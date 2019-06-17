@@ -1,0 +1,928 @@
+/**
+ * Copyright(c)  2014 SystemEXE,Inc.  All Rights Reserved.
+ */
+/**
+ *
+ * @author huy-du
+ */
+
+/**
+ * 定数を管理するオブジェクト。
+ */
+var Constants = {};
+
+Constants = {
+
+    /**
+     * 定数をSessionStorageにセットする。
+     */
+    setConstant : function(value) {
+
+        sessionStorage.setItem('constants', JSON.stringify(value));
+    },
+
+    /**
+     * 指定されたキーの定数をSessionStorageから取得する。
+     *
+     * @return 指定されたキーの定数
+     */
+    getConstant : function(key) {
+
+        return JSON.parse(sessionStorage.getItem('constants'))[key];
+    }
+};
+
+/**
+ * メッセージを管理するオブジェクト。
+ */
+var Messages = {};
+
+Messages = {
+
+    /**
+     * メッセージをSessionStorageにセットする。
+     */
+    setMessage : function(data) {
+        sessionStorage.setItem('messageWrapper', JSON.stringify(data));
+    },
+
+    /**
+     * 指定されたキーのメッセージをSessionStorageから取得する。
+     *
+     * @return 指定されたキーのメッセージ
+     */
+    getMessage : function(key, params) {
+
+        var messageWrapper = sessionStorage.getItem('messageWrapper');
+        var message = null;
+        if(!ValidateUtil.isValidTextEmpty(messageWrapper)){
+            message = JSON.parse(sessionStorage.getItem('messageWrapper'))[key];
+        }
+
+        if (!params) {
+            return message;
+        }
+
+        var _params = params.split(',');
+
+        for (var i = 0; i < _params.length; i++) {
+            var _param = this.getMessage(_params[i]);
+            message = message.replace(/\{[0-9]+\}/, _param ? _param : _params[i]);
+        }
+
+        return message;
+    }
+};
+
+/**
+ * Date Utils
+ */
+var DateUtils = {};
+
+DateUtils = {
+    getLastYear : function(){
+        var lastday = new Date();
+        return new Date( (lastday.getFullYear()-1).toString(), lastday.getMonth().toString(),lastday.getDate().toString());
+    },
+    getCurrentDate : function(){
+        var today = new Date();
+        return new Date( today.getFullYear().toString(), today.getMonth().toString(),today.getDate().toString());
+    },
+    getCurrentDateForString : function(){
+        var today = new Date();
+        var month = ((today.getMonth() + 1) < 10 ? '0' + (today.getMonth() + 1).toString() : (today.getMonth() + 1).toString()) ;
+        var day = (today.getDate() < 10 ? '0' + (today.getDate()).toString() : (today.getDate()).toString()) ;
+        return today.getFullYear().toString() + '/' + month + '/' + day;
+    },
+    getDateForString : function(today){
+        if(today != null && typeof today == 'object'){
+            var month = ((today.getMonth() + 1) < 10 ? '0' + (today.getMonth() + 1).toString() : (today.getMonth() + 1).toString()) ;
+            var day = (today.getDate() < 10 ? '0' + (today.getDate()).toString() : (today.getDate()).toString()) ;
+            return today.getFullYear().toString() + '/' + month + '/' + day;
+        }
+        return '';
+    },
+    getCurrentDatePreviousMonthForString : function(){
+        var today = new Date();
+        var datePreviousMonth = new Date( today.getFullYear().toString(), (today.getMonth()).toString(),today.getDate().toString());
+        var month = (datePreviousMonth.getMonth() < 10 ? '0' + (datePreviousMonth.getMonth()).toString() : (datePreviousMonth.getMonth()).toString()) ;
+        var day = ((datePreviousMonth.getDate() + 1) < 10 ? '0' + (datePreviousMonth.getDate() + 1).toString() : (datePreviousMonth.getDate() + 1).toString()) ;
+        return datePreviousMonth.getFullYear().toString() + '/' + month + '/' + day;
+    },
+    getAddDayFromDate : function(date, intDay){
+        intDay = isNaN(intDay) ? 0 : parseInt(intDay)
+        date = new Date(date);
+        date.setDate(date.getDate() + intDay);
+        return date;
+    },
+    getFirstDateOfMonth : function(){
+        var today = new Date();
+        return new Date( today.getFullYear().toString(), today.getMonth().toString(),"01");
+    },
+    getLastDateOfCurrentMonth : function(){
+        var today = new Date();
+        return new Date( today.getFullYear().toString(), (today.getMonth()+1).toString(), 0);
+    },
+    getLateDateOfMonth : function(date){
+        var newDate = new Date(date);
+        return new Date( newDate.getFullYear().toString(), (newDate.getMonth() + 1 ).toString(),0);
+    },
+    getAffterDateOfMonth : function(date){
+        var today = new Date();
+        return new Date( today.getFullYear().toString(), (today.getMonth()).toString(), (today.getDate() - date).toString());
+    },
+    getPreviousMonth : function(){
+        var today = new Date();
+        return new Date( today.getFullYear().toString(), (today.getMonth() - 1).toString(),today.getDate().toString());
+    },
+    getFirstDateOfPreviousMonth : function(){
+        var today = new Date();
+        var previousMonth = new Date( today.getFullYear().toString(), (today.getMonth() - 1).toString(),today.getDate().toString());
+        return new Date( previousMonth.getFullYear().toString(), previousMonth.getMonth().toString(),"01");
+    },
+    getAddMonth : function(date, number){
+        var resultDate = new Date(date.getTime());
+        resultDate.setMonth(date.getMonth() + number);
+        if (date.getDate() > resultDate.getDate()) {
+            resultDate.setDate(0);
+        }
+        return resultDate;
+    },
+    getCurrentMonth : function(){
+        var today = new Date();
+        return ((today.getMonth() + 1) < 10 ? '0' + (today.getMonth() + 1) .toString() : (today.getMonth() + 1) .toString());
+    },
+    getNextMonth : function(){
+        var today = new Date();
+        return new Date( today.getFullYear().toString(), (today.getMonth() + 1).toString(),today.getDate().toString());
+    },
+    getStringBillMonthByYM : function(billMonth){
+        var ymBillMonth = billMonth;
+        if(ymBillMonth.indexOf('/0') != -1){
+           return ymBillMonth = ymBillMonth.replace("/0", "0");
+            }else if(ymBillMonth.indexOf('/1') != -1){
+               return ymBillMonth = ymBillMonth.replace("/1", "1");
+            }else{
+               return ymBillMonth = ymBillMonth.replace("/", "0");
+            }
+    },
+    getBillMonthFromString : function(billMonth){
+        var stringbillMonth = billMonth;
+        if(!ValidateUtil.isValidTextEmpty(stringbillMonth)){
+            var year = stringbillMonth.substring(0,4);
+            var month = stringbillMonth.substring(4,6);
+            var billMonthByYM = year+"/"+month;
+            return billMonthByYM;
+        }
+        return '';
+    },
+
+    getCurrentYYYYMM : function(){
+        var today = new Date();
+        return  today.getFullYear().toString() + '/01';
+    },
+
+    /**
+     * retrieve 3 previous year
+     */
+    getPrevious3YearYYYYMM : function(){
+        var today = new Date();
+        return  (today.getFullYear() - 3).toString() + '/01';
+    },
+
+    /**
+     * retrieve first month of current year
+     */
+    getFirstYYYYMM : function(){
+        var d = new Date();
+        var today = d.setMonth(d.getMonth() - 11);
+        return moment(today).format('YYYY/MM');
+    },
+
+    /**
+     * retrieve last month of current year
+     */
+    getLastYYYYMM : function(){
+        var today = new Date();
+        return  today.getFullYear().toString() + '/' + this.getCurrentMonth();
+    },
+
+    /**
+     * Get Dislay time to write log
+     * @return {String} yyyy/MM/dd HH:mm:ss.sss
+     */
+    getNowString: function() {
+        var now = new Date();
+        return now.toLocaleDateString('ja') + ' ' + now.toLocaleTimeString() + '.' + now.getMilliseconds();
+    },
+
+    /**
+     * Formate time to yyyy/MM/dd HH:mm:ss.sss
+     * @param  {Date} time time
+     * @return {String}    yyyy/MM/dd HH:mm:ss.sss
+     */
+    formatTimestamp: function(time) {
+        return time.toLocaleDateString('ja') + ' ' + time.toLocaleTimeString() + '.' + time.getMilliseconds();
+    },
+
+    getCurrentYear : function(){
+        var today = new Date();
+        return  today.getFullYear().toString() ;
+    },
+
+    get3PreviousYear : function(){
+        var today = new Date();
+        return  (today.getFullYear() - 3).toString() ;
+    },
+
+    compare2Date: function(date1, date2){
+        var d1 = new Date(date1);
+        var d2 = new Date(date2);
+        if (d1 < d2) {
+            return true;
+        }
+        return false;
+    },
+
+    getNextYear : function(){
+        var now = new Date();
+        return new Date( (now.getFullYear()+1).toString(), now.getMonth().toString(),now.getDate().toString());
+    },
+
+    getPreviousWeek : function (){
+        var today = new Date();
+        return new Date(today.getFullYear(), today.getMonth(), today.getDate() - 7);
+    },
+
+    getNextWeek : function(n){
+        var today = new Date();
+        return new Date(today.getFullYear(), today.getMonth(), today.getDate() + 7);
+    },
+    convertJapanDate : function(date){
+        if(StringUtils.isEmpty(date)){
+            return '';
+        }
+        var val = date.split('/');
+        return val[0] + '年' + val[1] + '月' + val[2] + '日';
+    },
+    getYYYYMMDD : function(today){
+        var month = (today.getMonth() + 1 < 10 ? '0' + (today.getMonth() + 1).toString() : (today.getMonth() + 1).toString()) ;
+        var day = (today.getDate() < 10 ? '0' + (today.getDate()).toString() : (today.getDate()).toString()) ;
+        return today.getFullYear().toString() + month + day;
+    },
+    getDateTimeForString : function(today){
+        var month = (today.getMonth() + 1 < 10 ? '0' + (today.getMonth() + 1).toString() : (today.getMonth() + 1).toString()) ;
+        var day = (today.getDate() < 10 ? '0' + (today.getDate()).toString() : (today.getDate()).toString()) ;
+        var hour = (today.getHours() < 10 ? '0' + (today.getHours()).toString() : (today.getHours()).toString()) ;
+        var minute = (today.getMinutes() < 10 ? '0' + (today.getMinutes()).toString() : (today.getMinutes()).toString()) ;
+        var second = (today.getSeconds() < 10 ? '0' + (today.getSeconds()).toString() : (today.getSeconds()).toString()) ;
+        return today.getFullYear().toString() + month + day + hour + minute + second;
+    },
+
+};
+
+/**
+ * クライアント側で共通で実施するバリデート処理を定義したオブジェクト。
+ */
+var ValidateUtil = {};
+
+ValidateUtil =
+        {
+            /**
+             * 当該オブジェクトのメソッドが使用するプライベート関数です。指定された正規表現にマッチしているか確認します。
+             */
+            _isValidated : function(value, matcher) {
+
+                return matcher.test(value.rtrim());
+            },
+
+            /**
+             * 必須入力をチェックします。
+             *
+             * @param {string}
+             *            value 入力値
+             * @return {boolean} true:成功, false:失敗
+             */
+            isValidTextRequired : function(value) {
+
+                if (value != null) {
+                    return value ? this.isValidTextLength(value, 1, Infinity) : value;
+                } else {
+                    return false;
+                }
+            },
+
+            /**
+             * 禁則文字が含まれていないことをチェックします。
+             *
+             * @param {string}
+             *            value 入力値
+             * @return {boolean} true:成功, false:失敗
+             */
+            isValidTextInvalidChars : function(value) {
+
+                if (value == null || value == '') {
+                    return true;
+                }
+
+                var reg = new RegExp('[' + Configulation.INVALID_CHARS + ']');
+                if (true == this._isValidated(value, reg)) {
+                    return false;
+                }
+
+                return true;
+            },
+
+            /**
+             * 文字列の桁数をチェックします。
+             *
+             * @param {string}
+             *            value 入力値
+             * @param {number}
+             *            lower 最小桁数
+             * @parma {number} upper 最大桁数
+             * @return {boolean} true:成功, false:失敗
+             */
+            isValidTextLength : function(value, lower, upper) {
+
+                if (value == null || value == '') {
+                    return true;
+                }
+
+                if (value != null) {
+                    var _value = value.rtrim();
+                    if (upper == undefined) {
+                        upper = lower;
+                    }
+                    return _value.length >= lower && _value.length <= upper;
+                } else {
+                    return false;
+                }
+            },
+
+            /**
+             * 文字列の半角数字をチェックします。
+             *
+             * @param {string}
+             *            value 入力値
+             * @return {boolean} true:成功, false:失敗
+             */
+            isValidTextNumeric : function(value) {
+
+                if (value == null || value == '') {
+                    return true;
+                }
+
+                return this._isValidated(value, /^[\d]*$/);
+            },
+
+            /**
+             * 文字列の数値をチェックします。
+             *
+             * @param {string}
+             *            value 入力値
+             * @return {boolean} true:成功, false:失敗
+             */
+            isValidTextNumber : function(value) {
+
+                if (value == null || value == '') {
+                    return true;
+                }
+
+                return this._isValidated(value, /^[\d-\u002E]*$/) && isFinite(value);
+            },
+
+            /**
+             * 文字列の半角英字をチェックします。
+             *
+             * @param {string}
+             *            value 入力値
+             * @return {boolean} true:成功, false:失敗
+             */
+            isValidTextAlpha : function(value) {
+
+                if (value == null || value == '') {
+                    return true;
+                }
+
+                return this._isValidated(value, /^[A-Za-z]*$/);
+            },
+
+            /**
+             * 文字列の半角英数字をチェックします。
+             *
+             * @param {string}
+             *            value 入力値
+             * @return {boolean} true:成功, false:失敗
+             */
+            isValidTextAlphaNumeric : function(value) {
+
+                if (value == null || value == '') {
+                    return true;
+                }
+
+                return this._isValidated(value, /^[A-Za-z\d]*$/);
+            },
+            /**
+             * 文字列のメールをチェックします。
+             *
+             * @param {string}
+             *            value 入力値
+             * @return {boolean} true:成功, false:失敗
+             */
+            isValidTextEmail : function(value) {
+
+                if (value == null || value == '') {
+                    return true;
+                }
+
+                return this._isValidated(value, /^([\w-\.]+@([\w-]+\.)+[\w-]{2,4})?$/);
+            },
+            /**
+             * 文字列の半角英字数字(記号含む)をチェックします。
+             *
+             * @param {string}
+             *            value 入力値
+             * @return {boolean} true:成功, false:失敗
+             */
+            isValidTextHalf : function(value) {
+
+                if (value == null || value == '') {
+                    return true;
+                }
+
+                var reg = new RegExp('^[A-Za-z\d' + Configulation.VALID_CHARS_HALF + ']*$');
+                return this._isValidated(value, reg);
+            },
+
+            /**
+             * 文字列の日付形式をチェックします。
+             *
+             * @param {string}
+             *            value 入力値
+             * @return {boolean} true:成功, false:失敗
+             */
+            isValidTextDate : function(value) {
+
+                if (value == null || value == '') {
+                    return false;
+                }
+                var regex = /^\d{4}[\/\-](0?[1-9]|1[012])[\/\-](0?[1-9]|[12][0-9]|3[01])$/;
+               return this._isValidated(value, regex);
+            },
+
+            /**
+             * 文字列の電話番号形式をチェックします。
+             *
+             * @param {string}
+             *            value 入力値
+             * @return {boolean} true:成功, false:失敗
+             */
+            isValidTextTelNo : function(value) {
+
+                if (value == null || value == '') {
+                    return true;
+                }
+
+                if (false == this._isValidated(value, /^[0-9-]*$/)) {
+                    return false;
+                }
+
+                if (true == this._isValidated(value, /^-.*/)) {
+                    return false;
+                }
+
+                if (true == this._isValidated(value, /.*-$/)) {
+                    return false;
+                }
+
+                return true;
+            },
+
+            /**
+             * 文字列のバイト数(UTF-8)をチェックします。
+             *
+             * @param {string}
+             *            value 入力値
+             * @param {number}
+             *            size 最大サイズ(Byte)
+             * @return {boolean} true:成功, false:失敗
+             */
+            isValidBytesLength : function(value, size) {
+
+                if (value == null || value == '') {
+                    return true;
+                }
+
+                if ((new Blob([ value ], {
+                    type : 'text/plain'
+                })).size > size) {
+                    return false;
+                }
+
+                return true;
+            },
+
+            isValidTextEmpty : function(value) {
+                if (value == null || value == '' || value == undefined) {
+                    return true;
+                }
+                return false;
+            },
+
+            isValidPostNo : function(value) {
+                if(value.length != 7){
+                    return true;
+                }
+                return false;
+            },
+
+            isValidYYYYMMDD : function(value) {
+                var customDate, isValid;
+                if(!this.isValidTextEmpty(value)){
+                    customDate = new Date(value);
+                    isValid = !isNaN(customDate);
+                    if(isValid){
+                        return true;
+                    } else{
+                        return false;
+                    }
+                }else{
+                    return true;
+                }
+            }
+
+        };
+
+
+var StringUtils = {};
+StringUtils = {
+    /**
+     * check param is empty
+     *
+     * @param {string}
+     *            value
+     * @return {boolean} true:empty, false:not empty
+     */
+    isEmpty : function(value) {
+        if (value === null || value === '' || value === undefined || typeof value === 'undefined') {
+            return true;
+        }
+        return false;
+    },
+    replaceAt : function(str, index, chr) {
+        if (str === null || str === '' || str === undefined || typeof str === 'undefined') {
+            return '';
+        }
+        if(index > str.length-1) return str;
+        return str.substring(0,index) + chr + str.substring(index+1);
+    },
+    isJson : function(text){
+        try {
+            JSON.parse(text);
+        } catch (e) {
+            return false;
+        }
+        return true;
+    },
+    convertSingleToDoubleChar : function(text) {
+        try {
+            var obj = {
+                 value : text,
+                 name : ''
+            }
+            toZenkaku(obj);
+            return obj.value;
+        } catch (e) {
+            return text;
+        }
+    },
+    convertDoubleToSingleChar : function(text) {
+        try {
+            var obj = {
+                 value : text,
+                 name : ''
+            }
+            toHankaku(obj);
+            return obj.value;
+        } catch (e) {
+            return text;
+        }
+    }
+};
+
+
+/**
+ * クライアント側で共通で実施するバリデート処理を定義したオブジェクト。
+ */
+var ObjectUtil = {};
+
+ObjectUtil =
+        {
+            /**
+             * ヌルをチェックします。
+             */
+            isEmpty : function(value) {
+                var param = angular.fromJson(value);
+                for ( var key in param) {
+                    if(!ValidateUtil.isValidTextEmpty(param[key])){
+                        return false;
+                    }
+                }
+                return true;
+            },
+
+            /**
+             * ヌルをチェックします。
+             */
+            isEmptyIgnoreProperties : function(value, ignoreProperties) {
+                var param = angular.copy(value);
+                angular.forEach(param, function(index, item){
+                    for ( var val in ignoreProperties) {
+                      if(item.toString() == ignoreProperties[val]){
+                          delete param[item];
+                      }
+                  }
+                });
+
+                var param1 = angular.fromJson(param);
+                for ( var key in param1) {
+                    if(!ValidateUtil.isValidTextEmpty(param1[key])){
+                        return false;
+                    }
+                }
+                return true;
+            },
+
+            /**
+             *
+             */
+           resetEmpty : function(value) {
+               var param = angular.fromJson(value);
+               for ( var key in param) {
+                   if(!ValidateUtil.isValidTextEmpty(param[key])){
+                       param[key] = null;
+                   }
+               }
+               return angular.toJson(param);
+            },
+
+            /**
+             *
+             */
+           resetEmptyIgnoreProperties : function(value, ignoreProperties) {
+               var param = angular.copy(value);
+               angular.forEach(param, function(index, item){
+                   for ( var val in ignoreProperties) {
+                     if(item.toString() == ignoreProperties[val]){
+                         delete param[item];
+                     }
+                 }
+               });
+
+               var param1 = angular.fromJson(param);
+               for ( var key in param1) {
+                   value[key] = null;
+               }
+            },
+
+            convertPostNo: function(value){
+                if (!value) {
+                    return '';
+                }
+                if(!ValidateUtil.isValidTextEmpty(value)){
+                    var val = value.toString().trim().replace(/^\+/, '');
+
+                    if (val.match(/[^0-9-]/)) {
+                        return value;
+                    }
+                    var number;
+                    switch (val.length) {
+                        case 7: // ####### ->###-####
+                            number = val.slice(0, 3) + '-' + val.slice(3);
+                            break;
+                        case 10: // ########## ->###-###-####
+                            number = val.slice(0, 3) + '-' + val.slice(3,6) + '-' + val.slice(6);
+                            break;
+                        case 13: // ############# ->#####-####-####
+                            number = val.slice(0, 5) + '-' + val.slice(5,9) + '-' + val.slice(9);
+                            break;
+                        default:
+                            return number = val;
+                    }
+                    return "〒 " + number.trim();
+                }
+            }
+        };
+
+var ChartUtil = {};
+
+ChartUtil = {
+        formatDateForChart: function (value, format){
+            if(undefined != format && null != format){
+                switch (format) {
+                case 'MM/DD':
+                    var date = new Date(value);
+                    var month = (date.getMonth() + 1).toString();
+                    var day = date.getDate().toString();
+                    value = month + '/' + day;
+                    break;
+                }
+                return value;
+            }
+        },
+
+        getChartColor: function(index){
+            var color = [ '#F44336', '#2196F3', '#4CAF50', '#FFEB3B', '#FF5722',
+                          '#9C27B0', '#9E9E9E', '#009688', '#C6FF00', '#FFA000',
+                          '#607D8B', '#00E5FF', '#7C4DFF', '#26A69A', '#EC407A',
+                          '#FFAB00', '#A1887F', '#81D4FA', '#3F51B5', '#E9D460',
+                          '#F1A9A0', '#F0F4C3', '#CE93D8', '#80CBC4', '#827717',
+                          '#4E342E', '#42A5F5', '#AD1457', '#4DD0E1', '#FFA000',
+                          '#E0E0E0', '#2E7D32', '#FF1744', '#76FF03', '#FFB300',
+                          '#304FFE', '#303F9F', '#00838F', '#264653', '#2A9D8F',
+                          '#E9C46A', '#F4A261', '#E76F51', '#5BC0EB', '#FDE74C',
+                          '#9BC53D', '#E55934', '#FA7921', '#9C89B8', '#F0A6CA',
+                          '#EFC3E6', '#F0E6EF', '#B8BEDD', '#F6511D', '#FFB400',
+                          '#00A6ED', '#7FB800', '#0D2C54', '#247BA0', '#70C1B3',
+                          '#B2DBBF', '#F3FFBD', '#FF1654', '#50514F', '#F25F5C',
+                          '#FFE066', '#247BA0', '#70C1B3', '#011627', '#FDFFFC',
+                          '#2EC4B6', '#E71D36', '#FF9F1C' ];
+            if(index > color.length -1){
+                return ChartUtil.getRandomColor();
+            }else{
+                return color[index];
+            }
+        },
+
+        getRandomColor : function() {
+            var letters = '0123456789ABCDEF';
+            var color = '#';
+            for (var i = 0; i < 6; i++) {
+                color += letters[Math.floor(Math.random() * 16)];
+            }
+            return color;
+        },
+};
+
+/**
+ * 入力チェックで利用する入力許可文字／禁則文字の定義オブジェクトです。
+ */
+var Configulation = {
+    VALID_CHARS_HALF : '!#$%()+-./={}',
+    INVALID_CHARS : '￥＄￠￡Å‰＃＆＊＠§☆★○●◎◇◆□■△▲▽▼※〒→←↑↓〓♯♭♪†‡¶◯´｀¨♂♀─│┌┐┘└├┬┤┴┼━┃┏┓┛┗┣┳┫┻╋┠┯┨┷┿┝┰┥┸╂'
+};
+
+
+var Utils = {};
+/**
+ * フォームにより、Post送信
+ */
+Utils.postToUrl = function(path, params) {
+    var param = angular.fromJson(params);
+    var form = document.createElement("form");
+    form._submit_function_ = form.submit;
+
+    form.setAttribute("method", "POST");
+    form.setAttribute("action", getContextPath() + path);
+    form.setAttribute("modelAttribute","pdfConditionDto");
+    for ( var key in param) {
+      var hiddenField = document.createElement("input");
+      hiddenField.setAttribute("type", "hidden");
+      hiddenField.setAttribute("name", key);
+      if(null == param[key]){
+          hiddenField.setAttribute("value", "");
+      }else{
+          hiddenField.setAttribute("value", param[key]);
+      }
+
+      form.appendChild(hiddenField);
+    }
+
+    var csrfField = document.createElement("input");
+    csrfField.setAttribute("type", "hidden");
+    csrfField.setAttribute("name", "_csrf");
+    csrfField.setAttribute("value", $('meta[name=_csrf]').attr('content'));
+    form.appendChild(csrfField);
+
+    document.body.appendChild(form);
+    form._submit_function_();
+    document.body.removeChild(form);
+};
+var GroupUtil = {};
+
+GroupUtil.getParentGroup = function(groupCd, listMstGroup, listSelect){
+    if(StringUtils.isEmpty(groupCd) || groupCd === "#" || groupCd === "$"){
+        return;
+    }
+    angular.forEach(listMstGroup, function(item, j){
+        if(groupCd == item.groupCd && item.oldFlag){
+            return;
+        }
+        if(groupCd === item.groupCd && item.parentCd !== "#" && item.parentCd !== "$"){
+            if(listSelect.indexOf(item.parentCd) == -1){
+                var groupIndex = listSelect.indexOf(item.groupCd);
+                listSelect.splice(groupIndex, 0, item.parentCd);
+                GroupUtil.getParentGroup(item.parentCd, listMstGroup, listSelect);
+            }
+        }
+    });
+}
+
+var CompanyUtil = {};
+
+CompanyUtil.getCustomFlag = function(index){
+    // index là vị trí tính từ phải sang
+    var sessionLogin = angular.fromJson(sessionStorage.getItem("session"));
+    var customFlag = "";
+    if(!StringUtils.isEmpty(sessionLogin.customFlag)){
+        var length = sessionLogin.customFlag.length;
+        customFlag = sessionLogin.customFlag.charAt(length - index);
+    }
+    return customFlag;
+};
+
+/**
+ * synchronize 2 table when resize column
+ */
+function syncTableWidth(e) {
+    var parent = e.currentTarget;
+    var childId = $(parent).attr("id") + 'Child'
+
+    $("table").filter(function() {
+        return $(this).attr("id^='"+childId+"'") != $(parent).attr("id")
+    }).each(function() {
+        //Match the width
+        $("tr td", this).each(function(index) {
+            $(this).css("width", $("tr th:nth-of-type(" + (index + 1) + ")", parent).css("width"));
+        });
+      //Match the grip's position
+        $(this).prev().find(".JCLRgrip").each(function(index){
+            $(this).css("left",$(parent).prev().find(".JCLRgrip:nth-of-type("+(index+1)+")").css("left"));
+        });
+    });
+}
+
+var SessionUtils = {};
+
+SessionUtils = {
+    prepareSession: function (sessionCurrent){
+        if (!sessionCurrent) { // check if an item is already registered
+            sessionCurrent = []; // if not, we initiate an empty array
+        } else {
+            sessionCurrent = JSON.parse(sessionCurrent); // else parse whatever is in
+        }
+        return sessionCurrent;
+    }
+};
+
+var CalculateUtils = {};
+
+CalculateUtils = {
+    sumControlType12: function (detail, $filter){
+        var groupFreeItemFlag = !StringUtils.isEmpty(detail.groupFreeItemFlag) && detail.groupFreeItemFlag ? '1' : '0';
+        var groupNo = detail.groupNo.toString();
+        var controlType12 = $("[id^="+ groupFreeItemFlag + "_" + groupNo +"][id$=_12]");
+        //If group has input controlType = "12".
+        if(controlType12.length > 0){
+            var sum12 = 0;
+            var controlType06 = $("[id^="+ groupFreeItemFlag + "_" + groupNo +"][id$=_06]");
+            controlType06.each(function() {
+                var value06 = $(this).val();
+                if(!StringUtils.isEmpty(value06) && !isNaN(value06.replace(/,/g,''))){
+                    sum12 += parseInt(value06.replace(/,/g,''));
+                }
+            });
+            controlType12.val($filter('exexCurrency')(sum12));
+            controlType12.trigger('change');
+        }
+    }
+};
+
+
+var FileUtils = {};
+
+FileUtils = {
+    replaceSpecialCharacter: function (filename){
+        var name = "";
+        if(!StringUtils.isEmpty(filename)){
+            name = filename.replace( /[<>:"\/\\|?*]+/g, '' );
+        }
+        return name;
+    }
+};
+
+
+var ColorUtils = {};
+
+ColorUtils = {
+    getListColor: function (){
+        var listColorPopover = [
+            '#00bcd4', 'rgb(83,141,213)', '#3c8dbc', '#2196f3', '#009688', '#3d9970', '#4caf50',
+            '#cddc39', '#f39c12', '#ff9800','#f44336',  '#e91e63', '#d81b60', '#9c27b0',
+            '#9e9e9e', 'rgb(82,82,82)', 'rgb(51,63,79)', '#001f3f', '#000000'
+        ]
+        return listColorPopover;
+    }
+};
+

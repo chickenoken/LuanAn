@@ -1,0 +1,83 @@
+table#tableheader1 {
+  margin-bottom: 0px !important;
+}
+
+th#username, th#mailAddress {
+  background-color: #3598DC;
+  color: #FFFFFF;
+  border : 1px solid #3598DC;
+}
+
+
+table#table-body1 {
+  width: 820px;
+  margin-top: -1px !important;
+  margin-bottom: 0px !important;
+}
+
+.scrollbar-custom-1 {
+  height: 370px;
+  width: 820px;
+}
+
+.table-bordered>thead>tr>th, .table-bordered>thead>tr>td {
+  border-bottom-width: 0px !important;
+  word-break: break-all;
+}
+
+.setcolor {
+  color: #000000;
+  background: #87CEEB
+}
+
+.searchMail {
+  padding-bottom: 8px;
+  padding-left: 50px;
+}
+
+tr.selectOwner {
+  word-break: break-all;
+}
+
+tr.selectOwner .md-checkbox label>.check {
+    border-color: #000000;
+}
+.modal-dialog.w-mail {
+  width: 850px;
+}
+
+#tableheader2 {
+  width: 820px;
+}
+
+@media ( max-width : 768px) {
+  .modal-dialog.w-mail {
+    margin: 30px auto;
+    width: 500px;
+  }
+  #tableheader2 {
+    width: 470px;
+  }
+  .scrollbar-custom-1 {
+    width: 470px;
+  }
+  table#table-body1 {
+    width: 470px;
+  }
+}
+
+@media ( max-width : 500px) {
+  .modal-dialog.w-mail {
+    margin: 30px auto;
+    width: 90%;
+  }
+  #tableheader2 {
+    width: 100%;
+  }
+  .scrollbar-custom-1 {
+    width: 100%;
+  }
+  table#table-body1 {
+    width: 100%;
+  }
+}

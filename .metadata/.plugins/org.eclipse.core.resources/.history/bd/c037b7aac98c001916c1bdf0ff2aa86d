@@ -1,0 +1,182 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision: 12186 $  $Date: 2016-07-29 09:52:29 +0700 (Fri, 29 Jul 2016) $
+ * @author minh-thuan
+ */
+
+'use strict';
+
+exexSMSApp.factory('SearchCustomerModel', [ 'BaseModel', function(BaseModel) {
+
+    var model = BaseModel.getInstance();
+
+    model.form = {
+            search : {
+                custName : '',
+                custCd : '',
+                custType: '',
+                salesUserCd: '',
+                controlCd: '',
+                clientType: '',
+                stockFlag: false
+            },
+           C020001:[],
+           listMstUser: [],
+           listMstCustomer: [],
+           listCustomer: [],
+
+           //TODO common pagination info
+           paginationInfo : {
+               page: 0,
+               pageSize: 10,
+               totalPage: 0,
+               totalRecord: 0,
+               from: 0,
+               to: 0
+           }
+      };
+
+    model.hidden = {};
+
+    return model;
+} ]);
+exexSMSApp.service('SearchCustomerService', ['$q', 'ServerService',function ($q, ServerService) {
+    var self = this;
+
+    self.getInit = function(param) {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('/SearchCustomer/getInit', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    self.search = function(param) {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('/SearchCustomer/search', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+}]);
+
+exexSMSApp.controller('searchCustomerCtrl',
+        ['$scope', '$uibModalInstance', 'SearchCustomerModel', 'SearchCustomerService', 'DialogsService', 'Messages',
+         function($scope, $uibModalInstance, SearchCustomerModel, SearchCustomerService, DialogsService, Messages){
+
+    $scope.model = SearchCustomerModel;
+
+    $scope.getInit = function(){
+        $scope.model.form.search.custName = '';
+        $scope.model.form.search.custCd = '';
+        $scope.model.form.search.custType = '';
+        $scope.model.form.search.salesUserCd = '';
+        $scope.model.form.search.controlCd = '';
+        var param = {};
+        SearchCustomerService
+        .getInit(param)
+        .then(function(result) {
+                var error = result.failed;
+                if(!ValidateUtil.isValidTextEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                }
+                $scope.model.form.listMstUser = result.data.listMstUser;
+                $scope.model.form.listC020001 = result.data.listC020001;
+            });
+    };
+
+    $scope.search = function(param){
+        $scope.doSearch(1,param);
+    };
+
+    $scope.doSearch = function(page,param){
+        var params = {
+             custCd : !ValidateUtil.isValidTextEmpty(param.custCd) ? param.custCd.toString() : "",
+             custName : !ValidateUtil.isValidTextEmpty(param.custName) ? param.custName.toString() : "",
+             custType : !ValidateUtil.isValidTextEmpty(param.custType) ? param.custType.toString() : "",
+             salesUserCd : !ValidateUtil.isValidTextEmpty(param.salesUserCd) ? param.salesUserCd.toString() : "",
+             controlCd : !ValidateUtil.isValidTextEmpty(param.controlCd) ? param.controlCd.toString() : "",
+             clientType: $scope.model.form.search.clientType,
+             page : page,
+             pageSize : $scope.model.form.paginationInfo.pageSize
+         };
+        SearchCustomerService
+        .search(params)
+        .then(function(result) {
+             var error = result.data.failed;
+             var warning = result.data.warning;
+             if(!ValidateUtil.isValidTextEmpty(error)){
+                 DialogsService.showError(Messages.getMessage('system.error'), error);
+                 return;
+             }
+             else if(!ValidateUtil.isValidTextEmpty(warning)){
+                 DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                 return;
+             }else{
+                 $scope.model.form.paginationInfo = result.data.paginationInfo;
+                 $scope.model.form.listCustomer = result.data.listCustomer;
+                 $scope.model.filteredItems = $scope.model.form.listMstCustomer.length;
+                 $scope.model.totalItems = $scope.model.form.listMstCustomer.length;
+             }
+         });
+    };
+
+    $scope.init = function(){
+        setTimeout(function() {
+            $scope.getInit();
+        }, 10);
+        var searchStock = angular.fromJson(sessionStorage.getItem("searchCustStock"));
+        sessionStorage.removeItem("searchCustStock");
+        if(!ValidateUtil.isValidTextEmpty(searchStock)){
+            $scope.model.form.search.clientType = searchStock.clientType;
+        }
+        if($scope.model.form.search.clientType == '1'){
+            $scope.model.form.search.stockFlag = true;
+        }
+        var params = {
+            custName : '',
+            custCd : '',
+            custType: '',
+            salesUserCd: '',
+            controlCd: '',
+            clientType:$scope.model.form.search.clientType,
+            page : 1,
+            pageSize :$scope.model.form.paginationInfo.pageSize
+        };
+        $scope.search(params);
+    };
+    $scope.init();
+
+    /**
+     * close popup
+     */
+    $scope.close = function() {
+        $uibModalInstance.dismiss('close');
+    };
+
+    $scope.getCustomer = function(row) {
+      sessionStorage.setItem('searchCustomer',JSON.stringify(row));
+      $uibModalInstance.dismiss('close');
+    };
+}]);
+

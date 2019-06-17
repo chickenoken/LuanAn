@@ -1,0 +1,9 @@
+.slimScrollDiv{
+  height: auto !important;
+  max-height: 446px !important;
+}
+.table-bill {
+  height: auto !important;
+  font-size: 14px;
+  max-height: 446px !important;
+}

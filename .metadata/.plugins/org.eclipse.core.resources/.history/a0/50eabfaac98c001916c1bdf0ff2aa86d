@@ -1,0 +1,986 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision: 1.0 $  $Date: 2014/06/06 $
+ * @author : Minh-thuan
+ */
+
+'use strict';
+
+exexSMSApp.factory('TodoCustomerListModel', [ 'BaseModel', function(BaseModel) {
+
+    var model = BaseModel.getInstance();
+
+    model.form = {
+        search : {
+            searchCreateDateFrom:'',
+            searchCreateDateTo:'',
+            searchUpdDateFrom : '',
+            searchUpdDateTo : '',
+            searchTodoMotion : [],
+            searchTodoName : '',
+            searchCustName : '',
+            searchTodoGroupCd : [],
+            searchTodoUserCd : [],
+            searchPartnerGroupCd : [],
+            searchPartnerUserCd : [],
+            searchOwnerName : '',
+            searchFinished : false,
+            todoDetailUpdDate : '',
+            searchHavingCustMstFlagList : [],
+            todoList: [],
+            listSort: [],
+            searchOrderKey : [],
+            searchOrderSort: '',
+            salesReportCondition : []
+        },
+        paginationInfo : {
+            page: 0,
+            pageSize: 20,
+            totalPage: 0,
+            totalRecord: 0,
+            from: 0,
+            to: 0
+        },
+        listC010006 : [],
+        listC010010: [],
+        listS020023 : [],
+        listUser: [],
+        listGroupTypeCd: [],
+        resultList: [],
+    };
+
+    model.hidden = {
+        listGroupSelect:[],
+        listGroupSelect1:[],
+        listParamSearch : [{id: 1, model: 'searchTodoGroupCd', name: angular.element('#searchTodoGroupCdLabel').text()},
+                           {id: 2, model: 'searchTodoUserCd', name: angular.element('#searchTodoUserCdLabel').text()},
+                           {id: 3, model: 'searchTodoMotion', name: angular.element('#searchTodoMotionLabel').text()},
+                           {id: 4, model: 'searchCreateDate', name: angular.element('#searchCreateDateLabel').text()},
+                           {id: 5, model: 'searchUpdDate', name: angular.element('#searchUpdDateLabel').text()},
+                           {id: 6, model: 'todoList', name: angular.element('#searchTodoNoLabel').text()},
+                           {id: 7, model: 'searchTodoName', name: angular.element('#searchTodoNameLabel').text()},
+                           {id: 8, model: 'searchCustName', name: angular.element('#searchCustNameLabel').text()},
+                           {id: 9, model: 'searchOwnerName', name: angular.element('#searchOwnerNameLabel').text()},
+                           {id: 10, model: 'searchPartnerGroupCd', name: angular.element('#searchPartnerGroupCdLabel').text()},
+                           {id: 11, model: 'searchPartnerUserCd', name: angular.element('#searchPartnerUserCdLabel').text()},
+                           {id: 12, model: 'salesReportCondition', name: angular.element('#salesReportConditionLabel').text()},
+                           {id: 13, model: 'todoDetailUpdDate', name: angular.element('#todoDetailUpdDateLabel').text()},
+                           {id: 14, model: 'searchHavingCustMstFlagList', name: angular.element('#searchHavingCustMstFlagListLabel').text()}
+                          ],
+
+        searchOrderKey : [
+                          {id: 1, model: 'todoDetailUpdDateLabel', name: angular.element('#todoDetailUpdDateLabel').text()},
+                          {id: 2, model: 'searchCreateDateLabel', name: angular.element('#searchCreateDateLabel').text()},
+                          {id: 3, model: 'searchUpdDateLabel', name: angular.element('#searchUpdDateLabel').text()},
+                          {id: 4, model: 'searchTodoMotionLabel', name: angular.element('#searchTodoMotionLabel').text()},
+                          {id: 5, model: 'deadlineLabel', name: angular.element('#deadlineLabel').text()},
+                          {id: 6, model: 'resDateTimeLabel', name: angular.element('#resDateTimeLabel').text()},
+                          {id: 7, model: 'searchTodoNameLabel', name: angular.element('#searchTodoNameLabel').text()},
+                          {id: 8, model: 'projectNameLabel', name: angular.element('#projectNameLabel').text()},
+                          {id: 9, model: 'searchTodoGroupCdLabel', name: angular.element('#searchTodoGroupCdLabel').text()},
+                          {id: 10, model: 'searchTodoUserCdLabel', name: angular.element('#searchTodoUserCdLabel').text()},
+                          {id: 11, model: 'searchPartnerGroupCdLabel', name: angular.element('#searchPartnerGroupCdLabel').text()},
+                          {id: 12, model: 'searchPartnerUserCdLabel', name: angular.element('#searchPartnerUserCdLabel').text()},
+                          {id: 13, model: 'statusNameLabel', name: angular.element('#statusNameLabel').text()},
+                          {id: 14, model: 'searchCustNameLabel', name: angular.element('#searchCustNameLabel').text()},
+                          {id: 15, model: 'deptCdLabel', name: angular.element('#deptCdLabel').text()},
+                          {id: 16, model: 'positionLabel', name: angular.element('#positionLabel').text()},
+                          {id: 17, model: 'ownerNameLabel', name: angular.element('#ownerNameLabel').text()},
+                          {id: 18, model: 'phoneNoLabel', name: angular.element('#phoneNoLabel').text()},
+                          {id: 19, model: 'mailAddressLabel', name: angular.element('#mailAddressLabel').text()},
+                          {id: 20, model: 'actionNameLabel', name: angular.element('#actionNameLabel').text()}
+                         ],
+
+        searchOrderSort : [{id: 1, model: 'desc', name: angular.element('#descLabel').text()},
+                           {id: 2, model: 'asc', name: angular.element('#ascLabel').text()}],
+        listSearch:[],
+        listTmp: [],
+        lastIndex : null,
+        lastActionName : null,
+        detailStatus : null,
+        detailStatusCode: null,
+        listDataAjax: [],
+    };
+
+    return model;
+} ]);
+
+exexSMSApp.controller('todoCustomerListCtrl',
+        ['$scope', '$filter', 'RouteService', 'ServerService', 'TodoCustomerListModel', 'Messages', 'DialogsService', '$timeout',
+         function($scope, $filter, RouteService, ServerService, TodoCustomerListModel, Messages, DialogsService, $timeout) {
+
+    $scope.model = TodoCustomerListModel;
+
+    $scope.$on("TodoCustomerList#search", function(evt, param) {
+        $scope.search();
+    });
+
+    $scope.newListParamSearch = function(){
+        $scope.model.hidden.listTmp = angular.copy($scope.model.hidden.listParamSearch);
+        for (var i = 0; i < $scope.model.hidden.listSearch.length; i++) {
+            var item = $scope.model.hidden.listSearch[i];
+            var removeIndex = $scope.model.hidden.listTmp.map(function(items) { return items.model; }).indexOf(item.model);
+            if (item.model == 'searchTodoGroupCd') {
+                $scope.model.hidden.listTmp.splice(removeIndex, 1);
+            } else if (item.model == 'searchTodoUserCd') {
+                $scope.model.hidden.listTmp.splice(removeIndex, 1);
+            } else if (item.model == 'searchTodoMotion') {
+                $scope.model.hidden.listTmp.splice(removeIndex, 1);
+            } else if (item.model == 'searchCreateDate') {
+                $scope.model.hidden.listTmp.splice(removeIndex, 1);
+            } else if (item.model == 'searchUpdDate') {
+                $scope.model.hidden.listTmp.splice(removeIndex, 1);
+            } else if (item.model == 'todoList') {
+                $scope.model.hidden.listTmp.splice(removeIndex, 1);
+            } else if (item.model == 'searchTodoName') {
+                $scope.model.hidden.listTmp.splice(removeIndex, 1);
+            } else if (item.model == 'searchCustName') {
+                $scope.model.hidden.listTmp.splice(removeIndex, 1);
+            } else if (item.model == 'searchOwnerName') {
+                $scope.model.hidden.listTmp.splice(removeIndex, 1);
+            } else if (item.model == 'searchPartnerGroupCd') {
+                $scope.model.hidden.listTmp.splice(removeIndex, 1);
+            } else if (item.model == 'searchPartnerUserCd') {
+                $scope.model.hidden.listTmp.splice(removeIndex, 1);
+            } else if (item.model == 'salesReportCondition') {
+                $scope.model.hidden.listTmp.splice(removeIndex, 1);
+            } else if (item.model == 'todoDetailUpdDate') {
+                $scope.model.hidden.listTmp.splice(removeIndex, 1);
+            } else if (item.model == 'searchHavingCustMstFlagList') {
+                $scope.model.hidden.listTmp.splice(removeIndex, 1);
+            }
+        }
+    };
+
+    $scope.prepareListParamSearch = function (){
+        var listParamSearch = $scope.model.hidden.listParamSearch;
+        var sessionSearch = angular.fromJson(sessionStorage.getItem("todoCustomerList"));
+        var sessionLogin = angular.fromJson(sessionStorage.getItem("session"));
+        for (var i = 0; i < $scope.model.hidden.listSearch.length; i++) {
+            var item = $scope.model.hidden.listSearch[i];
+            item.listDetailParam = angular.copy($scope.model.hidden.listTmp);
+            if (item.model == 'searchTodoGroupCd') {
+                item.listDetailParam.push(listParamSearch[0]);
+                if(!StringUtils.isEmpty(sessionLogin) && (!StringUtils.isEmpty(sessionSearch) && sessionSearch.searchTodoGroupCd == undefined)
+                    && (StringUtils.isEmpty($scope.model.form.search.searchTodoGroupCd) || $scope.model.form.search.searchTodoGroupCd.length == 0)){
+                    $scope.model.form.search.searchTodoGroupCd = !StringUtils.isEmpty(sessionLogin.groupCd) ? [sessionLogin.groupCd] : [];
+                }
+            } else if (item.model == 'searchTodoUserCd') {
+                item.listDetailParam.push(listParamSearch[1]);
+                if(!StringUtils.isEmpty(sessionLogin) && (!StringUtils.isEmpty(sessionSearch) && sessionSearch.searchTodoUserCd == undefined)
+                    && (StringUtils.isEmpty($scope.model.form.search.searchTodoUserCd) || $scope.model.form.search.searchTodoUserCd.length == 0)){
+                    $scope.model.form.search.searchTodoUserCd =  [sessionLogin.userCd];
+                }
+            } else if (item.model == 'searchTodoMotion') {
+                item.listDetailParam.push(listParamSearch[2]);
+            } else if (item.model == 'searchCreateDate') {
+                item.listDetailParam.push(listParamSearch[3]);
+                if(StringUtils.isEmpty(sessionSearch) || (!StringUtils.isEmpty(sessionSearch)
+                        && sessionSearch.searchCreateDateFrom === undefined && sessionSearch.searchCreateDateTo === undefined )){
+                    $scope.model.form.search.searchCreateDateFrom = DateUtils.getPreviousMonth();
+                    $scope.model.form.search.searchCreateDateTo = DateUtils.getCurrentDate();
+                }
+            } else if (item.model == 'searchUpdDate') {
+                item.listDetailParam.push(listParamSearch[4]);
+                if(StringUtils.isEmpty(sessionSearch) || (!StringUtils.isEmpty(sessionSearch)
+                        && sessionSearch.searchUpdDateFrom === undefined && sessionSearch.searchUpdDateTo === undefined )){
+                    $scope.model.form.search.searchUpdDateFrom = DateUtils.getPreviousMonth();
+                    $scope.model.form.search.searchUpdDateTo = DateUtils.getCurrentDate();
+                }
+            } else if (item.model == 'todoList') {
+                item.listDetailParam.push(listParamSearch[5]);
+            } else if (item.model == 'searchTodoName') {
+                item.listDetailParam.push(listParamSearch[6]);
+            } else if (item.model == 'searchCustName') {
+                item.listDetailParam.push(listParamSearch[7]);
+            } else if (item.model == 'searchOwnerName') {
+                item.listDetailParam.push(listParamSearch[8]);
+            } else if (item.model == 'searchPartnerGroupCd') {
+                item.listDetailParam.push(listParamSearch[9]);
+                if(!StringUtils.isEmpty(sessionLogin) && (!StringUtils.isEmpty(sessionSearch) && sessionSearch.searchPartnerGroupCd == undefined)
+                    && (StringUtils.isEmpty($scope.model.form.search.searchPartnerGroupCd) || $scope.model.form.search.searchPartnerGroupCd.length == 0)){
+                    $scope.model.form.search.searchPartnerGroupCd = !StringUtils.isEmpty(sessionLogin.groupCd) ? [sessionLogin.groupCd] : [];
+                }
+            } else if (item.model == 'searchPartnerUserCd') {
+                item.listDetailParam.push(listParamSearch[10]);
+                if(!StringUtils.isEmpty(sessionLogin) && (!StringUtils.isEmpty(sessionSearch) && sessionSearch.searchPartnerUserCd == undefined)
+                    && (StringUtils.isEmpty($scope.model.form.search.searchPartnerUserCd) || $scope.model.form.search.searchPartnerUserCd.length == 0)){
+                    $scope.model.form.search.searchPartnerUserCd =  [sessionLogin.userCd];
+                }
+            } else if (item.model == 'salesReportCondition') {
+                item.listDetailParam.push(listParamSearch[11]);
+            } else if (item.model == 'todoDetailUpdDate') {
+                item.listDetailParam.push(listParamSearch[12]);
+                if(StringUtils.isEmpty(sessionSearch) || (!StringUtils.isEmpty(sessionSearch)
+                        && sessionSearch.todoDetailUpdDateFrom === undefined && sessionSearch.todoDetailUpdDateTo === undefined )){
+                    $scope.model.form.search.todoDetailUpdDateFrom = DateUtils.getPreviousMonth();
+                    $scope.model.form.search.todoDetailUpdDateTo = DateUtils.getCurrentDate();
+                }
+            } else if (item.model == 'searchHavingCustMstFlagList') {
+                item.listDetailParam.push(listParamSearch[13]);
+            }
+        }
+    };
+
+    $scope.prepareSessionSearch = function(session){
+        var listSearch = [];
+        for(var key in session){
+            var item = {};
+            if (key == 'searchTodoGroupCd') {
+                $scope.model.form.search.searchTodoGroupCd = session[key]; item.model = key;
+            } else if (key == 'searchTodoUserCd') {
+                $scope.model.form.search.searchTodoUserCd = session[key]; item.model = key;
+            } else if (key == 'searchTodoMotion') {
+                $scope.model.form.search.searchTodoMotion = session[key]; item.model = key;
+            } else if (key == 'searchCreateDateFrom') {
+                $scope.model.form.search.searchCreateDateFrom = session[key]; item.model = 'searchCreateDate';
+            } else if (key == 'searchCreateDateTo') {
+                $scope.model.form.search.searchCreateDateTo = session[key];
+            } else if (key == 'searchUpdDateFrom') {
+                $scope.model.form.search.searchUpdDateFrom = session[key]; item.model = 'searchUpdDate';
+            } else if (key == 'searchUpdDateTo') {
+                $scope.model.form.search.searchUpdDateTo = session[key];
+            } else if (key == 'todoList') {
+                $scope.model.form.search.todoList = session[key]; item.model = key;
+            } else if (key == 'searchTodoName') {
+                $scope.model.form.search.searchTodoName = session[key]; item.model = key;
+            } else if (key == 'searchCustName') {
+                $scope.model.form.search.searchCustName = session[key]; item.model = key;
+            } else if (key == 'searchOwnerName') {
+                $scope.model.form.search.searchOwnerName = session[key]; item.model = key;
+            } else if (key == 'searchPartnerGroupCd') {
+                $scope.model.form.search.searchPartnerGroupCd = session[key]; item.model = key;
+            } else if (key == 'searchPartnerUserCd') {
+                $scope.model.form.search.searchPartnerUserCd = session[key]; item.model = key;
+            } else if (key == 'salesReportCondition') {
+                $scope.model.form.search.salesReportCondition = session[key]; item.model = key;
+            } else if (key == 'todoDetailUpdDateFrom') {
+                $scope.model.form.search.todoDetailUpdDateFrom = session[key]; item.model = 'todoDetailUpdDate';
+            } else if (key == 'todoDetailUpdDateTo') {
+                $scope.model.form.search.todoDetailUpdDateTo = session[key];
+            } else if (key == 'searchHavingCustMstFlagList') {
+                $scope.model.form.search.searchHavingCustMstFlagList = session[key]; item.model = key;
+            }
+
+            if (!StringUtils.isEmpty(item.model)){
+                listSearch.push(item);
+            }
+        };
+        $scope.model.hidden.listSearch = listSearch;
+        $scope.newListParamSearch();
+        $scope.prepareListParamSearch();
+    };
+
+    $scope.convertParamsSearch = function(param, page){
+        var params = {
+            searchFinished: param.searchFinished,
+            exportCsv: param.exportCsv,
+            listSort: param.listSort,
+            searchOrderKey : param.searchOrderKey,
+            searchOrderSort : param.searchOrderSort,
+            page : page,
+            pageSize : $scope.model.form.paginationInfo.pageSize
+        };
+
+        for (var i = 0; i < $scope.model.hidden.listSearch.length; i++) {
+            var item = $scope.model.hidden.listSearch[i];
+            if (item.model == 'searchTodoGroupCd') {
+                params.searchTodoGroupCd = !StringUtils.isEmpty(param.searchTodoGroupCd) ? param.searchTodoGroupCd : [];
+            } else if (item.model == 'searchTodoUserCd') {
+                params.searchTodoUserCd = !StringUtils.isEmpty(param.searchTodoUserCd) ? param.searchTodoUserCd : [];
+            } else if (item.model == 'searchTodoMotion') {
+                params.searchTodoMotion = !StringUtils.isEmpty(param.searchTodoMotion) ? param.searchTodoMotion : [];
+            } else if (item.model == 'searchCreateDate') {
+                params.searchCreateDateFrom = !StringUtils.isEmpty(param.searchCreateDateFrom) ? $filter('date')(param.searchCreateDateFrom, "yyyy/MM/dd") : null;
+                params.searchCreateDateTo = !StringUtils.isEmpty(param.searchCreateDateTo) ? $filter('date')(param.searchCreateDateTo, "yyyy/MM/dd") : null;
+            } else if (item.model == 'searchUpdDate') {
+                params.searchUpdDateFrom = !StringUtils.isEmpty(param.searchUpdDateFrom) ? $filter('date')(param.searchUpdDateFrom, "yyyy/MM/dd") : null;
+                params.searchUpdDateTo = !StringUtils.isEmpty(param.searchUpdDateTo) ? $filter('date')(param.searchUpdDateTo, "yyyy/MM/dd") : null;
+            } else if (item.model == 'todoList') {
+                params.todoList = !StringUtils.isEmpty(param.todoList) ? param.todoList : null;
+            } else if (item.model == 'searchTodoName') {
+                params.searchTodoName = !StringUtils.isEmpty(param.searchTodoName) ? param.searchTodoName : null;
+            } else if (item.model == 'searchCustName') {
+                params.searchCustName = !StringUtils.isEmpty(param.searchCustName) ? param.searchCustName : null;
+            } else if (item.model == 'searchOwnerName') {
+                params.searchOwnerName = !StringUtils.isEmpty(param.searchOwnerName) ? param.searchOwnerName : null;
+            } else if (item.model == 'searchPartnerGroupCd') {
+                params.searchPartnerGroupCd = !StringUtils.isEmpty(param.searchPartnerGroupCd) ? param.searchPartnerGroupCd : [];
+            } else if (item.model == 'searchPartnerUserCd') {
+                params.searchPartnerUserCd = !StringUtils.isEmpty(param.searchPartnerUserCd) ? param.searchPartnerUserCd : [];
+            } else if (item.model == 'salesReportCondition') {
+                params.salesReportCondition = !StringUtils.isEmpty(param.salesReportCondition) ? param.salesReportCondition : [];
+            } else if (item.model == 'todoDetailUpdDate') {
+                params.todoDetailUpdDateFrom = !StringUtils.isEmpty(param.todoDetailUpdDateFrom) ? $filter('date')(param.todoDetailUpdDateFrom, "yyyy/MM/dd") : null;
+                params.todoDetailUpdDateTo = !StringUtils.isEmpty(param.todoDetailUpdDateTo) ? $filter('date')(param.todoDetailUpdDateTo, "yyyy/MM/dd") : null;
+            } else if (item.model == 'searchHavingCustMstFlagList') {
+                params.searchHavingCustMstFlagList = !StringUtils.isEmpty(param.searchHavingCustMstFlagList) ? param.searchHavingCustMstFlagList : [];
+            }
+        };
+        return params;
+    };
+
+    $scope.changeListParamSearch = function (){
+        $scope.newListParamSearch();
+        $scope.prepareListParamSearch();
+    };
+
+    $scope.newRowParamSearch = function(){
+        $scope.newListParamSearch();
+        var tmp = ""
+        var param = {
+                model : $scope.model.hidden.listTmp[0].model,
+                listDetailParam : $scope.model.hidden.listTmp
+        };
+        $scope.model.hidden.listSearch.push(param);
+        for (var i = 0; i < param.listDetailParam.length; i++) {
+            var tmp = $scope.model.hidden.listTmp[i];
+            if(param.model == tmp.model){
+                param.listDetailParam.splice(i, 1);
+            }
+        };
+        $scope.prepareListParamSearch();
+    };
+
+    $scope.removeItem = function(index) {
+        $scope.model.hidden.listSearch.splice(index, 1);
+        $scope.newListParamSearch();
+        $scope.prepareListParamSearch();
+    };
+
+    $scope.init = function() {
+        $scope.openedTodoDetail = [];
+        $scope.getInit();
+    };
+
+    /**
+     * 初期表示
+     */
+    $scope.getInit = function(){
+        ServerService.doPost('TodoCustomerList/getInit', {}).then(
+            function(okResult) {
+                var error = okResult.data.failed;
+                if(!StringUtils.isEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                }
+                $scope.model.form.listUser = okResult.data.listUser;
+                $scope.model.form.listC010006 = okResult.data.listC010006;
+                $scope.model.form.listC010010 = okResult.data.listC010010;
+                $scope.model.form.listA050001 = okResult.data.listA050001;
+                $scope.model.form.listL010015 = okResult.data.listL010015;
+                $scope.model.form.listS020023 = okResult.data.listS020023;
+                $scope.model.form.listGroupTypeCd = okResult.data.listGroupTypeCd;
+
+                for(var j = $scope.model.form.listA050001.length -1 ; j >= 0; j--){
+                    var item = $scope.model.form.listA050001[j];
+                    if(item.remark == null){
+                        $scope.model.form.listA050001.splice(j, 1);
+                    }
+                }
+
+                for(var i = 0; i < 16; i++){
+                    $scope.model.form.search.listSort[i] = 1;
+                }
+
+                var sessionLogin = angular.fromJson(sessionStorage.getItem("session"));
+                var todoDetailList = angular.fromJson(sessionStorage.getItem("todoDetail"));
+                var todoCustomerList = angular.fromJson(sessionStorage.getItem("todoCustomerList"));
+                if(!StringUtils.isEmpty(todoDetailList)){
+                    $scope.model.form.search.todoList = todoDetailList.todoList;
+                    $scope.model.form.search.searchFinished = todoDetailList.searchFinished;
+                    $scope.model.hidden.listDataAjax.push([todoDetailList.listDataAjax])
+                    var defaultCondition = {
+                        todoList: todoDetailList.todoList,
+                        listDataAjax: [],
+                    };
+                    defaultCondition.listDataAjax.push([todoDetailList.listDataAjax]);
+                    $scope.prepareSessionSearch(defaultCondition);
+                    $scope.model.form.search.searchOrderKey = [1];
+                    $scope.doSearch(1 , true, defaultCondition);
+                }else if(!StringUtils.isEmpty(todoCustomerList)){
+                    if(!StringUtils.isEmpty(sessionLogin)){
+                        $scope.model.form.search.searchTodoGroupCd = !StringUtils.isEmpty(sessionLogin.groupCd) ? [sessionLogin.groupCd] : [];
+                        $scope.model.form.search.searchTodoUserCd = [sessionLogin.userCd];
+                        $scope.model.form.search.searchPartnerGroupCd = !StringUtils.isEmpty(sessionLogin.groupCd) ? [sessionLogin.groupCd] : [];
+                        $scope.model.form.search.searchPartnerUserCd = [sessionLogin.userCd];
+                    }
+                    $scope.model.form.search = angular.copy(todoCustomerList);
+                    $scope.prepareSessionSearch($scope.model.form.search);
+                    $scope.doSearch(todoCustomerList.page, true, todoCustomerList);
+                } else {
+                    if(!StringUtils.isEmpty(sessionLogin)){
+                        $scope.model.form.search.searchTodoGroupCd = !StringUtils.isEmpty(sessionLogin.groupCd) ? [sessionLogin.groupCd] : [];
+                        $scope.model.form.search.searchTodoUserCd = [sessionLogin.userCd];
+                        $scope.model.form.search.searchPartnerGroupCd = !StringUtils.isEmpty(sessionLogin.groupCd) ? [sessionLogin.groupCd] : [];
+                        $scope.model.form.search.searchPartnerUserCd = [sessionLogin.userCd];
+                    }
+                    $scope.model.form.search.searchOrderKey = [1];
+                    $scope.createDefaultSearchCondition();
+                    // $scope.newRowParamSearch();
+                    $scope.search();
+                }
+            },
+            function(errResult){}
+        );
+    };
+
+    $scope.createDefaultSearchCondition = function() {
+        var sessionLogin = angular.fromJson(sessionStorage.getItem("session"));
+        var defaultCondition = {
+                                searchTodoGroupCd: !StringUtils.isEmpty(sessionLogin.groupCd) ? [sessionLogin.groupCd] : [],
+                                todoDetailUpdDateFrom: DateUtils.getPreviousMonth(),
+                                todoDetailUpdDateTo: DateUtils.getCurrentDate()
+                               };
+        $scope.prepareSessionSearch(defaultCondition);
+    }
+
+    $scope.init();
+
+    $scope.search = function(isSearch){
+        $scope.doSearch(1, isSearch);
+    }
+    /**
+     * 売上一覧を選択する
+     */
+    $scope.doSearch = function(page, isSearch, session){
+        if(!StringUtils.isEmpty($scope.model.hidden.lastIndex)){
+            $scope.openedTodoDetail[$scope.model.hidden.lastIndex] = false;
+            $scope.model.hidden.lastIndex = null;
+        }
+        $scope.model.hidden.exportCSV = false;
+        $scope.model.hidden.createDateLabel = $('#searchCreateDateLabel').text();
+        var params;
+        if(isSearch){
+            sessionStorage.removeItem("todoDetail");
+            params = $scope.convertParamsSearch($scope.model.form.search, page);
+            params.listDataAjax = [];
+            if (StringUtils.isEmpty(session)) {
+                if (!StringUtils.isEmpty($scope.model.form.search.todoList) && $scope.model.form.search.todoList.length > 0) {
+                    $scope.convertDataAjax(0, params);
+                }
+            } else {
+                if (!StringUtils.isEmpty(session.todoList) && session.todoList.length > 0) {
+                    $scope.model.hidden.listDataAjax[0] = session.listDataAjax[0];
+                    params.listDataAjax[0] = session.listDataAjax[0];
+                }
+            }
+            sessionStorage.setItem("todoCustomerList", JSON.stringify(params));
+        } else {
+            params = $scope.convertParamsSearch($scope.model.form.search, page);
+            var detail = sessionStorage.getItem("todoDetail");
+            if(detail){
+                params.todoList = angular.fromJson(detail).todoList;
+            }
+        }
+        delete params.listDataAjax;
+        ServerService.doPost('TodoCustomerList/search', params).then(
+            function(okResult) {
+                var error = okResult.data.failed;
+                var warning = okResult.data.warning;
+                if(!StringUtils.isEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                 }else if(!StringUtils.isEmpty(warning)){
+                     DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                     return;
+                 }
+                $scope.model.form.todoList = okResult.data.resultList;
+                $scope.model.form.paginationInfo = okResult.data.paginationInfo;
+
+                // set ColResizable for column of table
+                // 2018/04/06 comment out because layout has been break after download file
+                // setTimeout(function(){
+                //     $scope.setColResizable();
+                // });
+            },
+            function(errResult){}
+        );
+    };
+
+    $scope.onChangeGroup= function(todoGroupCd){
+        var params = {
+                'todoGroupCd' : todoGroupCd
+        };
+        ServerService.doPost('TodoCustomerList/getListUser', params).then(
+            function(okResult) {
+                var error =  okResult.data.failed;
+                var warning =  okResult.data.warning;
+                if(!StringUtils.isEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                }else if(!StringUtils.isEmpty(warning)){
+                    DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                    return;
+                }
+                $scope.model.form.listUser = okResult.data.listUser;
+            }
+        );
+    };
+
+
+    /**
+     * CSV出カ
+     */
+    $scope.exportCSV = function(param){
+        var params = $scope.convertParamsSearch(param, 0);
+        params.pageSize = 0;
+        if(param.exportCsv == "01"){
+            $scope.model.hidden.exportCSV = true;
+            if(StringUtils.isEmpty(params.todoDetailUpdDateFrom) || StringUtils.isEmpty(params.todoDetailUpdDateFrom)){
+                DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00346'));
+                return;
+            }
+        }
+        var limit = 10000;
+        if($scope.model.form.todoList.length > limit){
+            DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00329', limit.toString()));
+            return;
+        }
+
+        var current = $filter('date')(new Date(), "yyyyMMddHHmmss");
+        var fileName = angular.element("select[id='exportCsv'] option:selected").text();
+        var csvName = fileName + "_" + current +".xlsx";
+        ServerService.doDownload('/TodoCustomerList/exportCsv',  params, 'application/vnd.ms-excel', csvName);
+        $scope.model.hidden.exportCSV = false;
+    };
+
+    /**
+     * redirect to edit form
+     */
+    $scope.goToSalDecideProcess = function(row){
+        var param = {
+                'salesSno' : row.salesSno,
+                'recodeNo' : row.recodeNo
+        };
+        ServerService.doPost('TodoCustomerList/isExistData', param).then(
+            function(okResult) {
+                var error =  okResult.data.failed;
+                var warning =  okResult.data.warning;
+                if(!StringUtils.isEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                }else if(!StringUtils.isEmpty(warning)){
+                    DialogsService.showWarning(Messages.getMessage('check.error'), warning)
+                    .result.then(function() {
+                        $scope.search();
+                    });
+                }else{
+                    var salDecideProcess = {
+                            custCd : row.custCd,
+                            salesSno :  row.salesSno,
+                            recodeNo : row.recodeNo,
+                            documentStatus : row.documentStatus,
+                            custType: row.custType ? '1' : '0',
+                            screenMode : "VIEW",
+                            backMode : true,
+                            isDisabled : true,
+                            projectSno : row.projectSno,
+                            businessCd : row.businessCd,
+                            processNo : row.processNo,
+                            lineNo : row.lineNo,
+                            workNo : row.workNo,
+                            connectWorkNo : row.connectWorkNo,
+                            workflowFlag :  row.workflowFlag,
+                            redirectUrl : 'TodoCustomerList'
+                    };
+                    sessionStorage.setItem("salDecideProcess", JSON.stringify(salDecideProcess));
+                    RouteService.gotoUrl('SalDecideProcess');
+                }
+            },
+            function(errResult){
+            }
+        );
+    };
+
+    $scope.download = function(row){
+        var params = {
+                salesSno : row.salesSno,
+                recodeNo : row.recodeNo
+        };
+        SalDecideProcessService.checkDataForReport(params).then(
+            function(result) {
+                var error = result.data.failed;
+                var warning = result.data.warning;
+                if(!StringUtils.isEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                } else if(!StringUtils.isEmpty(warning)){
+                    if(angular.equals(warning,Messages.getMessage('W00172'))){
+                        DialogsService.showWarning(Messages.getMessage('check.error'), warning).result.then(function() {
+                            sessionStorage.removeItem("salDecideProcess");
+                            RouteService.gotoUrl('TodoCustomerList');
+                        });
+                        return;
+                    }else{
+                        DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                        return;
+                    }
+                }else{
+                    SalDecideProcessService.doDownload(params);
+                }
+            }
+        );
+    };
+
+    $scope.showPopover = function(index) {
+        var length = $scope.model.form.todoList.length;
+        for(var i = 0; i< length; i++){
+            $scope.model.form.todoList[i].openedDetail = [];
+            if(i == index){
+                $scope.model.form.todoList[i].opened = true;
+            }else{
+                $scope.model.form.todoList[i].opened = false;
+            }
+        }
+    };
+
+    $scope.showPopoverDetail = function(parentIndex, index) {
+        var length = $scope.model.form.todoList.length;
+        for(var i = 0; i< length; i++){
+            if(i == parentIndex){
+                $scope.model.form.todoList[i].openedDetail = [];
+                $scope.model.form.todoList[i].openedDetail[index] = true;
+            }else{
+                $scope.model.form.todoList[i].openedDetail = [];
+            }
+        }
+    };
+
+    $scope.gotoUrl = function(url, row, detail, index){
+        var options = {
+                size: 'md',
+            };
+        switch (url) {
+            case 'TodoDetail':
+                var param = {
+                        todoNo: row.todoNo
+                }
+                sessionStorage.setItem("todoInfo", JSON.stringify(param));
+                sessionStorage.removeItem("todoDetail");
+                RouteService.gotoUrl('TodoControl');
+                break;
+            case 'TodoControl':
+                var param = {
+                    todoNo: row.todoNo,
+                    fromScreen: 'TodoCustomerList'
+                }
+                sessionStorage.setItem("todo", JSON.stringify(param));
+                sessionStorage.removeItem("todoDetail");
+                RouteService.gotoUrl('TodoControl');
+                break;
+            case 'CrmControl':
+                if(!StringUtils.isEmpty(row.custCd)){
+                    var param = {
+                        custCd: row.custCd,
+                        custType: row.custType,
+                        fromScreen: 'TodoCustomerList'
+                    }
+                    sessionStorage.setItem("projectCustItemInfo", JSON.stringify(param));
+                    sessionStorage.removeItem("todoDetail");
+                    window.open("CrmControl", "_blank");
+                }
+                break;
+            case 'ScheduleControl':
+                var todoLineNoInfo = row.custName;
+                if(!StringUtils.isEmpty(row.deptName)){
+                    todoLineNoInfo += " / " + row.deptName;
+                }
+                if(!StringUtils.isEmpty(row.position)){
+                    todoLineNoInfo += " / " + row.position;
+                }
+                if(!StringUtils.isEmpty(row.ownerName)){
+                    todoLineNoInfo += " / " + row.ownerName;
+                }
+                var param = {
+                    userCd : null,
+                    userName : null,
+                    scheduleCd : null,
+                    scheduleName : row.todoName,
+                    scheduleStartYmd : new Date(),
+                    scheduleEndYmd : new Date(),
+                    scheduleContent: row.content,
+                    scheduleCategory: '5',
+                    screenMode : 'INSERT',
+                    allDayFlag : false,
+                    topMode : true,
+                    custCd: row.custCd,
+                    custName: row.custName,
+                    ownerCd: row.ownerCd,
+                    projectSno: row.projectSno,
+                    projectName: row.projectName,
+                    sourceTodoNo: row.todoNo,
+                    todoName: row.todoName,
+                    sourceTodoLineNo: row.lineNo,
+                    todoLineNoInfo: todoLineNoInfo
+                };
+                sessionStorage.setItem("scheduleInfo", JSON.stringify(param));
+                sessionStorage.removeItem("scheduleSetting");
+                sessionStorage.removeItem("todoDetail");
+                DialogsService.showDialog('PtlTodoControl', 'ptlTodoControlCtrl', param, {size: 'ptlTodo-control',});
+                break;
+            case 'SalesReportInsert':
+                var todoDetail = row.custName;
+                if(!StringUtils.isEmpty(row.siteName)){
+                    todoDetail += " / " + row.siteName;
+                }
+                if(!StringUtils.isEmpty(row.deptName)){
+                    todoDetail += " / " + row.deptName;
+                }
+                if(!StringUtils.isEmpty(row.position)){
+                    todoDetail += " / " + row.position;
+                }
+                var salesReport = {
+                    salesReportNo : "",
+                    isTodo : true,
+                    isDisabled : false,
+                    screenMode: 'INSERT',
+                    todoNo: row.todoNo,
+                    lineNo: row.lineNo,
+                    todoName: row.todoName,
+                    content: row.content,
+                    todoDetail: todoDetail,
+                    custCd: row.custCd,
+                    custName: row.custName,
+                    ownerCd: row.ownerCd,
+                    ownerName: row.ownerName,
+                    projectSno: row.projectSno,
+                    projectName: row.projectName,
+                    motion: row.motion,
+                    scheduleStartYmd: new Date(),
+                    lastAction: $scope.model.hidden.lastAction
+                };
+                sessionStorage.setItem("salesReportUrl", JSON.stringify(salesReport));
+                sessionStorage.removeItem("salesReport");
+                sessionStorage.removeItem("todoDetail");
+                var options = {size: 'lg'};
+                DialogsService.showDialog('SalesReportDialog','SalesReportControlCtrl', null,options).result.then(
+                function(isClosed) {
+                    if(!isClosed){
+                        $scope.searchReportList(salesReport, index);
+                        $scope.openedTodoDetail[index] = true;
+                        row.lastActionName = $scope.model.hidden.lastActionName;
+                        row.lastAction = $scope.model.hidden.lastAction;
+                        row.detailStatus = $scope.model.hidden.detailStatus;
+                        row.detailStatusCode = $scope.model.hidden.detailStatusCode;
+                    }
+                });
+                break;
+            case 'SalesReport':
+                var todoDetail = row.custName;
+                if(!StringUtils.isEmpty(row.siteName)){
+                    todoDetail += " / " + row.siteName;
+                }
+                if(!StringUtils.isEmpty(row.deptName)){
+                    todoDetail += " / " + row.deptName;
+                }
+                if(!StringUtils.isEmpty(row.position)){
+                    todoDetail += " / " + row.position;
+                }
+                var salesReport = {
+                    salesReportNo : detail.salesReportNo,
+                    isDisabled : false,
+                    screenMode: 'UPDATE',
+                    isTodo : true,
+                    todoName: row.todoName,
+                    todoDetail: todoDetail,
+                    todoNo: row.todoNo,
+                    lineNo: row.lineNo,
+                };
+                sessionStorage.setItem("salesReport", JSON.stringify(salesReport));
+                sessionStorage.removeItem("salesReportUrl");
+                sessionStorage.removeItem("todoDetail");
+                var options = {size: 'lg'};
+                DialogsService.showDialog('SalesReportDialog','SalesReportControlCtrl', null,options).result.then(
+                function(isClosed) {
+                    if(!isClosed){
+                        $scope.searchReportList(salesReport, index);
+                        $scope.openedTodoDetail[index] = true;
+                    }
+                });
+                break;
+            case 'TodoMailPopup':
+                var options = {size: '1200'};
+                var listCustCd = [];
+                var params = $scope.convertParamsSearch($scope.model.form.search, 0);
+                params.pageSize = 0;
+                ServerService.doPost('TodoCustomerList/search', params).then(
+                    function(okResult) {
+                        var error = okResult.data.failed;
+                        var warning = okResult.data.warning;
+                        if(!StringUtils.isEmpty(error)){
+                            DialogsService.showError(Messages.getMessage('system.error'), error);
+                            return;
+                        }else if(!StringUtils.isEmpty(warning)){
+                            DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                            return;
+                        }
+                        angular.forEach(okResult.data.resultList, function(item, i){
+                            var param = {}
+                            if(!StringUtils.isEmpty(item.mailAddress)){
+                                param = {
+                                    destCustCd : item.custCd,
+                                    destCustName : item.custName,
+                                    destOwnerCd : item.ownerCd,
+                                    destOwnerName : item.ownerName,
+                                    position : item.position,
+                                    deptCd : item.deptCd,
+                                    deptName : item.deptName,
+                                    destMailAddress: item.mailAddress,
+                                    siteCd : item.siteCd,
+                                    siteName : item.siteName,
+                                    customerClass : item.customerClass,
+                                    customerClassName : item.customerClassName
+                                }
+                                listCustCd.push(param);
+                            }
+                        })
+                        DialogsService.showDialog('TodoMailPopup','TodoMailPopupCtrl', listCustCd, options);
+                    },
+                    function(errResult){}
+                );
+                break;
+        };
+    };
+
+    $scope.updateTodoDetail = function(indexTodo, indexListAction, indexStatus) {
+        $scope.model.form.todoList[indexTodo].opened = false;
+        $scope.model.hidden.lastActionName = $scope.model.form.listA050001[indexListAction].codeName;
+        $scope.model.hidden.lastAction = $scope.model.form.listA050001[indexListAction].code;
+        $scope.model.hidden.detailStatus = $scope.model.form.listC010010[indexStatus].codeName;
+        $scope.model.hidden.detailStatusCode = $scope.model.form.listC010010[indexStatus].code;
+        var row = $scope.model.form.todoList[indexTodo];
+        var param = {
+                'todoNo' : row.todoNo,
+                'lineNo' : row.lineNo,
+                'status' : $scope.model.form.listC010010[indexStatus].code,
+                'lastAction' : $scope.model.form.listA050001[indexListAction].code,
+        };
+        ServerService.doPost('TodoCustomerList/updateTodoDetail', param).then(
+            function(okResult) {
+                var error =  okResult.data.failed;
+                var warning =  okResult.data.warning;
+                if(!StringUtils.isEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                }else if(!StringUtils.isEmpty(warning)){
+                    DialogsService.showWarning(Messages.getMessage('check.error'), warning)
+                    .result.then(function() {
+                        $scope.search();
+                    });
+                }else{
+                    $scope.gotoUrl('SalesReportInsert', $scope.model.form.todoList[indexTodo], '', indexTodo);
+                }
+            },
+            function(errResult){
+            }
+        );
+    };
+
+    $scope.searchReportList = function(row, index){
+        var params = $scope.convertParamsSearch($scope.model.form.search, 0);
+        params.todoNo = row.todoNo;
+        params.lineNo = row.lineNo;
+        params.page = 0;
+        params.pageSize = 0;
+        //remove list detail salesreport when click another row by lastIndex
+        if(!StringUtils.isEmpty($scope.model.hidden.lastIndex)){
+            $scope.model.form.todoList[$scope.model.hidden.lastIndex].listReport = [];
+        }
+        ServerService.doPost('TodoCustomerList/searchReport', params).then(
+            function(okResult) {
+                var error = okResult.data.failed;
+                var warning = okResult.data.warning;
+                if(!StringUtils.isEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                }else if(!StringUtils.isEmpty(warning)){
+                    DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                    return;
+                }
+                $scope.model.form.todoList[index].listReport = okResult.data.listReport;
+                if($scope.model.form.todoList[index].listReport.length > 0){
+                    $scope.model.hidden.showTime = $scope.model.form.todoList[index].listReport[0].isActive;
+                }
+                //get lastIndex
+                $scope.model.hidden.lastIndex = index;
+            },
+            function(errResult){}
+        );
+    };
+
+    $scope.convertDataAjax = function (index, param) {
+        var list = [];
+        var listTmp = [];
+        if (index == 0) {
+            listTmp = $("select[id='todoNoList']").select2('data')
+        }
+        if (!StringUtils.isEmpty(listTmp)) {
+            for (var i = 0; i < listTmp.length; i++) {
+                list.push({
+                    no: listTmp[i].id,
+                    name: listTmp[i].text
+                });
+            };
+            param.listDataAjax[index] = list;
+            $scope.model.hidden.listDataAjax[index] = list;
+        }
+    }
+
+    /*
+    // 2018/04/06 comment out because layout has been break after download file
+    // set colResizable
+    aaa
+    $scope.setColResizable = function(){
+        // remove JCLRgrips if having
+        $('.JCLRgrips').remove();
+
+        // parentId : table header id : tblTodoCustomerList
+        // childId : child table id : table accordion ( 'parent table id + Child + index' )
+        angular.element("table[id^='tblTodoCustomerList']").colResizable({
+            liveDrag: true,
+            postbackSafe: true,
+            useLocalStorage: true,
+            onDrag: syncTableWidth,
+            parentId: 'tblTodoCustomerList',
+            childId:'tblTodoCustomerListChild'
+        });
+        // prevent resize column on child table
+        $('.panel-title .JCLRgrips .JCLRgrip .JColResizer').on('mousemove', function(event) {
+            return false;
+        });
+    }
+    // when windows resize, set colresize again for table
+    var timer = false;
+    $(window).resize(function() {
+        if (timer !== false) {
+            clearTimeout(timer);
+        }
+
+        timer = setTimeout(function(){
+            $scope.setColResizable();
+        });
+    });
+    */
+}]);
+
+
+exexSMSApp.controller('todoCustomerSortCtrl',
+        ['$rootScope', '$scope', '$uibModalInstance', 'TodoCustomerListModel', 'Messages', 'ServerService',
+         function($rootScope, $scope, $uibModalInstance, TodoCustomerListModel, Messages, ServerService){
+
+    $scope.modelTodo = TodoCustomerListModel;
+    $scope.init = function(){
+    };
+    $scope.close = function(){
+        $uibModalInstance.dismiss('close');
+    };
+    $scope.search = function(){
+        $rootScope.$broadcast("TodoCustomerList#search",{});
+        $uibModalInstance.dismiss('close');
+    };
+
+}]);

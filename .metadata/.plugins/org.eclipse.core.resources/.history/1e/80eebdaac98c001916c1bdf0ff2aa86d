@@ -1,0 +1,138 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision:  $  $Date:  $
+ */
+'use strict';
+exexSMSApp.factory('SfaSubProjectControlExportModel', [ 'BaseModel', function(BaseModel) {
+
+    var model = BaseModel.getInstance();
+
+    model.form = {
+        dialog: {
+            popupIssueType: '',
+            popupIssueGroup: '',
+            popupIssueDate: '',
+            popupItemName: '',
+            popupItemSum: '',
+            popupReceiveFreeTaxSumPrice: '',
+            popupItemUnit: '式',
+            popupItemPrice: '',
+            popupFreeTaxSumPrice: '',
+            popupTaxRate: '',
+            popupTaxPrice: '',
+            popupRemark: ''
+        },
+        listSalesGroup : []
+    };
+
+    model.hidden = {
+        rounding : '',
+        isDownload : false
+    }
+
+
+    return model;
+}]);
+
+exexSMSApp.controller('sfaSubProjectControlExportCtrl',
+        ['$scope','SfaSubProjectControlExportModel', '$uibModalInstance', 'Messages', 'data', '$cookies', 'ServerService',
+         function($scope, SfaSubProjectControlExportModel, $uibModalInstance, Messages, data, $cookies, ServerService){
+
+    $scope.model = SfaSubProjectControlExportModel;
+
+    $scope.getInit = function() {
+        var cookies = angular.fromJson($cookies.get("sfaSubProjectControlExport"));
+        if(!StringUtils.isEmpty(cookies)) {
+            $scope.model.form.dialog.popupIssueType = cookies.issueType;
+            $scope.model.form.dialog.popupIssueGroup = cookies.issueGroup;
+            $scope.model.form.dialog.popupIssueDate =cookies.issueDate;
+        }
+        ServerService.doPost('SfaSubProjectControlExport/getInit', data).then(
+            function (okResult) {
+                var error = okResult.data.failed;
+                if (!StringUtils.isEmpty(error)) {
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                } else{
+                    $scope.model.form.listSalesGroup = okResult.data.listSalesGroup;
+                    $scope.model.hidden.rounding = okResult.data.rounding;
+                    if(!StringUtils.isEmpty(okResult.data.detailProjectControl)){
+                        $scope.model.form.dialog.popupTaxRate = okResult.data.detailProjectControl.taxRate;
+                        $scope.model.form.dialog.popupItemName = okResult.data.detailProjectControl.rcvName;
+                        $scope.model.form.dialog.popupReceiveFreeTaxSumPrice = okResult.data.detailProjectControl.freeTaxSumPrice;
+                    }
+                }
+            });
+    }
+
+    $scope.calculate = function() {
+        if(StringUtils.isEmpty($scope.model.form.dialog.popupItemPrice)){
+            $scope.model.form.dialog.popupFreeTaxSumPrice = '';
+            $scope.model.form.dialog.popupTaxPrice = '';
+            return;
+        }
+        if(StringUtils.isEmpty($scope.model.form.dialog.popupItemSum)){
+            $scope.model.form.dialog.popupFreeTaxSumPrice = '';
+            $scope.model.form.dialog.popupTaxPrice = '';
+            return;
+        }
+        var itemPrice = parseFloat($scope.model.form.dialog.popupItemPrice);
+        var itemSum = parseFloat($scope.model.form.dialog.popupItemSum);
+        var sum = $scope.rounding(Math.round10(itemPrice * itemSum), $scope.model.hidden.rounding);
+        $scope.model.form.dialog.popupFreeTaxSumPrice = sum;
+
+        var taxRate = 0;
+        if(!StringUtils.isEmpty($scope.model.form.dialog.popupTaxRate)){
+            taxRate = parseFloat($scope.model.form.dialog.popupTaxRate);
+        }
+        var taxPrice =  $scope.rounding(Math.round10(sum * taxRate / 100), $scope.model.hidden.rounding);
+        $scope.model.form.dialog.popupTaxPrice = taxPrice;
+    };
+
+
+    $scope.rounding = function(value, rounding){
+        if(!StringUtils.isEmpty(rounding)){
+            if(rounding == 1){
+                //ex: 5.2→5 (5.6->6)
+                value = Math.round10(value, -2);
+            } else if(rounding == 0){
+                //ex: 5.2→5
+                if(value < 0){
+                    value = Math.abs(value);
+                    value = Math.floor10(value, -2);
+                    value = value * (-1);
+                } else {
+                    value = Math.floor10(value, -2);
+                }
+            } else if(rounding == 2){
+                //ex: 5.2→6
+                value = Math.ceil10(value, -2);
+            }
+        }
+        return value;
+    };
+
+    $scope.getInit();
+
+    $scope.yes = function(param, formInvaid){
+        $scope.model.hidden.isDownload = true;
+        if(formInvaid){
+            return;
+        }
+        var params = {
+            issueType : param.popupIssueType,
+            issueGroup : param.popupIssueGroup,
+            issueDate : param.popupIssueDate
+        };
+        var cookies = angular.toJson(params);
+        $cookies.put("sfaSubProjectControlExport", cookies);
+        $uibModalInstance.close(param);
+    };
+
+    $scope.no = function() {
+        $uibModalInstance.dismiss();
+    };
+}]);

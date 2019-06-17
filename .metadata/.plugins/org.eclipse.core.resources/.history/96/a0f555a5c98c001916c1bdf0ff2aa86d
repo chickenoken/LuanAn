@@ -1,0 +1,1626 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision:  $  $Date:  $
+ * @author : huy-du
+ */
+'use strict';
+/**
+ * Table :
+ */
+exexSMSApp.factory('SalesReportControlModel', [ 'BaseModel', function(BaseModel) {
+    var model = BaseModel.getInstance();
+    model.form = {
+                activityDate : '',
+                relationUserCd : '',
+                listProjectItemDetail:[],
+    };
+    model.listRelationUser = [];
+    model.listEditSalesReport = [];
+    model.listA050001 = [];
+    model.listCustomer = [];
+    model.listUser = [];
+    model.listOwner = [];
+    model.listProject = [];
+    model.listS020002 =[];
+    model.listMstGroupType = [];
+    model.relationUserName = '';
+    model.listColorPopover = ColorUtils.getListColor();
+    model.hidden = {
+            isSubmited: false,
+            salesReportSubNo: 1,
+            isDisabled: false,
+            screenMode: 'INSERT',
+            salesReportNo: 0,
+            createDate: '',
+            createUserName: '',
+            lastUpdDate: '',
+            lastUpdUserName: '',
+            isExistCustomer: false,
+            listNewCustomer: [],
+            custCd: '',
+            listOwnerCd: [],
+            listOwnerName : [],
+            listDeleteSchedule: [],
+            projectList: [],
+            request : false,
+            redirectUrl: '',
+            isPopup : true,
+            salesReportMax: 0,
+            listGroupSelect: [],
+            listProjectItemDetail:[],
+            showRight: false,
+            fromOwnerCardList: false,
+            releaseScope : '',
+            listDataTag : []
+    };
+
+return model;
+
+}]);
+exexSMSApp.controller('SalesReportControlCtrl',
+        ['$rootScope', '$scope','$filter','SalesReportControlModel', '$uibModalInstance', 'DialogsService', 'ServerService', 'RouteService', 'SalesReportControlService', 'Messages','$timeout',
+         function($rootScope, $scope, $filter, salesReportControlModel, $uibModalInstance,  DialogsService, ServerService, routeService, SalesReportControlService, Messages, $timeout){
+
+        $scope.model = salesReportControlModel;
+        $scope.model.hidden.isDisabled = false;
+        var reportLabel = angular.element('#reportLabel').text();
+
+        $scope.loadInitJsEvent = function(row, index, event){
+            //Save color
+            var currColor = !StringUtils.isEmpty(row.scheduleColor) ? row.scheduleColor : "#3c8dbc"; //Red by default
+            if(!StringUtils.isEmpty(event)){
+                currColor = $(event.target).css('color');
+            }
+            row.scheduleColor = currColor;
+            //Add color effect to button
+            $('#eventColor').css({"background-color": currColor, "border-color": currColor});
+            $('.popover').remove();
+            angular.element('body').click();
+        };
+
+        $scope.onChangeScheduleCategory = function(row, code){
+            angular.forEach($scope.model.listS020002, function(item, i){
+                if(code == item.code){
+                    row.scheduleColor = item.remark;
+                }
+            });
+        };
+
+        /**初期*/
+        $scope.init = function(){
+            $scope.model.listEditSalesReport = [];
+            $scope.model.form.listProjectItemDetail = [];
+            if($scope.model.hidden.screenMode == 'INSERT'){
+                setTimeout(function() {
+                    $('.timepicker').parent('.input-group').on('click', '.input-group-btn', function(e){
+                        e.preventDefault();
+                        $(this).parent('.input-group').find('.timepicker').timepicker('showWidget');
+                    });
+                    angular.element('.input-group input').keydown(function (e){
+                        $(this).parent('.input-group').find('.timepicker').timepicker('hideWidget');
+                    });
+                }, 1000);
+            }
+
+            var salesReportNo = '';
+            var salesReport = angular.fromJson(sessionStorage.getItem("salesReport"));
+            if(!StringUtils.isEmpty(salesReport)){
+                $scope.model.hidden.isDisabled = !StringUtils.isEmpty(salesReport.isDisabled) ? salesReport.isDisabled : true;
+                $scope.model.hidden.screenMode = !StringUtils.isEmpty(salesReport.screenMode) ? salesReport.screenMode : "VIEW";
+                $scope.model.hidden.todoNo = !StringUtils.isEmpty(salesReport.todoNo) ? salesReport.todoNo : "";
+                $scope.model.hidden.lineNo = !StringUtils.isEmpty(salesReport.lineNo) ? salesReport.lineNo : "";
+                $scope.model.hidden.todoName = !StringUtils.isEmpty(salesReport.todoName) ? salesReport.todoName : "";
+                $scope.model.hidden.todoDetail = !StringUtils.isEmpty(salesReport.todoDetail) ? salesReport.todoDetail : "";
+                $scope.model.hidden.isTodo = !StringUtils.isEmpty(salesReport.isTodo) ? salesReport.isTodo : false;
+                $scope.model.hidden.fromScreen = !StringUtils.isEmpty(salesReport.fromScreen) ? salesReport.fromScreen : "";
+                salesReportNo = salesReport.salesReportNo;
+            }
+            var salesReportUrl = angular.fromJson(sessionStorage.getItem("salesReportUrl"));
+            if(!StringUtils.isEmpty(salesReportUrl)){
+                $scope.model.hidden.screenMode = !StringUtils.isEmpty(salesReportUrl.screenMode) ? salesReportUrl.screenMode : "VIEW";
+                $scope.model.hidden.todoNo = !StringUtils.isEmpty(salesReportUrl.todoNo) ? salesReportUrl.todoNo : "";
+                $scope.model.hidden.lineNo = !StringUtils.isEmpty(salesReportUrl.lineNo) ? salesReportUrl.lineNo : "";
+                $scope.model.hidden.todoName = !StringUtils.isEmpty(salesReportUrl.todoName) ? salesReportUrl.todoName : "";
+                $scope.model.hidden.todoDetail = !StringUtils.isEmpty(salesReportUrl.todoDetail) ? salesReportUrl.todoDetail : "";
+                $scope.model.hidden.isTodo = !StringUtils.isEmpty(salesReportUrl.isTodo) ? salesReportUrl.isTodo : false;
+                $scope.model.hidden.fromScreen = !StringUtils.isEmpty(salesReportUrl.fromScreen) ? salesReportUrl.fromScreen : false;
+                $scope.model.hidden.fromOwnerCardList = !StringUtils.isEmpty(salesReportUrl.fromOwnerCardList) ? salesReportUrl.fromOwnerCardList : false;
+                $scope.model.form.activityDate = $filter('date')(new Date(), "yyyy/MM/dd");
+                $scope.model.hidden.sourceScheduleCd = salesReportUrl.sourceScheduleCd;
+            }
+            $scope.getInit();
+        };
+
+        $scope.getInit = function(){
+            var salesReport = angular.fromJson(sessionStorage.getItem("salesReport"));
+            var salesReportUrl = angular.fromJson(sessionStorage.getItem("salesReportUrl"));
+            SalesReportControlService.initData({salesReportNo: ''})
+            .then(
+                function(result) {
+                    if(!StringUtils.isEmpty(result.data)){
+                        $scope.model.hidden.isSubmited = false;
+                        $scope.model.listA050001 = result.data.listA050001;
+                        $scope.model.listCustomer = result.data.listCustomer;
+                        $scope.model.listUser = result.data.listUser;
+                        $scope.model.listGroupTypeCd = result.data.listGroupTypeCd;
+                        $scope.model.listOwner = result.data.listOwner;
+                        $scope.model.listS020002 = result.data.listS020002;
+                        $scope.model.listMstGroupType = result.data.listMstGroupType;
+                        var relationUserCdArr = [];
+                        var relationUserNameArr = [];
+                        if($scope.model.hidden.screenMode == 'INSERT'){
+                            if(!StringUtils.isEmpty(result.data.relationUser)){
+                                for(var i = 0; i < result.data.relationUser.length; i++){
+                                    relationUserCdArr.push(result.data.relationUser[i].userCd);
+                                    relationUserNameArr.push(result.data.relationUser[i].userName);
+                                }
+                            }
+                            $scope.model.form.relationUserCd = relationUserCdArr;
+                            $scope.model.relationUserName= relationUserNameArr.toString();
+                            if($scope.model.hidden.screenMode == 'INSERT'){
+                                $scope.model.listEditSalesReport = [];
+                                $scope.model.listEditSalesReport[0] = {
+                                        listSubEdit : angular.copy(result.data.listEdit[0])
+                                }
+                            }else{
+                                $scope.model.listEditSalesReport = angular.copy(result.data.listEdit);
+                                $scope.model.hidden.isDisabled = false;
+                                $scope.model.hidden.screenMode = 'UPDATE';
+                            }
+
+                            $scope.model.listProject = result.data.listProject;
+                            var groupNo = null;
+                            angular.forEach($scope.model.listEditSalesReport, function(item1, i){
+                                item1.listSubEdit.listOwner = $scope.model.listOwner;
+                                item1.listSubEdit.listProject = $scope.model.listProject;
+                                var index = i;
+                                var item = item1.listSubEdit;
+                                angular.forEach(item, function(detail, i){
+                                    if(detail.lineNo == 1){
+                                        groupNo = detail.groupNo;
+                                    }
+                                });
+                                var length = item.length;
+                                var loginSession = angular.fromJson(sessionStorage.getItem("session"));
+                                var checkIndex = 0;
+                                var inputValueTimeEnd = '';
+                                var arralesReportUserName = [];
+                                var listSalesReportUser = result.data.listSalesReportUser;
+                                var j = 0;
+                                var salesReportSubNo = item[0].salesReportSubNo;
+                                var salesReportUrl = angular.fromJson(sessionStorage.getItem("salesReportUrl"));
+                                if(!StringUtils.isEmpty(salesReportUrl)){
+                                    $scope.model.hidden.redirectUrl = salesReportUrl.redirectUrl;
+                                }
+
+                                for(var i = 0; i < length; i++){
+                                    if(item[i].controlType == "04" && !StringUtils.isEmpty(item[i].listData)){
+                                        var inputValue = [];
+                                        angular.forEach(item[i].listData, function(data, k){
+                                            if(!StringUtils.isEmpty(item[i].inputValue) && item[i].inputValue.indexOf(data.code) > -1){
+                                                inputValue[k] = '1'
+                                            }else{
+                                                inputValue[k] = '0';
+                                            }
+                                        });
+                                        if(inputValue.length > 0){
+                                            item[i].inputValue = inputValue;
+                                        }
+                                    }
+                                    if(item[i].lineNo == '14' && item[i].controlType == '08'){
+                                        if(!StringUtils.isEmpty(item[i].inputValue)){
+                                            if(item[i].inputValue.indexOf(',') > -1){
+                                                item[i].inputValue = item[i].inputValue.split(',');
+                                            }else{
+                                                item[i].inputValue = [item[i].inputValue];
+                                            }
+                                        }else{
+                                            item[i].inputValue = [];
+                                        }
+                                        var length1 = item[i].inputValue.length;
+                                        var listName = "";
+                                        angular.forEach(item[i].inputValue, function(userCd, i){
+                                            angular.forEach($scope.model.listUser, function(user, j){
+                                                if(userCd == user.userCd){
+                                                    if(i == length1 - 1 ){
+                                                        listName += user.userName;
+                                                    }else{
+                                                        listName += user.userName + ", ";
+                                                    }
+                                                }
+                                            })
+                                        })
+                                        item[i].listName = listName;
+                                    }
+                                    if(item[i].controlType == "09"){
+                                        var address = {
+                                                postNo1: '',
+                                                postNo2: '',
+                                                address1: '',
+                                                address2: '',
+                                        }
+                                        if(!StringUtils.isEmpty(item[i].inputValue)){
+                                            item[i].inputValue = StringUtils.isJson(item[i].inputValue) ? angular.fromJson(item[i].inputValue) : address;
+                                        }else{
+                                            item[i].inputValue = address;
+                                        }
+                                    }
+                                    if(item[i].lineNo == '15' && !StringUtils.isEmpty(item[i].inputValue)){
+                                        item[i].inputValueCd = item[i].inputValue.split('#')[0];
+                                        item[i].inputValue =  item[i].inputValue.split('#')[1];
+                                    }
+                                    if(item[i].lineNo == '16' && !StringUtils.isEmpty(item[i].inputValue)){
+                                        item[i].inputValueCd = item[i].inputValue.split('#')[0];
+                                        item[i].inputValue =  item[i].inputValue.split('#')[1];
+                                    }
+                                    /**set init value when insert*/
+                                    if($scope.model.hidden.screenMode == 'INSERT'){
+                                        $scope.model.hidden.salesReportNo = 0;
+                                        item[i].salesReportSubNo = 1;
+                                        if(item[i].lineNo === 8){
+                                            item[i].inputValue = [loginSession.userCd];
+                                        }
+                                        if(item[i].lineNo === 11){
+                                            item[i].scheduleColor = "#3c8dbc";
+                                        }
+                                        if(item[i].lineNo === 13){
+                                            item[i].inputValue = [loginSession.groupCd];
+                                        }
+                                        if(item[i].lineNo === 19){
+                                            item[i].inputValue = [loginSession.groupCd];
+                                        }
+                                        item[i].scheduleCheck = false;
+                                        //TODO from other screen
+                                        if(!StringUtils.isEmpty(salesReportUrl)){
+                                            if(item[i].lineNo === 4 && !StringUtils.isEmpty(salesReportUrl.custCd)){
+                                                $scope.model.hidden.custCd = salesReportUrl.custCd;
+                                                item[i].inputValue = salesReportUrl.custCd;
+                                                $scope.onChangeCustomer2(salesReportUrl, salesReportUrl, 0, true);
+                                            }
+                                            if(item[i].lineNo === 5){
+                                                item[i].inputValue = salesReportUrl.custName;
+                                            }
+                                            if(item[i].lineNo === 6){
+                                                item[i].inputValue = salesReportUrl.ownerCd;
+                                            }
+                                            if(item[i].lineNo === 7 && salesReportUrl.fromScreen != 'CrmControl' && salesReportUrl.fromScreen != 'SfaProjectControl'){
+                                                $scope.model.hidden.listDataTag = [];
+                                                if(angular.isArray(salesReportUrl.ownerCd)){
+                                                    item[i].inputValue = salesReportUrl.ownerCd;
+                                                }else {
+                                                    item[i].inputValue = !StringUtils.isEmpty(salesReportUrl.ownerCd) ? [salesReportUrl.ownerCd] : [];
+                                                }
+                                                var listName = !StringUtils.isEmpty(salesReportUrl.ownerName) ? salesReportUrl.ownerName.split(',') : [];
+                                                for (var j = item[i].inputValue.length; j < listName.length; j++) {
+                                                    var tmp = listName[j].replace(/\s/g,'-');
+                                                    var data = {
+                                                            id : tmp,
+                                                            text : listName[j]
+                                                    }
+                                                    $scope.model.hidden.listDataTag.push(data);
+                                                    item[i].inputValue.push(tmp);
+                                                }
+                                            }
+                                            if(item[i].lineNo === 9){
+                                                $scope.model.hidden.projectSno = salesReportUrl.projectSno;
+                                                $scope.model.hidden.projectName = salesReportUrl.projectName;
+                                                item[i].inputValue = salesReportUrl.projectSno;
+                                                if(!StringUtils.isEmpty(item[i].inputValue)){
+                                                    $scope.changeProject(item[i].inputValue);
+                                                }
+                                            }
+                                            if(item[i].lineNo === 15 && index == 0){
+                                                item[i].inputValue = salesReportUrl.todoName;
+                                            }
+                                            if(item[i].lineNo === 16 && index == 0){
+                                                item[i].inputValue = salesReportUrl.todoDetail;
+                                            }
+                                            if(item[i].lineNo === 17){
+                                                item[i].inputValue = salesReportUrl.motion;
+                                            }
+                                            if(item[i].lineNo === 3){
+                                                item[i].inputValue = salesReportUrl.lastAction;
+                                            }
+                                            if(item[i].lineNo === 10){
+                                                item[i].inputValue = salesReportUrl.content;
+                                            }
+                                            if(!StringUtils.isEmpty(salesReportUrl.scheduleStartHm)
+                                               && item[i].lineNo === 1){
+                                                item[i].inputValueTimeStart = salesReportUrl.scheduleStartHm;
+                                            }
+                                            if(!StringUtils.isEmpty(salesReportUrl.scheduleEndHm)
+                                               && item[i].lineNo === 1){
+                                                item[i].inputValueTimeEnd = salesReportUrl.scheduleEndHm;
+                                            }
+                                        }
+                                    }
+                                }
+                                var firstItem =  angular.copy(item[0]);
+                                if(StringUtils.isEmpty(salesReportUrl)){
+                                    $scope.model.form.activityDate = firstItem.activityDate;
+                                }
+                                firstItem.controlLabelName = '';
+                                firstItem.controlType = 'show-no';
+                                firstItem.lineNo = '000000000';
+                                firstItem.showAdd = true;
+                                firstItem.No = 1;
+                                if(groupNo != null){
+                                    firstItem.groupNo = groupNo;
+                                } else {
+                                    firstItem.groupNo = 1;
+                                }
+                                for(var i = length -1; i >= 0; i--){
+                                    if(item[i].lineNo == 1){
+                                        item.splice(i, 0, firstItem);
+                                        console.log(new Date());
+                                    }
+                                }
+                                $scope.tmpList = angular.copy(item);
+                                if(index == ($scope.model.listEditSalesReport.length-1)){
+                                    $scope.convertForGroupView();
+                                }
+                            });
+                        }else{
+                            if(salesReport != null && !StringUtils.isEmpty(salesReport.salesReportNo)){
+                                $scope.edit(salesReport.salesReportNo);
+                            }
+                        }
+                    }
+                }
+            );
+        }
+
+        $scope.convertForGroupView = function(){
+            //CHIA DATA ĐỂ HIEN THI THEO GROUP
+            var listTmp = [];
+            angular.forEach($scope.model.listEditSalesReport, function(rows, i){
+                 var listGroup = [];
+                 var size = 1, length = rows.listSubEdit.length;
+                 listGroup.listOwner = rows.listSubEdit.listOwner;
+                 listGroup.listProject = rows.listSubEdit.listProject;
+                 if (length > 0) {
+                     var dto = rows.listSubEdit[0];
+                     dto.listDetail = [];
+                     dto.listDetail.push(rows.listSubEdit[0]);
+                     if (size == length) {
+                         listGroup.push(dto);
+                     }
+                     for (; size < length; size++) {
+                         if(rows.listSubEdit[size].groupNo == null){
+                             $scope.model.hidden.showRight = true;
+                         }
+                         if (rows.listSubEdit[size].groupNo == dto.groupNo) {
+                             dto.listDetail.push(rows.listSubEdit[size]);
+                             if (size == length - 1) {
+                                 listGroup.push(dto);
+                             }
+                         } else {
+                             listGroup.push(dto);
+                             dto = rows.listSubEdit[size];
+                             dto.listDetail.push(rows.listSubEdit[size]);
+                             if (size == length - 1) {
+                                 listGroup.push(dto);
+                             }
+                         }
+                     }
+                     rows.listSubEdit = listGroup;
+                 }
+                 if($scope.model.hidden.showRight){
+                     $('.modal-dialog').addClass('w-sales-report');
+                 }
+            });
+        }
+
+        $scope.convertForUpdate = function(listEditSalesReport){
+            //CHIA DATA ĐỂ HIEN THI THEO GROUP
+            angular.forEach(listEditSalesReport, function(rows, i){
+                var listTmp = [];
+                angular.forEach(rows.listSubEdit, function(group, i){
+                    angular.forEach(group.listDetail, function(detail, i){
+                        listTmp.push(detail);
+                    });
+                    delete group.listDetail;
+                })
+                rows.listSubEdit = listTmp;
+            });
+            return listEditSalesReport;
+        }
+
+        /**
+         * customer event change
+         */
+        $scope.onChangeCustomer = function(object, index) {
+            $("select[name='ownerCdAutocomplete'] ~ span").find('li.select2-selection__choice').remove();
+            $("select[name='ownerCdAutocomplete'] ~ span").find('.select2-selection__clear').remove();
+            var params = {
+                    custCd : ''
+            };
+            if(object.isSelected){
+                params.custCd = object.inputValue;
+                for (var j = 0; j < $scope.model.listEditSalesReport[0].listSubEdit.length; j++) {
+                    var tmp = $scope.model.listEditSalesReport[0].listSubEdit[j];
+                    for (var k = 0; k < tmp.listDetail.length; k++) {
+                        var tmpDetail = tmp.listDetail[k];
+                        if(object.salesReportSubNo == tmpDetail.salesReportSubNo && !StringUtils.isEmpty(tmpDetail.relationHistory)){
+                            var arr = object.relationHistory.split(',');
+                            tmpDetail.relationHistory = params.custCd + ',' + arr[1] + ',' + arr[2];
+                        }
+                        if(tmpDetail.lineNo == 4){
+                            $scope.model.hidden.custCd = params.custCd;
+                            tmpDetail.inputValue = params.custCd;
+                        }
+
+                        if(tmpDetail.lineNo == 9){
+                            tmp.inputValue = '';
+                        }
+                    }
+                };
+                object.inputValue = $("select[name='custCdAutocomplete']").select2('data')[0].text;
+                SalesReportControlService.onChangeCustomer(params).then(
+                    function(result) {
+                        var error =  result.data.failed;
+                        if(!StringUtils.isEmpty(error)){
+                            DialogsService.showError(Messages.getMessage('system.error'), error);
+                            return;
+                        }
+                        if(!StringUtils.isEmpty(result.data)){
+                            $scope.model.listEditSalesReport[0].listSubEdit.listOwner = result.data.listOwner;
+                            $scope.model.listEditSalesReport[0].listSubEdit.showAddProject = true;
+                            $scope.model.hidden.projectSno = '';
+                            $scope.model.hidden.projectName = '';
+                            for (var j = 0; j < $scope.model.listEditSalesReport[0].listSubEdit.length; j++) {
+                                var tmpDetail = $scope.model.listEditSalesReport[0].listSubEdit[j];
+                                for (var k = 0; k < tmpDetail.listDetail.length; k++) {
+                                    var tmp = tmpDetail.listDetail[k];
+                                    if(tmp.lineNo == 6){
+                                        tmp.inputValue = '';
+                                    }
+                                    if(tmp.lineNo == 7){
+                                        tmp.inputValue = '';
+                                    }
+                                    if(tmp.lineNo == 9){
+                                        tmp.inputValue = '';
+                                    }
+                                }
+                            };
+                            $scope.model.form.listProjectItemDetail = [];
+                        }
+                    }
+                );
+            }else{
+                $scope.model.hidden.custCd = null;
+                $scope.model.hidden.projectSno = '';
+                $scope.model.hidden.projectName = '';
+                for (var j = 0; j < $scope.model.listEditSalesReport[0].listSubEdit.length; j++) {
+                    var tmpDetail = $scope.model.listEditSalesReport[0].listSubEdit[j];
+                    for (var k = 0; k < tmpDetail.listDetail.length; k++) {
+                        var tmp = tmpDetail.listDetail[k];
+                        if(tmp.lineNo == 4){
+                            tmp.inputValue = '';
+                        }
+                        if(tmp.lineNo == 5){
+                            tmp.inputValue = object.inputValue;
+                        }
+                        if(tmp.lineNo == 6){
+                            tmp.inputValue = '';
+                        }
+                        if(tmp.lineNo == 7){
+                            tmp.inputValue = '';
+                        }
+                        if(tmp.lineNo == 9){
+                            tmp.inputValue = '';
+                        }
+                    }
+                };
+                $scope.model.listEditSalesReport[0].listSubEdit.listOwner = [];
+                $scope.model.listEditSalesReport[0].listSubEdit.listProject = [];
+                $scope.model.form.listProjectItemDetail = [];
+                $scope.model.listEditSalesReport[0].listSubEdit.showAddProject = false;
+            }
+        };
+
+        /**
+         * owner event select
+         */
+        $scope.onSelectOwner = function(row, index) {
+            if(!StringUtils.isEmpty(row) && row.length > 0){
+                $scope.getListOwner();
+                angular.forEach($scope.model.listEditSalesReport, function(item1, i){
+                    for (var j = 0; j < item1.listSubEdit.length; j++) {
+                        var tmp = item1.listSubEdit[j];
+                        for (var k = 0; k < tmp.listDetail.length; k++) {
+                            var tmpDetail = tmp.listDetail[k];
+                            if(tmpDetail.lineNo == 6){
+                                tmpDetail.inputValueCd = $scope.model.hidden.listOwnerCd.toString();
+                            }
+                            if(tmpDetail.lineNo == 7){
+                                tmpDetail.inputValueName = $scope.model.hidden.listOwnerName.toString();
+                            }
+                        }
+                    }
+                });
+            }
+        };
+
+        $scope.getListOwner = function (){
+            var listDataOwner = $("select[name='ownerCdAutocomplete']").select2('data');
+            $scope.model.hidden.listOwnerCd = [];
+            $scope.model.hidden.listOwnerName = [];
+            angular.forEach(listDataOwner, function(item, i){
+                if(item.selected && item.title != 'TAG'){
+                    $scope.model.hidden.listOwnerCd.push(item.id);
+                }
+                $scope.model.hidden.listOwnerName.push(item.text);
+            })
+        }
+
+         $scope.convertBeforeUpdate = function(){
+             $scope.model.hidden.listNewCustomer = [];
+             angular.forEach($scope.model.listEditSalesReport, function(item1, i){
+                 var custCd = "";
+                 for (var j = 0; j < item1.listSubEdit.length; j++) {
+                     var group = item1.listSubEdit[j];
+                     for (var k = 0; k < group.listDetail.length; k++) {
+                         var salesReport = group.listDetail[k];
+                         if(salesReport.lineNo == '4' && !StringUtils.isEmpty(salesReport.inputValue)){
+                             custCd = salesReport.inputValue;
+                             break;
+                         }
+                         if(salesReport.lineNo == '5' && StringUtils.isEmpty(custCd)){
+                             if(!StringUtils.isEmpty(salesReport.inputValue)){
+                                 var custInfo = angular.copy(salesReport);
+                                 custInfo.inputValue = custInfo.inputValue.toString();
+                                 delete salesReport.listData;
+                                 delete salesReport.listDataSource;
+                                 delete salesReport.positionNo;
+                             }
+                         }
+                     }
+                 }
+             });
+             var lengthNewCustomer = $scope.model.hidden.listNewCustomer.length;
+             if(lengthNewCustomer > 0){
+                 $scope.model.hidden.request = true;
+             }else{
+                 $scope.model.hidden.request = false;
+             }
+         }
+
+         /**登録*/
+        $scope.create = function(formInvalid) {
+            $scope.model.hidden.isSubmited = true;
+            if (formInvalid) {
+                return;
+            }
+            $scope.convertBeforeUpdate();
+            if($scope.model.hidden.request){
+                DialogsService.showDialog('SalesReportRequest', 'salesReportRequestCtrl', {action: 'insert'}, {size: '660'});
+            }else{
+                $scope.insertData();
+            }
+        };
+
+        $scope.convertParamProject = function(){
+            var projectDetail = angular.copy($scope.model.form.listProjectItemDetail);
+            angular.forEach(projectDetail, function(detail, j){
+                if(detail.controlType == "04" && detail.listData.length > 0){
+                    if(!StringUtils.isEmpty(detail.listDataSource)){
+                        var inputValue = "";
+                        angular.forEach(detail.listData, function(data, k){
+                            if(detail.inputValue[k] == "1"){
+                                inputValue += data.code+",";
+                            }
+                        });
+                        if(!StringUtils.isEmpty(inputValue)){
+                            var trim = inputValue.replace(/(^,)|(,$)/g, "")
+                            detail.inputValue = trim;
+                        }else{
+                            detail.inputValue = null;
+                        }
+                    }
+                }
+                if(detail.controlType == "09"){
+                    if(!StringUtils.isEmpty(detail.inputValue.postNo1) || !StringUtils.isEmpty(detail.inputValue.postNo2)
+                            || !StringUtils.isEmpty(detail.inputValue.address1) || !StringUtils.isEmpty(detail.inputValue.address2)){
+                        detail.inputValue = JSON.stringify(detail.inputValue);
+                    }else{
+                        detail.inputValue = null;
+                    }
+                }
+                if((detail.controlType == "11" || detail.controlType == "MST_GROUP_LIST" || detail.controlType == "MST_USER_LIST")
+                        && !StringUtils.isEmpty(detail.inputValue)){
+                    detail.inputValue = detail.inputValue.toString();
+                }
+
+                delete detail.isFileChange;
+                delete detail.fileSize;
+                delete detail.checkSize;
+            });
+            return projectDetail;
+        };
+
+        /**insert data*/
+        $scope.insertData = function(){
+            var listEditSalesReport = angular.copy($scope.model.listEditSalesReport);
+            listEditSalesReport = $scope.convertForUpdate(listEditSalesReport);
+            $scope.getListOwner();
+            for(var j = 0; j < listEditSalesReport.length; j++){
+                var item = listEditSalesReport[j].listSubEdit;
+                $scope.model.hidden.ownerCd = '';
+                $scope.model.hidden.custCd = '';
+                var custCd = '';
+                var ownerCd = '';
+                var nextScheduled = '';
+                var timeEnd = '';
+                var options = {size: 460};
+                for(var i = 0; i < item.length; i++){
+                    if(item[i].lineNo == '1' ){
+                        timeEnd = item[i].inputValueTimeEnd;
+                    }
+                    if(item[i].lineNo == '2' ){
+                        item[i].inputValueTimeEnd = timeEnd;
+                    }
+                    if(item[i].lineNo == '4' && !StringUtils.isEmpty(item[i].inputValue)){
+                        $scope.model.hidden.custCd = item[i].inputValue.toString();
+                    }
+                    if(item[i].lineNo == '5'){
+                        custCd = item[i].inputValue;
+                    }
+                    if(item[i].lineNo == '11'){
+                        nextScheduled = item[i].inputValue;
+                    }
+                    if(item[i].controlType == "09"){
+                        item[i].inputValue = JSON.stringify(item[i].inputValue);
+                    }
+                    if((item[i].controlType == "11" || item[i].controlType == "MST_GROUP_LIST" || item[i].controlType == "MST_USER_LIST")
+                            && !StringUtils.isEmpty(item[i].inputValue)){
+                        item[i].inputValue = item[i].inputValue.toString();
+                    }
+                    if((item[i].lineNo == '8' || item[i].lineNo == '13' || item[i].lineNo == '19') && item[i].controlType == '08'){
+                        if(!StringUtils.isEmpty(item[i].inputValue)){
+                            item[i].inputValue = item[i].inputValue.toString();
+                        }
+                    }
+                    if(item[i].lineNo == '15' && j == 0 ){
+                        item[i].inputValue = $scope.model.hidden.todoNo;
+                    }
+                    if(item[i].lineNo == '16' && j == 0 ){
+                        item[i].inputValue = $scope.model.hidden.lineNo;
+                    }
+                    if(item[i].lineNo == '9'){
+                        if(item[i].salesReportMax == 0 || item[i].salesReportMax == $scope.model.hidden.salesReportNo){
+                            item[i].isUpdateMatterPhase = true;
+                        }else{
+                            item[i].isUpdateMatterPhase = false;
+                        }
+                    }
+                    if(item[i].controlType == "04" && !StringUtils.isEmpty(item[i].listData)){
+                        var inputValue = "";
+                        angular.forEach(item[i].listData, function(data, k){
+                            if(item[i].inputValue[k] == "1"){
+                                inputValue += data.code+",";
+                            }
+                        });
+                        if(!StringUtils.isEmpty(inputValue)){
+                            var trim = inputValue.replace(/(^,)|(,$)/g, "")
+                            item[i].inputValue = trim;
+                        }else{
+                            item[i].inputValue = null;
+                        }
+                    }
+                }
+                for(var z = 0; z < item.length; z++){
+                    if(item[z].controlType != "09" && !StringUtils.isEmpty(item[z].inputValue) || angular.isArray(item[z].inputValue)){
+                        item[z].inputValue = item[z].inputValue.toString();
+                    }
+                    item[z].custCd = $scope.model.hidden.custCd;
+                    item[z].ownerCd = $scope.model.hidden.listOwnerCd.toString();
+                    item[z].ownerName = $scope.model.hidden.listOwnerName.toString();
+
+                    //If 次回予定 has date value, scheduleCheck = true
+                    if(!StringUtils.isEmpty(nextScheduled)){
+                        item[z].scheduleCheck = true;
+
+                    //If 次回予定 hasn't date value, scheduleCheck = false
+                    }else{
+                        item[z].scheduleCheck = false;
+                    }
+                }
+            };
+            var confirm = {
+                    // releaseScope : '0', // setting default value in CustomConfirmDialog.js
+                    message : Messages.getMessage('S00003')
+            }
+            DialogsService.showDialog('ChangeReleaseScopeDialog', 'ChangeReleaseScopeDialogCtrl', confirm, null)
+            .result.then(function(releaseScope) {
+                var projectDetail = $scope.convertParamProject();
+                var param = { listMain : JSON.stringify(listEditSalesReport),
+                              listSub: JSON.stringify($scope.model.listFreeSalesReport),
+                              activityDate :  $scope.model.form.activityDate,
+                              relationUserCd :  !StringUtils.isEmpty($scope.model.form.relationUserCd) ? $scope.model.form.relationUserCd.toString() : '',
+                              listNewCustomer: $scope.model.hidden.listNewCustomer,
+                              listProjectItemDetail: JSON.stringify(projectDetail),
+                              releaseScope: releaseScope,
+                              sourceScheduleCd: $scope.model.hidden.sourceScheduleCd
+                            }
+                SalesReportControlService.createData(param)
+                .then(
+                    function(result) {
+                        if(!StringUtils.isEmpty(result.data)){
+                            if(!StringUtils.isEmpty(result.data.warning)){
+                                DialogsService.showWarning(Messages.getMessage('check.error'),  result.data.warning);
+                                return;
+                            }
+                            var success = result.data.success;
+                            DialogsService.showNotify(Messages.getMessage('title.info'), success).result.then(function(btn){
+                                var param = {
+                                        todoNo: $scope.model.hidden.todoNo,
+                                        lineNo: $scope.model.hidden.lineNo
+                                }
+                                $uibModalInstance.close(false);
+                                sessionStorage.removeItem("salesReportUrl");
+
+                                /** if come from PtlTodoList or ScheduleList, schedule and listSalesReport at PtlTodoList will reload*/
+                                if($scope.model.hidden.fromScreen == 'PtlTodoList'){
+                                    $rootScope.$broadcast("PtlTodoList#getEvents", {});
+                                    $rootScope.$broadcast("PtlTodoList#loadSalesReportList", {});
+                                }else if($scope.model.hidden.fromScreen == 'ScheduleList'){
+                                    $rootScope.$broadcast("ScheduleList#getEvents", {});
+                                }
+                            });
+                        }
+                        $scope.model.hidden.salesReportNo = result.data.salesReportNo;
+                        $scope.model.hidden.isSubmited = false;
+                    }
+                );
+            },function(btn){
+                $scope.model.hidden.isSubmited = false;
+            });
+        };
+
+        /**スケジュールをチェック*/
+        $scope.checkSchedule = function(row, index){
+            var scheduleCheck = row.scheduleCheck;
+            angular.forEach($scope.model.listEditSalesReport[0].listSubEdit, function(group, i){
+                angular.forEach(group.listDetail, function(item, i){
+                    item.scheduleCheck = scheduleCheck;
+                });
+            });
+        };
+
+
+        /**編集*/
+        $scope.edit = function(salesReportNo){
+            var param = {salesReportNo: salesReportNo};
+            SalesReportControlService.checkData(param)
+            .then(
+                function(result) {
+                    if(!StringUtils.isEmpty(result.data)){
+                        var warning = result.data.warning;
+                        if(!StringUtils.isEmpty(warning)){
+                            DialogsService.showWarning(Messages.getMessage('check.error'), warning).result.then(function(btn){
+                                sessionStorage.removeItem("salesReport");
+                                $uibModalInstance.close(false);
+                            })
+                        }else{
+                            var salesReport = {
+                                    salesReportNo :   salesReportNo
+                            };
+                            sessionStorage.setItem("salesReport", JSON.stringify(salesReport));
+                            $scope.model.listEditSalesReport = result.data.listEdit;
+                            $scope.model.listOwner = result.data.listOwner;
+                            $scope.model.listProject = result.data.listProject;
+                            $scope.model.hidden.isDisabled = false;
+                            $scope.model.hidden.screenMode = 'UPDATE';
+
+                            var groupNo = null;
+                            angular.forEach($scope.model.listEditSalesReport, function(item1, i){
+                                item1.listSubEdit.listOwner = $scope.model.listOwner;
+                                item1.listSubEdit.listProject = $scope.model.listProject;
+                                var item = item1.listSubEdit;
+                                angular.forEach(item, function(detail, i){
+                                    if(detail.lineNo == 1){
+                                        groupNo = detail.groupNo;
+                                    }
+                                });
+                                $scope.listTmp = angular.copy(item);
+                                var index = i;
+                                var relationUserCdArr = [];
+                                var relationUserNameArr = [];
+                                if($scope.model.hidden.screenMode == 'UPDATE' && !StringUtils.isEmpty(result.data.listDestinationUser)){
+                                    for(var i = 0; i < result.data.listDestinationUser.length; i++){
+                                        relationUserCdArr.push(result.data.listDestinationUser[i].destinationUserCd);
+                                        relationUserNameArr.push(result.data.listDestinationUser[i].destinationUserName);
+                                    }
+                                }
+                                $scope.model.form.relationUserCd = relationUserCdArr;
+                                $scope.model.relationUserName= relationUserNameArr.toString();
+                                var checkIndex = 0;
+                                var inputValueTimeEnd = '';
+                                var arralesReportUserName = [];
+                                var listSalesReportUser = result.data.listSalesReportUser;
+                                var j = 0
+                                var scheduleCheck = false;
+                                var items =  item[0];
+                                if(!StringUtils.isEmpty(items.relationSchedule)){
+                                    scheduleCheck = true;
+                                }
+                                var salesReportSubNo = item[0].salesReportSubNo;
+                                var length = item.length;
+
+                                for(var i = 0; i < length; i++){
+                                    $scope.model.hidden.releaseScope = item[i].releaseScope;
+                                    if(item[i].lineNo == '4'){
+                                        $scope.model.hidden.custCd = item[i].inputValue;
+                                        $scope.onChangeCustomer2(item[i], item[i], index, false);
+                                    }
+                                    if(item[i].lineNo == '6'){
+                                        $scope.model.hidden.ownerCd = item[i].inputValue;
+                                    }
+                                    if(item[i].lineNo == '7' && !StringUtils.isEmpty(item[i].inputValue)){
+                                        $scope.model.hidden.listDataTag = [];
+                                        $scope.model.hidden.ownerName = item[i].inputValue;
+                                        item[i].inputValue = !StringUtils.isEmpty($scope.model.hidden.ownerCd) ? $scope.model.hidden.ownerCd.split(',') : [];
+                                        var listName = $scope.model.hidden.ownerName.split(',');
+                                        for (var j = item[i].inputValue.length; j < listName.length; j++) {
+                                            var tmp = listName[j].replace(/\s/g,'-');
+                                            var data = {
+                                                    id : tmp,
+                                                    text : listName[j]
+                                            }
+                                            $scope.model.hidden.listDataTag.push(data);
+                                            item[i].inputValue.push(tmp);
+                                        }
+                                    }
+                                    if(item[i].controlType == "04" && !StringUtils.isEmpty(item[i].listData)){
+                                        var inputValue = [];
+                                        angular.forEach(item[i].listData, function(data, k){
+                                            if(!StringUtils.isEmpty(item[i].inputValue) && item[i].inputValue.indexOf(data.code) > -1){
+                                                inputValue[k] = '1'
+                                            }else{
+                                                inputValue[k] = '0';
+                                            }
+                                        });
+                                        if(inputValue.length > 0){
+                                            item[i].inputValue = inputValue;
+                                        }
+                                    }
+
+                                    if(item[i].lineNo == '14' && item[i].controlType == '08'){
+                                        if(!StringUtils.isEmpty(item[i].inputValue)){
+                                            if(item[i].inputValue.indexOf(',') > -1){
+                                                item[i].inputValue = item[i].inputValue.split(',');
+                                            }else{
+                                                item[i].inputValue = [item[i].inputValue];
+                                            }
+                                        }
+                                    }
+                                    if(item[i].controlType == "09"){
+                                        var address = {
+                                                postNo1: '',
+                                                postNo2: '',
+                                                address1: '',
+                                                address2: '',
+                                        }
+                                        if(!StringUtils.isEmpty(item[i].inputValue)){
+                                            item[i].inputValue = StringUtils.isJson(item[i].inputValue) ? angular.fromJson(item[i].inputValue) : address;
+                                        }else{
+                                            item[i].inputValue = address;
+                                        }
+                                    }
+                                    if(item[i].lineNo == '15' && !StringUtils.isEmpty(item[i].inputValue)){
+                                        $scope.model.hidden.todoNo = item[i].inputValue.split('#')[0];
+                                        item[i].inputValueCd = item[i].inputValue.split('#')[0];
+                                        item[i].inputValue =  item[i].inputValue.split('#')[1];
+                                    }
+                                    if(item[i].lineNo == '16' && !StringUtils.isEmpty(item[i].inputValue)){
+                                        $scope.model.hidden.lineNo = item[i].inputValue.split('#')[0];
+                                        item[i].inputValueCd = item[i].inputValue.split('#')[0];
+                                        item[i].inputValue =  item[i].inputValue.split('#')[1];
+                                    }
+                                    if(item[i].lineNo == '9'){
+                                        if(!StringUtils.isEmpty(item[i].inputValue)){
+                                            $scope.model.hidden.projectName = item[i].projectName;
+                                            $scope.model.hidden.projectSno = item[i].inputValue;
+                                            $scope.model.hidden.listProjectItemDetail = result.data.listProjectItemDetail;
+                                            $scope.changeProject(item[i].inputValue);
+                                        }
+                                    }
+                                    if((item[i].controlType == "11" || item[i].controlType == "MST_GROUP_LIST" || item[i].controlType == "MST_USER_LIST")
+                                            && !StringUtils.isEmpty(item[i].inputValue)){
+                                        item[i].inputValue = item[i].inputValue.split(',');
+                                    }
+                                    item[i].scheduleCheck = scheduleCheck;
+                                    if((item[i].lineNo == '1')){
+                                        item[i].inputValueTimeStart = item[i].inputValue;
+                                    }
+                                    if(i == 0){
+                                        $scope.model.hidden.createDate = item[i].createDate;
+                                        $scope.model.hidden.createUserName = item[i].createUserName;
+                                        $scope.model.hidden.lastUpdDate = item[i].lastUpdDate;
+                                        $scope.model.hidden.lastUpdUserName = item[i].lastUpdUserName;
+                                        $scope.model.hidden.salesReportNo = item[i].salesReportNo;
+                                        checkIndex = i;
+                                    }
+                                    if((item[i].lineNo == '8')){
+                                        for(;j<listSalesReportUser.length; j++){
+                                            if(item[i].salesReportSubNo == listSalesReportUser[j].salesReportSubNo){
+                                                arralesReportUserName.push(listSalesReportUser[j].salesReportUserName);
+                                            }else if(item[i].salesReportSubNo != listSalesReportUser[j].salesReportSubNo){
+                                                item[i].salesReportUserName = arralesReportUserName.toString();
+                                                arralesReportUserName = [];
+                                                break;
+                                            }
+                                        }
+                                        if(j == listSalesReportUser.length){
+                                            item[i].salesReportUserName = arralesReportUserName.toString();
+                                        }
+                                    }
+                                    if((item[i].lineNo == '2')){
+                                        inputValueTimeEnd = !StringUtils.isEmpty(item[i].inputValue) ? item[i].inputValue : '';
+                                    }
+                                    if(item[i].lineNo != '1' && item[i].lineNo != '2' && item[i].controlType == '02'){
+                                        item[i].inputValueTimeStart = item[i].inputValue;
+                                    }
+                                    item[checkIndex].inputValueTimeEnd = inputValueTimeEnd;
+                                    if($scope.model.hidden.screenMode == 'UPDATE'){
+                                        if(!StringUtils.isEmpty(item[i].inputValue) && (item[i].lineNo == '8' || item[i].lineNo == '13' || item[i].lineNo == '19')){
+                                            item[i].inputValue = item[i].inputValue.split(',');
+                                        }
+                                    }
+                                }
+
+                                var firstItem =  angular.copy(item[0]);
+                                $scope.model.form.activityDate = firstItem.activityDate;
+                                firstItem.controlLabelName = '';
+                                firstItem.controlType = 'show-no';
+                                firstItem.lineNo = '000000000';
+                                firstItem.showAdd = true;
+                                firstItem.No = 1;
+                                if(groupNo != null){
+                                    firstItem.groupNo = groupNo;
+                                } else {
+                                    firstItem.groupNo = 1;
+                                }
+                                for(var i = length -1; i >= 0; i--){
+                                    if(item[i].lineNo == 1){
+                                        item.splice(i, 0, firstItem);
+                                        console.log(new Date());
+                                    }
+                                }
+                                $scope.tmpList = angular.copy(item);
+                                if(index == ($scope.model.listEditSalesReport.length-1)){
+                                    $scope.convertForGroupView();
+                                }
+                            });
+                        }
+                    }
+                });
+        };
+
+        /**更新*/
+        $scope.update = function(formInvalid) {
+            $scope.model.hidden.isSubmited = true;
+            if (formInvalid) {
+                return;
+            }
+            $scope.convertBeforeUpdate();
+            if($scope.model.hidden.request){
+                DialogsService.showDialog('SalesReportRequest', 'salesReportRequestCtrl', {action: 'update'}, {size: '660'});
+            }else{
+                $scope.updateData();
+            }
+        };
+
+        /**更新*/
+        $scope.updateData = function(formInvalid) {
+            $scope.model.hidden.isSubmited = true;
+            if (formInvalid) {
+                return;
+            }
+            var listEditSalesReport = angular.copy($scope.model.listEditSalesReport);
+            listEditSalesReport = $scope.convertForUpdate(listEditSalesReport);
+            $scope.getListOwner();
+            for(var j = 0; j < listEditSalesReport.length; j++){
+                var item = listEditSalesReport[j].listSubEdit;
+                $scope.model.hidden.ownerCd = '';
+                $scope.model.hidden.custCd = '';
+                var custCd = '';
+                var ownerCd = '';
+                var nextScheduled = '';
+                var timeEnd = '';
+                var options = {size: 460};
+                for(var i = 0; i < item.length; i++){
+                    if(item[i].lineNo == '1' ){
+                        timeEnd = item[i].inputValueTimeEnd;
+                    }
+                    if(item[i].lineNo == '2' ){
+                        item[i].inputValueTimeEnd = timeEnd;
+                    }
+                    if(item[i].lineNo == '4' && !StringUtils.isEmpty(item[i].inputValue)){
+                        $scope.model.hidden.custCd = item[i].inputValue.toString();
+                    }
+                    if(item[i].lineNo == '5'){
+                        custCd = item[i].inputValue;
+                    }
+                    if(item[i].lineNo == '11'){
+                        nextScheduled = item[i].inputValue;
+                    }
+                    if(item[i].controlType == "09"){
+                        item[i].inputValue = JSON.stringify(item[i].inputValue);
+                    }
+                    if((item[i].controlType == "11" || item[i].controlType == "MST_GROUP_LIST" || item[i].controlType == "MST_USER_LIST")
+                            && !StringUtils.isEmpty(item[i].inputValue)){
+                        item[i].inputValue = item[i].inputValue.toString();
+                    }
+                    if((item[i].lineNo == '8' || item[i].lineNo == '13' || item[i].lineNo == '19') && item[i].controlType == '08'){
+                        if(!StringUtils.isEmpty(item[i].inputValue)){
+                            item[i].inputValue = item[i].inputValue.toString();
+                        }
+                    }
+                    if(item[i].lineNo == '15' && j == 0 ){
+                        item[i].inputValue = $scope.model.hidden.todoNo;
+                    }
+                    if(item[i].lineNo == '16' && j == 0 ){
+                        item[i].inputValue = $scope.model.hidden.lineNo;
+                    }
+                    if(item[i].lineNo == '9'){
+                        if(item[i].salesReportMax == 0 || item[i].salesReportMax == $scope.model.hidden.salesReportNo){
+                            item[i].isUpdateMatterPhase = true;
+                        }else{
+                            item[i].isUpdateMatterPhase = false;
+                        }
+                    }
+                    if(item[i].controlType == "04" && !StringUtils.isEmpty(item[i].listData)){
+                        var inputValue = "";
+                        angular.forEach(item[i].listData, function(data, k){
+                            if(item[i].inputValue[k] == "1"){
+                                inputValue += data.code+",";
+                            }
+                        });
+                        if(!StringUtils.isEmpty(inputValue)){
+                            var trim = inputValue.replace(/(^,)|(,$)/g, "")
+                            item[i].inputValue = trim;
+                        }else{
+                            item[i].inputValue = null;
+                        }
+                    }
+                }
+                for(var z = 0; z < item.length; z++){
+                    if(item[z].controlType != "09" && !StringUtils.isEmpty(item[z].inputValue) || angular.isArray(item[z].inputValue)){
+                        item[z].inputValue = item[z].inputValue.toString();
+                    }
+                    item[z].custCd = $scope.model.hidden.custCd;
+                    item[z].ownerCd = $scope.model.hidden.listOwnerCd.toString();
+                    item[z].ownerName = $scope.model.hidden.listOwnerName.toString();
+
+                    //If 次回予定 has date value, scheduleCheck = true
+                    if(!StringUtils.isEmpty(nextScheduled)){
+                        item[z].scheduleCheck = true;
+
+                    //If 次回予定 hasn't date value, scheduleCheck = false
+                    }else{
+                        item[z].scheduleCheck = false;
+                    }
+                }
+            };
+
+            var confirm = {
+                    releaseScope : $scope.model.hidden.releaseScope,
+                    message : Messages.getMessage('S00004')
+            }
+            DialogsService.showDialog('ChangeReleaseScopeDialog', 'ChangeReleaseScopeDialogCtrl', confirm, null)
+            .result.then(function(releaseScope) {
+                var projectDetail = $scope.convertParamProject();
+                var param = { listMain : JSON.stringify(listEditSalesReport),
+                              listSub: JSON.stringify($scope.model.listFreeSalesReport),
+                              activityDate :  $filter('date')($scope.model.form.activityDate, "yyyy/MM/dd"),
+                              salesReportNo: $scope.model.hidden.salesReportNo,
+                              relationUserCd :  !StringUtils.isEmpty($scope.model.form.relationUserCd) ? $scope.model.form.relationUserCd.toString() : '',
+                              listNewCustomer: $scope.model.hidden.listNewCustomer,
+                              listDeleteSchedule: $scope.model.hidden.listDeleteSchedule,
+                              listProjectItemDetail: JSON.stringify(projectDetail),
+                              releaseScope: releaseScope
+                            };
+                SalesReportControlService.updateData(param).then(
+                    function(result) {
+                        if(!StringUtils.isEmpty(result.data)){
+                            if(!StringUtils.isEmpty(result.data.warning)){
+                                DialogsService.showWarning(Messages.getMessage('check.error'),  result.data.warning);
+                                return;
+                            }
+                            var success = result.data.success;
+                            DialogsService.showNotify(Messages.getMessage('title.info'), success).result.then(function(btn){
+                                var param = {
+                                        todoNo: $scope.model.hidden.todoNo,
+                                        lineNo: $scope.model.hidden.lineNo
+                                }
+                                $uibModalInstance.close(false);
+                                sessionStorage.removeItem("salesReport");
+                            });
+                        }
+                        $scope.model.hidden.isSubmited = false;
+//                        $scope.model.hidden.listDeleteSchedule = [];
+                    }
+                );
+            },function(btn){
+                $scope.model.hidden.isSubmited = false;
+            });
+        };
+
+        /**削除*/
+        $scope.deleteData = function(salesReportNo){
+            DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('S00005'))
+            .result.then(function(btn){
+            var listEditSalesReport = angular.copy($scope.model.listEditSalesReport);
+            listEditSalesReport = $scope.convertForUpdate(listEditSalesReport);
+            for(var j = 0; j < listEditSalesReport.length; j++){
+                var item = listEditSalesReport[j].listSubEdit;
+                for(var i = 0; i < item.length; i++){
+                    if(item[i].controlType == "04" && !StringUtils.isEmpty(item[i].listData)){
+                        var inputValue = "";
+                        angular.forEach(item[i].listData, function(data, k){
+                            if(item[i].inputValue[k] == "1"){
+                                inputValue += data.code+",";
+                            }
+                        });
+                        if(!StringUtils.isEmpty(inputValue)){
+                            var trim = inputValue.replace(/(^,)|(,$)/g, "")
+                            item[i].inputValue = trim;
+                        }else{
+                            item[i].inputValue = null;
+                        }
+                    }
+                    if((item[i].controlType == "11" || item[i].controlType == "MST_GROUP_LIST" || item[i].controlType == "MST_USER_LIST")
+                            && !StringUtils.isEmpty(item[i].inputValue)){
+                        item[i].inputValue = item[i].inputValue.toString();
+                    }
+                    if(item[i].controlType == "09"){
+                        item[i].inputValue = JSON.stringify(item[i].inputValue);
+                    }
+                }
+                for(var z = 0; z < item.length; z++){
+                    if(item[z].controlType != "09" && !StringUtils.isEmpty(item[z].inputValue) || angular.isArray(item[z].inputValue)){
+                        item[z].inputValue = item[z].inputValue.toString();
+                    }
+                }
+            };
+            var param = { listMain : JSON.stringify(listEditSalesReport),
+                          salesReportNo: $scope.model.hidden.salesReportNo
+                        };
+            SalesReportControlService.deleteData(param).then(
+                function(result) {
+                    if(!StringUtils.isEmpty(result.data)){
+                        if(!StringUtils.isEmpty(result.data.warning)){
+                            DialogsService.showWarning(Messages.getMessage('check.error'),  result.data.warning);
+                            return;
+                        }
+                        var success = result.data.success;
+                        DialogsService.showNotify(Messages.getMessage('title.info'), success).result.then(function(btn){
+                            var param = {
+                                    todoNo: $scope.model.hidden.todoNo,
+                                    lineNo: $scope.model.hidden.lineNo
+                            }
+                            $uibModalInstance.close(false);
+                            sessionStorage.removeItem("salesReport");
+
+                            /** if come from PtlTodoList or ScheduleList, schedule and listSalesReport at PtlTodoList will reload*/
+                            if($scope.model.hidden.fromScreen == 'PtlTodoList'){
+                                $rootScope.$broadcast("PtlTodoList#getEvents", {});
+                                $rootScope.$broadcast("PtlTodoList#loadSalesReportList", {});
+                            }else if($scope.model.hidden.fromScreen == 'ScheduleList'){
+                                $rootScope.$broadcast("ScheduleList#getEvents", {});
+                            }
+                        });
+                    }
+                });
+            });
+        };
+
+        $scope.downloadFile = function(param){
+            if(!StringUtils.isEmpty(param.inputValue) && !param.isFileChange){
+                var params = {
+                        'salesReportNo': param.salesReportNo,
+                        'salesReportSubNo': param.salesReportSubNo,
+                        'lineNo' : param.lineNo,
+                        'mstDetailTableName' : param.mstDetailTableName,
+                        'detailFreeItemFlag' : false
+                };
+                Utils.postToUrl("/SalesReportControl/downloadFile", params);
+            }
+        };
+
+        $scope.downloadFileProject = function(param){
+            if($scope.model.hidden.screenMode == 'INSERT' || $scope.model.hidden.checkDownloadProjectFile){
+                if(!ValidateUtil.isValidTextEmpty(param.inputValue) && !param.isFileChange){
+                    var params = {
+                            'projectSno': param.projectSno,
+                            'detailFreeItemFlag': param.detailFreeItemFlag,
+                            'lineNo' : param.lineNo
+                    };
+                    Utils.postToUrl("/SfaProjectControl/downloadFile", params);
+                }
+            }else{
+                if(!ValidateUtil.isValidTextEmpty(param.inputValue) && !param.isFileChange){
+                    var params = {
+                            'salesReportNo': $scope.model.hidden.salesReportNo,
+                            'salesReportSubNo': 1,
+                            'lineNo' : param.lineNo,
+                            'mstDetailTableName' : param.mstDetailTableName,
+                            'detailFreeItemFlag' : param.detailFreeItemFlag
+                    };
+                    Utils.postToUrl("/SalesReportControl/downloadFile", params);
+                }
+            }
+        };
+
+        $scope.resetFile  = function(e) {
+            e.wrap('<form>').parent('form').trigger('reset');
+            e.unwrap();
+        };
+
+        $scope.removeFile = function(row,parentIndex,index){
+            row.binaryFile = '';
+            row.inputValue = '';
+            row.fileSize = '';
+            row.checkSize = false;
+            $scope.resetFile($('input[name="inputValueFile"]'));
+        };
+
+        /**
+         * 住所検索
+         */
+        $scope.checkPostNumber = function(param, parentIndex, index){
+            var postNo = param.postNo1 + param.postNo2;
+            if(StringUtils.isEmpty(postNo))
+            {
+                DialogsService.showWarning(Messages.getMessage('check.error'),
+                        Messages.getMessage('W00207'));
+                return true;
+            }
+            if(ValidateUtil.isValidPostNo(postNo))
+            {
+                DialogsService.showWarning(Messages.getMessage('check.error'),
+                        Messages.getMessage('W00018'));
+                return true;
+            }
+            var params = {'postNo':postNo};
+            ServerService
+            .doPost('CrmControl/checkPostNumber', params)
+            .then(
+                function(okResult) {
+                    var error =  okResult.data.failed;
+                    var warning =  okResult.data.warning;
+                    if(!StringUtils.isEmpty(warning)){
+                        DialogsService.showWarning(Messages.getMessage('check.error'),
+                                warning);
+                    }else if(!StringUtils.isEmpty(error)){
+                        DialogsService.showError(Messages.getMessage('system.error'),
+                                error);
+                    }else{
+                        $scope.model.listEditSalesReport[0].listSubEdit[index].inputValue.address1 = okResult.data.address;
+                    }
+                },
+                function(errResult){
+                });
+        };
+
+        /**
+         * 住所検索
+         */
+        $scope.checkPostNumberProject = function(param, index){
+            var postNo = param.postNo1 + param.postNo2;
+            if(StringUtils.isEmpty(postNo))
+            {
+                DialogsService.showWarning(Messages.getMessage('check.error'),
+                        Messages.getMessage('W00207'));
+                return true;
+            }
+            if(ValidateUtil.isValidPostNo(postNo))
+            {
+                DialogsService.showWarning(Messages.getMessage('check.error'),
+                        Messages.getMessage('W00018'));
+                return true;
+            }
+            var params = {'postNo':postNo};
+            ServerService.doPost('CrmControl/checkPostNumber', params).then(
+                function(okResult) {
+                    var error =  okResult.data.failed;
+                    var warning =  okResult.data.warning;
+                    if(!StringUtils.isEmpty(warning)){
+                        DialogsService.showWarning(Messages.getMessage('check.error'),
+                                warning);
+                    }else if(!StringUtils.isEmpty(error)){
+                        DialogsService.showError(Messages.getMessage('system.error'),
+                                error);
+                    }else{
+                        $scope.model.form.listProjectItemDetail[index].inputValue.address1 = okResult.data.address;
+                    }
+                },
+                function(errResult){
+                });
+        };
+
+        $scope.changeProject = function(projectSno, isChange){
+            $scope.model.hidden.projectSno = projectSno;
+            var params = {'projectSno':projectSno};
+            if(StringUtils.isEmpty(projectSno)){
+                $scope.model.form.listProjectItemDetail = [];
+                return;
+            }
+            ServerService.doPost('SalesReportControl/getProjectDetails', params).then(
+                function(okResult) {
+                    var error =  okResult.data.failed;
+                    var warning =  okResult.data.warning;
+                    if(!StringUtils.isEmpty(warning)){
+                        DialogsService.showWarning(Messages.getMessage('check.error'),
+                                warning);
+                    }else if(!StringUtils.isEmpty(error)){
+                        DialogsService.showError(Messages.getMessage('system.error'),
+                                error);
+                    }else{
+                        var listProject = [];
+                        if($scope.model.hidden.screenMode == 'INSERT' || isChange){
+                            $scope.model.form.listProjectItemDetail = okResult.data.projectDetail;
+                        }else{
+                            $scope.model.form.listProjectItemDetail = $scope.model.hidden.listProjectItemDetail;
+                        }
+                        if($scope.model.hidden.screenMode != 'INSERT' && isChange){
+                            $scope.model.hidden.checkDownloadProjectFile = true;
+                        }
+                        $scope.model.form.listCrmSite = okResult.data.listCrmSite;
+                        $scope.model.form.listCrmDept = okResult.data.listCrmDept;
+                        $scope.model.form.listMstOwner = okResult.data.listMstOwner;
+                        $scope.model.form.listBilladdress = okResult.data.listBillAddress;
+                        var item = $scope.model.listEditSalesReport[0];
+                        angular.forEach(item.listSubEdit, function(group, j){
+                            angular.forEach(group.listDetail, function(detail, i){
+                                if(detail.lineNo == 9){
+                                    detail.salesReportMax = okResult.data.salesReportNo;
+                                }
+                            });
+                        });
+                        var billaddressNo = "";
+                        if($scope.model.hidden.screenMode != "INSERT"){
+                            angular.forEach($scope.model.form.listProjectItemDetail, function(detail, i){
+                                angular.forEach(okResult.data.projectDetail, function(project, j){
+                                    if(detail.detailKey == project.detailKey){
+                                        if(detail.inputValue != project.inputValue){
+                                            detail.newFlag = true;
+                                        }
+                                        $scope.convertDataOfProjectDetailForView(detail);
+                                    }
+                                });
+                            });
+                        }else{
+                            angular.forEach($scope.model.form.listProjectItemDetail, function(detail, i){
+                                $scope.convertDataOfProjectDetailForView(detail);
+                            });
+                        }
+                    }
+                },
+                function(errResult){
+                });
+        }
+
+        $scope.convertDataOfProjectDetailForView = function(detail){
+            if(detail.controlType == "04" && !StringUtils.isEmpty(detail.listData)){
+                var inputValue = [];
+                angular.forEach(detail.listData, function(data, k){
+                    if(!StringUtils.isEmpty(detail.inputValue) && detail.inputValue.indexOf(data.code) > -1){
+                        inputValue[k] = '1'
+                    }else{
+                        inputValue[k] = '0';
+                    }
+                });
+                if(inputValue.length > 0){
+                    detail.inputValue = inputValue;
+                }
+            }
+            if(detail.controlType == "09"){
+                var address = {
+                        postNo1: '',
+                        postNo2: '',
+                        address1: '',
+                        address2: '',
+                }
+                if(!StringUtils.isEmpty(detail.inputValue)){
+                    detail.inputValue = StringUtils.isJson(detail.inputValue) ? angular.fromJson(detail.inputValue) : address;
+                }else{
+                    detail.inputValue = address;
+                }
+            }
+
+            if(detail.controlType == "11" || detail.controlType == "MST_GROUP_LIST" || detail.controlType == "MST_USER_LIST"){
+                if(!StringUtils.isEmpty(detail.inputValue)) {
+                    detail.inputValue = detail.inputValue.split(',');
+                }
+            }
+
+            if(detail.detailKey == "015"){
+                 var billaddressNo = detail.inputValue;
+                $scope.billaddressChange(billaddressNo);
+            }
+        }
+
+
+        /**
+         * customer event change
+         */
+        $scope.onChangeCustomer2 = function(item, object, index, change) {
+            var params = {
+                    custCd : ''
+            };
+            if(!StringUtils.isEmpty(item)){
+                if(!change){
+                    params.custCd = item.inputValue.toString();
+                    for (var j = 0; j < $scope.model.listEditSalesReport[0].listSubEdit.length; j++) {
+                        var tmp = $scope.model.listEditSalesReport[0].listSubEdit[j];
+                        if(tmp.lineNo == 4){
+                            tmp.inputValue = params.custCd;
+                        }
+                    };
+                }else{
+                    params.custCd = item.custCd;
+                    for (var j = 0; j < $scope.model.listEditSalesReport[0].listSubEdit.length; j++) {
+                        var tmp = $scope.model.listEditSalesReport[0].listSubEdit[j];
+                        if(tmp.lineNo == 4){
+                            tmp.inputValue = item.custCd;
+                        }
+                    };
+                }
+
+                SalesReportControlService.onChangeCustomer(params).then(
+                    function(result) {
+                        var error =  result.data.failed;
+                        if(!StringUtils.isEmpty(error)){
+                            DialogsService.showError(Messages.getMessage('system.error'), error);
+                            return;
+                        }
+                        if(!StringUtils.isEmpty(result.data)){
+                            if($scope.model.hidden.screenMode == 'INSERT'){
+                                object.inputValue = item.custName;
+                            }
+                            $scope.model.listEditSalesReport[0].listSubEdit.listOwner = result.data.listOwner;
+//                            $scope.model.listEditSalesReport[0].listSubEdit.listProject = result.data.listProject;
+                            $scope.model.listEditSalesReport[0].listSubEdit.showAddProject = true;
+                        }
+                    }
+                );
+            }else{
+                for (var j = 0; j < $scope.model.listEditSalesReport[0].listSubEdit.length; j++) {
+                    var tmp = $scope.model.listEditSalesReport[0].listSubEdit[j];
+                    if(tmp.lineNo == 4){
+                        tmp.inputValue = '';
+                    }
+                    if(tmp.lineNo == 5){
+                        tmp.inputValue = object.inputValue;
+                    }
+                    if(tmp.lineNo == 6){
+                        tmp.inputValue = '';
+                    }
+                    if(tmp.lineNo == 7){
+                        tmp.inputValue = '';
+                    }
+                    if(tmp.lineNo == 9){
+                        tmp.inputValue = '';
+                    }
+                };
+                $scope.model.listEditSalesReport[0].listSubEdit.listOwner = [];
+                $scope.model.listEditSalesReport[0].listSubEdit.listProject = [];
+                $scope.model.form.listProjectItemDetail = [];
+                $scope.model.listEditSalesReport[0].listSubEdit.showAddProject = false;
+            }
+        };
+
+        $scope.close = function() {
+            if($scope.model.hidden.screenMode == 'INSERT'){
+                DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('S00062'))
+                .result.then(function(btn){
+                    sessionStorage.removeItem("salesReport");
+                    sessionStorage.removeItem("salesReportUrl");
+                    $uibModalInstance.close(true);
+                })
+            } else {
+                sessionStorage.removeItem("salesReport");
+                sessionStorage.removeItem("salesReportUrl");
+                $uibModalInstance.close(true);
+            }
+        };
+
+        $scope.showQuickProject = function(index){
+            var options = {
+                size: '520'
+            };
+            var custCd, custName;
+            for (var j = 0; j < $scope.model.listEditSalesReport[0].listSubEdit.length; j++) {
+                var tmp = $scope.model.listEditSalesReport[0].listSubEdit[j];
+                for (var k = 0; k < tmp.listDetail.length; k++) {
+                    var tmpDetail = tmp.listDetail[k];
+                    if(tmpDetail.lineNo == 4){
+                        custCd = tmpDetail.inputValue;
+                    }else if(tmpDetail.lineNo == 5){
+                        custName = tmpDetail.inputValue;
+                    }
+                }
+            };
+            var param = {
+                    custCd: custCd,
+                    custName: custName
+            }
+            DialogsService.showDialog('QuickStartPopup', 'quickStartCtrl', param,options).result.then(function(param) {
+                if(param != true){
+                    if(!StringUtils.isEmpty(param.projectSno) && !StringUtils.isEmpty(param.projectName)){
+                        $scope.model.hidden.projectSno = param.projectSno;
+                        $scope.model.hidden.projectName = param.projectName;
+                        angular.forEach($scope.model.listEditSalesReport[0].listSubEdit, function(group, j){
+                            angular.forEach(group.listDetail, function(detail, i){
+                                if(detail.lineNo == 9){
+                                    detail.inputValue = param.projectSno;
+                                    $scope.changeProject(detail.inputValue, true);
+                                }
+                            });
+                        });
+                    }
+                }
+            });
+        }
+
+        $scope.billaddressChange = function(param){
+            if(!StringUtils.isEmpty(param)){
+                var params = [param];
+                ServerService.doPost('SfaProjectControl/onChangeBill', params).then(
+                    function(okResult) {
+                        var error = okResult.data.failed;
+                        var warning =  okResult.data.warning;
+                        if(!ValidateUtil.isValidTextEmpty(error)){
+                            dialogs.error(Messages.getMessage('system.error'), error);
+                            return;
+                        }else if(!ValidateUtil.isValidTextEmpty(warning)){
+                            dialogs.warn(Messages.getMessage('check.error'), warning);
+                            return;
+                        }
+                        if(!StringUtils.isEmpty(okResult.data.billAddress)){
+                            $scope.model.form.billaddressNo = okResult.data.billAddress[0].billaddressNo;
+                            $scope.model.form.billaddressName = okResult.data.billAddress[0].billaddressName;
+                            $scope.model.form.address1 = okResult.data.billAddress[0].address1;
+                            $scope.model.form.address2 = okResult.data.billAddress[0].address2;
+                        }
+                    }
+                )
+            }else{
+                $scope.model.form.billaddressNo = '';
+                $scope.model.form.billaddressName = '';
+                $scope.model.form.address1 = '';
+                $scope.model.form.address2= '';
+            }
+        };
+
+        $scope.init();
+
+        /**
+         * Tự động convert giá trị trong input thành 1 byte hoặc 2 byte như dưới đây
+         * AUTO_CONVERT_INPUT_TYPE = '02': chuyển giá trị input thành 1 byte
+         * AUTO_CONVERT_INPUT_TYPE = '03': chuyển giá trị input thành 2 byte
+         */
+        $scope.convertCharByInputType = function(detail){
+            if(!StringUtils.isEmpty(detail.autoConvertInputType)){
+                switch (detail.autoConvertInputType) {
+                case '02' :
+                    detail.inputValue = StringUtils.convertDoubleToSingleChar(detail.inputValue);
+                    break;
+                case '03' :
+                    detail.inputValue = StringUtils.convertSingleToDoubleChar(detail.inputValue);
+                    break;
+                }
+            }
+        }
+
+        //Change value input has controlType = "06".
+        $scope.onChangeControlType06 = function(detail){
+            CalculateUtils.sumControlType12(detail, $filter);
+        }
+}]);

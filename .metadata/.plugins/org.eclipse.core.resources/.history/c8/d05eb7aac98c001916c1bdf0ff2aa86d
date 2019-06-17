@@ -1,0 +1,195 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision:  $  $Date:  $
+ * @author quang-tung
+ */
+
+'use strict';
+
+exexSMSApp.factory('SearchDeliveryPlaceModel', [ 'BaseModel', function(BaseModel) {
+
+    var model = BaseModel.getInstance();
+
+    model.form = {
+            search : {
+                warehouseName : '',
+                custName : '',
+                telephoneNo : '',
+                address : '',
+                warehouseType : ''
+            },
+           listM070001:[],
+           listMstCustomer: [],
+           listDeliveryPlace: [],
+           //TODO common pagination info
+           paginationInfo : {
+               page: 0,
+               pageSize: 5,
+               totalPage: 0,
+               totalRecord: 0,
+               from: 0,
+               to: 0
+           }
+      };
+
+    model.hidden = {};
+
+    return model;
+} ]);
+exexSMSApp.service('SearchDeliveryPlaceService', ['$q', 'ServerService',function ($q, ServerService) {
+    var self = this;
+
+    self.getInit = function(param) {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('/SearchDeliveryPlace/getInit', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    self.search = function(param) {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('/SearchDeliveryPlace/search', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+}]);
+
+exexSMSApp.controller('searchDeliveryPlaceCtrl',
+        ['$scope', '$filter', '$uibModalInstance', 'SearchDeliveryPlaceModel', 'SearchDeliveryPlaceService', 'DialogsService', 'Messages',
+         function($scope, $filter, $uibModalInstance, SearchDeliveryPlaceModel, SearchDeliveryPlaceService, DialogsService, Messages){
+
+    $scope.model = SearchDeliveryPlaceModel;
+
+    $scope.getInit = function(){
+        $scope.model.form.search.warehouseName = '';
+        $scope.model.form.search.custName = '';
+        $scope.model.form.search.address = '';
+        $scope.model.form.search.warehouseType = '';
+        var param = {};
+        SearchDeliveryPlaceService
+        .getInit(param)
+        .then(function(result) {
+                var error = result.failed;
+                if(!ValidateUtil.isValidTextEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                }
+                $scope.model.form.listM070001 = result.data.listM070001;
+            });
+    };
+
+    $scope.search = function(param){
+        $scope.doSearch(1,param);
+    };
+
+    $scope.doSearch = function(page,param){
+        var params = {
+             warehouseName : param.warehouseName,
+             custName : param.custName,
+             address : param.address,
+             warehouseType : param.warehouseType,
+             page : page,
+             pageSize : $scope.model.form.paginationInfo.pageSize
+         };
+        SearchDeliveryPlaceService
+        .search(params)
+        .then(function(result) {
+             var error = result.data.failed;
+             var warning = result.data.warning;
+             if(!ValidateUtil.isValidTextEmpty(error)){
+                 DialogsService.showError(Messages.getMessage('system.error'), error);
+                 return;
+             }
+             else if(!ValidateUtil.isValidTextEmpty(warning)){
+                 DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                 return;
+             }else{
+                 $scope.model.form.paginationInfo = result.data.paginationInfo;
+                 $scope.model.form.listDeliveryPlace = result.data.listDeliveryPlace;
+                 $scope.model.filteredItems = $scope.model.form.listDeliveryPlace.length;
+                 $scope.model.totalItems = $scope.model.form.listDeliveryPlace.length;
+             }
+         });
+    };
+
+    $scope.init = function(){
+        setTimeout(function() {
+            $scope.getInit();
+        }, 10);
+        var params = {
+                warehouseName : '',
+                custName : '',
+                address : '',
+                warehouseType : '',
+                page : 1,
+                pageSize :$scope.model.form.paginationInfo.pageSize
+        };
+        $scope.search(params);
+    };
+    $scope.init();
+
+    $scope.close = function() {
+        $uibModalInstance.dismiss('close');
+    };
+
+    $scope.getDeliveryPlace = function(row) {
+        var returnData = row.warehouseName;
+        if(!StringUtils.isEmpty(row.warehouseOwner)){
+            returnData = returnData + '  ' + row.warehouseOwner;
+        }
+        if(!StringUtils.isEmpty(row.telephoneNo)){
+            returnData = returnData + '  TEL:' + row.telephoneNo;
+        }
+        if(!StringUtils.isEmpty(row.postNo)){
+            returnData = returnData + '  ' + $filter('post')(row.postNo);
+        }
+        if(!StringUtils.isEmpty(row.address1)){
+            returnData = returnData + '  ' + row.address1;
+        }
+        if(!StringUtils.isEmpty(row.address2)){
+            returnData = returnData + '  ' + row.address2;
+        }
+        sessionStorage.setItem('warehouseName',JSON.stringify(returnData));
+        $uibModalInstance.dismiss('close');
+    };
+
+    $scope.openDialog = function(data, result) {
+        switch (result) {
+            case 'searchCustomer':
+                var options = {
+                    size: 'auto',
+                };
+                DialogsService.showDialog('SearchCustomer', 'searchCustomerCtrl', 'data', options)
+                .result.then(function(param) {}, function(){
+                    var searchCustomer = angular.fromJson(sessionStorage.getItem("searchCustomer"));
+                    sessionStorage.removeItem("searchCustomer");
+                    if(!ValidateUtil.isValidTextEmpty(searchCustomer)){
+                        $scope.model.form.search.custName = searchCustomer.custName;
+                    }
+                });
+            break;
+        };
+    };// end launch
+}]);
+

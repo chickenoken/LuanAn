@@ -1,0 +1,113 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision:  $  $Date:  $
+ * @author : trung-hieu
+ */
+'use strict';
+exexSMSApp.factory('AdvancesReceivedModel', [ 'BaseModel', function(BaseModel) {
+    var model = BaseModel.getInstance();
+    model.form = {
+            billaddressNo: '',
+            billaddressName: '',
+            advancesReceivedDate: '',
+            advancesReceivedUserCd: '',
+            advancesReceivedValue: '',
+            remark: '',
+            advancesBankCd : '',
+            advancesPaymentType : '',
+            advancesFee : ''
+    };
+    model.listD010001 = [];
+    model.hidden = {
+            isSubmited: false,
+            listDataAjax: [],
+            advancesReceivedUserName : ""
+    };
+
+return model;
+
+}]);
+exexSMSApp.controller('advancesReceivedCtrl',
+        ['$rootScope', '$scope','AdvancesReceivedModel', 'DialogsService', '$uibModalInstance', 'ServerService', 'Messages', 'data', 'RouteService',
+         function($rootScope, $scope, AdvancesReceivedModel,  DialogsService, $uibModalInstance, ServerService, Messages, data, RouteService){
+
+    $scope.model = AdvancesReceivedModel;
+
+    $scope.init = function(){
+        $scope.model.form = {};
+        $scope.model.hidden.isSubmited = false;
+        $scope.getInit();
+    };
+
+    $scope.getInit = function(){
+
+        var sessionLogin = angular.fromJson(sessionStorage.getItem("session"));
+        $scope.model.form.advancesReceivedUserCd = sessionLogin.userCd;
+        $scope.model.hidden.advancesReceivedUserName = sessionLogin.userName;
+        $scope.model.form.billaddressNo = data.billaddressNo;
+        $scope.model.form.billaddressName = data.billaddressName;
+        $scope.model.form.advancesReceivedDate = new Date();
+
+        ServerService.doPost('AdvancesReceivedControl/getInit', null).then(
+            function(okResult) {
+                var error = okResult.data.failed;
+                if(!StringUtils.isEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                }else {
+                    var listD010001 = [];
+                    for(var i = 0; i < okResult.data.listD010001.length; i++){
+                        if(okResult.data.listD010001[i].code != '4'){
+                            listD010001.push(okResult.data.listD010001[i]);
+                        }
+                    }
+                    $scope.model.listD010001 = listD010001;
+                }
+             }
+        );
+    };
+
+    $scope.init();
+
+    $scope.insert = function(formInvalid) {
+        $scope.model.hidden.isSubmited = true;
+        if(formInvalid){
+            return;
+        }
+        var params = angular.copy($scope.model.form);
+        params.advancesReceivedDate = new Date(params.advancesReceivedDate);
+
+        delete params.billaddressName;
+        DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('S00003'))
+        .result.then(function() {
+            ServerService.doPost('AdvancesReceivedControl/insert', params).then(
+                function(okResult) {
+                    var error = okResult.data.failed;
+                    var warning =  okResult.data.warning;
+                    var success =  okResult.data.success;
+                    if(!StringUtils.isEmpty(error)){
+                        DialogsService.showError(Messages.getMessage('system.error'), error);
+                        return;
+                    }else if(!StringUtils.isEmpty(warning)){
+                        DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                        return;
+                    }else if(!StringUtils.isEmpty(success)){
+                        DialogsService.showNotify(Messages.getMessage('title.info'), success).result.then(function(btn){
+                            $rootScope.$broadcast("MstBillControl#loadData",params.billaddressNo);
+                            $uibModalInstance.dismiss();
+                        });
+                    }
+                }
+            );
+        });
+    };
+
+    $scope.close = function() {
+        $uibModalInstance.dismiss('close');
+    };
+
+
+}]);

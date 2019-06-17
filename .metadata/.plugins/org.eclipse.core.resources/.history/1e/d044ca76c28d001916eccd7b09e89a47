@@ -1,0 +1,56 @@
+@CHARSET "UTF-8";
+#wf-div{
+  border: 1px solid #9fa4ab;
+  padding: 5px;
+  border-radius: 2px;
+}
+
+#wf-div .form-group{
+  display: flex;
+  margin-bottom: 5px;
+}
+
+#wf-div .form-group div:first-child{
+  text-align: right;
+  padding-right: 10px;
+}
+
+.bootstrap-switch .bootstrap-switch-handle-on,
+.bootstrap-switch .bootstrap-switch-handle-off,
+.bootstrap-switch .bootstrap-switch-label {
+  line-height: 20px !important;
+  padding: 6px 10px !important;
+}
+
+#reportCode .bootstrap-switch-wrapper{
+  width: 90px !important;
+}
+
+#wf-div div:first-child .col-md-2{
+  padding-left: 0px;
+  padding-right: 0xp;
+}
+
+.system-setting-form .no-image {
+  background: url(../../img/no-image.png) no-repeat;
+  cursor: pointer;
+  width: 100%;
+  height: 100px;
+  background-size: cover;
+  background-position: 50%;
+}
+
+.system-setting-form .thumbnail {
+  cursor: pointer;
+  width: 100%;
+  height: 110px;
+  background-size: cover;
+  background-position: 50%;
+}
+
+a#logoPath {
+    display: block;
+    overflow: auto;
+    width: 100%;
+    white-space: nowrap;
+}

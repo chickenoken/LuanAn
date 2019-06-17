@@ -1,0 +1,30 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ * @author quang-tung
+ *
+ * @version $Revision: $ $Date: $
+ */
+
+'use strict';
+exexSMSApp.controller('salesReportRequestCtrl',
+        ['$rootScope', '$scope', '$uibModalInstance', 'SalesReportControlModel','data',
+         function($rootScope, $scope, $uibModalInstance, SalesReportControlModel, data) {
+
+    $scope.modelSalesReportControl = SalesReportControlModel;
+
+    $scope.actionType = function(type) {
+        var param = {type: type};
+        if(data.action == 'insert'){
+            $rootScope.$broadcast("insertSalesReport", param);
+        }else{
+            $rootScope.$broadcast("updateSalesReport", param);
+        }
+        $uibModalInstance.dismiss();
+    }
+
+    $scope.close = function(){
+        $uibModalInstance.dismiss();
+    };
+}]);

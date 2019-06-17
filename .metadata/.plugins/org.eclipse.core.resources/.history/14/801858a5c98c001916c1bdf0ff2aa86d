@@ -1,0 +1,60 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision:  $  $Date:  $
+ * @author : quang-tung
+ */
+'use strict';
+/**
+ * Table :
+ */
+exexSMSApp.service('SalesSupportAnalysisService', ['$q', 'ServerService',function ($q, serverService) {
+    var _self = this;
+
+    _self.initData = function(param) {
+        var deferred = $q.defer();
+        serverService
+            .doPost('SalesSupportAnalysis/getInit', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    _self.search = function(param) {
+        var deferred = $q.defer();
+        serverService
+            .doPost('SalesSupportAnalysis/search', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    _self.onChangeGroup = function(param) {
+        var deferred = $q.defer();
+        serverService
+            .doPost('SalesSupportAnalysis/getUserListByGroupList', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+}]);

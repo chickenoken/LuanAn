@@ -1,0 +1,6 @@
+package org.planning.net.service;
+
+@Service
+public class LoginServiceImpl {
+
+}

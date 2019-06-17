@@ -1,0 +1,37 @@
+
+var qlnv = angular.module("qlnvApp", []);
+
+qlnv.factory('quanLyNhanVienModel',[ function(){
+    var model = [];
+
+    model.form = {
+       search : {
+           maNv : '',
+           tenNv : ''
+       },
+       listNhanVien : []
+    }
+
+    model.hidden = {
+        isShow : false
+    }
+
+    return model;
+}]);
+
+qlnv.controller("quanLyNhanVienCtrl",  ['$scope', '$http', '$filter','$rootScope','quanLyNhanVienModel',
+    function($scope, $http, $filter, $rootScope, quanLyNhanVienModel){
+
+    $scope.model = quanLyNhanVienModel;
+
+    $scope.search = function (param){
+        var httpParams = {
+                headers: {'X-CSRF-TOKEN': $('meta[name=_csrf]').attr("content")},
+                method: 'POST',
+                url: 'login/dangNhap',
+                data: angular.copy(param)
+            };
+
+    }
+
+}]);

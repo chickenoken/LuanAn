@@ -1,0 +1,8 @@
+<%@ tag pageEncoding="utf-8"%>
+
+<%@ attribute name="module" required="true"%>
+
+<!DOCTYPE html>
+<html ng-app="${module}" ng-controller="commonCtrl">
+  <jsp:doBody />
+</html>

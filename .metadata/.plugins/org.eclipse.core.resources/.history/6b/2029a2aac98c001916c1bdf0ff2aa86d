@@ -1,0 +1,48 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision:  $  $Date:  $
+ * @author : huy-du
+ */
+'use strict';
+/**
+ * Table :
+ */
+exexSMSApp.service('MstSalesReportService', ['$q', 'ServerService',function ($q, serverService) {
+    var _self = this;
+
+    /**初期*/
+    _self.initData = function(param) {
+        var deferred = $q.defer();
+        serverService
+            .doPost('MstSalesReport/getSalesReport', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+    
+    /**更新*/
+    _self.updateData = function(param) {
+        var deferred = $q.defer();
+        serverService
+            .doPost('MstSalesReport/updateData', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+}]);

@@ -1,0 +1,136 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision:  $  $Date:  $
+ */
+
+'use strict';
+exexSMSApp.factory('ProjectInformationModel',[ 'BaseModel', function(BaseModel) {
+
+    var model = BaseModel.getInstance();
+
+    model.form = {
+            search : {
+                lastUpdDateFrom : '',
+                lastUpdDateTo : '',
+                deadlineFrom : '',
+                deadlineTo:'',
+                documentDateFrom: '',
+                documentDateTo: '',
+                processCompleteDateFrom : '',
+                processCompleteDateTo : '',
+                projectName : '',
+                processName : ''
+            },
+            projectInformation: [],
+        };
+
+    model.hidden = {
+            logoffTime : 0
+        };
+
+    return model;
+}]);
+
+exexSMSApp.controller('ProjectInformationCtrl',
+        ['$scope', '$timeout', 'ProjectInformationModel', 'RouteService', 'DialogsService', 'Messages','ServerService',
+         function($scope, $timeout, ProjectInformationModel, RouteService, DialogsService, Messages,ServerService) {
+
+    $scope.model = ProjectInformationModel;
+
+    $scope.convertParamsSearch = function(param){
+        var params = {
+                lastUpdDateFrom : !ValidateUtil.isValidTextEmpty(param.lastUpdDateFrom) ? new Date(param.lastUpdDateFrom) : "",
+                lastUpdDateTo : !ValidateUtil.isValidTextEmpty(param.lastUpdDateTo) ? new Date(param.lastUpdDateTo) : "",
+                deadlineFrom : !ValidateUtil.isValidTextEmpty(param.deadlineFrom) ? new Date(param.deadlineFrom) : "",
+                deadlineTo: !ValidateUtil.isValidTextEmpty(param.deadlineTo) ? new Date(param.deadlineTo) : "",
+                documentDateFrom: !ValidateUtil.isValidTextEmpty(param.documentDateFrom) ? new Date(param.documentDateFrom) : "",
+                documentDateTo: !ValidateUtil.isValidTextEmpty(param.documentDateTo) ? new Date(param.documentDateTo) : "",
+                processCompleteDateFrom : !ValidateUtil.isValidTextEmpty(param.processCompleteDateFrom) ? new Date(param.processCompleteDateFrom) : "",
+                processCompleteDateTo : !ValidateUtil.isValidTextEmpty(param.processCompleteDateTo) ? new Date(param.processCompleteDateTo) : "",
+                projectName : !ValidateUtil.isValidTextEmpty(param.projectName) ? param.projectName.toString() : "",
+                processName : !ValidateUtil.isValidTextEmpty(param.processName) ? param.processName.toString() : "",
+        };
+        return params;
+    };
+
+    $scope.search = function(param){
+        var params = $scope.convertParamsSearch($scope.model.form.search);
+        ServerService.doPost('ProjectInformation/search', params)
+        .then(
+        /* success function */
+        function(result) {
+            var error = result.data.failed;
+            var warning = result.data.warning;
+            if(!ValidateUtil.isValidTextEmpty(error)){
+                DialogsService.showError(Messages.getMessage('system.error'), error);
+                return;
+            }else if(!ValidateUtil.isValidTextEmpty(warning)){
+                DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                return;
+            }
+            $scope.model.form.projectInformation = result.data.resultList;
+            var length= $scope.model.form.projectInformation.length;
+            $scope.model.currentPage = 1; //current page
+            $scope.model.entryLimit = 20;//max no of items to display in a page
+            $scope.model.number = 20;
+            $scope.model.filteredItems = length; //Initially for no filter
+            $scope.model.totalItems = length;
+            $scope.model.beginValFilter = 1;
+            if(length > 0){
+                $scope.model.beginValFilter = 1;
+            }else{
+                $scope.model.beginValFilter = 0;
+            }
+             $scope.setPage = function(pageNo) {
+                $scope.currentPage = pageNo;
+            };
+            $scope.model.filter = function() {
+                $timeout(function() {
+                    $scope.model.filteredItems = $scope.model.filtered.length;
+                    if($scope.model.filtered.length > 0){
+                        $scope.model.beginValFilter = 1;
+                    }else{
+                        $scope.model.beginValFilter = 0;
+                    }
+                }, 10);
+            };
+        },
+        /* error function */
+        function(error) {});
+    };
+
+    $scope.init = function(){
+        var loginSubAccount = angular.fromJson(sessionStorage.getItem("loginSubAccount"));
+        if(ValidateUtil.isValidTextEmpty(loginSubAccount)){
+            RouteService.gotoUrl('LoginSubAccount');
+        }else{
+            $scope.model.loginId= loginSubAccount.loginId;
+            $scope.model.custName= loginSubAccount.custName;
+            $scope.search();
+        }
+    };
+    $scope.init();
+    $scope.openDialog = function(param) {
+        var  options = {
+            size: '970',
+        };
+        DialogsService.showDialog('ProjectInformationControl', 'ProjectInformationControlCtrl', param, options);
+    };
+
+    $scope.logout = function() {
+        var pr = {};
+        ServerService.doPost('logout', pr)
+        .then(
+        /* success function */
+        function(result) {
+            sessionStorage.clear();
+            RouteService.gotoUrl('LoginSubAccount');
+        },
+        /* error function */
+        function(error) {});
+    };
+}]);
+

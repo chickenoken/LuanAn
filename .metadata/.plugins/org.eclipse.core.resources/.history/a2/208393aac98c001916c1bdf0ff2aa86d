@@ -1,0 +1,231 @@
+﻿/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision:  $  $Date:  $
+ * @author : quang-tung
+ */
+
+exexSMSApp.factory('StockDetailsControlModel', [ 'BaseModel', function(BaseModel) {
+
+    var model = BaseModel.getInstance();
+
+    model.form = {
+            stockDetailControl : []
+    };
+    model.listMstItem = [];
+    model.hidden = {
+            warehouseNo : '',
+            screenMode : '',
+            isDisabled : false,
+            isSubmitedDetail: false
+    };
+
+    return model;
+} ]);
+
+
+exexSMSApp.controller('stockDetailsControlCtrl',
+        ['$scope', 'DialogsService', '$timeout', 'StockDetailsControlModel', 'StockTransferControlModel', 'ServerService','MstItemListService', 'Messages',
+         function($scope, DialogsService, $timeout, StockDetailsControlModel, StockTransferControlModel, ServerService, MstItemListService, Messages){
+
+    $scope.model = StockDetailsControlModel;
+    $scope.parentModel = StockTransferControlModel;
+
+    $scope.init = function() {
+        if($scope.model.form.stockDetailControl.length == 0){
+            var item = {
+                serialCd : '',
+                itemCd : '',
+                janCd : '',
+                itemName : '',
+                itemUnit : '',
+                packageQuantity : '',
+                sourceWarehouseNo : '',
+                sourceWarehouseName : '',
+                sourceWarehouseItemSum : '',
+                sourceWarehouseValidItemSum : '',
+                sourceWarehouseItemAvarageCost: '',
+                sourceWarehouseItemLastCost: '',
+                destWarehouseNo : '',
+                destWarehouseName : '',
+                destWarehouseItemSum : '',
+                destWarehouseValidItemSum : '',
+                destWarehouseItemAvarageCost: '',
+                destWarehouseItemLastCost: '',
+                basicStockNum: '',
+                itemSum : ''
+            };
+            $scope.model.form.stockDetailControl.push(item);
+        }
+    };
+
+    $scope.onChangeItem = function(index, item, isSwap){
+        if(!StringUtils.isEmpty(item.serialCd)){
+            var params = {
+                    serialCd : item.serialCd,
+                    sourceWarehouseNo : item.sourceWarehouseNo,
+                    destWarehouseNo : item.destWarehouseNo
+            };
+            ServerService.doPost('StockDetailsControl/getItemDetails', params).then(
+                function(okResult) {
+                    var itemDetails = okResult.data.itemDetails;
+                    $scope.model.form.stockDetailControl[index].serialCd = itemDetails.serialCd;
+                    $scope.model.form.stockDetailControl[index].itemCd = itemDetails.itemCd;
+                    $scope.model.form.stockDetailControl[index].janCd = itemDetails.janCd;
+                    $scope.model.form.stockDetailControl[index].itemName = itemDetails.itemName;
+                    $scope.model.form.stockDetailControl[index].itemUnit = itemDetails.itemUnit;
+                    $scope.model.form.stockDetailControl[index].packageQuantity = itemDetails.packageQuantity;
+                    $scope.model.form.stockDetailControl[index].sourceWarehouseNo = item.sourceWarehouseNo;
+                    $scope.model.form.stockDetailControl[index].sourceWarehouseItemSum = itemDetails.sourceWarehouseItemSum;
+                    $scope.model.form.stockDetailControl[index].sourceWarehouseValidItemSum = itemDetails.sourceWarehouseValidItemSum;
+                    $scope.model.form.stockDetailControl[index].sourceWarehouseItemAvarageCost = itemDetails.sourceWarehouseItemAvarageCost;
+                    $scope.model.form.stockDetailControl[index].sourceWarehouseItemLastCost = itemDetails.sourceWarehouseItemLastCost;
+                    $scope.model.form.stockDetailControl[index].destWarehouseNo = item.destWarehouseNo;
+                    $scope.model.form.stockDetailControl[index].destWarehouseItemSum = itemDetails.destWarehouseItemSum;
+                    $scope.model.form.stockDetailControl[index].destWarehouseValidItemSum = itemDetails.destWarehouseValidItemSum;
+                    $scope.model.form.stockDetailControl[index].destWarehouseItemAvarageCost = itemDetails.destWarehouseItemAvarageCost;
+                    $scope.model.form.stockDetailControl[index].destWarehouseItemLastCost = itemDetails.destWarehouseItemLastCost;
+                    $scope.model.form.stockDetailControl[index].basicStockNum = itemDetails.basicStockNum;
+                    $scope.model.form.stockDetailControl[index].createDate = new Date(itemDetails.createDate);
+                    $scope.model.form.stockDetailControl[index].lastUpdDate = new Date(itemDetails.lastUpdDate);
+                }
+            );
+        }
+        if(!isSwap){
+            if(!StringUtils.isEmpty(item.sourceWarehouseNo) && !StringUtils.isEmpty(item.destWarehouseNo)){
+                $scope.checkWarehouse(item, index);
+                if(!StringUtils.isEmpty(item.serialCd)){
+//                    setTimeout(function(){
+                        $scope.addNewRowItem(index);
+//                    }, 500)
+                }
+            }
+        }
+    };
+
+
+    $scope.addNewRowItem = function(index){
+        var length = $scope.model.form.stockDetailControl.length;
+        var sourceWarehouseNo, destWarehouseNo, sourceWarehouseName, destWarehouseName;
+        if(length > 0) {
+            sourceWarehouseNo = $scope.model.form.stockDetailControl[index].sourceWarehouseNo;
+            destWarehouseNo = $scope.model.form.stockDetailControl[index].destWarehouseNo;
+            sourceWarehouseName = $scope.model.form.stockDetailControl[index].sourceWarehouseName;
+            destWarehouseName = $scope.model.form.stockDetailControl[index].destWarehouseName;
+        } else {
+            sourceWarehouseNo = "";
+            destWarehouseNo = "";
+            sourceWarehouseName = "";
+            destWarehouseName = "";
+        }
+        if(length == (index + 1)){
+            var cloneItem = {
+                serialCd : '',
+                itemCd : '',
+                janCd : '',
+                itemName : '',
+                itemUnit : '',
+                packageQuantity : '',
+                sourceWarehouseNo : sourceWarehouseNo,
+                sourceWarehouseName : sourceWarehouseName,
+                sourceWarehouseItemSum : '',
+                sourceWarehouseValidItemSum : '',
+                sourceWarehouseItemAvarageCost: '',
+                sourceWarehouseItemLastCost: '',
+                destWarehouseNo : destWarehouseNo,
+                destWarehouseName : destWarehouseName,
+                destWarehouseItemSum : '',
+                destWarehouseValidItemSum : '',
+                destWarehouseItemAvarageCost: '',
+                destWarehouseItemLastCost: '',
+                basicStockNum: '',
+                itemSum : ''
+            }
+            $scope.model.form.stockDetailControl.push(cloneItem);
+        }
+    };
+    $scope.init();
+
+    $scope.insertRow = function(index, item){
+        $scope.model.form.stockDetailControl[index].serialCd = item.serialCd;
+        $scope.model.form.stockDetailControl[index].itemCd = item.itemCd;
+        $scope.model.form.stockDetailControl[index].itemSum = '';
+        $scope.onChangeItem(index, item, false);
+    };
+
+    $scope.removeItem = function(index) {
+        var lastRow = $scope.model.form.stockDetailControl.length - 1;
+        if(!lastRow == 0){
+            $scope.model.form.stockDetailControl.splice(index, 1);
+        }
+    };
+
+    $scope.openDialog = function(result, index) {
+        $scope.model.hidden.isSubmited = false;
+        var options = {size: 'auto'};
+        var param = {
+                isDisabled : true
+        };
+        switch (result) {
+            case 'searchItem':
+                DialogsService.showDialog('SearchItem', 'searchItemCtrl', param,options).result.then(function () {}, function () {
+                    if(sessionStorage.getItem("product")){
+                        var item = JSON.parse(sessionStorage.getItem("product"));
+                        sessionStorage.removeItem("product");
+                        if(!StringUtils.isEmpty(item.itemCd)){
+                            $scope.insertRow(index, item);
+                            $scope.addNewRowItem(index);
+                        }
+                    }
+                });
+                break;
+        };
+    };
+
+    $scope.openDetailItem = function(item){
+        if(!StringUtils.isEmpty(item.serialCd)){
+            var param = {
+                     serialCd :item.serialCd
+            };
+            MstItemListService.checkData(param).then(
+                function(result) {
+                    if(!ValidateUtil.isValidTextEmpty(result.data.warning)){
+                        DialogsService.showWarning(Messages.getMessage('check.error'),result.data.warning);
+                        $scope.search($scope.model.form.search);
+                        return;
+                    }else if(!ValidateUtil.isValidTextEmpty(result.data.failed)){
+                        DialogsService.showError(Messages.getMessage('system.error'),result.data.failed);
+                        return;
+                    }else{
+                        param.detailFlag = true;
+                        sessionStorage.setItem('mstItemDialog',JSON.stringify(param));
+                        DialogsService.showDialog('MstItemDialog', 'mstItemDialogCtrl', 'data', {size: '1340'}).result.then(function(param) {
+                        }, function () {
+                            sessionStorage.removeItem('mstItem');
+                        });
+                    }
+                }
+            );
+        }
+    };
+
+    $scope.checkWarehouse = function (item, index){
+        if(!ValidateUtil.isValidTextEmpty(item.sourceWarehouseNo) &&
+            !ValidateUtil.isValidTextEmpty(item.destWarehouseNo) &&
+            item.sourceWarehouseNo == item.destWarehouseNo){
+            $scope.parentModel.hidden.checkWarehouse[index] = true;
+        } else {
+            $scope.parentModel.hidden.checkWarehouse[index] = false;
+        }
+    }
+
+    $scope.swapWarehouse = function(listDetail) {
+        angular.forEach(listDetail , function(item, i){
+            item.destWarehouseNo  = [item.sourceWarehouseNo, item.sourceWarehouseNo = item.destWarehouseNo][0];
+            item.destWarehouseName  = [item.sourceWarehouseName, item.sourceWarehouseName = item.destWarehouseName][0];
+            $scope.onChangeItem(i, item, true);
+        })
+    }
+}]);

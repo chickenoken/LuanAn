@@ -1,0 +1,214 @@
+.checker {
+  display: none !important;
+}
+
+#tableClone,#tableClone1 {
+  transition: width 0.1s ease-in-out;
+  margin-bottom: 0px;
+}
+
+.detail-control-table#tableBody,
+.detail-control-table#tableHead {
+  overflow-x: hidden;
+  overflow-y: auto;
+  max-height: 246px;
+}
+
+.div-calculate {
+  display: -webkit-inline-box;
+  display: -moz-inline-box;
+  display: -ms-inline-flexbox;
+  display: -webkit-inline-flex;
+  display: inline;
+  -webkit-flex-flow: row wrap;
+  justify-content: space-around;
+  float: right;
+}
+
+.div-calculate label {
+  color: white;
+  background: #4cae41;
+  padding: 5px 5px 0px 5px;
+  text-align: left;
+  width: 100%;
+}
+
+td div input[disabled="disabled"] {
+  background: transparent !important;
+  width: 100%;
+}
+
+td input[disabled="disabled"] {
+  background: transparent !important;
+  width: 100%;
+}
+
+#tableClone1 td ul.dropdown-menu:not(.datetime-picker-dropdown), .form-group div ul.dropdown-menu {
+  max-height: 170px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  font-size: 14px;
+  background-color: #FFF;
+  border-radius: 0px !important;
+  border: 1px solid #4fc3f7 !important;
+  -webkit-box-shadow: 0px 4px 2px -2px #cccccc;
+  box-shadow: 0px 2px 8px 2px rgba(204, 204, 204, 0.8);
+  width: 247px;
+  margin-top: -1px
+}
+
+div#detailDiv::-webkit-scrollbar {
+  background: transparent;
+}
+
+#tableBody .dropdown-menu li>a:hover, .dropdown-menu .active>a,
+  .dropdown-menu .active>a:hover {
+  background-color: #3598dc;
+  color: #fff;
+}
+
+button.has-error {
+  background-color: #f3565d !important;
+}
+
+@media only screen and (max-width: 992px) {
+  #collapseModalLabel a:after {
+    font-family: 'Glyphicons Halflings';
+    content: "\e113";
+    color: #398FD3;
+  }
+  #collapseModalLabel a.collapsed:after {
+    content: "\e114";
+  }
+}
+
+.div-in-table {
+  display: flex;
+}
+
+.row-break {
+  word-break: break-all;
+  width: calc(100% - 100px);
+  width: -webkit-calc(100% - 100px);
+}
+
+.label-inner-table {
+  width: 100px;
+}
+
+#search-customer .select2-container[class*="select2-container--disabled"] ,
+#search-stockaddress .select2-container[class*="select2-container--disabled"] ,
+#search-warehouse .select2-container[class*="select2-container--disabled"] ,
+#search-warehouse-no .select2-container[class*="select2-container--disabled"] {
+  width: 100% !important;
+}
+
+#search-customer .select2-container ,
+#search-stockaddress .select2-container,
+#search-warehouse-no .select2-container {
+  width: calc(100% - 34px) !important;
+  width: -webkit-calc(100% - 34px) !important;
+}
+
+.popover {
+    font-family: inherit;
+}
+
+#search-deliveryplace #delPlace,
+#search-customer .select2-container,
+#search-warehouse .select2-container  {
+  width: calc(100% - 68px) !important;
+  width: -webkit-calc(100% - 68px) !important;
+  float: left;
+}
+
+#search-deliveryplace #delPlace[disabled],
+#search-customer #custCd[disabled], {
+  width: 100% !important;
+}
+.select2-dropdown{
+  z-index : 1061;
+}
+
+#stockAddressNo span#select2-stockaddressNo0-container {
+    text-overflow: ellipsis;
+    overflow: hidden;
+}
+
+div#tableHead.scroll-bar{
+  width: calc(100% - 10px) !important;
+  overflow-y :hidden;
+}
+div#tableHead.no-scroll-bar{
+  width: 100% !important;
+  overflow-y :hidden;
+}
+
+.select2-container--default .select2-results__option[aria-disabled=true] {
+    cursor: not-allowed;
+    color: #999;
+}
+.help-block label {
+  color: #f50;
+  background: none;
+}
+
+label#uploadFile {
+  color: #3598dc;
+  font-weight: 100;
+  padding: 0;
+  position: relative;
+  width: calc(100% - 150px);
+  text-overflow: ellipsis;
+  overflow-x: hidden;
+  top: 5px;
+}
+
+label#uploadFile:hover {
+  cursor: pointer;
+  text-decoration : underline
+}
+
+
+#salDetailForm #tableClone1, #salDetailForm #tableClone1 td {
+  border-top: none;
+}
+
+#salDetailForm ul.rpt-list.scrollbar-custom {
+    max-height: 466px;
+    overflow-y: auto;
+}
+
+span.form-control[disabled] {
+    border-radius: 0;
+    border: none;
+    border-bottom: solid 1px Gray;
+    background-color: transparent;
+    padding-top: 7px;
+    width: 100%;
+    padding: 6px;
+}
+
+#salDetailForm table tbody tr td .select2-container--default.select2-container--disabled .select2-selection--single {
+    padding: 6px;
+}
+
+#table-reservation>tbody>tr.hidden-border {
+    border-top: 2px solid #398fd3;
+}
+
+#table-reservation>tbody>tr:last-child {
+    border-bottom: 2px solid #398fd3;
+}
+
+#table-reservation>tbody>tr>td:nth-of-type(1),
+#table-reservation>tbody>tr>td:nth-of-type(2),
+#table-reservation>tbody>tr>td:nth-of-type(3),
+#table-reservation>tbody>tr>td:nth-of-type(4) {
+    border-top: none;
+    border-bottom: none;
+}
+
+#table-reservation>tbody>tr>td {
+    padding: 4px 8px;
+}

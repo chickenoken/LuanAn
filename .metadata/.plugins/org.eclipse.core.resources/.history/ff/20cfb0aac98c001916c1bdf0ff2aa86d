@@ -1,0 +1,1144 @@
+﻿/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision:  $  $Date:  $
+ * @author : Quang-Thien
+ */
+
+exexSMSApp.factory('SalDetailsControlModel', [ 'BaseModel', function(BaseModel) {
+
+    var model = BaseModel.getInstance();
+
+    model.form = {
+        salDetailControl : [],
+        listGroupItem:[],
+        listMstTax : [],
+        listM010001 : [],
+        listS010003 : [],
+        listMstItem : [],
+        sumGrossMargin : '',
+        sumGrossMarginRate : '',
+        sumTax : '',
+        sumFreeTaxPrice : '',
+        sumFreeTaxPriceTmp : '',
+        sumPrice : '',
+        taxInclusive : '',
+        taxExclusive : '',
+        taxAdjustments : 0,
+        rounding : ''
+    };
+
+    model.hidden = {
+        warehouseNo : '',
+        warehouseName : '',
+        isRequiredWH : false,
+        screenMode : '',
+        screen : '',
+        stockMode : '',
+        checkStockMode : false,
+        usagePeriodFlag: '0',
+        usagePeriodTo: '',
+        isDisabled : false,
+        loginSession : '',
+        position : false,
+        isSubmitedDetail: false,
+        fromOrder : false,
+        sumTaxTmp : 0,
+        widthHeader : {"width": "100%"},
+        groupLabel: Messages.getMessage('SalDetailControl.001'),
+        issueDate : '' // ex : estimateDate, rsvDate, salDate, orderDate, stockDate
+    };
+
+    return model;
+} ]);
+
+
+exexSMSApp.controller('salDetailsControlCtrl',
+        ['$rootScope', '$scope', 'DialogsService', '$timeout', '$filter', 'SalDetailsControlModel', 'ServerService','MstItemListService', 'Messages',
+         function($rootScope, $scope, DialogsService, $timeout, $filter, SalDetailsControlModel, ServerService, MstItemListService, Messages){
+
+    $scope.model = SalDetailsControlModel;
+
+    $scope.newItemGroup = function($index){
+        $scope.model.form.listGroupItem[$index].isGroup = true;
+        var item = {
+            tmpIndex : '',
+            warehouseNo : '0000000000',
+            warehouseName : '倉庫なし',
+            itemCd: '',
+            itemName: '',
+            itemNameTmp: '',
+            itemName2: '',
+            itemName3: '',
+            itemCost: '',
+            itemSum: '',
+            itemPrice: '',
+            itemFixedPrice : '',
+            itemUnit: $scope.model.form.listM010001[0].code,
+            listItemUnit : $scope.model.form.listM010001,
+            itemUnitName: '',
+            taxType: $scope.model.form.listS010003[1].code,
+            taxTypeName: '',
+            taxRate : '',
+            tax: '',
+            taxFixedPrice : '',
+            freeTaxPrice: '',
+            freeTaxPriceTmp: '',
+            freeTaxFixedPrice : '',
+            freeTaxFixedPriceTmp : '',
+            price: '',
+            priceTmp: '',
+            fixedPrice : '',
+            fixedPriceTmp : '',
+            stockaddressNo: ''
+        };
+        $scope.model.form.salDetailControl = [];
+        $scope.model.form.salDetailControl.push(item);
+        detail = {detail: $scope.modelDetailsControl.form.salDetailControl, isGroup: false};
+        $scope.model.form.listGroupItem.push(detail);
+    };
+
+    $scope.deleteItemGroup = function($index){
+        $scope.model.form.listGroupItem.splice($index,1);
+        $scope.callbackIndex();
+    };
+
+    /**init for sale detail control*/
+    $scope.getInit = function(){
+        $scope.model.hidden.loginSession = angular.fromJson(sessionStorage.getItem("session"));
+        ServerService.doPost('SalDetailsControl/getInit', {}).then(
+            function(okResult) {
+                $scope.model.form.listMstTax = okResult.data.listMstTax;
+                $scope.model.form.listMstItem = okResult.data.listMstItem;
+                $scope.model.form.listM010001 = okResult.data.listM010001;
+                $scope.model.form.listS010003 = okResult.data.listS010003;
+                $scope.model.hidden.showSumItemUnit = CompanyUtil.getCustomFlag(3);
+                if($scope.model.form.salDetailControl.length == 0){
+                    var item = {
+                        tmpIndex : 1,
+                        warehouseNo : '0000000000',
+                        warehouseName : '倉庫なし',
+                        itemCd : '',
+                        itemName : '',
+                        itemName2 : '',
+                        itemName3 : '',
+                        itemCost : '',
+                        itemSum : '',
+                        itemPrice : '',
+                        itemFixedPrice : '',
+                        itemUnit : '',
+                        listItemUnit : $scope.model.form.listM010001,
+                        packageQuantity : 1,
+                        taxType : $scope.model.form.listS010003[1].code,
+                        taxRate : '',
+                        tax : '',
+                        taxFixedPrice : '',
+                        freeTaxPrice : '',
+                        freeTaxPriceTmp : '',
+                        freeTaxFixedPrice : '',
+                        freeTaxFixedPriceTmp : '',
+                        price : '',
+                        priceTmp : '',
+                        priceType : '0',
+                        bargainNo : '',
+                        discountValue : '',
+                        fixedPrice : '',
+                        fixedPriceTmp : ''
+                    };
+
+                    $scope.model.form.salDetailControl.push(item);
+                    var detail = {
+                        groupName: '',
+                        detail: $scope.model.form.salDetailControl,
+                        isGroup: false
+                    };
+                    $scope.model.form.listGroupItem.push(detail);
+                }
+            }
+        );
+    };
+
+    $scope.getInit();
+
+    /**
+     * get tax rate
+     */
+    $rootScope.getTaxRate = function(taxRate){
+        if(ValidateUtil.isValidTextEmpty(taxRate)){
+            taxRate = 0;
+        }
+        $scope.model.form.taxRate = taxRate.toString();
+        var rounding = $scope.model.form.salDetailControl.rounding;
+        angular.forEach($scope.model.form.salDetailControl, function(item, i){
+            item.taxRate = taxRate.toString();
+            item.tax = $rootScope.calcItemTax(item.itemPrice,item.itemSum, taxRate, item.taxType, rounding);
+            item.priceTmp = parseFloat(item.tax) + parseFloat(item.freeTaxPriceTmp);
+
+            item.taxFixedPrice = $rootScope.calcItemTax(item.itemFixedPrice, item.itemSum, taxRate, item.taxType, rounding);
+            item.fixedPriceTmp = parseFloat(item.taxFixedPrice) + parseFloat(item.freeTaxFixedPriceTmp);
+        });
+    };
+
+    /**add new row item*/
+    $scope.addNewRowItem = function(row, index, pIndex){
+        var salDetailControl = row.detail;
+        var length = salDetailControl.length;
+        if(length == (index + 1)){
+            var cloneItem = {
+                tmpIndex: '',
+                serialCd : '',
+                warehouseNo : !StringUtils.isEmpty($scope.model.hidden.warehouseNo) ? $scope.model.hidden.warehouseNo : '0000000000',
+                warehouseName : !StringUtils.isEmpty($scope.model.hidden.warehouseName) ? $scope.model.hidden.warehouseName : '倉庫なし',
+                itemCd : '',
+                itemName : '',
+                itemNameTmp : '',
+                itemName2 : '',
+                itemName3 : '',
+                itemCost : '',
+                itemSum : '',
+                itemPrice : '',
+                itemFixedPrice : '',
+                itemUnit : $scope.model.form.listM010001[0].unitCd,
+                itemUnitName : '',
+                listItemUnit : $scope.model.form.listM010001,
+                packageQuantity : 1,
+                taxType : $scope.model.form.listS010003[1].code,
+                taxTypeName : '',
+                taxRate : $scope.model.form.salDetailControl.taxRate,
+                tax : '',
+                taxFixedPrice : '',
+                freeTaxPrice : '',
+                freeTaxPriceTmp : '',
+                freeTaxFixedPrice : '',
+                freeTaxFixedPriceTmp : '',
+                price : '',
+                priceTmp : '',
+                priceType : '0',
+                bargainNo : '',
+                discountValue : '',
+                fixedPrice : '',
+                fixedPriceTmp : '',
+                stockaddressNo : ''
+            }
+            if($scope.model.hidden.usagePeriodFlag === '1') {
+                cloneItem.usagePeriodTo = $scope.model.hidden.usagePeriodTo;
+            }
+            salDetailControl.push(cloneItem);
+
+            $scope.model.filteredItems = salDetailControl.length;
+            $scope.model.totalItems = salDetailControl.length;
+
+            $scope.model.filteredItems = $scope.model.form.salDetailControl.length;
+            $scope.model.totalItems = $scope.model.form.salDetailControl.length;
+            $('.rpt-list').animate({scrollTop:$('.rpt-list').height()}, 'fast');
+        }
+        /**
+         * re init data input mask
+         */
+        setTimeout(function() {
+            $("input[data-inputmask]").inputmask();
+        }, 100);
+
+        if(StringUtils.isEmpty($scope.model.hidden.loginSession.rounding)){
+            $scope.getRounding();
+        }
+        $scope.callbackIndex();
+        $scope.calWidth();
+    };
+
+    $scope.selectItem = function(row, param, pIndex, index){
+        if(!StringUtils.isEmpty(param.serialCd)) {
+            var stockWarehouse = $("select[name='stockWarehouseNo']").select2('data');
+            if(!StringUtils.isEmpty(stockWarehouse) && stockWarehouse.length > 0){
+                $scope.model.hidden.warehouseName = stockWarehouse[0].text;
+            } else {
+                $scope.model.hidden.warehouseName = "";
+            }
+
+            var params = {
+                serialCd : param.serialCd
+            };
+            var salDetailControl = row.detail[index];
+            ServerService.doPost('SalDetailsControl/getItemDetails', params)
+            .then( function(okResult) {
+                if(!ValidateUtil.isValidTextEmpty(okResult.data.itemDetails)){
+                    if(StringUtils.isEmpty(salDetailControl.warehouseNo)){
+                        salDetailControl.warehouseNo = $scope.model.hidden.warehouseNo;
+                    }
+                    var listItem = okResult.data.itemDetails;
+                    salDetailControl.serialCd = listItem.serialCd;
+                    salDetailControl.itemCd = listItem.itemCd;
+                    salDetailControl.itemName = listItem.itemName;
+                    salDetailControl.itemName2 = listItem.itemName2;
+                    salDetailControl.itemName3 = listItem.itemName3;
+                    if($scope.model.hidden.screen == 'ERS'){
+                        salDetailControl.itemPrice = listItem.itemPrice;
+                    }else{
+                        salDetailControl.itemPrice = listItem.itemCost;
+                    }
+                    if(!ValidateUtil.isValidTextEmpty(listItem.itemCost)){
+                        salDetailControl.itemCost = listItem.itemCost;
+                    }else{
+                        salDetailControl.itemCost = '';
+                        angular.element("input[id='itemCost"+pIndex+index+"']").val('');
+                    }
+                    salDetailControl.itemFixedPrice = listItem.itemFixedPrice;
+                    salDetailControl.itemUnit = listItem.itemUnit;
+                    salDetailControl.listItemUnit = listItem.listItemUnit;
+
+                    salDetailControl.packageQuantity = listItem.packageQuantity;
+                    salDetailControl.priceType = listItem.priceType;
+                    salDetailControl.itemSum = 1;
+                    angular.element("input[id='itemSum"+pIndex+index+"']").val(1);
+                    salDetailControl.category1 = listItem.category1;
+                    salDetailControl.category2 = listItem.category2;
+                    salDetailControl.category3 = listItem.category3;
+                    salDetailControl.janCd = listItem.janCd;
+                    salDetailControl.isSetItem = listItem.isSetItem;
+
+                    $scope.getItem(salDetailControl, $scope.model.form.taxRate);
+                    $scope.getBargainItemPrice(salDetailControl);
+                    $timeout(function(){
+                        $("select[id='itemName"+pIndex+(index+1)+"']").select2("open");
+                    }, 200);
+                    return;
+                }else{
+                    salDetailControl.itemCd = '';
+                }
+            });
+            $scope.addNewRowItem(row, index, pIndex);
+        }
+    };
+
+    $scope.getBargainItemPrice = function(item){
+        if(StringUtils.isEmpty(item.serialCd)){
+            return;
+        }
+        if(!StringUtils.isEmpty($scope.model.hidden.screenMode) && $scope.model.hidden.screenMode === 'VIEW'){
+            return;
+        }
+        var isEXEX010203 = false;
+        var custCd = '';
+        var stockaddressNo = '';
+        if($scope.model.hidden.screen === "ERS"){
+            isEXEX010203 = true;
+        }
+        if(!StringUtils.isEmpty($scope.$parent.model.form.salEstimateControl) && !StringUtils.isEmpty($scope.$parent.model.form.salEstimateControl.custCd)){
+            custCd = $scope.$parent.model.form.salEstimateControl.custCd;
+        }
+        if(!StringUtils.isEmpty($scope.$parent.model.form.receive) && !StringUtils.isEmpty($scope.$parent.model.form.receive.custCd)){
+            custCd = $scope.$parent.model.form.receive.custCd;
+        }
+        if(!StringUtils.isEmpty($scope.$parent.model.form.salDecideProcessControl) && !StringUtils.isEmpty($scope.$parent.model.form.salDecideProcessControl.custCd)){
+            custCd = $scope.$parent.model.form.salDecideProcessControl.custCd;
+        }
+
+        if(!StringUtils.isEmpty($scope.$parent.model.form.salStockControl) && !StringUtils.isEmpty($scope.$parent.model.form.salStockControl.stockaddressNo)){
+            stockaddressNo = $scope.$parent.model.form.salStockControl.stockaddressNo;
+        }
+
+        if(!StringUtils.isEmpty($scope.$parent.model.form.salOrderControl) && !StringUtils.isEmpty($scope.$parent.model.form.salOrderControl.stockaddressNo)){
+            stockaddressNo = $scope.$parent.model.form.salOrderControl.stockaddressNo;
+        }
+
+//        if(StringUtils.isEmpty(stockaddressNo) && $scope.model.hidden.screen !== "ERS"){
+//            return;
+//        }
+
+        var params = {
+            'isEXEX010203' : isEXEX010203,
+            'custCd' : custCd,
+            'discountRate' : $scope.$parent.model.hidden.discountRate,
+            'custRank' : $scope.$parent.model.hidden.custRank,
+            'stockAddressNo' : stockaddressNo,
+            'issueDate' : new Date($scope.model.hidden.issueDate),
+            'serialCd' : item.serialCd,
+            'itemCd' : item.itemCd,
+            'itemUnit' : item.itemUnit,
+            'itemPrice' : item.itemPrice,
+            'itemSum' : item.itemSum,
+            'category1' : item.category1,
+            'category2' : item.category2,
+            'category3' : item.category3
+        };
+        ServerService.doPost('SalCommon/selectBargainItemPrice', params)
+            .then(function(okResult) {
+                if(!StringUtils.isEmpty(okResult.data.bargainNo)){
+                    item.bargainNo = okResult.data.bargainNo;
+                    item.discountValue = okResult.data.discountValue;
+                    item.itemPrice = okResult.data.itemPrice;
+                    item.priceType = okResult.data.priceType;
+                }else{
+                    item.discountValue = 0;
+                    // master price
+                    item.itemPrice = okResult.data.itemPrice;
+                }
+                $scope.calculateItemDetail();
+            }
+        );
+    };
+
+    /**remove item in detail table*/
+    $scope.removeItem = function(param, index) {
+        var lastRow = param.detail.length - 1;
+        $scope.model.filteredItems = param.detail.length;
+        $scope.model.totalItems = param.detail.length;
+        if(!lastRow == 0){
+            param.detail.splice(index, 1);
+        }
+        $scope.callbackIndex();
+        $scope.calWidth();
+    };
+
+    $scope.getItem = function(item, taxRate){
+        $scope.calWidth();
+        if(StringUtils.isEmpty($scope.model.form.rounding)){
+            $scope.getRounding();
+        }
+        var rounding = $scope.model.form.rounding;
+        item.taxRate = taxRate;
+        item.grossMargin = $rootScope.calcItemGrossMargin(item.itemCost, item.itemPrice, item.itemSum, rounding);
+        //item.grossMarginRate = $rootScope.calcItemGrossMarginRate(item.itemCost, item.itemPrice, item.itemSum, rounding);
+        item.tax = $rootScope.calcItemTax(item.itemPrice, item.itemSum, taxRate, item.taxType, rounding);
+        item.taxFixedPrice = $rootScope.calcItemTax(item.itemFixedPrice, item.itemSum, taxRate, item.taxType, rounding);
+        var itemPrice = item.itemPrice,
+            itemSum = item.itemSum;
+        if(!angular.isUndefined(item.itemPrice) && !ValidateUtil.isValidTextEmpty(item.itemPrice) && item.itemPrice.length > 3){
+            itemPrice = item.itemPrice.replace(/,/g, '');
+        }
+        if(!angular.isUndefined(item.itemSum) && !ValidateUtil.isValidTextEmpty(item.itemSum) && item.itemSum.length > 3){
+            itemSum = item.itemSum.replace(/,/g, '');
+        }
+
+        item.freeTaxPriceTmp = Math.round10((parseFloat(itemPrice)*parseFloat(itemSum)),-10);
+        item.freeTaxPriceTmp = $scope.rounding(item.freeTaxPriceTmp, rounding);
+
+        item.freeTaxFixedPriceTmp = Math.round10((parseFloat(item.itemFixedPrice)*parseFloat(itemSum)),-10);
+        item.freeTaxFixedPriceTmp = $scope.rounding(item.freeTaxFixedPriceTmp, rounding);
+
+        //TODO
+//        if($scope.model.hidden.loginSession.taxType == 1){
+//            item.price = parseFloat(0) + parseFloat(item.freeTaxPriceTmp);
+//        }else{
+//            item.price = parseFloat(item.tax) + parseFloat(item.freeTaxPriceTmp);
+//        }
+        //TODO end
+        item.priceTmp = parseFloat(item.tax) + parseFloat(item.freeTaxPriceTmp);
+        item.priceTmp = $scope.rounding(Math.round10(item.priceTmp,-10), rounding);
+
+        item.fixedPriceTmp = parseFloat(item.taxFixedPrice) + parseFloat(item.freeTaxFixedPriceTmp);
+        item.fixedPriceTmp = $scope.rounding(Math.round10(item.fixedPriceTmp,-10), rounding);
+
+        if(item.freeTaxPriceTmp > parseFloat(99999999999999999999)){
+            item.freeTaxPriceTmp = 'Overflow Error';
+        }
+        //if(item.grossMarginRate >= parseFloat(100) || item.grossMarginRate <= parseFloat(-100)){
+        //    item.grossMarginRate = 'Overflow Error';
+        //}
+
+        // TODO calc item receive remaining
+        item.itemReceiveRemaining = parseFloat(itemSum)*parseFloat(item.packageQuantity);
+        item.itemReceiveReservation = 0;
+    };
+
+    $scope.$on("OnChange#BargainCust", function(evt, param) {
+        var j = 0;
+        var l = $scope.model.form.listGroupItem.length;
+
+        // no need to get bargain price when custCd is null, invalid
+        // or when have no detail
+        if(StringUtils.isEmpty(param.custCd)
+                || ($scope.model.form.listGroupItem[0].detail.length <= 1)
+                || $scope.model.hidden.screenMode == 'VIEW'){
+            return;
+        }
+
+        // show pop up to confirm before get detail bargain price
+        DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage($scope.checkEXEXSno('S00063'))).result.then(function(btn){
+            for(; j < l; j++){
+                var salDetailControl = $scope.model.form.listGroupItem[j].detail;
+                var length = salDetailControl.length;
+                if(!StringUtils.isEmpty(length) && length > 0){
+                    angular.forEach(salDetailControl, function(row,i){
+                        if(!StringUtils.isEmpty(salDetailControl[i].sericalCd) ||
+                                !StringUtils.isEmpty(salDetailControl[i].itemCost) ||
+                                !StringUtils.isEmpty(salDetailControl[i].itemPrice) ||
+                                !StringUtils.isEmpty(salDetailControl[i].itemSum)) {
+                            $scope.getBargainItemPrice(row);
+                        }
+                    });
+                }
+            }
+        });
+    });
+
+    $scope.$on("OnChange#BargainStock", function(evt, param) {
+        var j = 0;
+        var l = $scope.model.form.listGroupItem.length;
+        if(StringUtils.isEmpty(param.stockaddressNo)
+                || ($scope.model.form.listGroupItem[0].detail.length <= 1)
+                || $scope.model.hidden.screenMode == 'VIEW'){
+            return;
+        }
+
+        DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage($scope.checkEXEXSno('S00063'))).result.then(function(btn){
+            for(; j < l; j++){
+                var salDetailControl = $scope.model.form.listGroupItem[j].detail;
+                var length = salDetailControl.length;
+                if(!StringUtils.isEmpty(length) && length > 0){
+                    angular.forEach(salDetailControl, function(row,i){
+                        if(!StringUtils.isEmpty(salDetailControl[i].sericalCd) ||
+                                !StringUtils.isEmpty(salDetailControl[i].itemCost) ||
+                                !StringUtils.isEmpty(salDetailControl[i].itemPrice) ||
+                                !StringUtils.isEmpty(salDetailControl[i].itemSum)) {
+                            $scope.getBargainItemPrice(row);
+                        }
+                    });
+                }
+            }
+        });
+    });
+
+    $scope.$on("OnChange#EXEDate", function(evt, param) {
+        var j = 0;
+        var l = $scope.model.form.listGroupItem.length;
+
+        // no need to get bargain price when dateName is null, invalid
+        // or when have no detail
+        if(StringUtils.isEmpty(param.dateName) || !StringUtils.isEmpty(param.dateName) && 'stockDate' != param.dateName
+                || ($scope.model.form.listGroupItem[0].detail.length <= 1)
+                || $scope.model.hidden.screenMode == 'VIEW'){
+            return;
+        }
+        // show pop up to confirm before get detail bargain price
+        DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage($scope.checkEXEXSno('S00063'))).result.then(function(btn){
+            for(; j < l; j++){
+                var salDetailControl = $scope.model.form.listGroupItem[j].detail;
+                var length = salDetailControl.length;
+                if(!StringUtils.isEmpty(length) && length > 0){
+                    angular.forEach(salDetailControl, function(row,i){
+                        if(!StringUtils.isEmpty(salDetailControl[i].sericalCd) ||
+                                !StringUtils.isEmpty(salDetailControl[i].itemCost) ||
+                                !StringUtils.isEmpty(salDetailControl[i].itemPrice) ||
+                                !StringUtils.isEmpty(salDetailControl[i].itemSum)) {
+                            $scope.getBargainItemPrice(row);
+                        }
+                    });
+                }
+            }
+        });
+    });
+
+    /**
+    *
+    */
+   $scope.$watch('model.form.listGroupItem', function () {
+       $scope.model.hidden.isSubmitedDetail = false;
+       var j = 0;
+       var l = $scope.model.form.listGroupItem.length;
+       var sumFreeTaxPrice = 0,
+           sumFreeTaxPriceTmp = 0,
+           sumTax = 0,
+           sumPrice = 0,
+           sumItemSum = 0,
+           sumDiscountValue = 0,
+           sumGrossMargin = 0,
+           sumGrossMarginRate = 0,
+           freeTaxPriceForInc = 0,
+           freeTaxPriceForExc = 0;
+       $scope.model.form.sumGrossMargin = 0;
+       $scope.model.form.sumGrossMarginRate = 0;
+       $scope.model.form.sumFreeTaxPrice = 0;
+       $scope.model.form.sumFreeTaxPriceTmp = 0;
+       $scope.model.form.sumTax = 0;
+       $scope.model.form.sumPrice = 0;
+       $scope.model.form.sumItemSum = 0;
+       $scope.model.form.sumDiscountValue = 0;
+       $scope.model.form.taxInclusive = 0;
+       $scope.model.form.taxExclusive = 0;
+
+       // TODO fixed price
+       var freeTaxSumFixedPrice = 0,
+           freeTaxSumFixedPriceTmp = 0,
+           sumTaxFixedPrice = 0,
+           sumFixedPrice = 0,
+           freeTaxFixedPriceForInc = 0,
+           freeTaxFixedPriceForExc = 0;
+       $scope.model.form.freeTaxSumFixedPrice = 0;
+       $scope.model.form.freeTaxSumFixedPriceTmp = 0;
+       $scope.model.form.sumTaxFixedPrice = 0;
+       $scope.model.form.sumFixedPrice = 0;
+       $scope.model.form.taxInclusiveFixedPrice = 0;
+       $scope.model.form.taxExclusiveFixedPrice = 0;
+
+       if(StringUtils.isEmpty($scope.model.form.rounding)){
+           $scope.getRounding();
+       }
+
+       for(; j < l; j++){
+           var salDetailControl = $scope.model.form.listGroupItem[j].detail;
+           var length = salDetailControl.length;
+           var rounding = !ValidateUtil.isValidTextEmpty($scope.model.form.rounding) ? $scope.model.form.rounding : 0;
+           var breakRow = false;
+
+           if(!ValidateUtil.isValidTextEmpty(length) && length > 0){
+               angular.forEach(salDetailControl, function(row,i){
+                   if(!ValidateUtil.isValidTextEmpty(salDetailControl[i].itemCd) ||
+                           !ValidateUtil.isValidTextEmpty(salDetailControl[i].itemName) ||
+                           !ValidateUtil.isValidTextEmpty(salDetailControl[i].itemCost) ||
+                           !ValidateUtil.isValidTextEmpty(salDetailControl[i].itemPrice) ||
+                           !ValidateUtil.isValidTextEmpty(salDetailControl[i].itemSum)){
+                       if(salDetailControl[i].freeTaxPriceTmp == 'Overflow Error'){
+                           $scope.model.form.sumGrossMargin  = 'Overflow Error';
+                           $scope.model.form.sumGrossMarginRate  = 'Overflow Error';
+                           $scope.model.form.sumFreeTaxPrice  = 'Overflow Error';
+                           $scope.model.form.sumFreeTaxPriceTmp  = 'Overflow Error';
+                           $scope.model.form.sumTax = 'Overflow Error';
+                           $scope.model.form.sumPrice = 'Overflow Error';
+                           $scope.model.form.sumItemSum = 'Overflow Error';
+                           breakRow = true;
+                       }
+                       if(salDetailControl[i].grossMarginRate == 'Overflow Error'){
+                           $scope.model.form.sumGrossMarginRate  = 'Overflow Error';
+                           breakRow = true;
+                       }
+                       if(!breakRow){
+                           if($scope.model.hidden.loginSession.taxType == 1){
+                               row.tax = $rootScope.calcItemTax(row.itemPrice,row.itemSum, row.taxRate, row.taxType, null);
+                               row.taxFixedPrice = $rootScope.calcItemTax(row.itemFixedPrice, row.itemSum, row.taxRate, row.taxType, null);
+                           }else{
+                               row.tax = $rootScope.calcItemTax(row.itemPrice, row.itemSum, row.taxRate, row.taxType, rounding);
+                               row.taxFixedPrice = $rootScope.calcItemTax(row.itemFixedPrice, row.itemSum, row.taxRate, row.taxType, rounding);
+                           }
+                           row.freeTaxPriceTmp = Math.round10((parseFloat(row.itemPrice)*parseFloat(row.itemSum)),-10);
+                           row.freeTaxPriceTmp = $scope.rounding(row.freeTaxPriceTmp, rounding);
+
+                           row.freeTaxFixedPriceTmp = Math.round10((parseFloat(row.itemFixedPrice)*parseFloat(row.itemSum)),-10);
+                           row.freeTaxFixedPriceTmp = $scope.rounding(row.freeTaxFixedPriceTmp, rounding);
+
+                           if(ValidateUtil.isValidTextEmpty(row.itemSum) || ValidateUtil.isValidTextEmpty(row.itemPrice)){
+                               $("input[id='freeTaxPriceTmp"+j+i+"']").val('');
+                           }
+                           if(row.taxType == 0){
+                               row.price = row.freeTaxPriceTmp;
+                               row.freeTaxPrice = Math.round10((parseFloat(row.freeTaxPriceTmp) - $scope.rounding(parseFloat(row.tax), rounding)),-10);
+                               row.freeTaxPrice = $scope.rounding(row.freeTaxPrice, rounding);
+                               $scope.model.form.taxInclusive += isNaN(row.tax) ? parseFloat(0) : parseFloat(row.tax); //=0
+                               $scope.model.form.taxInclusive = Math.round10($scope.model.form.taxInclusive,-10);
+                               row.priceTmp = parseFloat(row.freeTaxPriceTmp);
+                               row.priceTmp = $scope.rounding(Math.round10(row.priceTmp,-10), rounding);
+
+                               row.fixedPrice = row.freeTaxFixedPriceTmp;
+                               row.freeTaxFixedPrice = Math.round10((parseFloat(row.freeTaxFixedPriceTmp) - $scope.rounding(parseFloat(row.taxFixedPrice), rounding)),-10);
+                               row.freeTaxFixedPrice = $scope.rounding(row.freeTaxFixedPrice, rounding);
+
+                               $scope.model.form.taxInclusiveFixedPrice += isNaN(row.taxFixedPrice) ? parseFloat(0) : parseFloat(row.taxFixedPrice); //=0
+                               $scope.model.form.taxInclusiveFixedPrice = Math.round10($scope.model.form.taxInclusiveFixedPrice,-10);
+                               if(row.taxType == 0){
+                                   //税額 =round ( ( round(単価A * 数量A)+ round(単価B+数量B) ) )
+                                   freeTaxPriceForInc += $scope.rounding(parseFloat(row.itemPrice)*parseFloat(row.itemSum), rounding);
+                                   freeTaxFixedPriceForInc += $scope.rounding(parseFloat(row.itemFixedPrice)*parseFloat(row.itemSum), rounding);
+                               }
+                               row.priceTmp = parseFloat(row.freeTaxPriceTmp);
+                               row.priceTmp = $scope.rounding(Math.round10(row.priceTmp,-10), rounding);
+                               row.fixedPriceTmp = parseFloat(row.freeTaxFixedPriceTmp);
+                               row.fixedPriceTmp = $scope.rounding(Math.round10(row.fixedPriceTmp,-10), rounding);
+
+                           }else if(row.taxType == 1){
+                               row.freeTaxPrice = row.freeTaxPriceTmp;
+                               row.price = (isNaN(row.tax) ? parseFloat(0) : parseFloat(row.tax)) + (isNaN(row.freeTaxPriceTmp) ? parseFloat(0) : parseFloat(row.freeTaxPriceTmp));
+                               $scope.model.form.taxExclusive += isNaN(row.tax) ? parseFloat(0) : parseFloat(row.tax); //=1
+                               $scope.model.form.taxExclusive = Math.round10($scope.model.form.taxExclusive,-10);
+                               //税額 =round ( ( round(単価A * 数量A)+ round(単価B+数量B) ) )
+                               freeTaxPriceForExc += $scope.rounding(Math.round10(parseFloat(row.itemPrice)*parseFloat(row.itemSum),-10), rounding);
+                               row.priceTmp = parseFloat(row.tax) + parseFloat(row.freeTaxPriceTmp);
+                               row.priceTmp = $scope.rounding(Math.round10(row.priceTmp,-10), rounding);
+
+                               // TODO fixed price
+                               row.freeTaxFixedPrice = row.freeTaxFixedPriceTmp;
+                               row.fixedPrice = (isNaN(row.taxFixedPrice) ? parseFloat(0) : parseFloat(row.taxFixedPrice)) + (isNaN(row.freeTaxFixedPriceTmp) ? parseFloat(0) : parseFloat(row.freeTaxFixedPriceTmp));
+                               $scope.model.form.taxExclusiveFixedPrice += isNaN(row.taxFixedPrice) ? parseFloat(0) : parseFloat(row.taxFixedPrice); //=1
+                               $scope.model.form.taxExclusiveFixedPrice = Math.round10($scope.model.form.taxExclusiveFixedPrice,-10);
+                               //税額 =round ( ( round(単価A * 数量A)+ round(単価B+数量B) ) )
+                               freeTaxFixedPriceForExc += $scope.rounding(Math.round10(parseFloat(row.itemFixedPrice)*parseFloat(row.itemSum),-10), rounding);
+                               row.fixedPriceTmp = parseFloat(row.taxFixedPrice) + parseFloat(row.freeTaxFixedPriceTmp);
+                               row.fixedPriceTmp = $scope.rounding(Math.round10(row.fixedPriceTmp,-10), rounding);
+                           }else if(row.taxType == 2){
+                               row.freeTaxPrice = row.freeTaxPriceTmp;
+                               row.price = (isNaN(row.tax) ? parseFloat(0) : parseFloat(row.tax)) + (isNaN(row.freeTaxPriceTmp) ? parseFloat(0) : parseFloat(row.freeTaxPriceTmp));
+                               $scope.model.form.taxInclusive += isNaN(row.tax) ? parseFloat(0) : parseFloat(row.tax); //=0
+                               $scope.model.form.taxInclusive = Math.round10($scope.model.form.taxInclusive,-10);
+                               row.priceTmp = parseFloat(row.freeTaxPriceTmp);
+                               row.priceTmp = $scope.rounding(Math.round10(row.priceTmp,-10), rounding);
+
+                               // TODO fixed price
+                               row.freeTaxFixedPrice = row.freeTaxFixedPriceTmp;
+                               row.fixedPrice = (isNaN(row.taxFixedPrice) ? parseFloat(0) : parseFloat(row.taxFixedPrice)) + (isNaN(row.freeTaxFixedPriceTmp) ? parseFloat(0) : parseFloat(row.freeTaxFixedPriceTmp));
+                               $scope.model.form.taxInclusiveFixedPrice += isNaN(row.taxFixedPrice) ? parseFloat(0) : parseFloat(row.taxFixedPrice); //=0
+                               $scope.model.form.taxInclusiveFixedPrice = Math.round10($scope.model.form.taxInclusiveFixedPrice,-10);
+                               row.fixedPriceTmp = parseFloat(row.freeTaxFixedPriceTmp);
+                               row.fixedPriceTmp = $scope.rounding(Math.round10(row.fixedPriceTmp,-10), rounding);
+                           }
+                           row.grossMargin = $rootScope.calcItemGrossMargin(row.itemCost, row.itemPrice, row.itemSum, rounding);
+                           //row.grossMarginRate = $rootScope.calcItemGrossMarginRate(row.itemCost, row.itemPrice, row.itemSum, rounding);
+                           sumGrossMargin += isNaN(row.grossMargin) ? parseFloat(0) : parseFloat(row.grossMargin);
+                           //sumGrossMarginRate += isNaN(row.grossMarginRate) ? parseFloat(0) : parseFloat(row.grossMarginRate);
+                           if($scope.model.hidden.loginSession.taxType == 0){
+                               sumFreeTaxPrice += isNaN(row.freeTaxPrice) ? parseFloat(0) : parseFloat(row.freeTaxPrice);
+                               sumFreeTaxPriceTmp += isNaN(row.freeTaxPriceTmp) ? parseFloat(0) : parseFloat(row.freeTaxPriceTmp);
+
+                               // TODO fixed price
+                               freeTaxSumFixedPrice += isNaN(row.freeTaxFixedPrice) ? parseFloat(0) : parseFloat(row.freeTaxFixedPrice);
+                               freeTaxSumFixedPriceTmp += isNaN(row.freeTaxFixedPriceTmp) ? parseFloat(0) : parseFloat(row.freeTaxFixedPriceTmp);
+                           }else if($scope.model.hidden.loginSession.taxType == 1){
+                               sumFreeTaxPrice += isNaN(row.freeTaxPriceTmp) ? parseFloat(0) : parseFloat(row.freeTaxPriceTmp);
+
+                               // TODO fixed price
+                               freeTaxSumFixedPrice += isNaN(row.freeTaxFixedPriceTmp) ? parseFloat(0) : parseFloat(row.freeTaxFixedPriceTmp);
+                           }
+                           sumTax += isNaN(row.tax) ? parseFloat(0) : parseFloat(row.tax);
+                           sumPrice += isNaN(row.priceTmp) ? parseFloat(0) : parseFloat(row.priceTmp);
+                           sumItemSum += isNaN(row.itemSum) ? parseFloat(0) : parseFloat(row.itemSum);
+                           sumDiscountValue += isNaN(row.discountValue) ? parseFloat(0) : parseFloat(row.discountValue);
+
+                           // TODO fixed price
+                           sumTaxFixedPrice += isNaN(row.taxFixedPrice) ? parseFloat(0) : parseFloat(row.taxFixedPrice);
+                           sumFixedPrice += isNaN(row.fixedPriceTmp) ? parseFloat(0) : parseFloat(row.fixedPriceTmp);
+
+                           // TODO calc item receive remaining
+                           row.itemReceiveRemaining = parseFloat(row.itemSum)*parseFloat(row.packageQuantity);
+                           row.itemReceiveReservation = 0;
+                       }
+                   }
+               });
+
+               if(!breakRow && $scope.model.hidden.loginSession.taxType == 1){
+                   // 課税種別＝1
+                   var taxRate = $scope.model.form.taxRate;
+                   if(!ValidateUtil.isValidTextEmpty(taxRate)){
+                       taxRate = taxRate.toString();
+                   }
+                   var taxInclusive = Math.round10((freeTaxPriceForInc * parseFloat(taxRate)) / (parseFloat(taxRate) + 100),-10);
+                   var taxExclusive = Math.round10((freeTaxPriceForExc * parseFloat(taxRate)) / (100),-10);
+
+                   $scope.model.form.taxInclusive = $scope.rounding(taxInclusive, rounding);
+                   $scope.model.form.taxExclusive = $scope.rounding(taxExclusive, rounding);
+                   sumTax = $scope.rounding(parseFloat($scope.model.form.taxInclusive) + parseFloat($scope.model.form.taxExclusive), rounding);
+                   $scope.model.form.sumGrossMargin = sumGrossMargin;
+                   sumFreeTaxPriceTmp = sumFreeTaxPrice;
+                   sumFreeTaxPrice = $scope.rounding(parseFloat(sumFreeTaxPrice),rounding) - $scope.rounding(taxInclusive, rounding);
+                   sumFreeTaxPrice = $scope.rounding(Math.round10(sumFreeTaxPrice,-10),rounding);
+                   $scope.model.form.sumFreeTaxPrice = sumFreeTaxPrice;
+                   $scope.model.form.sumFreeTaxPriceTmp = $scope.rounding(Math.round10(sumFreeTaxPriceTmp,-10),rounding);
+                   if(sumFreeTaxPriceTmp != 0){
+                       sumGrossMarginRate = Math.round10((sumGrossMargin / sumFreeTaxPriceTmp)*100,-2);
+                       if(sumGrossMarginRate % 1 === 0){
+                           sumGrossMarginRate = sumGrossMarginRate + '.00';
+                       }
+                       if(sumGrossMarginRate > parseFloat(999) || sumGrossMarginRate < parseFloat(-999)){
+                           sumGrossMarginRate = 0;
+                       }
+                   }
+                   $scope.model.form.sumGrossMarginRate = sumGrossMarginRate;
+                   $scope.model.form.sumTax = sumTax;
+                   sumPrice = parseFloat(sumFreeTaxPrice) + $scope.rounding(parseFloat(sumTax),rounding);
+                   $scope.model.form.sumPrice = $scope.rounding(Math.round10(sumPrice,-10),rounding);
+                   $scope.model.form.sumItemSum = $scope.rounding(Math.round10(sumItemSum,-10),rounding);
+                   $scope.model.form.sumDiscountValue = $scope.rounding(Math.round10(sumDiscountValue,-10),rounding);
+
+                   // TODO fixed price
+                   var taxInclusiveFixedPrice = Math.round10((freeTaxFixedPriceForInc * parseFloat(taxRate)) / (parseFloat(taxRate) + 100),-10);
+                   var taxExclusiveFixedPrice = Math.round10((freeTaxFixedPriceForExc * parseFloat(taxRate)) / (100),-10);
+                   $scope.model.form.taxInclusiveFixedPrice = $scope.rounding(taxInclusiveFixedPrice, rounding);
+                   $scope.model.form.taxExclusiveFixedPrice = $scope.rounding(taxExclusiveFixedPrice, rounding);
+                   sumTaxFixedPrice = $scope.rounding(($scope.rounding(parseFloat(taxInclusiveFixedPrice), rounding) +
+                                      $scope.rounding(parseFloat(taxExclusiveFixedPrice), rounding)), rounding);
+                   freeTaxSumFixedPriceTmp = freeTaxSumFixedPrice;
+                   freeTaxSumFixedPrice = $scope.rounding(parseFloat(freeTaxSumFixedPrice),rounding) - $scope.rounding(taxInclusiveFixedPrice, rounding);
+                   freeTaxSumFixedPrice = $scope.rounding(Math.round10(freeTaxSumFixedPrice,-10),rounding);
+                   $scope.model.form.freeTaxSumFixedPrice = freeTaxSumFixedPrice;
+                   $scope.model.form.freeTaxSumFixedPriceTmp = $scope.rounding(Math.round10(freeTaxSumFixedPriceTmp,-10),rounding);
+                   $scope.model.form.sumTaxFixedPrice = sumTaxFixedPrice;
+                   sumFixedPrice = parseFloat(freeTaxSumFixedPrice) + $scope.rounding(parseFloat(sumTaxFixedPrice),rounding);
+                   $scope.model.form.sumFixedPrice = $scope.rounding(Math.round10(sumFixedPrice,-10),rounding);
+
+               } else if(!breakRow){
+                   $scope.model.form.sumGrossMargin = sumGrossMargin;
+                   if(sumFreeTaxPriceTmp != 0){
+                       sumGrossMarginRate = Math.round10((sumGrossMargin / sumFreeTaxPriceTmp)*100,-2);
+                       if(sumGrossMarginRate % 1 === 0){
+                           sumGrossMarginRate = sumGrossMarginRate + '.00';
+                       }
+                       if(sumGrossMarginRate > parseFloat(999) || sumGrossMarginRate < parseFloat(-999)){
+                           sumGrossMarginRate = 0;
+                       }
+                   }
+                   $scope.model.form.sumGrossMarginRate = sumGrossMarginRate;
+                   sumFreeTaxPrice = $scope.rounding(Math.round10(sumFreeTaxPrice,-10),rounding);
+                   $scope.model.form.sumFreeTaxPrice = sumFreeTaxPrice;
+                   $scope.model.form.sumFreeTaxPriceTmp = $scope.rounding(Math.round10(sumFreeTaxPriceTmp,-10),rounding);
+                   $scope.model.form.sumTax = $scope.rounding(Math.round10(sumTax,-10),rounding);
+                   $scope.model.form.sumPrice = $scope.rounding(Math.round10(sumPrice,-10),rounding);
+                   $scope.model.form.sumItemSum = $scope.rounding(Math.round10(sumItemSum,-10),rounding);
+                   $scope.model.form.sumDiscountValue = $scope.rounding(Math.round10(sumDiscountValue,-10),rounding);
+
+                   // TODO fixed price
+                   freeTaxSumFixedPrice = $scope.rounding(Math.round10(freeTaxSumFixedPrice,-10),rounding);
+                   $scope.model.form.freeTaxSumFixedPrice = freeTaxSumFixedPrice;
+                   $scope.model.form.freeTaxSumFixedPriceTmp = $scope.rounding(Math.round10(freeTaxSumFixedPriceTmp,-10),rounding);
+                   $scope.model.form.sumTaxFixedPrice = $scope.rounding(Math.round10(sumTaxFixedPrice,-10),rounding);
+                   $scope.model.form.sumFixedPrice = $scope.rounding(Math.round10(sumFixedPrice,-10),rounding);
+               }
+           }
+           $scope.model.hidden.sumTaxTmp = angular.copy($scope.model.form.sumTax);
+           $scope.calculateFinallySumTaxSumPrice();
+       }
+
+       if(length > 3){
+           $scope.model.hidden.position = true;
+       }
+       /**callbackIndex*/
+       $scope.callbackIndex();
+   }, true);
+
+    // Get stock address name
+    $scope.selectStockaddressNo = function(pItem, parentIndex, index){
+        pItem.stockaddressName = !StringUtils.isEmpty($("select[name='stockaddressNo"+parentIndex+index+"'").select2('data'))
+                            ? $("select[name='stockaddressNo"+parentIndex+index+"'").select2('data')[0].text : "";
+    };
+
+    /**
+     * rounding number
+     */
+    $scope.rounding = function(value, rounding){
+        if(!StringUtils.isEmpty(rounding)){
+            if(rounding == 1){
+                //ex: 5.2→5 (5.6->6)
+                value = Math.round10(value, -2);
+            } else if(rounding == 0){
+                //ex: 5.2→5
+                if(value < 0){
+                    value = Math.abs(value);
+                    value = Math.floor10(value, -2);
+                    value = value * (-1);
+                } else {
+                    value = Math.floor10(value, -2);
+                }
+            } else if(rounding == 2){
+                //ex: 5.2→6
+                value = Math.ceil10(value, -2);
+            }
+        }
+        return value;
+    };
+
+    /**table details width*/
+    $scope.tblDetailsWidth = function(){
+        var classWidth = 1190;
+        if($scope.model.hidden.checkStockMode == true && $scope.model.hidden.stockMode == 'STOCKMODE'){
+            classWidth = parseInt(classWidth) + parseInt(300);
+        }
+        return 'width-'+classWidth;
+    };
+
+    if($(window).height() < 600){
+        $scope.model.hidden.position = true;
+    }
+    $(window).resize(function(){
+        if($(window).height() < 600){
+            $scope.model.hidden.position = true;
+        }else{
+            $scope.model.hidden.position = false;
+        }
+    });
+
+    /**
+     * open dialog
+     */
+    $scope.openDialog = function(result, row, item, index, pIndex) {
+        $scope.model.hidden.isSubmited = false;
+        var stockWarehouse = $("select[name='stockWarehouseNo']").select2('data');
+        if(!StringUtils.isEmpty(stockWarehouse) && stockWarehouse.length > 0){
+            $scope.model.hidden.warehouseName = stockWarehouse[0].text;
+        } else {
+            $scope.model.hidden.warehouseName = "";
+        }
+        var options = {size: 'auto'};
+        var param = null;
+        switch (result) {
+            case 'searchItem':
+                DialogsService.showDialog('SearchItem', 'searchItemCtrl', param,options).result.then(function () {}, function () {
+                    if(sessionStorage.getItem("product")){
+                        var item = JSON.parse(sessionStorage.getItem("product"));
+                        if(!StringUtils.isEmpty(item.serialCd)){
+                            $scope.insertRow(row, item, index, pIndex);
+                            $scope.addNewRowItem(row, index);
+                        }
+                    }
+                });
+                break;
+            default:
+              break;
+        };
+    };
+
+    /**insert row*/
+    $scope.insertRow = function(row, item, index, pIndex){
+        var salDetailControl = row.detail[index];
+        salDetailControl.serialCd = item.serialCd;
+        salDetailControl.itemCd = item.itemCd;
+        salDetailControl.itemName = item.itemName;
+        salDetailControl.itemName2 = item.itemName2;
+        salDetailControl.itemName3 = item.itemName3;
+
+        if($scope.model.hidden.screen == 'ERS'){
+            salDetailControl.itemPrice = item.itemPrice;
+        }else{
+            salDetailControl.itemPrice = item.itemCost;
+        }
+        salDetailControl.itemUnit = item.itemUnit;
+        salDetailControl.listItemUnit = item.listItemUnit;
+        if(!ValidateUtil.isValidTextEmpty(item.itemCost)){
+            salDetailControl.itemCost = item.itemCost;
+        }else{
+            salDetailControl.itemCost = '';
+            angular.element("input[id='itemCost"+pIndex+index+"']").val('');
+        }
+        salDetailControl.itemSum = 1;
+        salDetailControl.itemFixedPrice = item.itemFixedPrice;
+        salDetailControl.packageQuantity = item.packageQuantity;
+        salDetailControl.priceType = item.priceType;
+        angular.element("input[id='itemSum"+pIndex+index+"']").val('');
+        angular.element("input[id='freeTaxPriceTmp"+pIndex+index+"']").val('');
+        salDetailControl.category1 = item.category1;
+        salDetailControl.category2 = item.category2;
+        salDetailControl.category3 = item.category3;
+        salDetailControl.janCd = item.janCd;
+        salDetailControl.isSetItem = item.isSetItem;
+
+        $scope.getItem(salDetailControl, $scope.model.form.taxRate);
+        $scope.getBargainItemPrice(salDetailControl);
+        sessionStorage.removeItem("product");
+    };
+
+    /**is required*/
+    $scope.isRequired = function(isLast, item){
+        if (!isLast){
+            return true;
+        }
+        return (item.itemName || item.itemCost || item.Price || item.itemSum);
+    };
+
+    /**is requiredWH*/
+    $scope.isRequiredWH = function(isLast, item){
+        if (!isLast && model.hidden.isRequiredWH){
+            return true;
+        }
+        return (item.itemName || item.itemCost || item.Price || item.itemSum) && model.hidden.isRequiredWH;
+    };
+
+    /**open detail item*/
+    $scope.openDetailItem = function(item){
+        if(!ValidateUtil.isValidTextEmpty(item.serialCd)){
+            var param = {
+                    serialCd:item.serialCd
+            };
+            MstItemListService
+            .checkData(param)
+            .then(
+                function(result) {
+                    if(!ValidateUtil.isValidTextEmpty(result.data.warning)){
+                        DialogsService.showWarning(Messages.getMessage('check.error'),result.data.warning);
+                        $scope.search($scope.model.form.search);
+                        return;
+                    }else{
+                        param.detailFlag = true;
+                        sessionStorage.setItem('mstItemDialog',JSON.stringify(param));
+                        DialogsService.showDialog('MstItemDialog', 'mstItemDialogCtrl', 'data', {size: '1240'}).result.then(function () {}, function () {
+                            sessionStorage.removeItem('mstItemDialog');
+                        });
+                    }
+                }
+            );
+        }
+    };
+
+    /**
+     * get rounding()
+     */
+    $scope.getRounding = function(rounding){
+        $scope.model.hidden.loginSession = angular.fromJson(sessionStorage.getItem("session"));
+        if(StringUtils.isEmpty($scope.model.hidden.loginSession.rounding)){
+            ServerService.doPost('SalDetailsControl/getRounding', null).then(
+                function(okResult) {
+                    if(!StringUtils.isEmpty(okResult.data.rounding)){
+                        $scope.model.hidden.loginSession.rounding = okResult.data.rounding;
+                        $scope.model.form.rounding = okResult.data.rounding;
+                    }
+                }
+            );
+        }else{
+            $scope.model.form.rounding = $scope.model.hidden.loginSession.rounding;
+        }
+    };
+
+
+    /**change item unit*/
+    $scope.changeItemUnit = function(pIndex, index, item){
+        var lineNo = angular.element('select[name="itemUnit'+pIndex+index+'"] option:selected').attr('lineNo');
+        if(!StringUtils.isEmpty(item.serialCd)){
+            var param = {
+                serialCd : item.serialCd,
+                lineNo : lineNo,
+                itemUnit : item.itemUnit
+            }
+            ServerService.doPost('SalDetailsControl/getItemByItemUnit', param).then(
+                function(okResult) {
+                    var okResult = okResult.data;
+                    if($scope.model.hidden.screen == 'ERS'){
+                        item.itemPrice = okResult.itemPrice;
+                    }else{
+                        item.itemPrice = okResult.itemCost;
+                    }
+                    if(!ValidateUtil.isValidTextEmpty(okResult.itemCost)){
+                        item.itemCost = okResult.itemCost;
+                    }else{
+                        item.itemCost = '';
+                        angular.element("input[id='itemCost"+pIndex+index+"']").val('');
+                    }
+                    item.packageQuantity = okResult.packageQuantity;
+                    item.itemFixedPrice = okResult.itemFixedPrice;
+                    item.priceType = okResult.priceType;
+                    $scope.getBargainItemPrice(item);
+                }
+            );
+        }
+    };
+
+    /**
+     * calculate width for table
+     */
+    $scope.calWidth = function(){
+        $timeout(function(){
+            var isChrome = !!window.chrome && !!window.chrome.webstore;
+            var heightTable = $("#tableClone1")[0].offsetHeight;
+            if(!isChrome && heightTable > 246){
+                $scope.model.hidden.widthHeader = {"width": "calc(100% - 17px)"};
+                return;
+            }else if (isChrome && heightTable > 246){
+                $scope.model.hidden.widthHeader = {"width": "calc(100% - 10px)"};
+                return;
+            }
+            $scope.model.hidden.widthHeader = {"width": "100%"};
+        },100);
+    }
+
+    $scope.clickItemUnit = function(index, item){
+        console.log(item);
+    };
+
+    $('.select2-container').focusin(function(e) {
+        $(this).css('background-color', '#ffc');
+    }).focusout(function(e) {
+        $(this).css('background-color', '');
+    });
+
+    /**callbackIndex*/
+    $scope.callbackIndex = function(){
+        var i = 0;
+        var index = 1;
+        var length = $scope.model.form.listGroupItem.length;
+        var tmpListItemGroup = [];
+        for ( ;i < length; i++) {
+            var tmpDetail = $scope.model.form.listGroupItem[i];
+            angular.forEach(tmpDetail.detail, function(item, i){
+                if(!ValidateUtil.isValidTextEmpty(item.itemName)){
+                    item.tmpIndex = index;
+                    index += 1;
+                }
+            });
+        }
+    };
+
+    /**
+     * change ware house from stock screen
+     */
+    $scope.onChangeWarehouseStock = function(warehouseNo, listDetail, index) {
+        // if !stock control will immediately return
+        if($scope.model.hidden.screen !== 'STOCK') {
+            return;
+        }
+        ServerService.doPost('SalStockControl/onChangeWarehouseStock', warehouseNo).then(
+            function(okResult) {
+                var okResult = okResult.data;
+                listDetail[index].usagePeriodTo = okResult.rtnCd;
+            }
+        );
+    };
+
+
+    /**
+     * change 利用期限 set 在庫利用期限
+     */
+    $scope.$watchCollection('model.hidden.usagePeriodTo', function(){
+        if($scope.model.hidden.screenMode == 'VIEW'){
+            return;
+        }
+        if($scope.model.hidden.usagePeriodFlag === '1') {
+            var length = $scope.model.form.listGroupItem.length;
+            for(var i = 0;i < length ; i++ ){
+                var salDetailControl = $scope.model.form.listGroupItem[i].detail;
+                angular.forEach(salDetailControl, function(row,i){
+                    if(StringUtils.isEmpty(row.usagePeriodTo) || StringUtils.isEmpty(row.stockSno)) {
+                        row.usagePeriodTo = $scope.model.hidden.usagePeriodTo;
+                    }
+                });
+            }
+        }
+    });
+
+    $scope.calculateFinallySumTaxSumPrice = function(){
+        $scope.model.form.taxAdjustments = !StringUtils.isEmpty($scope.model.form.taxAdjustments) ?
+                $scope.model.form.taxAdjustments : 0;
+        $scope.model.form.sumTax = parseFloat($scope.model.hidden.sumTaxTmp) + parseFloat($scope.model.form.taxAdjustments);
+        $scope.model.form.sumPrice = parseFloat($scope.model.form.sumFreeTaxPrice) + parseFloat($scope.model.form.sumTax);
+    }
+
+    $scope.sortableConfig = {
+        handle:'.handle',
+        onMove: function (evt) {
+            var isLastRow = $(evt.related).find('td.handle').length > 0 ? false : true;
+            if(isLastRow) {
+                return false;
+            }
+        },
+    };
+
+    $scope.calculateItemDetail = function() {
+        for (var i = 0; i < $scope.model.form.listGroupItem.length; i++) {
+            var group = $scope.model.form.listGroupItem[i];
+            for (var j = 0; j < group.detail.length - 1; j++) {
+                var item = group.detail[j];
+                $scope.getCodeName(item.taxType, item);
+            }
+        }
+    }
+
+    $scope.$on("SalEstimateControl#calculateItemDetail", function() {
+        $scope.calculateItemDetail();
+    });
+
+
+    $scope.getCodeName = function(code, detail) {
+        for (var i = 0; i < $scope.model.form.listS010003.length; i++) {
+            var item = $scope.model.form.listS010003[i];
+            if(code == item.code) {
+                detail.taxTypeName = item.codeName;
+                break;
+            }
+        }
+    }
+
+}]);

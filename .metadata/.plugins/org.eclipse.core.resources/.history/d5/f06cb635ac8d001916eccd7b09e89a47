@@ -1,0 +1,27 @@
+package org.planning.net.logic;
+
+import java.util.List;
+
+import org.planning.net.dao.LoginDao;
+import org.planning.net.dto.LoginDto;
+import org.planning.net.entity.HoaDon;
+import org.planning.net.dao.testDoma;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+@Component
+public class LoginLogicImpl implements LoginLogic{
+
+    //@Autowired
+    //private LoginDao loginDao;
+
+    private testDoma testDoma;
+
+    @Override
+    public List<LoginDto> dangNhap(LoginDto model) throws Exception {
+
+        testDoma.testDoma("232");
+        return null;
+    }
+
+}

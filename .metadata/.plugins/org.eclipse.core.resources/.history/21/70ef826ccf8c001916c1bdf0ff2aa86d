@@ -1,0 +1,92 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+package jp.co.systemexe.exex.sms.common.conf;
+
+import javax.sql.DataSource;
+
+import org.seasar.doma.jdbc.DomaAbstractConfig;
+import org.seasar.doma.jdbc.JdbcLogger;
+import org.seasar.doma.jdbc.dialect.Dialect;
+
+/**
+ * Doma用コンフィグレーションクラスです。
+ * <p>
+ * Doma用にDataSourceおよびDialect（SQL方言を吸収するクラス)を保持します。
+ * </p>
+ *
+ * @author r-tanaka $Author: $
+ * @version $Revision: $ $Date: $
+ *
+ */
+public class DbConfig extends DomaAbstractConfig {
+
+    /**
+     * ログ(Slf4j)
+     */
+    private static JdbcLogger jdbcLogger = new Slf4jJdbcLogger();
+
+    @Override
+    public JdbcLogger getJdbcLogger() {
+
+        return jdbcLogger;
+    }
+
+    /**
+     * DataSource.
+     */
+    private DataSource dataSource;
+
+    /**
+     * Dialect.
+     * <p>
+     * SQL方言を吸収するクラスです。
+     * </p>
+     */
+    private Dialect dialect;
+
+    /**
+     * dataSource を取得します。
+     *
+     * @return dataSource
+     */
+    @Override
+    public DataSource getDataSource() {
+
+        return dataSource;
+    }
+
+    /**
+     * dataSource を設定します。
+     *
+     * @param dataSource
+     *            セットする dataSource
+     */
+    public void setDataSource(DataSource dataSource) {
+
+        this.dataSource = dataSource;
+    }
+
+    /**
+     * dialect を取得します。
+     *
+     * @return dialect
+     */
+    @Override
+    public Dialect getDialect() {
+
+        return dialect;
+    }
+
+    /**
+     * dialect を設定します。
+     *
+     * @param dialect
+     *            セットする dialect
+     */
+    public void setDialect(Dialect dialect) {
+
+        this.dialect = dialect;
+    }
+
+}

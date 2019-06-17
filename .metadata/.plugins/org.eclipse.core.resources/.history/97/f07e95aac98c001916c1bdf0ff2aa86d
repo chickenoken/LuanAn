@@ -1,0 +1,455 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision:  $ $Date:  $
+ * @author quang-tung
+ */
+
+'use strict';
+
+exexSMSApp.factory('MailRegistrationControlModel', [ 'BaseModel', function(BaseModel) {
+
+        var model = BaseModel.getInstance();
+        model.form = {
+            search : {
+                clientType: '',
+                name : '',
+                custType : '',
+                mailSendStatus: '',
+                openStatus : null,
+                mailReceiveFlag1 : ['1'],
+                mailReceiveFlag2 : ['2'],
+                custName : ''
+            }
+        };
+        model.searchMail = "";
+        model.selectedItems = 0;
+        model.listOwner = [];
+        model.hidden = {
+            checkBox : true,
+            listOwnerTmp : [],
+            listSelected : []
+        };
+        return model;
+}]);
+
+exexSMSApp.controller('MailDestinationSearchControl',
+        ['$scope', '$uibModalInstance', 'MailRegistrationControlModel', 'data', 'MailRegistrationModel', 'ServerService', 'Messages',
+         function($scope, $uibModalInstance, MailRegistrationControlModel, data, MailRegistrationModel, ServerService, Messages) {
+
+    $scope.model = MailRegistrationControlModel;
+    $scope.mailRegistration = MailRegistrationModel;
+
+    $scope.init = function() {
+        $scope.model.hidden.listOwnerTmp = angular.copy($scope.mailRegistration.form.registration.lstMailDestination);
+        if($scope.mailRegistration.hidden.isStockMode) {
+            $scope.getInitStock();
+        } else {
+            $scope.getInit();
+        }
+    };
+
+    $scope.getInit = function() {
+        ServerService.doPost('MailDestinationSearch/getInit', null)
+        .then(
+            function(okResult) {
+                $scope.model.listS020015 = okResult.data.listS020015;
+                $scope.model.listC020001 = okResult.data.listC020001;
+                $scope.search();
+            }
+        );
+    }
+
+    $scope.getInitStock = function() {
+        ServerService.doPost('StockaddressOwnerList/getInit', null)
+        .then(
+            function(okResult) {
+                $scope.model.listC030002 = okResult.data.listC030002;
+                $scope.model.listC030003 = okResult.data.listC030003;
+                $scope.search();
+            }
+        );
+    }
+
+    $scope.search = function() {
+        var param;
+        if($scope.mailRegistration.hidden.isStockMode) {
+            param = {
+                listSelected : data,
+                custName : $scope.model.form.search.custName,
+                mailReceiveFlag1 : $scope.model.form.search.mailReceiveFlag1,
+                mailReceiveFlag2 : $scope.model.form.search.mailReceiveFlag2
+            };
+        } else {
+            var custType = !StringUtils.isEmpty($scope.model.form.search.custType) ? ($scope.model.form.search.custType == '1' ? true : false) : null;
+            param = {
+                listSelected : data,
+                name : $scope.model.form.search.name,
+                clientType : $scope.model.form.search.clientType,
+                custType : custType,
+                listCustCd : []
+            };
+        }
+        param.isStockMode = $scope.mailRegistration.hidden.isStockMode;
+
+        ServerService.doPost('MailDestinationSearch/getOwnerList', param).then(
+            function(okResult) {
+                $scope.model.listOwner = okResult.data.listOwner;
+                angular.forEach($scope.model.listOwner, function(item, i){
+                    $scope.model.listOwner[i].checked = false;
+                });
+                //Table Paging
+                $scope.model.currentPage = 1; //current page
+                $scope.model.entryLimit = 10; //max no of items to display in a page
+                $scope.model.filteredItems = $scope.model.listOwner.length; //Initially for no filter
+                $scope.model.totalItems = $scope.model.listOwner.length;
+                $scope.beginValFilter = 1;
+                if($scope.model.listOwner.length > 0){
+                    $scope.model.beginValFilter = 1;
+                }else{
+                    $scope.model.beginValFilter = 0;
+                }
+
+                $scope.setPage = function(pageNo) {
+                    $scope.currentPage = pageNo;
+                };
+
+                $scope.filter = function() {
+                    $timeout(function() {
+                        $scope.filteredItems = $scope.model.form.filtered.length;
+                        if($scope.model.form.filtered.length > 0){
+                            $scope.beginValFilter = 1;
+                        }else{
+                            $scope.beginValFilter = 0;
+                        }
+                    }, 10);
+                };
+                //End Table Paging
+            },
+            function(errResult){}
+        );
+    };
+
+    $scope.save = function(){
+        var listEmail = angular.copy($scope.mailRegistration.form.registration.lstMailDestination);
+        for (var i = $scope.model.listOwner.length - 1; i >= 0; i--) {
+            if ($scope.model.listOwner[i].checked) {
+                listEmail.push($scope.model.listOwner[i]);
+                $scope.model.listOwner.splice(i, 1);
+            }
+        }
+        $scope.mailRegistration.form.registration.lstMailDestination = angular.copy(listEmail);
+        $scope.model.hidden.selectedAll = false;
+        $uibModalInstance.close();
+    };
+
+    $scope.checkList= function(){
+        $scope.model.hidden.listSelected = [];
+        if($scope.model.hidden.selectedAll){
+            angular.forEach($scope.model.listOwner, function(item, i){
+                item.checked = true;
+                $scope.model.hidden.listSelected.push(i);
+            });
+            $scope.model.selectedItems = $scope.model.listOwner.length;
+        }else{
+            angular.forEach($scope.model.listOwner, function(item, i){
+                item.checked = $scope.model.hidden.selectedAll;
+            });
+        }
+        $scope.model.selectedItems = $scope.model.hidden.listSelected.length;
+    };
+
+    $scope.click = function(row, index, checkbox){
+        if (row.checked == true) {
+            if(!checkbox){
+                angular.forEach($scope.model.hidden.listSelected , function(item, i){
+                    if(item == index){
+                        $scope.model.hidden.listSelected.splice(i, 1);
+                    }
+                })
+                row.checked = false;
+            }else{
+                $scope.model.hidden.listSelected.push(index);
+            }
+        }else {
+            if(!checkbox){
+                $scope.model.hidden.listSelected.push(index);
+                row.checked = true;
+            }else {
+                angular.forEach($scope.model.hidden.listSelected , function(item, i){
+                    if(item == index){
+                        $scope.model.hidden.listSelected.splice(i, 1);
+                    }
+                })
+            }
+        }
+        $scope.model.selectedItems = $scope.model.hidden.listSelected.length;
+    };
+
+    $scope.close = function() {
+        $scope.model.hidden.selectedAll = false;
+        $scope.mailRegistration.form.registration.lstMailDestination = $scope.model.hidden.listOwnerTmp;
+        $uibModalInstance.close();
+    };
+}]);
+
+exexSMSApp.controller('MailDestinationListControl',
+        ['$scope', '$filter','$uibModalInstance', 'data', 'MailRegistrationModel', 'DialogsService', 'ServerService', 'MailRegistrationControlModel', 'Messages',
+         function($scope, $filter, $uibModalInstance, data, MailRegistrationModel, DialogsService, ServerService, MailRegistrationControlModel, Messages) {
+
+    $scope.model = MailRegistrationModel;
+    $scope.modelControl =  MailRegistrationControlModel
+    $scope.init = function(){
+        $scope.model.selectedItems = 0;
+        $scope.model.hidden.listSelected = [];
+        var mailDestination = angular.fromJson(sessionStorage.getItem("mailDestination"));
+        if(null != mailDestination){
+            $scope.model.form.registration.mailCd = mailDestination.mailCd;
+            $scope.model.form.registration.mailSendStatus = mailDestination.mailSendStatus;
+            $scope.model.hidden.screenMode = mailDestination.screenMode;
+            $scope.model.hidden.fromScreen = mailDestination.fromScreen;
+            $scope.modelControl.form.search.mailSendStatus = mailDestination.controlMailSendStatus;
+            var params = {
+                    mailCd : mailDestination.mailCd
+            }
+            ServerService.doPost('MailRegistration/getMailDetail', params)
+            .then(
+                function(okResult) {
+                    var warning = okResult.data.warning;
+                    if(!StringUtils.isEmpty(warning)){
+                        DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                        return;
+                    }
+                    $scope.model.form.registration = okResult.data.mailView;
+                },
+                function(errResult){}
+            );
+        };
+        if($scope.model.hidden.screenMode != 'VIEW'){
+            $scope.modelControl.form.search.mailSendStatus = '';
+            $scope.model.hidden.listOwnerTmp = angular.copy($scope.model.form.registration.lstMailDestination);
+            //Table Paging
+            $scope.model.currentPage = 1; //current page
+            $scope.model.entryLimit = 10; //max no of items to display in a page
+            $scope.model.number = 10;
+            $scope.model.filteredItems = $scope.model.form.registration.lstMailDestination.length; //Initially for no filter
+            $scope.model.totalItems = $scope.model.form.registration.lstMailDestination.length;
+            $scope.beginValFilter = 1;
+            if($scope.model.form.registration.lstMailDestination.length > 0){
+                $scope.model.beginValFilter = 1;
+            }else{
+                $scope.model.beginValFilter = 0;
+            }
+
+            $scope.setPage = function(pageNo) {
+                $scope.currentPage = pageNo;
+            };
+
+            $scope.filter = function() {
+                $timeout(function() {
+                    $scope.filteredItems = $scope.model.form.filtered.length;
+                    if($scope.model.form.filtered.length > 0){
+                        $scope.beginValFilter = 1;
+                    }else{
+                        $scope.beginValFilter = 0;
+                    }
+                }, 10);
+            };
+            //End Table Paging
+        }else{
+            $scope.getInit();
+        }
+
+        $scope.exportFile = function(listDestination){
+            var params = {
+                    lstMailDestination : listDestination
+            };
+            var now = $filter('date')(new Date(), "yyyyMMddhhmm");
+            ServerService.doDownload('/MailDestinationList/exportData',  params, "application/vnd.ms-excel", "メール宛先一覧_" + now + ".xlsx");
+        }
+    }
+
+    //screenMode == VIEW
+    $scope.getInit = function() {
+        ServerService.doPost('MailDestinationList/getInit', null)
+        .then(
+            function(okResult) {
+                $scope.model.listS020004 = okResult.data.listS020004;
+                $scope.model.listS020019= okResult.data.listS020019;
+                $scope.search($scope.modelControl.form.search);
+            },
+            function(errResult){}
+        );
+    }
+
+    $scope.search = function(param) {
+        var params = {
+            mailSendStatus : param.mailSendStatus,
+            mailCd : $scope.model.form.registration.mailCd
+        };
+        if(!StringUtils.isEmpty(param.openStatus)){
+            params.openStatus = param.openStatus == '1' ? true : false
+        }
+        ServerService.doPost('MailDestinationList/search', params)
+        .then(
+            function(okResult) {
+                $scope.model.listDestination = okResult.data.listOwner;
+                //Table Paging
+                $scope.model.currentPage = 1; //current page
+                $scope.model.entryLimit = 10; //max no of items to display in a page
+                $scope.model.filteredItems = $scope.model.listDestination.length; //Initially for no filter
+                $scope.model.totalItems = $scope.model.listDestination.length;
+                $scope.beginValFilter = 1;
+                if($scope.model.listDestination.length > 0){
+                    $scope.model.beginValFilter = 1;
+                }else{
+                    $scope.model.beginValFilter = 0;
+                }
+
+                $scope.setPage = function(pageNo) {
+                    $scope.currentPage = pageNo;
+                };
+
+                $scope.filter = function() {
+                    $timeout(function() {
+                        $scope.filteredItems = $scope.model.form.filtered.length;
+                        if($scope.model.form.filtered.length > 0){
+                            $scope.beginValFilter = 1;
+                        }else{
+                            $scope.beginValFilter = 0;
+                        }
+                    }, 10);
+                };
+            },
+            function(errResult){}
+        );
+    };
+
+    $scope.checkList= function(){
+        $scope.model.hidden.listSelected = [];
+        if($scope.model.hidden.selectedAll){
+            angular.forEach($scope.model.listDestination, function(item, i){
+                item.checked = true;
+                $scope.model.hidden.listSelected.push(i);
+            });
+            $scope.model.selectedItems = $scope.model.listDestination.length;
+        }else{
+            angular.forEach($scope.model.listDestination, function(item, i){
+                item.checked = $scope.model.hidden.selectedAll;
+            });
+        }
+        $scope.model.selectedItems = $scope.model.hidden.listSelected.length;
+    };
+
+    $scope.click = function(row, index, checkbox){
+        if (row.checked == true) {
+            if(!checkbox){
+                angular.forEach($scope.model.hidden.listSelected , function(item, i){
+                    if(item == index){
+                        $scope.model.hidden.listSelected.splice(i, 1);
+                    }
+                })
+                row.checked = false;
+            }else{
+                $scope.model.hidden.listSelected.push(index);
+            }
+        }else {
+            if(!checkbox){
+                $scope.model.hidden.listSelected.push(index);
+                row.checked = true;
+            }else {
+                angular.forEach($scope.model.hidden.listSelected , function(item, i){
+                    if(item == index){
+                        $scope.model.hidden.listSelected.splice(i, 1);
+                    }
+                })
+            }
+        }
+        $scope.model.selectedItems = $scope.model.hidden.listSelected.length;
+    };
+
+    /**
+     * SEND MAIL
+     */
+    $scope.resendMail = function(){
+        DialogsService.showConfirm(Messages.getMessage('title.confirm'),Messages.getMessage('S00021'))
+        .result.then(function(btn){
+            var param = angular.copy($scope.model.form.registration);
+            var listSendMail = [];
+            angular.forEach($scope.model.listDestination, function(item, i){
+                if(item.checked){
+                    delete item.checked;
+                    listSendMail.push(item);
+                }
+            })
+            param.lstMailDestination = listSendMail;
+            param.createSalesReport = false;
+            ServerService.doPost('MailRegistration/sendMail', param)
+            .then(
+                function(okResult) {
+                    var error = okResult.data.failed;
+                    var success = okResult.data.success;
+                    var warning = okResult.data.warning;
+                    if(!StringUtils.isEmpty(success)){
+                        DialogsService.showNotify(Messages.getMessage('title.info'), success);
+                        $scope.model.form.registration.mailSendStatus = "1";
+                        $scope.model.hidden.selectedAll = false;
+                    } else if(!StringUtils.isEmpty(error)){
+                        DialogsService.showError(Messages.getMessage('system.error'), error);
+                        return;
+                    }else if(!StringUtils.isEmpty(warning)){
+                        DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                        return;
+                    }
+                },
+                function(errResult){}
+            );
+        });
+    };
+
+    $scope.init();
+    //screenMode != VIEW
+    $scope.removeItem = function(index) {
+        //if filter, just remove item in filter list
+        if(!StringUtils.isEmpty($scope.model.searchMail)){
+            var length = $scope.model.form.registration.lstMailDestination.length;
+            var itemFilter = $scope.model.form.filtered[index];
+            for(var i = length - 1; i >= 0; i-- ){
+                var item = $scope.model.form.registration.lstMailDestination[i];
+                if(JSON.stringify(item) == JSON.stringify(itemFilter)){
+                    $scope.model.form.registration.lstMailDestination.splice(i, 1);
+                    return;
+                }
+            }
+        }else{
+            //if NOT filter, remove item in destination list
+            $scope.model.form.registration.lstMailDestination.splice(index, 1);
+        }
+    };
+
+    $scope.removeAll = function() {
+        //if filter, just remove filter item
+        if(!StringUtils.isEmpty($scope.model.searchMail)){
+            angular.forEach($scope.model.form.filtered, function(item, i){
+                $scope.removeItem(i);
+            })
+        }else{
+            //if NOT filter, remove all item
+            $scope.model.filteredItems = 0;
+            $scope.model.form.registration.lstMailDestination = [];
+        }
+    };
+
+    $scope.save = function(){
+        $uibModalInstance.close();
+    }
+
+    $scope.close = function() {
+        if($scope.model.hidden.screenMode != 'VIEW'){
+            $scope.model.form.registration.lstMailDestination= $scope.model.hidden.listOwnerTmp;
+        }
+        $uibModalInstance.close();
+    };
+}]);

@@ -1,0 +1,543 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision: 1.0 $  $Date: 2019/04/18 $
+ * @author chi-cuong
+ */
+
+'use strict';
+exexSMSApp.factory('MstApproveRouteModel', [ 'BaseModel', function(BaseModel) {
+
+    var model = BaseModel.getInstance();
+
+    model.form = {
+        groupEdit: {
+            groupCd : '',
+            groupName : '',
+            positionNo :  '',
+            validDateFrom : '',
+            validDateTo :'',
+            remark :''
+        },
+        listUser : [],
+        listMstGroup : [],
+        userGroupList : []
+    };
+    model.treeData = [];
+    model.userGroupList =[];
+    model.treeConfig = {
+        core : {
+            multiple : true,
+            animation: true,
+            error : function(error) {
+                console.log('treeCtrl: error from js tree - ' + angular.toJson(error));
+            },
+            check_callback : true,
+            worker : true
+        },
+        types : {
+            'default' : {
+                icon : 'fa fa-users'
+            },
+            star : {
+                icon : 'glyphicon glyphicon-star'
+            },
+            cloud : {
+                icon : 'glyphicon glyphicon-cloud'
+            }
+        },
+        version : 1,
+        plugins : ["types","search"]
+    };
+    model.treeGroup = {
+        treeData : [],
+        treeConfig : angular.copy(model.treeConfig),
+        treeInstance : ''
+    }
+    model.treeApproveGroup = {
+        treeData : [],
+        treeConfig : angular.copy(model.treeConfig),
+        treeInstance : ''
+    }
+
+    model.hidden = {
+        selectedGroup: [],
+        listGroupSelect : [],
+        isSubmited: false,
+        screenMode : 'INSERT'
+    };
+    return model;
+}]);
+
+exexSMSApp.controller('mstApproveRouteCtrl',
+        ['$timeout', '$scope', 'MstApproveRouteModel', 'Messages', 'ServerService', 'DialogsService',
+         function($timeout, $scope, MstApproveRouteModel, Messages, ServerService, DialogsService){
+
+    $scope.model = MstApproveRouteModel;
+
+    var to = false;
+
+    $scope.init = function(){
+        $scope.model.form.userGroupList = [];
+        $scope.model.form.listUser = [];
+        setTimeout(function(){
+            $scope.groupLabel = angular.element('#groupNameTmpLabel').text();
+        },0);
+        $scope.model.form.groupEdit.groupType = 'APPROVE_ROUTE';
+        $scope.model.hidden.isSubmited = false;
+        $scope.getInit();
+    };
+
+    $scope.getInit = function(){
+        ServerService.doPost('MstApproveRoute/getInit', {}).then(
+            function(okResult) {
+                var error = okResult.data.failed;
+                if(!StringUtils.isEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                }else{
+                    var json = okResult.data.listApproveRoute;
+                    if(!StringUtils.isEmpty(json)){
+                        json = JSON.parse(JSON.stringify(json).split('"groupCd":').join('"id":'));
+                        json = JSON.parse(JSON.stringify(json).split('"groupName":').join('"text":'));
+                        angular.forEach(json, function(item, i){
+                            if(item.id == '$' || item.id == '$old'){
+                                item.state = { opened : true, disabled: true};
+                            }
+                        })
+                        $scope.model.treeData = json;
+                    }else{
+                        $scope.model.treeData = null;
+                    }
+                    $scope.model.treeInstance.jstree(true).settings.core.data = $scope.model.treeData;
+                    $scope.model.treeInstance.jstree(true).refresh();
+                }
+            }
+        );
+    }
+
+    $scope.loadPage = function(data){
+        $scope.model.form.listUser = [];
+        $scope.model.form.userGroupList = [];
+        var groupDetail = {
+            groupCd : data,
+            groupType: 'APPROVE_ROUTE'
+        };
+        ServerService.doPost('MstApproveRoute/getGroupDetail', groupDetail).then(
+            function(okResult) {
+
+                var sessionLogin = angular.fromJson(sessionStorage.getItem("session"));
+                if(!StringUtils.isEmpty(sessionLogin.groupCd)){
+                    $scope.model.hidden.selectedGroup = [sessionLogin.groupCd];
+                }else{
+                    $scope.model.hidden.selectedGroup = [];
+                }
+
+                $scope.model.form.listMstGroup = okResult.data.listGroupType;
+                $scope.model.form.groupEdit =  okResult.data.groupDetail;
+                $scope.model.form.userGroupList =  okResult.data.userGroupList;
+                $scope.model.form.listUser =  okResult.data.userList;
+
+                $scope.model.hidden.json = okResult.data.listGroupType;
+                $scope.model.hidden.jsonApprove = okResult.data.listGroupApprove;
+                $scope.convertGroupTreeData(angular.copy($scope.model.hidden.json), $scope.model.treeGroup, true);
+                $scope.convertGroupTreeData(angular.copy($scope.model.hidden.jsonApprove), $scope.model.treeApproveGroup, true);
+
+                $timeout(function() {
+                    $scope.model.treeGroup.treeInstance.jstree(true).settings.core.data = $scope.model.treeGroup.treeData;
+                    $scope.model.treeApproveGroup.treeInstance.jstree(true).settings.core.data = $scope.model.treeApproveGroup.treeData;
+                    $scope.model.treeGroup.treeInstance.jstree(true).refresh();
+                    $scope.model.treeApproveGroup.treeInstance.jstree(true).refresh();
+                }, 100);
+            }
+        );
+    };
+
+    $scope.resetForm = function(){
+        $scope.model.hidden.screenMode = '';
+        $scope.nodeId = ''
+        $scope.model.form.groupEdit.groupCd = '';
+        $scope.model.form.groupEdit.groupName = '';
+        $scope.model.form.groupEdit.positionNo = '';
+        $scope.model.form.groupEdit.remark = '';
+        $scope.model.form.groupEdit.validDateFrom = '';
+        $scope.model.form.groupEdit.validDateTo = '';
+        $scope.model.form.userGroupList = [];
+        $scope.model.hidden.isSubmited = false;
+    }
+
+    $scope.selectNode = function(node, selected) {
+        $scope.model.hidden.screenMode = 'UPDATE';
+        $scope.nodeId = selected.node.id;
+        $scope.loadPage($scope.nodeId);
+    }
+
+    // Check this Ellipsis
+    $scope.isEllipsisActive = function (e) {
+         return (e.offsetWidth < e.scrollWidth);
+    }
+
+    $scope.hoverNode = function(node, selected) {
+        if(selected.node.id.indexOf('$') == -1){
+            var idNode =  "#" + selected.node.id + "_anchor";
+            $(idNode).each(function(i) {
+                if ($scope.isEllipsisActive(this)) {
+                    $(this).attr("title", $(this).text());
+                }
+            });
+        }
+    }
+
+    $scope.register = function (){
+        $scope.model.treeInstance.jstree(true).deselect_node($scope.nodeId);
+
+        $scope.model.treeGroup.searchValue = "";
+        $scope.model.treeApproveGroup.searchValue = "";
+
+        $scope.convertGroupTreeData(angular.copy($scope.model.hidden.json), $scope.model.treeGroup, false);
+        $scope.convertGroupTreeData(angular.copy($scope.model.hidden.jsonApprove), $scope.model.treeApproveGroup, false);
+        $timeout(function() {
+            $scope.model.treeGroup.treeInstance.jstree(true).settings.core.data = $scope.model.treeGroup.treeData;
+            $scope.model.treeApproveGroup.treeInstance.jstree(true).settings.core.data = $scope.model.treeApproveGroup.treeData;
+            $scope.model.treeGroup.treeInstance.jstree(true).refresh();
+            $scope.model.treeApproveGroup.treeInstance.jstree(true).refresh();
+        }, 100);
+
+        $scope.nodeId = '0';
+        $scope.model.form.groupEdit = {
+            groupCd : '',
+            groupName : '',
+            positionNo :  '',
+            validDateFrom : '',
+            validDateTo :'',
+            remark :''
+        };
+
+        $scope.model.hidden.isSubmited = false;
+        $scope.model.hidden.screenMode = 'INSERT';
+        $scope.loadPage();
+
+    }
+
+    $scope.deleteLogicGroup = function(param) {
+        var params = {
+            groupCd : param.groupCd,
+        };
+        DialogsService.showConfirm(Messages.getMessage('title.confirm'),Messages.getMessage('S00005'))
+        .result.then(function(btn){
+            ServerService.doPost('MstGroupControl/deleteLogicGroup', params).then(
+                function(okResult) {
+                    if(!StringUtils.isEmpty(okResult.data.failed)){
+                         DialogsService.showError(Messages.getMessage('system.error'), error);
+                         return;
+                    } else if (!StringUtils.isEmpty(okResult.data.warning)) {
+                        DialogsService.showWarning(Messages.getMessage('check.error'), okResult.data.warning);
+                        return;
+                    } else {
+                        DialogsService.showNotify(Messages.getMessage('title.info'), okResult.data.success);
+                        $scope.model.treeInstance.jstree(true).delete_node(param.groupCd);
+                        $scope.model.hidden.screenMode = 'INSERT';
+                        $scope.resetForm();
+                    }
+                }
+            );
+        });
+    };
+
+    $scope.addGroup = function(param,formInvalid) {
+        $scope.model.hidden.isSubmited = true;
+        if (formInvalid) {
+            return;
+        }
+        var params = $scope.convertParams(param);
+        for(var i = 0; i < params.userGroupList.length; i++){
+            params.userGroupList[i] = $scope.convertUserGroupList(params.userGroupList[i]);
+        }
+        if($scope.model.form.userGroupList.length > 0){
+            $scope.model.form.userGroupList.forEach(function(item, key) {
+                params.newUserGroupList.push(item.userCd);
+            });
+        }
+        DialogsService.showConfirm(Messages.getMessage('title.confirm'),Messages.getMessage('S00003'))
+        .result.then(function(btn){
+            ServerService.doPost('MstApproveRoute/addGroup', params).then(
+                function(okResult) {
+                    if(!StringUtils.isEmpty(okResult.data.error)){
+                         DialogsService.showError(Messages.getMessage('system.error'), okResult.data.failed);
+                         return;
+                    }
+                    if (!StringUtils.isEmpty(okResult.data.warning)) {
+                        DialogsService.showWarning(Messages.getMessage('check.error'), okResult.data.warning);
+                        return;
+                    } else {
+                        DialogsService.showNotify(Messages.getMessage('title.info'), okResult.data.success).result.then(
+                            function(btn){
+                                $scope.model.form.groupEdit.groupCd = okResult.data.groupCd;
+                                $scope.model.form.groupEdit.version = 1;
+                                $scope.model.hidden.screenMode = 'UPDATE';
+
+                                var newGroup =  {
+                                    id : okResult.data.groupCd,
+                                    text : param.groupName
+                                }
+                                //Check valid date to
+                                var groupId = "$";
+                                if(!StringUtils.isEmpty(param.validDateTo) && param.validDateTo < DateUtils.getDateForString(new Date())){
+                                    groupId = "$old"
+                                }
+                                //Add group mới vào treeview
+                                $scope.model.treeInstance.jstree(true).create_node(groupId, newGroup);
+                                $scope.model.searchGroup = param.groupName;
+                                $scope.searchNode();
+
+                                $scope.model.treeInstance.jstree(true).select_node($scope.model.form.groupEdit.groupCd);
+                            }
+                        );
+                    }
+                }
+            );
+        });
+    };
+
+    $scope.updateGroup = function(param,formInvalid) {
+        $scope.model.hidden.isSubmited = true;
+        if (formInvalid) {
+            return;
+        }
+        var params = $scope.convertParams(param);
+        params.version = $scope.model.form.groupEdit.version;
+        for(var i = 0; i < params.userGroupList.length; i++){
+            params.userGroupList[i] = $scope.convertUserGroupList(params.userGroupList[i]);
+        }
+        if($scope.model.form.userGroupList.length > 0){
+            $scope.model.form.userGroupList.forEach(function(item) {
+                params.newUserGroupList.push(item.userCd);
+            });
+        }
+        if(!StringUtils.isEmpty(params.groupType)){
+            DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('S00004')) .result.then(
+                function(btn){
+                    ServerService.doPost('MstApproveRoute/updateGroup', params).then(
+                        function(okResult) {
+                            if(!StringUtils.isEmpty(okResult.data.failed)){
+                                 DialogsService.showError(Messages.getMessage('system.error'), okResult.data.failed);
+                                 return;
+                            } else if(!StringUtils.isEmpty(okResult.data.warning)){
+                                DialogsService.showWarning(Messages.getMessage('check.error'), okResult.data.warning.replaceAll("#","<br>"));
+                                return;
+                            } else {
+                                $scope.model.form.groupEdit.version = okResult.data.version;
+                                var newGroup =  {
+                                    id : okResult.data.groupCd,
+                                    text : param.groupName
+                                }
+                                DialogsService.showNotify(Messages.getMessage('title.info'), okResult.data.success).result.then(function(btn){
+                                    $scope.getInit();
+                                    $timeout(function(){
+                                        $scope.model.searchGroup = param.groupName;
+                                        $scope.searchNode();
+                                        $scope.model.treeInstance.jstree(true).select_node($scope.model.form.groupEdit.groupCd);
+                                    },500);
+                                })
+                            }
+                        }
+                    );
+                }
+            );
+        }else{
+            DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00203'));
+        }
+    };
+
+    ////Event JSTree
+    $scope.searchNode = function(){
+        if(to){
+            clearTimeout(to);
+        }
+        to = setTimeout(function () {
+            var v = $('#searchGroup').val();
+            $('#tree').jstree(true).search(v);
+        }, 250);
+    }
+
+    $scope.searchNodeGroup = function(){
+        var to = false;
+        if(to){
+            clearTimeout(to);
+        }
+        to = setTimeout(function () {
+            var v = $('#searchNodeGroup').val();
+            $scope.model.treeGroup.treeInstance.jstree(true).search(v);
+        }, 250);
+    }
+
+    $scope.searchApproveNode = function(){
+        var to = false;
+        if(to){
+            clearTimeout(to);
+        }
+        to = setTimeout(function () {
+            var v = $('#searchApproveGroup').val();
+            $scope.model.treeApproveGroup.treeInstance.jstree(true).search(v);
+        }, 250);
+    }
+
+    $scope.init();
+
+    $scope.removeItem = function(row, index){
+        var userCd = !StringUtils.isEmpty(row.approvedUserCd) ? row.approvedUserCd : row.userCd;
+        if(row.userGroupFlag == '0'){
+            var list = $scope.model.form.userGroupList.splice(index, 1);
+            $scope.model.form.listUser.push(list[0]);
+        } else if ($scope.model.treeGroup.treeInstance.jstree(true).get_node(userCd)){
+            $scope.model.form.userGroupList.splice(index, 1);
+            $scope.model.treeGroup.treeInstance.jstree(true).get_node(userCd).state.disabled = false;
+            $scope.model.treeGroup.treeInstance.jstree(true).redraw_node(userCd);
+        } else if ($scope.model.treeApproveGroup.treeInstance.jstree(true).get_node(userCd)){
+            $scope.model.form.userGroupList.splice(index, 1);
+            $scope.model.treeApproveGroup.treeInstance.jstree(true).get_node(userCd).state.disabled = false;
+            $scope.model.treeApproveGroup.treeInstance.jstree(true).redraw_node(userCd);
+        }
+    };
+
+    $scope.convertGroupTreeData = function(json, treeModel, viewMode){
+        if(!ValidateUtil.isValidTextEmpty(json)){
+            json = JSON.parse(JSON.stringify(json).split('"groupCd":').join('"id":'));
+            json = JSON.parse(JSON.stringify(json).split('"groupName":').join('"text":'));
+            json = JSON.parse(JSON.stringify(json).split('"parentCd":').join('"parent":'));
+            angular.forEach(json, function(item, i){
+                if(item.id == '$'){
+                    item.state = { opened : true, disabled: true};
+                }
+                if(item.id == '$old'){
+                    item.state = { disabled: true};
+                }
+                if(viewMode) {
+                    var userGroupList = $scope.model.form.userGroupList;
+                    for(var i = 0; i < userGroupList.length; i++){
+                        var group = userGroupList[i];
+                        if(group.userGroupFlag == '1'){
+                            if(item.id == group.userCd){
+                                item.state = { disabled: true };
+                            }
+                        }
+                    }
+                }
+            })
+            treeModel.treeData = json;
+        }else{
+            treeModel.treeData = null;
+        }
+    }
+
+    $scope.searchApproveNode = function(){
+        var to = false;
+        if(to){
+            clearTimeout(to);
+        }
+        to = setTimeout(function () {
+            var v = $('#searchApproveGroup').val();
+            $scope.model.treeApproveGroup.treeInstance.jstree(true).search(v);
+        }, 250);
+    }
+
+    $scope.selectNodeGroup = function(node, selected) {
+
+        selected.node.state.disabled = true;
+        var item = {
+            approvedUserCd : selected.node.id,
+            userName : selected.node.text,
+            userGroupFlag : '1',
+            isApproveGroup: false,
+        };
+        $scope.model.form.userGroupList.push(item);
+        $scope.model.treeGroup.treeInstance.jstree(true).redraw_node(selected.node.id);
+    }
+
+    $scope.selectNodeApprove = function(node, selected){
+
+        selected.node.state.disabled = true;
+        var item = {
+            approvedUserCd : selected.node.id,
+            userName : selected.node.text,
+            userGroupFlag : '1',
+            isApproveGroup: true,
+        };
+        $scope.model.form.userGroupList.push(item);
+        $scope.model.treeApproveGroup.treeInstance.jstree(true).redraw_node(selected.node.id);
+    }
+
+    $scope.selectUserByGroupList = function(groupCdList) {
+        var param = {
+            groupCdList : groupCdList,
+            userSelectedList : []
+        };
+        for(var i = 0; i < $scope.model.form.userGroupList.length; i++){
+            $scope.model.form.userGroupList[i] = $scope.convertUserGroupList($scope.model.form.userGroupList[i]);
+        }
+        if($scope.model.form.userGroupList.length != 0){
+            angular.forEach($scope.model.form.userGroupList, function(item, i){
+                if(item.userGroupFlag == '0'){
+                    param.userSelectedList.push(item.userCd);
+                }
+            })
+        }
+        ServerService.doPost('PtlRequest/selectUserByGroupList', param).then(
+            function(okResult) {
+                var error = okResult.data.failed;
+                if(!StringUtils.isEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                }
+                $scope.model.form.listUser = okResult.data.listUser;
+            }
+        );
+    };
+
+    $scope.changeGroup = function(listSelect){
+        $scope.selectUserByGroupList(listSelect);
+    }
+
+    $scope.convertUserGroupList = function (param) {
+        var params = {
+            groupCd : param.groupCd,
+            userCd : !StringUtils.isEmpty(param.userCd) ? param.userCd : param.approvedUserCd,
+            userName : param.userName,
+            userGroupFlag : !StringUtils.isEmpty(param.userGroupFlag) ? param.userGroupFlag : '0',
+            userOrderNo : param.userOrderNo,
+        };
+        return params;
+    }
+
+    $scope.selectUser = function(row, index){
+        $scope.model.form.listUser.splice(index, 1);
+        $scope.model.form.userGroupList.push(row);
+    }
+
+    $scope.changeTab = function(index) {
+        $scope.model.hidden.tabIndex = index;
+    }
+
+    $scope.convertParams = function (param){
+        var params = {
+            groupCd : $scope.model.form.groupEdit.groupCd,
+            groupName : param.groupName,
+            groupType : 'APPROVE_ROUTE',
+            userGroupList : $scope.model.form.userGroupList,
+            newUserGroupList : [],
+            positionNo : param.positionNo,
+            validDateFrom : !StringUtils.isEmpty(param.validDateFrom) ? new Date(param.validDateFrom) : null,
+            validDateTo : !StringUtils.isEmpty(param.validDateTo) ? new Date(param.validDateTo) : null,
+            remark: param.remark,
+        };
+        return params;
+    }
+
+    $scope.sortableConfig = {
+        group: 'requestUser'
+    };
+
+}]);
+

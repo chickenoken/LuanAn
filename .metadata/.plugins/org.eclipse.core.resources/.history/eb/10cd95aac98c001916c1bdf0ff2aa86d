@@ -1,0 +1,188 @@
+'use strict';
+
+exexSMSApp.factory('MailListModel', [ 'BaseModel', function(BaseModel) {
+
+    var model = BaseModel.getInstance();
+    model.form = {
+        search :{
+            createDateFrom:'',
+            createDateTo: '',
+            mailSendDateFrom : '',
+            mailSendDateTo :'',
+            userCd : '',
+            mailSendStatus:'',
+            mailSubject  : ''
+        },
+        mailList : [],
+        listS020004 : [],
+        listMstUser : [],
+    };
+    return model;
+}]);
+
+exexSMSApp.controller('mailListCtrl',
+        ['$scope', '$filter', 'RouteService', 'DialogsService', 'MailListModel', 'Messages', 'ServerService',
+         function($scope, $filter, RouteService, DialogsService, MailListModel, Messages, ServerService) {
+
+    $scope.model = MailListModel;
+
+    $scope.convertParamsSearch = function(param){
+        var params = {
+            createDateFrom : !StringUtils.isEmpty(param.createDateFrom) ? new Date(param.createDateFrom) : "",
+            createDateTo : !StringUtils.isEmpty(param.createDateTo) ? new Date(param.createDateTo) : "",
+            mailSendDateFrom : !StringUtils.isEmpty(param.mailSendDateFrom) ? new Date(param.mailSendDateFrom) : "",
+            mailSendDateTo : !StringUtils.isEmpty(param.mailSendDateTo) ? new Date(param.mailSendDateTo) : "",
+            userCd : param.userCd,
+            mailSendStatus : param.mailSendStatus,
+            mailSubject  : param.mailSubject,
+        };
+        return params;
+    };
+
+    $scope.getInit = function(){
+        ServerService.doPost('MailList/getInit', {}).then(
+            function(okResult) {
+                var error = okResult.data.failed;
+                if(!StringUtils.isEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                }
+                $scope.model.form.listS020004 = okResult.data.listS020004;
+                $scope.model.form.listMstUser = okResult.data.listMstUser;
+
+                var sessionSearch = angular.fromJson(sessionStorage.getItem("mailListSession"));
+                if(!StringUtils.isEmpty(sessionSearch)){
+                    $scope.model.currentPage = sessionSearch.currentPage;
+                    $scope.model.form.search = sessionSearch;
+                } else {
+                    $scope.model.form.search.createDateFrom = $filter('date')(DateUtils.getPreviousMonth(), "yyyy/MM/dd");
+                    $scope.model.form.search.createDateTo = $filter('date')(new Date(), "yyyy/MM/dd");
+                }
+                $scope.search($scope.model.form.search, $scope.model.currentPage);
+            }
+        );
+    };
+    $scope.getInit();
+
+    $scope.checkDate = function (param) {
+        var date = param;
+        var minDate = new Date('1000/01/01');
+        var maxDate = new Date('9999/12/31');
+        if(date < minDate || date > maxDate){
+            DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00117'));
+            return true;
+        }
+    };
+
+    $scope.search = function(param , page){
+        var params = $scope.convertParamsSearch($scope.model.form.search);
+        if($scope.checkDate(params.mailSendDateFrom)){
+            return;
+        };
+        sessionStorage.setItem("mailListSession",JSON.stringify(params));
+        ServerService.doPost('MailList/search', params)
+        .then(
+            function(okResult) {
+                var error = okResult.data.failed;
+                var warning = okResult.data.warning;
+                if(!StringUtils.isEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                 }else if(!StringUtils.isEmpty(warning)){
+                     DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                     return;
+                 }
+                console.log(okResult.data);
+                var length = okResult.data.resultList.length;
+                $scope.model.form.mailList = okResult.data.resultList;
+                $scope.model.currentPage = !StringUtils.isEmpty(page) ? page : 1; //current page
+                $scope.model.entryLimit = 20; //max no of items to display in a page
+                $scope.model.number = 20;
+                $scope.model.filteredItems = length; //Initially for no filter
+                $scope.model.totalItems = length;
+                if(length > 0){
+                    $scope.model.beginValFilter = 1;
+                }else{
+                    $scope.model.beginValFilter = 0;
+                }
+                $scope.setPage = function(pageNo) {
+                    $scope.currentPage = pageNo;
+                };
+
+                // add colresizable to table
+                setTimeout(function(){
+                    $scope.setColResizable();
+                });
+            },
+            function(errResult){}
+        );
+    };
+
+    $scope.$watch('model.currentPage', function(newVal, oldVal) {
+        if(!StringUtils.isEmpty(newVal)) {
+            var sessionSearch = SessionUtils.prepareSession(sessionStorage.getItem("mailListSession"));
+            sessionSearch.currentPage = newVal;
+            sessionStorage.setItem("mailListSession", JSON.stringify(sessionSearch));
+        }
+    });
+
+
+    $scope.goToMailReg = function(mailCd){
+        var param = {mailCd: mailCd};
+        ServerService.doPost('MailList/isExistData', param).then(
+            function(okResult) {
+                var error =  okResult.data.failed;
+                var warning =  okResult.data.warning;
+                if(!StringUtils.isEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                }else if(!StringUtils.isEmpty(warning)){
+                    DialogsService.showWarning(Messages.getMessage('check.error'), warning)
+                    .result.then(function() {
+                        var paramSearch = $scope.model.form.search;
+                        $scope.search(param);
+                    });
+                }else{
+                    var mailListDetail = {
+                        mailCd :  mailCd,
+                        screenMode : "VIEW",
+                        isDisabled : true,
+                        redirectUrl : 'MailList'
+                    };
+                    sessionStorage.removeItem("mailCreateDetail");
+                    sessionStorage.setItem("mailListDetail", JSON.stringify(mailListDetail));
+                    RouteService.gotoUrl("MailRegistration");
+                }
+            }
+        );
+    };
+
+    $scope.openDialog = function(row){
+        var  options = {
+            size: '1300',
+        };
+        var mailDestination= {
+            mailCd :  row.mailCd,
+            mailSendStatus : row.mailSendStatus,
+            screenMode : "VIEW",
+            fromScreen : "MailList",
+            controlMailSendStatus : '3'
+        };
+        sessionStorage.setItem("mailDestination", JSON.stringify(mailDestination));
+        DialogsService.showDialog('MailDestinationList', 'MailDestinationListControl', mailDestination, options).result.then(function(){
+            sessionStorage.removeItem('mailDestination');
+        });
+    }
+
+    // set colResizable
+    $scope.setColResizable = function(){
+        // remove JCLRgrips if having
+        $('.JCLRgrips').remove();
+
+        angular.element('#tableMailList').colResizable({
+            liveDrag: true,
+            postbackSafe: true,
+            useLocalStorage: true
+        });
+    }
+}]);

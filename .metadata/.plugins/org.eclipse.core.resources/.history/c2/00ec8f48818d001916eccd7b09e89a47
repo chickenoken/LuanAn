@@ -1,0 +1,545 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision: $ $Date: $
+ * @author SystemEXE Quang-Thien
+ */
+
+'use strict';
+
+exexSMSApp.controller('LeftSidebarCtrl',
+        ['$window', '$scope', 'RouteService','ServerService', 'HeaderModel',
+            function($window, $scope , RouteService, ServerService, HeaderModel) {
+
+
+    $scope.getFreeLabel = function() {
+        ServerService.doPost('Login/selectFreeLabel', {}).then(
+            function(okResult) {
+                if(!StringUtils.isEmpty(okResult.data.freeDto) && okResult.data.freeDto.length > 0){
+                    var freeLabel = {};
+                    angular.forEach(okResult.data.freeDto, function (item, i) {
+                        freeLabel[item.labelKey] = item.labelValue;
+                    });
+                    sessionStorage.setItem('freeLabel', JSON.stringify(freeLabel));
+                    $scope.model.label = freeLabel;
+                }
+            }
+        );
+    }
+
+    $scope.init = function(){
+        $scope.model = HeaderModel;
+
+//        var freeLabel = angular.fromJson(sessionStorage.getItem("freeLabel"));
+//        if(!StringUtils.isEmpty(freeLabel)) {
+//            $scope.model.label = freeLabel;
+//        } else {
+            $scope.getFreeLabel();
+//        }
+
+        // TODO set min height
+        $('.page-content').css({'min-height' : $('.exex-sidebar').height() + 'px'});
+
+        //Active menu
+        var url = $window.location.href.split('/');
+        var viewUrl = url[url.length - 2];
+        var id = url[url.length - 1].replace('.html', '');
+        $scope.setStyle  = function(value, id){
+            if (id.indexOf('#') != -1 || id.indexOf('?') != -1){
+                id = id.replace(/[#?]/g,'');
+            }
+            angular.element(document.getElementById(id)).addClass('active');
+            //TOP
+            angular.element(document.getElementById(id)).children().children('span').last().addClass('selected');
+            //END TOP
+            angular.element(document.getElementById(id)).parent().parent().addClass('active');
+            angular.element(document.getElementById(id)).parent().parent().parent('ul').parent('li').addClass('active');
+            angular.element(document.getElementById(id)).parent().parent().children().children('span.arrow').addClass('open');
+            angular.element(document.getElementById(id)).parent().parent().children().children('span').last().addClass('selected');
+        };
+        if (id.indexOf('Control') != -1){
+            $scope.setStyle('Control', id);
+        } else if (id.indexOf('List') != -1){
+            $scope.setStyle('List', id);
+            if(id == 'OwnerCardList'){
+                $scope.setStyle('List', 'OwnerCardListHeader');
+            }
+        } else {
+            $scope.setStyle(null,id);
+        }
+    };
+    $scope.init();
+
+    $scope.gotoUrl = function(url) {
+        switch (url) {
+            // 仮登録一覧画面遷移する
+            case 'InterimRegistOwnerCardList':
+                sessionStorage.removeItem("businessCardSearch");
+                sessionStorage.removeItem("businessCardControl");
+                RouteService.gotoUrl('InterimRegistOwnerCardList');
+                break;
+            // ご担当者登録画面遷移する
+            case 'BusinessCardControl':
+                sessionStorage.removeItem("businessCardSearch");
+                sessionStorage.removeItem("businessCardControl");
+                RouteService.gotoUrl('BusinessCardControl');
+                break;
+            // 顧客登録更新画面遷移する
+            case 'CrmControl':
+                sessionStorage.removeItem("projectCustItemInfo");
+                RouteService.gotoUrl('CrmControl');
+                break;
+            // 案件登録更新画面遷移する
+            case 'SfaProjectControl':
+                var passingParam = {'screenMode' : 'INSERT'};
+                sessionStorage.setItem("projectItemControl", JSON.stringify(passingParam));
+                sessionStorage.removeItem("projectCustItemInfo");
+                sessionStorage.removeItem("salesReportParamSearch");
+                sessionStorage.removeItem("fromSalEXEX");
+                RouteService.gotoUrl('SfaProjectControl');
+                break;
+            // 案件一覧画面遷移する
+            case 'SfaProjectList':
+                sessionStorage.removeItem('custItemInfo');
+                sessionStorage.removeItem('projectCustItemInfo');
+                sessionStorage.removeItem("salesReportParamSearch");
+                sessionStorage.removeItem("sessionSearch");
+                sessionStorage.removeItem("fromSalEXEX");
+                sessionStorage.removeItem("sfaProjectListSession");
+                sessionStorage.removeItem("todo");
+                sessionStorage.removeItem("projectDetailSearch");
+                // this session using for next-back process (remove)
+                sessionStorage.removeItem("tabProjectProcess");
+                RouteService.gotoUrl('SfaProjectList');
+                break;
+
+            case 'SfaSubProjectControl':
+                sessionStorage.removeItem('sfaSubProjectListSession');
+                sessionStorage.removeItem('projectItemControl');
+                sessionStorage.removeItem("projectCustItemInfo");
+                sessionStorage.removeItem("salesReportParamSearch");
+                sessionStorage.removeItem("fromSalEXEX");
+                var passingParam = {screenMode : 'INSERT'};
+                sessionStorage.setItem("projectItemControl", JSON.stringify(passingParam));
+                RouteService.gotoUrl('SfaSubProjectControl');
+                break;
+
+             // サブ案件一覧画面遷移する
+            case 'SfaSubProjectList':
+                sessionStorage.removeItem('custItemInfo');
+                sessionStorage.removeItem('projectCustItemInfo');
+                sessionStorage.removeItem("salesReportParamSearch");
+                sessionStorage.removeItem("sessionSearch");
+                sessionStorage.removeItem("fromSalEXEX");
+                sessionStorage.removeItem("sfaSubProjectListSession");
+                sessionStorage.removeItem("todo");
+                sessionStorage.removeItem("projectSubDetailSearch");
+                sessionStorage.removeItem("mainProject");
+                // this session using for next-back process (remove)
+                sessionStorage.removeItem("tabProjectProcess");
+                RouteService.gotoUrl('SfaSubProjectList');
+                break;
+
+            // 見積一覧画面遷移する
+            case 'SalEstimateList':
+                sessionStorage.removeItem("customerInfo");
+                sessionStorage.removeItem("projectSno");
+                sessionStorage.removeItem("salEstimate");
+                sessionStorage.removeItem("processDetail");
+                sessionStorage.removeItem("fromSalEXEX");
+                sessionStorage.removeItem("salEstimateListSession");
+                RouteService.gotoUrl('SalEstimateList');
+                break;
+            // 見積登録更新画面遷移する
+            case 'SalEstimateControl':
+                sessionStorage.removeItem("customerInfo");
+                sessionStorage.removeItem("projectSno");
+                sessionStorage.removeItem("salEstimate");
+                sessionStorage.removeItem("fromSalEXEX");
+                RouteService.gotoUrl('SalEstimateControl');
+                break;
+            // 受注一覧画面遷移する
+            case 'SalRsvList':
+                sessionStorage.removeItem("customerInfo");
+                sessionStorage.removeItem("projectSno");
+                sessionStorage.removeItem("receiveItemInfo");
+                sessionStorage.removeItem("processDetail");
+                sessionStorage.removeItem("fromSalEXEX");
+                sessionStorage.removeItem("salRsvListSession");
+                RouteService.gotoUrl('SalRsvList');
+                break;
+            // 受注登録変更画面遷移する
+            case 'SalRsvControl':
+                sessionStorage.removeItem("customerInfo");
+                sessionStorage.removeItem("projectCustItemInfo");
+                sessionStorage.removeItem("projectSno");
+                sessionStorage.removeItem("receiveItemInfo");
+//                sessionStorage.removeItem("salEstimate");
+                sessionStorage.removeItem("fromSalEXEX");
+                RouteService.gotoUrl('SalRsvControl');
+                break;
+            // 売上一覧画面遷移する
+            case 'SalDemandList':
+                sessionStorage.removeItem("customerInfo");
+                sessionStorage.removeItem("salDecideProcess");
+                sessionStorage.removeItem("projectSno");
+                sessionStorage.removeItem("fromSalEXEX");
+                sessionStorage.removeItem("salDemandListSession");
+                RouteService.gotoUrl('SalDemandList');
+                break;
+            // 売上登録更新画面遷移する
+            case 'SalDecideProcess':
+                sessionStorage.removeItem("customerInfo");
+                sessionStorage.removeItem("projectSno");
+                sessionStorage.removeItem("salDecideProcess");
+                sessionStorage.removeItem("receiveItemInfo");
+                sessionStorage.removeItem("fromSalEXEX");
+                RouteService.gotoUrl('SalDecideProcess');
+                break;
+            // 発注一覧画面遷移する
+            case 'SalOrderList':
+                sessionStorage.removeItem("salSell");
+                sessionStorage.removeItem("projectSno");
+                sessionStorage.removeItem("processDetail");
+                sessionStorage.removeItem("fromSalEXEX");
+                sessionStorage.removeItem("salOrderListSession");
+                RouteService.gotoUrl('SalOrderList');
+                break;
+            // 発注登録変更画面遷移する
+            case 'SalOrderControl':
+                sessionStorage.removeItem("salSell");
+                sessionStorage.removeItem("projectSno");
+                sessionStorage.removeItem("fromSalEXEX");
+                RouteService.gotoUrl('SalOrderControl');
+                break;
+             // 仕入一覧画面遷移する
+            case 'SalStockList':
+                sessionStorage.removeItem("salStock");
+                sessionStorage.removeItem("projectSno");
+                sessionStorage.removeItem("processDetail");
+                sessionStorage.removeItem("fromSalEXEX");
+                sessionStorage.removeItem("salStockListSession");
+                RouteService.gotoUrl('SalStockList');
+                break;
+            // 仕入登録更新画面遷移する
+            case 'SalStockControl':
+                sessionStorage.removeItem("salStock");
+                sessionStorage.removeItem("projectSno");
+                sessionStorage.removeItem("fromSalEXEX");
+                RouteService.gotoUrl('SalStockControl');
+                break;
+            case 'SalDemandOutputForShime':
+                sessionStorage.removeItem("projectSno");
+                var salDemandOutputSession = {
+                    billType : '1'
+                }
+                sessionStorage.setItem("salDemandOutputSession", JSON.stringify(salDemandOutputSession));
+                RouteService.gotoUrl('SalDemandOutputForShime');
+                break;
+            case 'SalDemandOutputForZuiji':
+                sessionStorage.removeItem("projectSno");
+                var salDemandOutputSession = {
+                    billType : '2'
+                }
+                sessionStorage.setItem("salDemandOutputSession", JSON.stringify(salDemandOutputSession));
+                RouteService.gotoUrl('SalDemandOutputForZuiji');
+                break;
+            // 請求締処理画面遷移する
+            case 'SalBillControl':
+                RouteService.gotoUrl('SalBillControl');
+                break;
+            // 請求書出力画面遷移する
+            case 'SalRptList':
+                RouteService.gotoUrl('SalRptList');
+                break;
+            // 入金一覧表画面遷移する
+            case 'SalDepositList':
+                sessionStorage.removeItem("salDepositControl");
+                sessionStorage.removeItem("projectSno");
+                sessionStorage.removeItem("salDepositListSession");
+                RouteService.gotoUrl('SalDepositList');
+                break;
+            // 請求先登録画面遷移する
+            case 'MstBillAddressList':
+                RouteService.gotoUrl('MstBillAddressList');
+                break;
+            // 入金登録更新画面遷移する
+            case 'SalDepositControl':
+                sessionStorage.removeItem("salDepositControl");
+                sessionStorage.removeItem("passingParamOrderItem");
+                RouteService.gotoUrl('SalDepositControl');
+                break;
+            // 支払一覧画面遷移する
+            case 'SalPayList':
+                sessionStorage.removeItem("salPayControl");
+                sessionStorage.removeItem("salPayListSession");
+                RouteService.gotoUrl('SalPayList');
+                break;
+            // 支払登録更新画面遷移する
+            case 'SalPayControl':
+                sessionStorage.removeItem("salPayControl");
+                sessionStorage.removeItem("passingSalPayItem");
+                RouteService.gotoUrl('SalPayControl');
+                break;
+            // 品目マスタ画面遷移する
+            case 'MstItemList':
+                sessionStorage.removeItem('mstItem');
+                sessionStorage.removeItem('mstItemDialog');
+                sessionStorage.removeItem('mstItemListSession');
+                RouteService.gotoUrl('MstItemList');
+                break;
+            // ユーザ管理画面遷移する
+            case 'mstUserControl':
+                $rootScope.$broadcast("MstUserSearch#addUser", {
+                    includeMstUserSearch : false,
+                    includeMstUserControl : true,
+                });
+                break;
+            // ユーザ管理画面遷移する
+            case 'MstUser':
+                RouteService.gotoUrl('MstUser');
+                break;
+            // グループ管理画面遷移する
+            case 'MstGroupControl':
+                RouteService.gotoUrl('MstGroupControl');
+                break;
+            // パスワード変更画面遷移する
+            case 'PwdChange':
+                RouteService.gotoUrl('PwdChange');
+                break;
+            // パスワードリセット画面遷移する
+            case 'PwdReset':
+                RouteService.gotoUrl('PwdReset');
+                break;
+            // 仕入先登録画面遷移する
+            case 'MstStockList':
+                RouteService.gotoUrl('MstStockList');
+                break;
+             // 仕入先登録画面遷移する
+            case 'PtlTodoList':
+                RouteService.gotoUrl('PtlTodoList');
+                break;
+            // 顧客一覧画面遷移する
+            case 'CrmList':
+                sessionStorage.removeItem("fromSalEXEX");
+                sessionStorage.removeItem("projectCustItemInfo");
+                sessionStorage.removeItem("salesReportParamSearch");
+                sessionStorage.removeItem("businessCustomerListSearch");
+                sessionStorage.removeItem("businessCustomerDetailSearch");
+                sessionStorage.removeItem("individualCustomerListSearch");
+                sessionStorage.removeItem("individualCustomerDetailSearch");
+                RouteService.gotoUrl('CrmList');
+                break;
+            // 拠点一覧画面遷移する
+            case 'CrmSiteList':
+                sessionStorage.removeItem("crmSiteListSession");
+                sessionStorage.removeItem("crmSiteDetailSearch");
+                RouteService.gotoUrl('CrmSiteList');
+                break;
+            // 部署一覧画面遷移する
+            case 'CrmDeptList':
+                sessionStorage.removeItem("crmDeptListSession");
+                sessionStorage.removeItem("crmDeptDetailSearch");
+                RouteService.gotoUrl('CrmDeptList');
+                break;
+            // ご担当者一覧画面遷移する
+            case 'OwnerCardList':
+                sessionStorage.removeItem("ownerCardSearch");
+                RouteService.gotoUrl('OwnerCardList');
+                break;
+            case 'MstTaxControl':
+                RouteService.gotoUrl('MstTaxControl');
+                break;
+            case 'MstBankList':
+                RouteService.gotoUrl('MstBankList');
+                break;
+            case 'MstRoleList':
+                sessionStorage.removeItem("mstRole");
+                RouteService.gotoUrl('MstRoleList');
+                break;
+            case 'ExExContract' :
+                sessionStorage.removeItem("processInfo");
+                RouteService.gotoUrl('ExExContract');
+                break;
+            case 'ExExSetting' :
+                RouteService.gotoUrl('ExExSetting');
+                break;
+            case 'MailRegistration' :
+                sessionStorage.removeItem("mailCreateDetail");
+                sessionStorage.removeItem("mailListDetail");
+                RouteService.gotoUrl('MailRegistration');
+                break;
+            case 'MailList' :
+                sessionStorage.removeItem("mailCreateDetail");
+                sessionStorage.removeItem("mailListDetail");
+                sessionStorage.removeItem("mailListSession");
+                RouteService.gotoUrl('MailList');
+                break;
+            case 'MstMail' :
+                RouteService.gotoUrl('MstMail');
+                break;
+            case 'IndividualCustomerList' :
+                RouteService.gotoUrl('IndividualCustomerList');
+                break;
+            case 'MstBusinessList' :
+                sessionStorage.removeItem("business");
+                RouteService.gotoUrl('MstBusinessList');
+                break;
+            case 'MstBusinessControl' :
+                RouteService.gotoUrl('MstBusinessControl');
+                break;
+            case 'ScheduleControl' :
+                sessionStorage.removeItem("scheduleInfo");
+                sessionStorage.removeItem("scheduleSetting");
+                RouteService.gotoUrl('ScheduleControl');
+                break;
+            case 'ScheduleList' :
+                sessionStorage.removeItem("scheduleSearchInfo");
+                RouteService.gotoUrl('ScheduleList');
+                break;
+            case 'MstMailSetting':
+                RouteService.gotoUrl('MstMailSetting');
+                break;
+            case 'SalesAnalytics':
+                RouteService.gotoUrl('SalesAnalytics');
+                break;
+            case 'OrderAnalytics':
+                RouteService.gotoUrl('OrderAnalytics');
+                break;
+            case 'MstIconList' :
+                RouteService.gotoUrl('MstIconList');
+                break;
+            case 'MstCustomerItemSetting' :
+                RouteService.gotoUrl('MstCustomerItemSetting');
+                break;
+            case 'MstProjectItemSetting' :
+                RouteService.gotoUrl('MstProjectItemSetting');
+                break;
+            case 'MstSalesReport' :
+                RouteService.gotoUrl('MstSalesReport');
+                break;
+            case 'SalesReportList' :
+                sessionStorage.removeItem('projectCustItemInfo');
+                sessionStorage.removeItem("salesReportParamSearch");
+                sessionStorage.removeItem("salesReportSearch");
+                RouteService.gotoUrl('SalesReportList');
+                break;
+            case 'SalesReportControl':
+                sessionStorage.removeItem("todo");
+                sessionStorage.removeItem("salesReport");
+                sessionStorage.removeItem("salesReportUrl");
+                RouteService.gotoUrl('SalesReportControl');
+                break;
+            case 'IndividualPlanInput':
+                RouteService.gotoUrl('IndividualPlanInput');
+                break;
+            case 'SalesSupportAnalysis':
+                RouteService.gotoUrl('SalesSupportAnalysis');
+                break;
+            case 'MstCodeList':
+                RouteService.gotoUrl('MstCodeList');
+                break;
+            case 'BudgetControl':
+                RouteService.gotoUrl('BudgetControl');
+                break;
+            case 'SalDepositPlanList':
+                sessionStorage.removeItem("salDepositControl");
+                sessionStorage.removeItem("passingParamOrderItem");
+                sessionStorage.removeItem("salDepositPlanListSession");
+                RouteService.gotoUrl('SalDepositPlanList');
+                break;
+            case 'SalPayPlanList':
+                sessionStorage.removeItem("salPayControl");
+                sessionStorage.removeItem("passingSalPayItem");
+                sessionStorage.removeItem("salPayPlanListSession");
+                RouteService.gotoUrl('SalPayPlanList');
+                break;
+            case 'QuickStart':
+                sessionStorage.removeItem("projectItemControl");
+                sessionStorage.removeItem("projectCustItemInfo");
+                RouteService.gotoUrl('QuickStart');
+                break;
+            case 'CollationCandidateCustomerList':
+                sessionStorage.removeItem("collationCandidateCustList");
+                RouteService.gotoUrl('CollationCandidateCustList');
+                break;
+            case 'MstDeliveryPlaceList':
+                RouteService.gotoUrl('MstDeliveryPlaceList');
+                break;
+            case 'MstWarehouseList':
+                RouteService.gotoUrl('MstWarehouseList');
+                break;
+            case 'ReceiveReservationList':
+                sessionStorage.removeItem("rcvReservation");
+                sessionStorage.removeItem("projectSno");
+                RouteService.gotoUrl('ReceiveReservationList');
+                break;
+            case 'StockSituationList':
+                sessionStorage.removeItem('mstItem');
+                sessionStorage.removeItem('mstItemDialog');
+                sessionStorage.removeItem("stockSituationListSession")
+                RouteService.gotoUrl('StockSituationList');
+                break;
+            case 'StockTransferList':
+                sessionStorage.removeItem("stockTransfer");
+                sessionStorage.removeItem("stockTransgerListSession");
+                RouteService.gotoUrl('StockTransferList');
+                break;
+            case 'InventoryList':
+                RouteService.gotoUrl('InventoryList');
+                break;
+            case 'CsvImportControl' :
+                RouteService.gotoUrl('CsvImportControl');
+                break;
+            case 'BargainList':
+                sessionStorage.removeItem("bargain");
+                RouteService.gotoUrl('BargainList');
+                break;
+            case 'TodoControl':
+                sessionStorage.removeItem("todo");
+                RouteService.gotoUrl('TodoControl');
+                break;
+            case 'TodoList':
+                //remove session sfa project control
+                sessionStorage.removeItem("projectCustItemInfo");
+                sessionStorage.removeItem("todoListSearch");
+                sessionStorage.removeItem("todoCustomerList");
+                RouteService.gotoUrl('TodoList');
+                break;
+            case 'TodoCustomerList':
+                sessionStorage.removeItem("todoDetail");
+                sessionStorage.removeItem("todoListSearch");
+                sessionStorage.removeItem("todoCustomerList");
+                RouteService.gotoUrl('TodoCustomerList');
+                break;
+            case 'TrackingAccessList':
+                sessionStorage.removeItem("trackingAccessListSession");
+                RouteService.gotoUrl('TrackingAccessList');
+                break;
+            case 'TrackingOwnerList':
+                sessionStorage.removeItem("trackingOwnerListSession");
+                RouteService.gotoUrl('TrackingOwnerList');
+                break;
+            case 'SetItemChangeList':
+                sessionStorage.removeItem("setItemChangeListSession");
+                RouteService.gotoUrl('SetItemChangeList');
+                break;
+            case 'AccountsReceivableList':
+                sessionStorage.removeItem("accountsReceivableListSearch");
+                RouteService.gotoUrl('AccountsReceivableList');
+                break;
+            case 'AccountsPayableList':
+                sessionStorage.removeItem("accountsPayableListSearch");
+                RouteService.gotoUrl('AccountsPayableList');
+                break;
+            case 'ExportReport':
+                RouteService.gotoUrl('ExportReport');
+                break;
+            case 'ImportPaymentData':
+                RouteService.gotoUrl('ImportPaymentData');
+                break;
+        }
+    };
+}]);

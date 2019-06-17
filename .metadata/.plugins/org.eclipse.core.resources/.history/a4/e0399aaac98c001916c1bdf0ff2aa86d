@@ -1,0 +1,76 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision:  $  $Date:  $
+ * @author : huy-du
+ */
+'use strict';
+/**
+ * Table :
+ */
+exexSMSApp.service('MstCodeListService', ['$q', 'ServerService',function ($q, serverService) {
+    var _self = this;
+
+    _self.getInit = function(param) {
+        var deferred = $q.defer();
+        serverService
+            .doPost('MstCodeList/getInit', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    _self.search = function(param) {
+        var deferred = $q.defer();
+        serverService
+            .doPost('MstCodeList/search', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    _self.update = function(param) {
+        var deferred = $q.defer();
+        serverService
+            .doPost('MstCodeList/update', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    _self.onChangeCategory = function(param) {
+        var deferred = $q.defer();
+        serverService
+            .doPost('MstCodeList/onChangeCategory', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+}]);

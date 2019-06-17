@@ -1,0 +1,125 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+	pageEncoding="UTF-8"%>
+<%@taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
+<!DOCTYPE html>
+<html>
+<script
+	src="https://ajax.googleapis.com/ajax/libs/angularjs/1.7.8/angular.min.js"></script>
+<script type="text/javascript"
+	src="<c:url value="/resources/js/quanLyNhanVien.js" />"></script>
+<style>
+div.hidden {
+	display: none
+}
+</style>
+<head>
+<title>QuanLyNhanVien-Net</title>
+<%@include file="/WEB-INF/views/Header.jsp"%>
+</head>
+<body style="background-color: #80ced6">
+	<div id="qlnv" class="EXEX-Content-Body" ng-controller="quanLyNhanVienCtrl" ng-app="qlnvApp" >
+		<div id="page" class="EXEXPageContent hidden" style="height : 580px; width : 100%">
+			<div class="container" style="height : 100%">
+				<div class="portlet light" style="height : 100%">
+					<div class="portlet-body">
+						<!-- start portlet-body -->
+						<form class="form-horizontal exex-form" id="" name="">
+							<div class="form-body">
+								<div class="form-group">
+									<div class="form-group col-md-6">
+										<div class="col-md-3 exex-text-align">
+											<label class="control-label">Mã Nhân Viên</label>
+										</div>
+										<div class="col-md-9 exex-text-align">
+										  <input type="text" ng-model="model.form.search.maNv" style="width : 100%">
+                    </div>
+									</div>
+
+									<div class="form-group col-md-6">
+										<div class="col-md-3 exex-text-align">
+											<label class="control-label">Tên Nhân Viên</label>
+										</div>
+										<div class="col-md-9">
+										  <input type="text" ng-model="model.form.search.tenNv" style="width : 100%">
+										</div>
+									</div>
+
+									<div class="form-group col-md-12">
+										<button class="btn blue waves-effect waves-light pull-right m-r-20"
+											ng-click="search(model.form.search)">
+											<i class="glyphicon glyphicon-search"> Tìm</i>
+										</button>
+									</div>
+								</div>
+							</div>
+
+							<hr class="content-separator">
+							<div class="row">
+								<div class="table-search-sort-paging">
+									<div class="row m-b-10">
+										 <div id="pagination-top" class="pull-right">
+                       <ul class="pagination pagination-sm" ng-repeat="page in range(model.hidden.pageNum) track by $index">
+											    <li><a ng-class="$index == model.hidden.pageSelect ? bg-primary : ''" ng-click="showList($index)">{{$index}}</a></li>
+											  </ul>
+                     </div>
+									</div>
+									<div class="row">
+										<table
+											class="table table-striped table-bordered table-hover table-click exex-table"
+											id="tableMstUser">
+											<thead>
+												<tr>
+													<th style="width: 10%">Mã Nhân Viên</th>
+													<th style="width: 20%">Tên Nhân Viên</th>
+													<th style="width: 20%">Role</th>
+													<th style="width: 25%">Tài Khoản</th>
+													<th style="width: 20%">Mật Khẩu</th>
+													<th style="width: 5%"></th>
+												</tr>
+											</thead>
+											<tbody>
+												<tr
+													ng-repeat="row in model.form.listShow">
+													<td class="align-middle">{{row.maNv}}</td>
+													<td class="align-middle text-center">{{row.tenNv}}</td>
+													<td class="align-middle text-center">{{row.role}}</td>
+													<td class="align-middle text-right">{{row.taiKhoan}}</td>
+													<td class="align-middle text-right">{{row.matKhau}}</td>
+													<td class="text-center">
+													  <a ng-click="deleteItem(row)"> <i class="fa fa-times red"style="top: 1px;"></i></a>
+												  </td>
+												</tr>
+											</tbody>
+										</table>
+										<div ng-show="model.form.listNhanVien.length == 0">
+											<h4>
+												Không có dữ liệu
+											</h4>
+										</div>
+									</div>
+
+
+									<div class="pull-left m-t-10">
+										<button class="btn green waves-effect waves-light"
+											ng-click="openDialog()">
+											<i class="glyphicon glyphicon-plus" style="top: 1px;"></i>
+										</button>
+									</div>
+								</div>
+							</div>
+						</form>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</body>
+<script type="text/javascript">
+     $(document).ready(function() {
+         $("div#page").removeClass("hidden");
+         angular.bootstrap(document.getElementById("qlnv"), ['qlnvApp']);
+     });
+   </script>
+<script type="text/javascript" src="<c:url value="/resources/jsLib/StringUtils.js" />"></script>
+</html>
+

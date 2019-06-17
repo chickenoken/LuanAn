@@ -1,0 +1,207 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ * @author minh-dao
+ * @version $Revision:  $  $Date:  $
+ */
+'use strict';
+
+exexSMSApp.factory('SalPayListModel', [ 'BaseModel', function(BaseModel) {
+
+    var model = BaseModel.getInstance();
+    model.form = {
+        search : {
+             fromDate : '',
+             toDate : '',
+             spendNo : '',
+             stockaddressName: '',
+             spendPriceFrom: '',
+             spendPriceTo: '',
+             exportExcel:'',
+             paymentNo:'',
+             orderSno : '',
+             stockSno : '',
+             documentStatus : [],
+        },
+        payLists : [],
+        D010001 :[],
+        listExport: []
+    };
+    model.hidden = {
+        paymentCertFlag : ''
+    };
+
+    return model;
+}]);
+
+/**
+ * 支払一覧画面コントローラー
+ */
+exexSMSApp.controller('salPayListCtrl',
+        ['$scope', '$filter', 'DialogsService', 'RouteService', 'SalPayListModel', 'Messages', 'ServerService',
+         function($scope, $filter, DialogsService, RouteService, SalPayListModel, Messages, ServerService) {
+
+    $scope.model = SalPayListModel;
+
+    sessionStorage.removeItem("passingSalPayItem");
+
+    $scope.getInit = function(){
+        ServerService.doPost('SalPayList/getInit', {}).then(
+            function(okResult) {
+                var warning = okResult.data.warning;
+                var error = okResult.data.failed;
+                if(!StringUtils.isEmpty(warning)){
+                    DialogsService.showWarning(Messages.getMessage('check.error'),warning);
+                    return;
+                }else if(!StringUtils.isEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'),error);
+                    return;
+                }else{
+                    $scope.model.form.D010001 = okResult.data.listD010001;
+                    $scope.model.form.listExport = okResult.data.listExport;
+
+                    var params = $scope.convertParamsSearch($scope.model.form.search);
+                    var sessionSearch = angular.fromJson(sessionStorage.getItem("salPayListSession"));
+
+                    if(!StringUtils.isEmpty(sessionSearch)){
+                        $scope.model.currentPage = sessionSearch.currentPage;
+                        $scope.model.form.search = sessionSearch;
+                    }else{
+                        $scope.model.form.search.fromDate = $filter('date')(DateUtils.getPreviousMonth(), "yyyy/MM/dd");
+                        $scope.model.form.search.toDate = $filter('date')(DateUtils.getCurrentDate(), "yyyy/MM/dd");
+                    }
+                    $scope.search($scope.model.form.search,$scope.model.currentPage);
+                }
+            }
+        );
+    };
+
+    $scope.getInit();
+
+    $scope.convertParamsSearch = function(param){
+        var params = {
+            fromDate : !StringUtils.isEmpty(param.fromDate) ? new Date(param.fromDate) : null,
+            toDate : !StringUtils.isEmpty(param.toDate) ? new Date(param.toDate) : null,
+            spendNo : param.spendNo,
+            stockaddressName : !StringUtils.isEmpty(param.stockaddressName) ? $scope.model.form.search.stockaddressName : null,
+            spendPriceFrom : !StringUtils.isEmpty(param.spendPriceFrom) ? parseInt(param.spendPriceFrom) : null,
+            spendPriceTo : !StringUtils.isEmpty(param.spendPriceTo) ? parseInt(param.spendPriceTo) : null,
+            documentStatus : param.documentStatus,
+            paymentNo : !StringUtils.isEmpty(param.paymentNo) ? param.paymentNo : null,
+            orderSno : !StringUtils.isEmpty(param.orderSno) ? param.orderSno : null,
+            stockSno : !StringUtils.isEmpty(param.stockSno) ? param.stockSno : null
+        };
+        return params;
+    };
+
+
+    $scope.search = function(param, page) {
+
+        var params = $scope.convertParamsSearch($scope.model.form.search);
+        sessionStorage.setItem("salPayListSession",JSON.stringify(params));
+
+        ServerService.doPost('SalPayList/searchPayList', params).then(
+            function(okResult) {
+                 var warning = okResult.data.warning;
+                 var error = okResult.data.failed;
+                 if(!StringUtils.isEmpty(warning)){
+                     DialogsService.showWarning(Messages.getMessage('check.error'),warning);
+                     return;
+                 }else if(!StringUtils.isEmpty(error)){
+                     DialogsService.showError(Messages.getMessage('system.error'),error);
+                     return;
+                 }else{
+                     $scope.model.form.payLists = okResult.data.resultList;
+                     $scope.model.currentPage = !StringUtils.isEmpty(page) ? page : 1; //current page
+                     $scope.model.entryLimit = 20; //max no of items to display in a page
+                     $scope.model.number = 20;
+                     $scope.model.filteredItems = $scope.model.form.payLists.length; //Initially for no filter
+                     $scope.model.totalItems = $scope.model.form.payLists.length;
+                 }
+
+                 // add colresizable to table
+                 setTimeout(function(){
+                     $scope.setColResizable();
+                 });
+             }
+         );
+     };
+
+     /**
+      * Excel出カ
+      */
+     $scope.exportExcel = function(param) {
+         var params = $scope.convertParamsSearch(param);
+         params.exportExcel =  param.exportExcel;
+         var title;
+         if ('01' == params.exportExcel) {
+             title = Messages.getMessage("common.excel.file.name.spend01");
+         } else if ('02' == params.exportExcel) {
+             title = Messages.getMessage("common.excel.file.name.spend02");
+         } else if ('03' == params.exportExcel) {
+             title = Messages.getMessage("common.excel.file.name.spend03");
+         } else if ('04' == params.exportExcel) {
+             title = Messages.getMessage("common.excel.file.name.spend04");
+         }
+         var fileName = title + '_' + DateUtils.getYYYYMMDD(new Date());
+         ServerService.doDownload('/SalPayList/downloadSalPayListExcel', params, 'application/vnd.ms-excel', fileName + '.xlsx');
+     };
+
+    /**
+     *
+     */
+    $scope.goTo = function(spendNo, stockaddressNo) {
+        var params = {'spendNo' : spendNo};
+        ServerService.doPost('SalPayList/isExistData', params).then(
+            function(okResult) {
+               var error =  okResult.data.failed;
+               var warning =  okResult.data.warning;
+               if(!StringUtils.isEmpty(error)){
+                   DialogsService.showError(Messages.getMessage('system.error'), error);
+                   return;
+               }
+               else if(!StringUtils.isEmpty(warning)){
+                   DialogsService.showWarning(Messages.getMessage('check.error'), warning)
+                   .result.then(function() {
+                       var paramSearch = $scope.model.form.search;
+                       $scope.search(paramSearch);
+                   });
+                   return;
+               }else{
+                   var salPay = {
+                       'spendNo' :  spendNo,
+                       'stockaddressNo' : stockaddressNo,
+                       'add' : false,
+                       'detail' : true,
+                       'edit' : false,
+                       'list' : true,
+                       'redirectUrl' : 'SalPayList'
+                   };
+                   sessionStorage.setItem("passingSalPayItem", JSON.stringify(salPay));
+                   RouteService.gotoUrl("SalPayControl");
+               }
+            }
+        );
+    };
+
+    // set colResizable
+    $scope.setColResizable = function(){
+        // remove JCLRgrips if having
+        $('.JCLRgrips').remove();
+
+        angular.element('#tableSalPayList').colResizable({
+            liveDrag: true,
+            postbackSafe: true,
+            useLocalStorage: true
+        });
+    }
+
+    $scope.$watch('model.currentPage',function(newVal ,oldVal){
+       if(!StringUtils.isEmpty(newVal)){
+           var sessionSearch = SessionUtils.prepareSession(sessionStorage.getItem('salPayListSession'));
+           sessionSearch.currentPage = newVal;
+           sessionStorage.setItem("salPayListSession",JSON.stringify(sessionSearch));
+       }
+    });
+}]);

@@ -1,0 +1,11 @@
+package org.planning.net.entity;
+
+import org.seasar.doma.Column;
+import org.seasar.doma.Entity;
+
+@Entity
+public class KhachHang {
+
+    @Column(name = "MA_KHACH_HANG")
+    private String maKhachHang;
+}

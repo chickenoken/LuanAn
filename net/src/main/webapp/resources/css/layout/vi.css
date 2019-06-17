@@ -1,0 +1,24 @@
+body, h1, h2, h3, h4, h5, h6 {
+  font-family: Tahoma,"Helvetica Neue",Helvetica,Arial,sans-serif;
+}
+
+.badge, .btn, .dashboard-stat .more, .dashboard-stat2 .display .number small, .dashboard-stat2 .progress-info .status, .dropdown-menu-v2>li>a, .icon-btn>div, .label, .table.table-light>thead>tr.uppercase, .widget-tab .nav-tabs>li>a {
+  text-transform: none;
+}
+
+button, input, select, textarea, .dropdown-menu {
+  font-family: Tahoma,"Helvetica Neue",Helvetica,Arial,sans-serif;
+}
+
+button[ng-click*="checkPostNumber"]{
+  display: none;
+}
+
+.page-header.navbar .hor-menu .navbar-nav>li.mega-menu-dropdown>.dropdown-menu .mega-menu-content .mega-menu-submenu li>a{
+  font-family: Tahoma,"Helvetica Neue",Helvetica,Arial,sans-serif;
+}
+
+.label, .table.table-light>thead>tr>th {
+    font-family: Tahoma,"Helvetica Neue",Helvetica,Arial,sans-serif;
+}
+

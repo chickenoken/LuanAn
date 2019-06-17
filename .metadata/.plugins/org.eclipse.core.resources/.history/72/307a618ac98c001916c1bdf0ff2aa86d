@@ -1,0 +1,729 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision:  $  $Date:  $
+ */
+
+'use strict';
+
+exexSMSApp.factory('OrderAnalyticsModel', [ 'BaseModel', '$rootScope', function(BaseModel, $rootScope) {
+
+    var model = BaseModel.getInstance();
+    model.datacolumns = [];
+    model.listData = [];
+    model.form = {
+            search : {
+                aggregateData :'1',
+                aggregateType : '1',
+                stockAddressName : '',
+                itemName : '',
+                aggregateDate : '',
+                month : DateUtils.getCurrentMonth(),
+                yearMonthStart: DateUtils.getFirstYYYYMM(),
+                yearMonthEnd:DateUtils.getLastYYYYMM(),
+                yearStart: DateUtils.getPrevious3YearYYYYMM(),
+                yearEnd: DateUtils.getCurrentYYYYMM(),
+                year1 : DateUtils.getCurrentYear(),
+                year2 : DateUtils.get3PreviousYear(),
+                ankenBetsu : '',
+                noSalesData: true,
+            },
+
+            listAggregateType:[],
+            listMonth:[],
+            listAggregateData : [],
+            listStock : [],
+            check: true,
+            listAnkenBetsu: [],
+    };
+
+    model.chartData = {
+            listObject: [],
+            listHeader: [],
+            lengthObject: 0,
+            value: ''
+    };
+
+    model.hidden = {
+            lengthTd: 96,
+            ankenBetsuLength: 0,
+            tmpYearStart : DateUtils.getPrevious3YearYYYYMM(),
+            tmpYearEnd : DateUtils.getCurrentYYYYMM(),
+            chart: false,
+            viewChart: false,
+            sumPrice: true,
+            feeTaxSumPrice: true,
+            itemSum: true,
+            viewLine: '0',
+            listDataTmp :[],
+            left: 355,
+            itemHeight : 50,
+            heightOneRow: 25,
+            hideAll : false,
+            chartWith : 0,
+            tableWidth: 1262,
+            heightHeader: 30,
+            outerMaxWidth : 1000,
+            innerHeight: 348,
+            templateUrl: '',
+            listObject :[],
+            colspan : 12,
+            viewTable : false,
+            nodata: false,
+            itemHeightItem : 67,
+            heightOneRowItem: 17,
+            innerNotNullWidth: 1273,
+            isFilter: false,
+            selectAll : false
+    }
+    return model;
+}]);
+
+exexSMSApp.controller('OrderAnalyticsCtrl',['$rootScope','$scope','$filter','$window','$timeout','OrderAnalyticsModel','DialogsService','OrderAnalyticsService', 'Messages', 'ServerService',
+      function($rootScope, $scope, $filter, $window, $timeout, OrderAnalyticsModel, dialogsService , OrderAnalyticsService, Messages, ServerService) {
+
+    $scope.calendarType = 3;
+    $scope.model = OrderAnalyticsModel;
+    $scope.model.checkIndex = [];
+    $scope.model.listIndex = [];
+    $scope.status = '';
+    $scope.model.hidden.chartWith = $window.outerWidth - 200;
+
+    $scope.model.form.search.aggregateDate = {
+        startDate: $filter('date')(DateUtils.getCurrentDatePreviousMonthForString(), "yyyy/MM/dd"),
+        endDate: $filter('date')(DateUtils.getCurrentDateForString(), "yyyy/MM/dd")
+    };
+
+    /**
+     * calTabelWidth()
+     */
+    $scope.calTabelWidth = function(){
+        if($scope.status != undefined && $scope.status !== null){
+          $timeout(function() {
+                var width = 0;
+                var widthOuter = 0;
+                var innerHeight = 0;
+                var widthTableLeft = 0;
+                var widthTableMiddle = 0;
+                var widthTableRight = 0;
+                var widthOuter = 0;
+                var innerHeight = 0;
+                var subWidth = 0;
+                var widthTableMiddleLabel = 0;
+                if($scope.model.hidden.ankenBetsuLength == 0){
+                    widthOuter = parseInt(angular.element('.outer').width());
+                    innerHeight = parseInt(angular.element('#div-left').height());
+                    widthTableLeft = parseInt(angular.element('#table-left').width());
+                    widthTableMiddle  = parseInt(angular.element('#table-middle-label').width());
+                    widthTableRight  = parseInt(angular.element('#table-right').width());
+                    subWidth = widthTableLeft + widthTableRight  + 105;
+                    width = widthOuter - subWidth;
+                    $scope.model.hidden.tableWidth = width - 46;
+                    $scope.model.hidden.innerHeight = innerHeight + 10;
+                }else if($scope.model.hidden.ankenBetsuLength == 1){
+                    widthOuter = parseInt(angular.element('.outer').width());
+                    widthTableLeft = parseInt(angular.element('#table-left-item').width());
+                    widthTableMiddle = parseInt(angular.element('#table-middle-1-item').width());
+                    widthTableMiddleLabel = parseInt(angular.element('#table-middle-label-item').width());
+                    widthTableRight  = parseInt(angular.element('#table-right-item').width());
+                    innerHeight = parseInt(angular.element('#table-left-item').height());
+                    subWidth = widthTableLeft + widthTableMiddle + widthTableMiddleLabel + widthTableRight;
+                    width = widthOuter - subWidth;
+                    $scope.model.hidden.innerNotNullWidth = width;
+                    $scope.model.hidden.innerHeight = innerHeight + 11;
+              }
+          },300);
+        }
+    };
+
+    /**
+    * 発注先別売上を検索
+    **/
+    $scope.orderAction = function(value) {
+        $scope.model.hidden.nodata = false;
+        $scope.model.hidden.viewChart = false;
+        var startDate = '';
+        var endDate = '';
+        var yearStart = '';
+        var yearEnd = '';
+        var aggregateType = $scope.model.form.search.aggregateType;
+        if(!ValidateUtil.isValidTextEmpty(aggregateType)){
+            if(aggregateType === '3' || aggregateType === '4'){
+                $scope.model.form.search.yearMonthStart =  DateUtils.getFirstYYYYMM();
+                $scope.model.form.search.yearMonthEnd = DateUtils.getLastYYYYMM();
+                yearStart = DateUtils.getFirstYYYYMM();
+                yearEnd = DateUtils.getLastYYYYMM();
+            }else if(aggregateType === '1'){
+                startDate =  DateUtils.getCurrentDatePreviousMonthForString() ;
+                endDate =   DateUtils.getCurrentDateForString();
+                yearStart = DateUtils.getFirstYYYYMM();
+                yearEnd = DateUtils.getLastYYYYMM();
+                $scope.model.form.search.month
+            }else if(aggregateType === '2'){
+                $scope.model.form.search.yearMonthStart =  DateUtils.getFirstYYYYMM();
+                $scope.model.form.search.yearMonthEnd = DateUtils.getLastYYYYMM();
+                startDate =  DateUtils.getCurrentDatePreviousMonthForString() ;
+                endDate =   DateUtils.getCurrentDateForString();
+                yearStart = angular.element('#yearStart').val();
+                yearEnd = angular.element('#yearEnd').val();
+                if(ValidateUtil.isValidTextEmpty(yearStart) && ValidateUtil.isValidTextEmpty(yearEnd)){
+                    $scope.model.form.search.yearStart = null;
+                    $scope.model.form.search.yearEnd = null;
+                }
+            }
+            var aggregateDate = $scope.model.form.search.aggregateDate;
+            if(!StringUtils.isEmpty(aggregateDate.startDate) && !StringUtils.isEmpty(aggregateDate.endDate)){
+                startDate = !ValidateUtil.isValidTextEmpty(aggregateDate.startDate) ? aggregateDate.startDate.toString() : DateUtils.getCurrentDatePreviousMonthForString() ;
+                endDate = !ValidateUtil.isValidTextEmpty(aggregateDate.endDate) ? aggregateDate.endDate.toString() : DateUtils.getCurrentDateForString();
+            }
+        }
+
+        var obj = $scope.model.form.search.stockAddressName;
+        var ankenBetsu = $scope.model.form.search.ankenBetsu;
+        var aggregateData = $scope.model.form.search.aggregateData;
+        var month = $scope.model.form.search.month;
+        var param =  {
+                        aggregateFromDate : !ValidateUtil.isValidTextEmpty(startDate) ? startDate : "",
+                        aggregateToDate : !ValidateUtil.isValidTextEmpty(endDate) ? endDate : "",
+                        aggregateData : !ValidateUtil.isValidTextEmpty(aggregateData) ? aggregateData.toString() : '',
+                        aggregateType : !ValidateUtil.isValidTextEmpty(aggregateType) ? aggregateType.toString() : '',
+                        month : !ValidateUtil.isValidTextEmpty(month) ? month.toString() : '',
+                        yearMonthStart: $scope.model.form.search.yearMonthStart,
+                        yearMonthEnd: $scope.model.form.search.yearMonthEnd,
+                        yearStart:  yearStart,
+                        yearEnd: yearEnd,
+                        listStocks : !ValidateUtil.isValidTextEmpty(obj) ? obj.toString() : null,
+                        ankenBetsu: !ValidateUtil.isValidTextEmpty(ankenBetsu) ? ankenBetsu.toString() : '',
+                        ankenBetsuLength:  $scope.model.hidden.ankenBetsuLength,
+                        noSalesData : $scope.model.form.search.noSalesData ? '1' : '0'
+                      };
+        if(value == "1"){
+            var status = !ValidateUtil.isValidTextEmpty(aggregateType) ? aggregateType.toString() : '';
+            $scope.status = status;
+            $scope.search(param);
+        } else {
+            delete param.ankenBetsuLength;
+            OrderAnalyticsService.checkData(param).then (
+                    function(result){
+                        if(!ValidateUtil.isValidTextEmpty(result)){
+                            if(!ValidateUtil.isValidTextEmpty(result.data.warning)){
+                                $scope.model.hidden.nodata = true;
+                            }else{
+                                $scope.exportExcel(param);
+                            }
+                        }
+                    }
+            );
+        }
+    }
+
+    /**
+     * 検索
+     */
+    $scope.search = function(param) {
+        $scope.model.hidden.listObject = [];
+        $scope.model.checkIndex = [];
+        $scope.model.hidden.selectAll =  false;
+        $scope.model.hidden.sumPrice =  true;
+        $scope.model.hidden.feeTaxSumPrice = true;
+        $scope.model.hidden.itemSum = true;
+        if($scope.model.hidden.ankenBetsuLength == 1){
+            $scope.model.hidden.itemSum = true
+        }
+        delete param.ankenBetsuLength;
+        OrderAnalyticsService.orderSearch(param).then (
+            function(result){
+                    $scope.model.hidden.heightHeader = 32;
+                    if(result.data == null){
+                        $scope.model.hidden.viewTable = false;
+                        $scope.model.hidden.nodata = true;
+                    }else{
+                        $scope.model.form.listHeader = result.data.listHeader;
+                        $scope.model.form.listOrderAnalytics = angular.fromJson(result.data.listResult);
+                        $scope.model.hidden.colspan = $scope.model.form.listHeader.length;
+                        $scope.model.hidden.viewTable = true;
+                        if(!ValidateUtil.isValidTextEmpty($scope.model.form.listOrderAnalytics) &&  $scope.model.form.listHeader.length > 0){
+                            $scope.model.hidden.nodata = false;
+                            $scope.calHeight();
+                            if($scope.model.hidden.ankenBetsuLength == 1){
+                                $scope.calHeightItem();
+                            }
+                            $scope.calTabelWidth();
+                        }else{
+                            $scope.model.hidden.nodata = true;
+                        }
+                    }
+            }
+        );
+        $scope.changeTitlePanel();
+    };
+
+    /**
+     * 月を変更
+     */
+    $scope.changeMonth = function(){
+        if(ValidateUtil.isValidTextEmpty($scope.model.form.search.month)){
+            var sessionLogin = angular.fromJson(sessionStorage.getItem("session"));
+            if(!ValidateUtil.isValidTextEmpty(sessionLogin)){
+                $scope.model.form.search.month = sessionLogin.accountClosingMonth;
+            }
+        }
+        var yearVar = new Date($scope.model.hidden.tmpYearStart + '/01');
+        if(!ValidateUtil.isValidTextEmpty(yearVar)){
+            var monthVar = parseInt($scope.model.form.search.month);
+            var clearDate = null;
+            var month = null;
+            if(monthVar == 12){
+                month = '01';
+                clearDate= yearVar.getFullYear() + '/' + month;
+            }else{
+                monthVar = (monthVar + 1) < 10 ? '0' + (monthVar + 1) : monthVar + 1;
+                clearDate= yearVar.getFullYear() + '/' + monthVar;
+            }
+            angular.element('#yearStart').val(clearDate);
+            $scope.model.form.search.yearStart = clearDate;
+        }else{
+            angular.element('#yearStart').val('');
+        }
+
+        yearVar = new Date($scope.model.hidden.tmpYearEnd + '/01');
+        if(!ValidateUtil.isValidTextEmpty(yearVar)){
+            var monthVar = parseInt($scope.model.form.search.month);
+            var clearDate = null;
+            var month = null;
+            monthVar = monthVar < 10 ? '0' + monthVar : monthVar;
+            clearDate= yearVar.getFullYear() + '/' + monthVar;
+            angular.element('#yearEnd').val(clearDate);
+            $scope.model.form.search.yearEnd = clearDate;
+        }else{
+            angular.element('#yearEnd').val('');
+        }
+    };
+
+    /**
+     * 表頭を変化
+     */
+    $scope.changeAggregateType = function(){
+        $scope.titlePanel = '　';
+        if($scope.model.form.search.aggregateType == '1'){
+            $scope.changeTitlePanel()
+            $scope.calendarType = 3;
+        }else if($scope.model.form.search.aggregateType == '2'){
+            $scope.changeTitlePanel();
+            $scope.calendarType = 2;
+        }else if($scope.model.form.search.aggregateType == '3'){
+            $scope.changeTitlePanel()
+            $scope.calendarType = 1;
+        }else{
+            $scope.changeTitlePanel()
+            $scope.calendarType = 1;
+        }
+        $scope.model.form.search.yearMonthStart = DateUtils.getFirstYYYYMM();
+        $scope.model.form.search.yearMonthEnd = DateUtils.getLastYYYYMM();
+        var sessionLogin = angular.fromJson(sessionStorage.getItem("session"));
+        if(!ValidateUtil.isValidTextEmpty(sessionLogin)){
+            $scope.model.form.search.month = sessionLogin.accountClosingMonth;
+            $scope.changeMonth();
+            $scope.changeTitlePanel();
+        }
+        $scope.model.form.search.aggregateDate = {
+            startDate: $filter('date')(DateUtils.getPreviousMonth(), "yyyy/MM/dd"),
+            endDate: $filter('date')(DateUtils.getCurrentDateForString(), "yyyy/MM/dd")
+        };
+    }
+
+    //Hide row when check
+    $scope.hideRow = function(index){
+
+      if($scope.model.hidden.sumPrice && index == 0){
+        return true;
+      }else if($scope.model.hidden.feeTaxSumPrice && index == 1){
+        return true;
+      }else if($scope.model.hidden.itemSum && index == 2){
+        return true;
+      }else{
+        return false;
+      }
+    };
+
+    //Hide row when check
+    $scope.hideLastRow = function(index){
+        if(index != ""){
+           return false;
+        }else{
+          return true;
+        }
+    };
+
+    /**
+     * check row is last row
+     */
+    $scope.lastRow = function(index, mode){
+        var tmpIndex = 0;
+        var countRowTmp = 0;
+        if($scope.model.hidden.sumPrice){
+          tmpIndex = 0;
+          countRowTmp += 1;
+        }
+        if($scope.model.hidden.feeTaxSumPrice){
+          tmpIndex = 1;
+          countRowTmp += 1;
+        }
+        if ($scope.model.hidden.itemSum) {
+            tmpIndex = 2;
+            countRowTmp += 1;
+        }
+        if(index == tmpIndex){
+           return true;
+        }else{
+            return false;
+        }
+      };
+
+      /**
+      *
+      **/
+      $scope.calHeight= function(){
+        var height = 0;
+        var countRowTmp = 0;
+        if($scope.model.hidden.sumPrice){
+          height += 1;
+          countRowTmp += 1;
+        }
+        if($scope.model.hidden.feeTaxSumPrice){
+          height += 1;
+          countRowTmp += 1;
+        }
+        if($scope.model.hidden.itemSum){
+            height += 1;
+            countRowTmp += 1;
+          }
+        if(countRowTmp == 1){
+          $scope.model.hidden.heightOneRow = 25;
+          $scope.model.hidden.itemHeight = 25;
+        }else{
+          $scope.model.hidden.heightOneRow = 25;
+          $scope.model.hidden.itemHeight = height*25;
+        }
+        if(height == 0){
+            $scope.model.hidden.hideAll = true;
+            $scope.model.hidden.viewChart = false;
+          }else{
+            $scope.model.hidden.hideAll = false;
+          }
+          $scope.calTabelWidth();
+//          $scope.showViewLine($scope.model.hidden.viewLine);
+      };
+
+      /**
+       * calculate the height of tables
+       **/
+       $scope.calHeightItem= function(){
+         var height = 0;
+         var countRowTmp = 0;
+         if($scope.model.hidden.sumPrice){
+           height += 1;
+           countRowTmp += 1;
+         }
+         if($scope.model.hidden.feeTaxSumPrice){
+           height += 1;
+           countRowTmp += 1;
+         }
+         if($scope.model.hidden.itemSum){
+             height += 1;
+             countRowTmp += 1;
+           }
+         if(countRowTmp == 1){
+             $scope.model.hidden.heightOneRowItem = 35;
+             $scope.model.hidden.itemHeightItem = 35;
+         }else{
+           $scope.model.hidden.heightOneRowItem = 17;
+           $scope.model.hidden.itemHeightItem = height*22 + 1;
+         }
+         if(height == 0){
+           $scope.model.hidden.hideAll = true;
+           $scope.model.hidden.viewChart = false;
+         }else{
+           $scope.model.hidden.hideAll = false;
+         }
+         $scope.calTabelWidth();
+       };
+
+      /**
+       * 初期
+       */
+    $scope.getInit= function(){
+        var param = {
+            ankenBetsu : $scope.model.form.search.ankenBetsu
+        }
+        OrderAnalyticsService
+        .initData(param)
+        .then(
+            function(result){
+                var error = result.failed;
+                if(!ValidateUtil.isValidTextEmpty(error)){
+                    dialogs.error(Messages.getMessage('check.error'), error);
+                    return;
+                 }
+                $scope.model.form.listAggregateType = result.data.listAggregateType;
+                $scope.model.form.listAnkenBetsu = result.data.listAnkenBetsu;
+                $scope.model.form.listAggregateData = result.data.listAggregateData;
+                $scope.model.form.listStocks = result.data.listStock;
+                $scope.model.form.listMonth = result.data.listMonth;
+                $scope.model.hidden.isFilter = result.data.isFilter;
+                $scope.changeTitlePanel();
+            }
+        );
+    };
+
+    /**
+    *
+    **/
+    $scope.hideChart = function(){
+        for (var i = 0; i < $scope.model.checkIndex.length; i++) {
+            if($scope.model.checkIndex[$scope.model.listIndex[i]]){
+                return true;
+            }
+        };
+        return false;
+    };
+
+    /**
+     * 初期
+     */
+    $scope.init = function(){
+      $scope.getInit();
+    };
+    $scope.init();
+
+    /**
+     * 年を変更
+     */
+    $scope.$watch('model.form.search.yearStart',function(){
+        var yearVar = new Date($scope.model.form.search.yearStart + '/01');
+        if(!ValidateUtil.isValidTextEmpty(yearVar)){
+            var monthVar = parseInt($scope.model.form.search.month);
+            var clearDate = null;
+            var month = null;
+            if(monthVar == 12){
+                month = '01';
+                clearDate= yearVar.getFullYear() + '/' + month;
+            }else{
+                monthVar = (monthVar + 1) < 10 ? '0' + (monthVar + 1) : monthVar + 1;
+                clearDate= yearVar.getFullYear() + '/' + monthVar;
+            }
+            angular.element('#yearStart').val(clearDate);
+        }else{
+            angular.element('#yearStart').val('');
+        }
+    });
+
+    /**
+     * 年を変更
+     */
+    $scope.$watch('model.form.search.yearEnd',function(){
+        var yearVar = new Date($scope.model.form.search.yearEnd + '/01');
+        if(!ValidateUtil.isValidTextEmpty(yearVar)){
+            var monthVar = parseInt($scope.model.form.search.month);
+            var clearDate = null;
+            var month = null;
+            monthVar = monthVar < 10 ? '0' + monthVar : monthVar;
+            clearDate= yearVar.getFullYear() + '/' + monthVar;
+            angular.element('#yearEnd').val(clearDate);
+        }else{
+            angular.element('#yearEnd').val('');
+        }
+    });
+
+    /**
+     * 表題欄を変化
+     */
+    $scope.changeTitlePanel = function(){
+        var aggregateData = $scope.model.form.search.aggregateData;
+        $scope.titlePanel = '　';
+        if(!ValidateUtil.isValidTextEmpty(aggregateData)){
+            var index = parseInt(aggregateData.toString()) - 1;
+            var txt = $scope.model.form.listAggregateData[index].codeName;
+            var aggregateType = $scope.model.form.search.aggregateType;
+            if(!ValidateUtil.isValidTextEmpty(aggregateType)){
+                if(aggregateType.toString() == '1'){
+                    $scope.titlePanel = '　' + txt + '(月毎: ' + $scope.model.form.search.yearMonthStart + ' 　～　 ' + $scope.model.form.search.yearMonthEnd + ')';
+                }else if($scope.model.form.search.aggregateType.toString() == '2'){
+                    $scope.titlePanel ='　' + txt + '(年度毎: ' + $scope.model.form.search.yearStart + ' 　～　 ' + $scope.model.form.search.yearEnd + ')';
+                }else if(aggregateType.toString() == '3'){
+                    var startDate = "";
+                    var endDate = "";
+                    var aggregateDate = $scope.model.form.search.aggregateDate;
+                    if(!ValidateUtil.isValidTextEmpty(aggregateDate)){
+                            startDate = !ValidateUtil.isValidTextEmpty(aggregateDate.startDate) ? aggregateDate.startDate.toString() : "";
+                            endDate = !ValidateUtil.isValidTextEmpty(aggregateDate.endDate) ? aggregateDate.endDate.toString() : "";
+                    }
+                    $scope.titlePanel = '　' + txt + '(週毎: ' + startDate + ' 　～　 ' + endDate + ')';
+                }else{
+                    var startDate = "";
+                    var endDate = "";
+                    var aggregateDate = $scope.model.form.search.aggregateDate;
+                    if(!ValidateUtil.isValidTextEmpty(aggregateDate)){
+                        startDate = !ValidateUtil.isValidTextEmpty(aggregateDate.startDate) ? aggregateDate.startDate.toString() : "";
+                        endDate = !ValidateUtil.isValidTextEmpty(aggregateDate.endDate) ? aggregateDate.endDate.toString() : "";
+                    }
+                    $scope.titlePanel = '　' + txt + '(日毎: ' + startDate + ' 　～　 ' + endDate + ')';
+                }
+            }
+        }
+    };
+
+    /**
+     * 表頭を変化
+     */
+    $scope.changeAnkenBetsu = function(){
+        var ankenBetsu = $scope.model.form.search.ankenBetsu;
+        $scope.status = '';
+        $scope.model.hidden.viewTable = false;
+        if(!ValidateUtil.isValidTextEmpty(ankenBetsu)){
+            $scope.model.hidden.ankenBetsuLength = 1;
+        }else{
+            $scope.model.hidden.ankenBetsuLength = 0;
+        }
+    };
+
+    /**
+     * Excelを出す
+     */
+    $scope.exportExcel = function(params){
+        var title = '発注先別仕入_';
+        if(params.ankenBetsu == '1'){
+            title = '発注先別・品目別仕入_';
+        }
+        var fileName = title + DateUtils.getYYYYMMDD(new Date());
+        ServerService.doDownload('/OrderAnalytics/exportExcel', params
+                , 'application/vnd.ms-excel', fileName + '.xlsx');
+    };
+
+    /**
+     * show chart
+     */
+    $scope.showChartLine= function(index, object){
+        $scope.model.axisLabel = "円";
+        var listObject = $scope.model.hidden.listObject;
+        var lengthObject = listObject.length;
+        var check = $scope.model.checkIndex[index];
+        if(check){
+            listObject.splice(index, 0, object);
+        }else{
+            for(var i = 0; i < lengthObject; i++){
+                if(object.stockAddressNo === listObject[i].stockAddressNo){
+                    listObject.splice(i, 1);
+                    break;
+                }
+            }
+        }
+        $scope.showViewLine($scope.model.hidden.viewLine);
+    };
+
+    /**show chart in popup*/
+    $scope.showChart = function(){
+        var data = angular.copy($scope.model.chartData);
+        data.type = 'LINE';
+        data.mode = 'ORDER';
+        data.status = $scope.status;
+        var listObject = $scope.model.hidden.listObject;
+        var lengthObject = listObject.length;
+        data.lengthObject = lengthObject;
+        data.listObject = listObject;
+        if(!ValidateUtil.isValidTextEmpty(data.listObject)){
+            var i = 0, length = data.listObject.length;
+            for(;i < length;i++){
+                data.listObject[i].objectName = data.listObject[i].stockAddressName;
+            }
+            var options = {size: '900'};
+            dialogsService.showDialog('SalesAnalyticsChartDialog','SalesAnalyticsChartCtrl', data, options);
+        }else{
+            dialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00261'), {size : '355',});
+            return;
+        }
+    };
+
+    /**
+     * ショーチャート
+     * @author huy-du
+     */
+    $scope.showChartPie = function(object){
+        var data = object;
+        data.type = 'BAR';
+        data.listHeader = $scope.model.form.listHeader;
+        data.mode = 'ORDER';
+        var windowWidth = $( window ).width();
+        var size = parseInt((windowWidth*65) / 100);
+        size = size - size % 5;
+        var options = {size: size};
+        dialogsService.showDialog('SalesAnalyticsChartDialog','SalesAnalyticsChartCtrl', data, options);
+    };
+
+
+    /*Show/hide line in chart*/
+    $scope.showViewLine = function(value){
+        //Show/hide 1 line
+        if($scope.model.checkIndex.length > 0){
+            if($scope.checkAggregate()){
+                var listObject = $scope.model.hidden.listObject;
+                if(listObject.length != 0){
+                    var lengthObject = listObject.length;
+                    $scope.model.chartData.listObject = listObject;
+                    $scope.model.chartData.listHeader = $scope.model.form.listHeader;
+                    $scope.model.chartData.lengthObject = lengthObject;
+                    $scope.model.chartData.value = value;
+                }
+            } else {
+                $scope.model.chartData.listObject = listObject;
+                $scope.model.chartData.lengthObject = lengthObject;
+                $scope.model.chartData.value = 9999;
+                $scope.model.chartData.listHeader = $scope.model.form.listHeader;
+            }
+        }
+    };
+
+    /**
+     * 表側をチェック。
+     */
+    $scope.checkAggregate = function(){
+        if($scope.model.hidden.viewLine == 0 && $scope.model.hidden.sumPrice){
+            return true;
+        }
+        if($scope.model.hidden.viewLine == 1 && $scope.model.hidden.feeTaxSumPrice){
+            return true;
+        }
+        if($scope.model.hidden.viewLine == 2 && $scope.model.hidden.itemSum){
+            return true;
+        }
+        return false;
+    };
+
+    /**
+     * チャートデータを変更。
+     */
+    $scope.changeChartData = function(value){
+        $scope.showViewLine(value);
+      }
+
+    $scope.$on('divResize', function() {
+        $scope.calTabelWidth();
+    });
+
+    $(window).resize(function(){
+        $scope.$apply(function(){
+            $scope.calTabelWidth();
+        });
+    });
+
+    //Check all
+    $scope.onCheckAll = function(){
+        for (var i = 0; i < $scope.model.form.listOrderAnalytics.length; i++) {
+            var object = $scope.model.form.listOrderAnalytics[i];
+            $scope.model.checkIndex[i] = $scope.model.hidden.selectAll;
+            $scope.showChartLine(i, object);
+        }
+    }
+}]);

@@ -1,0 +1,164 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision:  $  $Date:  $
+ * @author : quang-tung
+ */
+
+'use strict';
+exexSMSApp.factory('CustomConfirmDialogModel', [ 'BaseModel', function(BaseModel) {
+    var model = BaseModel.getInstance();
+    model.title = Messages.getMessage('title.confirm');
+    model.demandOutputExport = {
+        outputDivision : '',
+        issueSalesOffice : '',
+        issueDate : '',
+        remark : ''
+    }
+    return model;
+}]);
+
+exexSMSApp.controller('ChangeReleaseScopeDialogCtrl',
+        ['$scope','CustomConfirmDialogModel', '$uibModalInstance', 'Messages', 'data',
+         function($scope, CustomConfirmDialogModel, $uibModalInstance, Messages, data){
+
+    $scope.model = CustomConfirmDialogModel;
+
+    $scope.init = function(){
+        if(!StringUtils.isEmpty(data.releaseScope)){
+            $scope.model.releaseScope = data.releaseScope == '1' ? true : false;
+        }else {
+            $scope.model.releaseScope = true;
+        }
+        $scope.model.label = data.message;
+        //$scope.model.title = Messages.getMessage('title.confirm');
+    }
+    $scope.init();
+
+    $scope.yes = function(){
+        var param =  $scope.model.releaseScope ? "1" : "0";
+        $uibModalInstance.close(param);
+    };
+
+    $scope.no = function() {
+        $uibModalInstance.dismiss();
+    };
+}]);
+
+exexSMSApp.controller('ChangeProgressUpdDateDialogCtrl',
+        ['$scope','CustomConfirmDialogModel', '$uibModalInstance', 'Messages', 'data',
+         function($scope, CustomConfirmDialogModel, $uibModalInstance, Messages, data){
+
+    $scope.model = CustomConfirmDialogModel;
+
+    $scope.init = function(){
+        $scope.model.checkProgressUpdDate = true;
+        $scope.model.label = data.message;
+        //$scope.model.title = Messages.getMessage('title.confirm');
+    }
+    $scope.init();
+
+    $scope.yes = function(){
+        $uibModalInstance.close($scope.model.checkProgressUpdDate);
+    };
+
+    $scope.no = function() {
+        $uibModalInstance.dismiss();
+    };
+}]);
+
+exexSMSApp.controller('PtlRequestWFDialogCtrl',
+        ['$scope','CustomConfirmDialogModel', '$uibModalInstance', 'Messages', 'data',
+         function($scope, CustomConfirmDialogModel, $uibModalInstance, Messages, data){
+
+    $scope.model = CustomConfirmDialogModel;
+
+    $scope.init = function(){
+        $scope.model.isSendMail = false;
+        $scope.model.label = Messages.getMessage('S00055');
+        //$scope.model.title = Messages.getMessage('title.confirm');
+    }
+    $scope.init();
+
+    $scope.yes = function(){
+        $uibModalInstance.close($scope.model.isSendMail);
+    };
+
+    $scope.no = function() {
+        $uibModalInstance.dismiss();
+    };
+}]);
+
+
+exexSMSApp.controller('ItemNoticeDialogCtrl',
+        ['$scope','CustomConfirmDialogModel', '$uibModalInstance', 'Messages', 'data',
+         function($scope, CustomConfirmDialogModel, $uibModalInstance, Messages, data){
+
+    $scope.model = CustomConfirmDialogModel;
+
+    $scope.init = function(){
+        $scope.model.itemName = "";
+    }
+    $scope.init();
+
+    $scope.yes = function(){
+        $uibModalInstance.close($scope.model.itemName);
+    };
+
+    $scope.no = function() {
+        $uibModalInstance.dismiss();
+    };
+}]);
+
+exexSMSApp.controller('DemandOutputExportDialogCtrl',
+        ['$scope','CustomConfirmDialogModel', '$uibModalInstance', 'Messages', 'data', '$cookies', 'ServerService', '$filter',
+         function($scope, CustomConfirmDialogModel, $uibModalInstance, Messages, data, $cookies, ServerService, $filter){
+
+    $scope.model = CustomConfirmDialogModel;
+
+    $scope.getInit = function() {
+        ServerService.doPost('DemandOutputExportDialogCtrl/getInit', {}).then(
+            function(okResult) {
+                var error =  okResult.data.failed;
+                var warning =  okResult.data.warning;
+                if(!StringUtils.isEmpty(warning)){
+                    DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                    return;
+                }else if(!StringUtils.isEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                }else{
+                    $scope.model.listUD00022 = okResult.data.listUD00022;
+                    $scope.model.listUD00060 = okResult.data.listUD00060;
+                    $scope.initData();
+                }
+            }
+        );
+    }
+    $scope.initData = function() {
+        var cookies = angular.fromJson($cookies.get("demandOutputExport"));
+        if(!StringUtils.isEmpty(cookies)) {
+            $scope.model.demandOutputExport = cookies;
+        } else {
+            $scope.model.demandOutputExport.outputDivision = '0';
+            $scope.model.issueSalesOffice = "";
+            $scope.model.demandOutputExport.issueDate = $filter('date')(DateUtils.getCurrentDate(), "yyyy/MM/dd");
+            $scope.model.demandOutputExport.remark = "";
+        }
+    };
+
+    $scope.getInit();
+
+
+    $scope.yes = function(param){
+        var cookies = angular.toJson(param);
+        $cookies.put("demandOutputExport", cookies);
+        $uibModalInstance.close(param);
+    };
+
+    $scope.no = function() {
+        $uibModalInstance.dismiss();
+    };
+}]);

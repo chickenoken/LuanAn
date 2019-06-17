@@ -1,0 +1,18 @@
+.c3-axis.c3-axis-x .tick text tspan {
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 14px;
+  fill: #2196f3;
+  opacity: 1;
+  transition: opacity 0.5s;
+}
+.tick text tspan:hover {
+  opacity: 0.5;
+}
+.modal-700{
+  width: 700px;
+}
+span.input-group-addon.daterange-none-border-lr {
+    background: white;
+    border: white;
+}

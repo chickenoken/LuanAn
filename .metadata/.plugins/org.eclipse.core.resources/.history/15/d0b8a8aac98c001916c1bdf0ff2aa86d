@@ -1,0 +1,132 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision: 1.0 $  $Date: 2016/04/12 $
+ * @author Quang-Thien
+ */
+
+'use strict';
+
+exexSMSApp.factory('BusinessListModel',
+        [ 'BaseModel', '$rootScope',
+          function(BaseModel, $rootScope) {
+
+    var model = BaseModel.getInstance();
+    console.log(angular.copy(model));
+
+    model.form = {
+            business : {
+                businessName : '',
+                onlyTemplate : false,
+                exceptTemplate : false
+            },
+            listProcess :[],
+
+            //TODO common pagination info
+            paginationInfo : {
+                page: 0,
+                pageSize: 20,
+                totalPage: 0,
+                totalRecord: 0,
+                from: 0,
+                to: 0
+            }
+    };
+
+    model.hidden = {
+        isDisabled : true,
+        isModeFunction : true,
+        indexUpdate : 0
+    };
+
+    return model;
+}]);
+
+exexSMSApp.service('MstBusinessListService', ['$q', 'ServerService',function ($q, ServerService) {
+    var self = this;
+
+    self.search = function(param) {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('/MstBusinessList/search', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+}]);
+
+exexSMSApp.controller('mstBusinessListCtrl',
+        ['$scope', 'BusinessListModel', 'MstBusinessListService','RouteService',
+         function($scope, BusinessListModel, MstBusinessListService, RouteService) {
+
+    $scope.model = BusinessListModel;
+    console.log(angular.copy($scope.model));
+
+    $scope.search = function(){
+        $scope.doSearch(1);
+    };
+
+    $scope.doSearch = function(page){
+        var param = {
+                businessName : $scope.model.form.business.businessName,
+                onlyTemplate : $scope.model.form.business.onlyTemplate,
+                exceptTemplate : $scope.model.form.business.exceptTemplate,
+                page : page,
+                pageSize : $scope.model.form.paginationInfo.pageSize
+        }
+
+        MstBusinessListService
+            .search(param)
+            .then(
+                function(result) {
+                    $scope.model.form.listProcess = result.data.listProcess;
+                    $scope.model.form.paginationInfo = result.data.paginationInfo;
+
+                    // add colresizable to table
+                    setTimeout(function(){
+                        $scope.setColResizable();
+                    }, 200);
+                }
+            );
+    }
+
+    $scope.init = function(){
+        sessionStorage.removeItem("business");
+        $scope.search(1);
+    };
+    $scope.init();
+
+    $scope.insertProcess = function(row){
+        if(null !== row){
+            var param = {
+                    businessCd : !ValidateUtil.isValidTextEmpty(row) ? row.businessCd : '',
+                    businessName : !ValidateUtil.isValidTextEmpty(row) ? row.businessName :''
+            };
+            sessionStorage.setItem("business", JSON.stringify(param));
+        }
+        RouteService.gotoUrl('MstBusinessControl');
+    };
+
+    // set colResizable
+    $scope.setColResizable = function(){
+        // remove JCLRgrips if having
+        $('.JCLRgrips').remove();
+
+        angular.element('#tableMstBusinessList').colResizable({
+            liveDrag: true,
+            postbackSafe: true,
+            useLocalStorage: true
+        });
+    }
+
+}]);

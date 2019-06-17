@@ -1,0 +1,366 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision: 1.0 $  $Date: 2014/06/02 $
+ * @author : quang-tung
+ */
+
+'use strict';
+
+/**
+ * 初期工場
+ */
+exexSMSApp.factory('IndividualPlanInputModel', [ 'BaseModel', '$rootScope',function(BaseModel, $rootScope) {
+    var model = BaseModel.getInstance();
+    model.form = {
+            search : {
+                target :'',
+                targetYear : '',
+                month: ''
+            },
+            listHeader: [],
+            listYears: [],
+            listMonth:[],
+            listData: []
+    };
+    model.hidden = {
+        lengthTd: 96,
+        individualReal: true,
+        individualPlan: true,
+        individualPercent: true,
+        heightOneRow: 30,
+        tableWidth: 1499,
+        innerHeight: 864,
+        userName: '',
+        isSubmited: false,
+        hiddenTable: false,
+        hiddenData: false,
+        individualPlanLabel: '',
+        individualPercentLabel : ''
+    };
+    return model;
+} ]);
+
+/**
+ * 初期コントローラ
+ */
+exexSMSApp.controller('individualPlanInputCtrl',
+        ['$rootScope', '$timeout', '$filter','$scope', 'ServerService','DialogsService', 'IndividualPlanInputModel', 'Messages',
+         function($rootScope, $timeout, $filter, $scope, ServerService, DialogsService, IndividualPlanInputModel, Messages) {
+
+    $scope.model = IndividualPlanInputModel;
+    $scope.listTargetTmp = [];
+
+    var sessionLogin = angular.fromJson(sessionStorage.getItem("session"));
+    if(!ValidateUtil.isValidTextEmpty(sessionLogin)){
+        $scope.model.hidden.userName = sessionLogin.userName;
+        $scope.model.form.search.month = [sessionLogin.accountClosingMonth];
+    }
+    /**
+     * calTabelWidth
+     */
+    $scope.calTabelWidth = function(){
+        $timeout(function() {
+          var width = 0;
+          var widthTableLeft = 0;
+          var widthTableMiddle_1 = 0;
+          var widthTableMiddleLabel = 0;
+          var widthTableRight  = 0;
+          var innerHeight = 0;
+          var widthOuter = parseInt(angular.element('.outer-0').width());
+          widthTableRight  = parseInt(angular.element('#table-right-0').width());
+          innerHeight = parseInt(angular.element('#table-left-0').height());
+          widthTableMiddleLabel = parseInt(angular.element('#table-middle-label-0').width());
+          widthTableLeft = parseInt(angular.element('#table-left-0').width());
+          var subWidth = widthTableLeft + widthTableRight + widthTableMiddle_1 + widthTableMiddleLabel + 3;
+          width = widthOuter - subWidth;
+          $scope.model.hidden.tableWidth = width;
+          $scope.model.hidden.innerHeight = innerHeight + 12;
+        },1000);
+      };
+
+      /**
+      * 案件別売上を検索
+      **/
+      $scope.search = function() {
+          $scope.model.form.listData = [];
+          $scope.model.hidden.hiddenTable = false;
+          if(!ValidateUtil.isValidTextEmpty($scope.model.form.search.target)){
+              $scope.model.form.listHeader = [];
+              var param = {target: $scope.model.form.search.target.toString(),
+                           month: $scope.model.form.search.month};
+              ServerService.doPost('IndividualPlanInput/search', param)
+              .then(
+              /* success function */
+              function(result) {
+                  if(!ValidateUtil.isValidTextEmpty(result.data)){
+                      $scope.model.hidden.hiddenTable = true;
+                      $scope.model.form.listHeader = result.data.listHeader;
+                      $scope.model.form.listData = result.data.listResult;
+                      $scope.createListYear();
+                      $scope.listTargetTmp = angular.copy($scope.model.form.search.target);
+                  }else{
+                      $scope.model.hidden.hiddenData = true;
+                  }
+                  $scope.calHeight();
+                  $scope.calTabelWidth();
+              },
+              /* error function */
+              function(error) {});
+          }else{
+              $scope.model.hidden.hiddenTable = false;
+          }
+      };
+
+      /**
+       * calculate the height of tables
+       **/
+       $scope.calHeight= function(){
+           var length = $scope.model.form.search.target.length;
+           var height = length*3;
+           var countRowTmp = 3;
+           if(!$scope.model.hidden.individualPlan){
+               height -= length;
+               countRowTmp -= 1;
+           }
+           if(!$scope.model.hidden.individualReal){
+               height -= length;
+               countRowTmp -= 1;
+           }
+           if(!$scope.model.hidden.individualPercent){
+               height -= length;
+               countRowTmp -= 1;
+           }
+           if(countRowTmp == 1){
+               $scope.model.hidden.heightOneRow = 30;
+               $scope.model.hidden.itemHeight = height*30;
+           }else{
+               $scope.model.hidden.heightOneRow = 30;
+               $scope.model.hidden.itemHeight = height*30;
+           }
+           if($scope.model.hidden.individualPlan ||
+                   $scope.model.hidden.individualReal ||
+                   $scope.model.hidden.individualPercent){
+               $scope.model.hidden.hiddenData = true;
+           }else{
+               $scope.model.hidden.hiddenData = false;
+           }
+           $scope.calTabelWidth();
+       };
+
+       $scope.$on('divResize', function() {
+           $scope.calTabelWidth();
+       });
+
+      /**初期*/
+      $scope.init = function(){
+          $scope.model.hidden.individualPlanLabel = angular.element("#individualPlan ~ label")[0].outerText;
+          $scope.model.hidden.individualPercentLabel = angular.element("#individualPercent ~ label")[0].outerText;
+          ServerService.doPost('IndividualPlanInput/getInit', null)
+          .then(
+          /* success function */
+          function(result) {
+              if(!ValidateUtil.isValidTextEmpty(result)){
+                  var curentYear = parseInt(DateUtils.getCurrentYear());
+                  $scope.model.form.search.target = [curentYear];
+                  $scope.model.form.listMonth = result.data.listS010015;
+                  if(!ValidateUtil.isValidTextEmpty(result.data.listYears)){
+                      for(var j = 0; j <= result.data.listYears.length; j++){
+                          if(parseInt(result.data.listYears[j]) < curentYear){
+                              $scope.model.form.listYears.push({code : result.data.listYears[j], codeName : result.data.listYears[j]});
+                          }
+                      }
+                  }
+                  for(var i = 1; i <= 10; i++){
+                      $scope.model.form.listYears.push({code : curentYear, codeName : curentYear});
+                      curentYear = curentYear + 1;
+                  }
+              }
+              var sessionLogin = angular.fromJson(sessionStorage.getItem("session"));
+              if(!ValidateUtil.isValidTextEmpty(sessionLogin)){
+                  $scope.model.form.search.month = sessionLogin.accountClosingMonth;
+              }
+          },
+          /* error function */
+          function(error) {});
+      }
+
+      $scope.init();
+
+      /**hideRow*/
+      $scope.hideRow = function(last, index) {
+          if($scope.model.hidden.individualReal && (index % 3 == 0)){
+              return true;
+          }else if($scope.model.hidden.individualPlan && (index % 3 == 1)){
+              return true;
+          }else if($scope.model.hidden.individualPercent && (index % 3 == 2)){
+              return true;
+          }else{
+              return false;
+          }
+      };
+
+      /**
+       * check row is last row
+       */
+      $scope.lastRow = function(pIndex, cIndex){
+          if(pIndex == 2){
+              var tmpIndex = ($scope.listTargetTmp.length*3) - 1;
+              if(!$scope.model.hidden.individualPercent){
+                  tmpIndex -= 1;
+                  if(!$scope.model.hidden.individualPlan){
+                      tmpIndex -= 1;
+                  }
+              }
+              if(cIndex == tmpIndex){
+                 return true;
+              }else{
+                  return false;
+              }
+         }
+      };
+
+      /**hidden input text*/
+      $scope.hiddenCol = function (label,index) {
+          if(label.indexOf($scope.model.hidden.individualPlanLabel) === -1 ){
+              return true;
+          }else{
+             return false;
+          }
+      };
+
+      /**hidden sum column*/
+      $scope.hiddenSum  = function (label,sum, sum1) {
+          if(label.indexOf($scope.model.hidden.individualPlanLabel) !== -1 ){
+              if(!ValidateUtil.isValidTextEmpty(sum)){
+                  return true;
+              }
+          }else{
+              if(label.indexOf($scope.model.hidden.individualPercentLabel) !== -1 ){
+                  if(!ValidateUtil.isValidTextEmpty(sum)){
+                      if(sum == 0 && ValidateUtil.isValidTextEmpty(sum1)){
+                          return false;
+                      }
+                      return true;
+                  }
+              }else{
+                  return true;
+              }
+          }
+
+      }
+
+      /**disable text*/
+      $scope.disableText = function (label,index) {
+          var year = locale == "ja" ? label.substring(0,4) : label.substring(label.length - 4, label.length);
+          var curentYear = DateUtils.getCurrentDate().getFullYear().toString();
+          if(year === curentYear){
+              var compareDate = $scope.listYear[index];
+              return DateUtils.compare2Date(compareDate, DateUtils.getCurrentDateForString());
+          }else if(year > curentYear){
+              return false;
+          }else{
+              return true;
+          }
+      };
+
+      /**create list year*/
+      $scope.createListYear = function () {
+          var length = $scope.model.form.search.target.length;
+          var i = 0;
+          var curentDate = DateUtils.getCurrentDate();
+          var year = curentDate.getFullYear().toString();
+          $scope.listYear = [];
+          var listHeaderLength = $scope.model.form.listHeader.length;
+          var month = locale == 'ja' ? $scope.model.form.listHeader[0].replace('月','') : $scope.model.form.listHeader[0].replace('Tháng ','');
+          var date = new Date(year + '/' + month + '/' + curentDate.getDate());
+          for(;i < listHeaderLength;i++){
+              month = date.getMonth();
+              var m = date.getMonth() != 12 ? (date.getMonth() + 1) : date.getMonth();
+              date = new Date(date.getFullYear(), m ,date.getDate());
+              $scope.listYear.push(date.getFullYear().toString()+ '/'
+                      + (date.getMonth() < 10 ? '0' + date.getMonth() : date.getMonth()).toString()+ '/'
+                      + (date.getDate()  < 10 ? '0' + date.getDate() : date.getDate()).toString());
+          }
+      };
+
+      /**変更*/
+      $scope.update = function(listData, formInvalid){
+          if (formInvalid) {
+              return;
+          }
+          DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('S00004')).result.then(function(btn){
+              var listTmp = angular.copy($scope.model.form.listData);
+              var i = 0;
+              var length = listTmp.length;
+              var listSalesPlan = [];
+              var listActivityPlan = [];
+              for(;i < length; i++){
+                  if(i == 0 || i == 1 || i == 2){
+                      var listAnalytics = listTmp[i].listAnalytics;
+                      var listAnalyticsTmp = [];
+                      angular.forEach(listAnalytics, function(value, key) {
+                          if(value.label.indexOf($scope.model.hidden.individualPlanLabel) !== -1){
+                              listAnalyticsTmp.push(value);
+                          }
+                      });
+                      listTmp[i].listAnalytics = listAnalyticsTmp;
+                      listSalesPlan.push(listTmp[i]);
+                  }else{
+                      var listAnalytics = listTmp[i].listAnalytics;
+                      var listAnalyticsTmp = [];
+                      angular.forEach(listAnalytics, function(value, key) {
+                          if(value.label.indexOf($scope.model.hidden.individualPlanLabel) !== -1){
+                              listAnalyticsTmp.push(value);
+                          }
+                      });
+                      listTmp[i].listAnalytics = listAnalyticsTmp;
+                      listActivityPlan.push(listTmp[i]);
+                  }
+              }
+              ServerService.doPost('IndividualPlanInput/update',
+                                  {listSalesPlan: listSalesPlan,
+                                  listActivityPlan: listActivityPlan,
+                                  target: $scope.model.form.search.target.toString(),
+                                  month: $scope.model.form.search.month.toString()
+              }).then(
+                  /* success function */
+                  function(result) {
+                      var success = result.data.success;
+                      if(!ValidateUtil.isValidTextEmpty(success)){
+                          DialogsService.showNotify(Messages.getMessage('title.info'), success).result.then(function(btn){
+                              $scope.search();
+                          });
+                      }
+                  },
+                  /* error function */
+                  function(error) {}
+             );
+
+          },function(btn){ });
+
+      };
+
+      /**change text value*/
+      $scope.changeTextValue = function(index, listValue, val){
+          listValue[index] = parseInt(val);
+      };
+
+      /**
+       * Excelを出す。
+       */
+      $scope.exportExcel = function(){
+          var param = {target: $scope.model.form.search.target.toString(),
+                       month: $scope.model.form.search.month.toString()
+                      };
+          var fileName = angular.element('#page-title').html() + '_' + $filter('date')(new Date(), "yyyyMMddHHmm");
+          ServerService.doDownload('/IndividualPlanInput/exportExcel', angular.toJson(param)
+                  , 'application/vnd.ms-excel', fileName + '.xlsx');
+      };
+
+      $scope.logResize = function () {
+          $scope.calTabelWidth();
+      };
+}]);

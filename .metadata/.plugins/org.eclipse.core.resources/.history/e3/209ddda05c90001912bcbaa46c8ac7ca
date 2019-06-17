@@ -1,0 +1,46 @@
+
+var app = angular.module("trangChuApp", []);
+
+'use strict'
+app.factory('trangChuModel',[ function(){
+    var model = [];
+
+    model.form = {
+       login : {
+           taiKhoan : '',
+           matKhau : ''
+       }
+    }
+
+    return model;
+}]);
+
+app.controller("trangChuCtrl",  ['$scope', '$http', '$filter','$rootScope','trangChuModel',
+    function($scope, $http, $filter, $rootScope, trangChuModel){
+
+    $scope.model = trangChuModel;
+
+    $scope.dangNhap = function(){
+        var params = {
+            taiKhoan : $scope.model.form.login.taiKhoan,
+            matKhau : $scope.model.form.login.matKhau
+        };
+        var httpParams = {
+                headers: {'X-CSRF-TOKEN': $('meta[name=_csrf]').attr("content")},
+                method: 'POST',
+                url: 'quanLyNhanVien/downloadExcel'
+            };
+        $http(httpParams).then(function (okResult){
+                if(!StringUtils.isEmpty(okResult.data.isNv)){
+                    sessionStorage.setItem("session", JSON.stringify(okResult.data.isNv));
+                    window.location.href = window.location.origin + '/net/trangChu';
+                }else{
+                    $scope.model.hidden.isShow = true;
+                }
+             },function (error){
+             }
+         );
+        $scope.$broadcast('app-finish-loading')
+     }
+
+}]);

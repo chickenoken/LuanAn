@@ -1,0 +1,455 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision: 1.0 $  $Date:  $
+ * @author quang-tung
+ */
+
+exexSMSApp.factory('InventoryExcutionModel', [ 'BaseModel', function(BaseModel) {
+
+    var model = BaseModel.getInstance();
+    model.form = {
+            inventoryExcution :{
+                controlCd: '',
+                inventorySno: '',
+                recodeNo: '',
+                progressStatus: '',
+                progressStatusName: '',
+                inventoryUser: '',
+                inventoryStartTime: '',
+                inventoryCountTime: '',
+                inventoryEndTime: '',
+                remark: '',
+                createUserName: '',
+                createDate: '',
+                lastUpdUserName: '',
+                lastUpdDate: ''
+            },
+            inventoryFilter :{
+                filterWarehouseNo: '',
+                filterItemName: '',
+                filterItemCd: '',
+                filterItemCategory1: '',
+                filterItemCategory2: '',
+                filterItemCategory3: '',
+                filterOnlyNotInputItem: false,
+                filterOnlyDiffItem: false,
+                filterOnlyInputItem: false,
+                filterSortKeys: ['WAREHOUSE_NO','ITEM_CD'],
+                filterSortAscDesc: 'ASC'
+            },
+            //TODO common pagination info
+            paginationInfo : {
+               page: 0,
+               pageSize: 100,
+               totalPage: 0,
+               totalRecord: 0,
+               from: 0,
+               to: 0
+            },
+            listDetailInventory : [],
+            listMstUser: [],
+            listCate01 : [],
+            listCate02 : [],
+            listCate03 : [],
+            listSortAscDesc : []
+    };
+    model.hidden = {
+            inventorySno : '',
+            isOpen : true,
+            isSubmited : false,
+            isFilterSubmited : false,
+            isDisabled : false,
+            screenMode: 'VIEW',
+            inItemNum: '',
+            outItemNum: '',
+            oldPage : '',
+            dataImport: '',
+            fileName : '',
+            fileType : '',
+            fileSize : ''
+    }
+    return model;
+} ]);
+
+exexSMSApp.controller('inventoryExcutionCtrl',
+        ['$scope', '$filter', 'InventoryExcutionModel', 'DialogsService', 'RouteService', 'InventoryService', 'ServerService', 'Messages',
+         function($scope, $filter, InventoryExcutionModel,  DialogsService, RouteService, InventoryService, ServerService, Messages){
+
+    $scope.model = InventoryExcutionModel;
+
+    /**初期*/
+    $scope.init = function(){
+        var inventory = angular.fromJson(sessionStorage.getItem("inventory"));
+        if(!ValidateUtil.isValidTextEmpty(inventory)){
+            $scope.getInit(inventory);
+            $scope.model.form.inventoryExcution.inventorySno = inventory.inventorySno;
+            $scope.model.form.inventoryExcution.recodeNo = inventory.recodeNo;
+        }
+    };
+
+    $scope.getInit = function(param){
+        var params = { inventorySno : param.inventorySno,
+                       recodeNo : param.recodeNo}
+        InventoryService.initDataExcution(params).then(
+            function(result) {
+                if(!ValidateUtil.isValidTextEmpty(result.data)){
+                    $scope.model.hidden.isDisabled = true;
+                    $scope.model.hidden.screenMode = 'VIEW';
+                    $scope.model.form.listMstUser = result.data.listMstUser;
+                    $scope.model.form.listCate01 = result.data.listCate01;
+                    $scope.model.form.listCate02 = result.data.listCate02;
+                    $scope.model.form.listCate03 = result.data.listCate03;
+                    $scope.model.form.listSort = result.data.listSort;
+                    $scope.model.form.listSortAscDesc = result.data.listSortAscDesc;
+                    $scope.getInventory(params);
+                }
+            }
+        );
+    };
+
+    $scope.getInventory = function(params) {
+        InventoryService.getInventory(params).then(
+            function(result) {
+                var error = result.data.failed;
+                if(!ValidateUtil.isValidTextEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                }
+                $scope.model.form.inventoryExcution = result.data.inventoryExcution;
+                if(ValidateUtil.isValidTextEmpty($scope.model.form.inventoryExcution.inventoryCountTime)){
+                    $scope.model.form.inventoryExcution.inventoryCountTime = new Date();
+                }else{
+                    $scope.model.form.inventoryExcution.inventoryCountTime = new Date($scope.model.form.inventoryExcution.inventoryCountTime);
+                }
+                $scope.excutionFilter(1, $scope.model.form.inventoryExcution, false, false);
+            }
+        );
+    };
+
+    $scope.search = function(page,param){
+        var params = {
+                inventorySno : param.inventorySno,
+                recodeNo : param.recodeNo,
+                page : page,
+                pageSize : $scope.model.form.paginationInfo.pageSize,
+                filterWarehouseNo: $scope.model.form.inventoryFilter.filterWarehouseNo,
+                filterItemName: $scope.model.form.inventoryFilter.filterItemName,
+                filterItemCd: $scope.model.form.inventoryFilter.filterItemCd,
+                filterItemCategory1: $scope.model.form.inventoryFilter.filterItemCategory1,
+                filterItemCategory2: $scope.model.form.inventoryFilter.filterItemCategory2,
+                filterItemCategory3: $scope.model.form.inventoryFilter.filterItemCategory3,
+                filterOnlyNotInputItem: $scope.model.form.inventoryFilter.filterOnlyNotInputItem,
+                filterOnlyDiffItem: $scope.model.form.inventoryFilter.filterOnlyDiffItem,
+                filterOnlyInputItem: $scope.model.form.inventoryFilter.filterOnlyInputItem,
+                filterSortKeys: $scope.model.form.inventoryFilter.filterSortKeys,
+                filterSortAscDesc: $scope.model.form.inventoryFilter.filterSortAscDesc
+        };
+       InventoryService.excutionFilter(params).then(
+           function(result) {
+            var error = result.data.failed;
+            var warning = result.data.warning;
+            if(!ValidateUtil.isValidTextEmpty(error)){
+                DialogsService.showError(Messages.getMessage('system.error'), error);
+                return;
+            }
+            else if(!ValidateUtil.isValidTextEmpty(warning)){
+                DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                return;
+            }else{
+                var listResult = result.data.listDetailInventory;
+                for (var i = 0; i < listResult.length; i++) {
+                    var item = listResult[i];
+                    if(!ValidateUtil.isValidTextEmpty(item.inventoryCountTime)){
+                        item.inventoryCountTime = new Date(item.inventoryCountTime);
+                    }
+                }
+                $scope.model.form.listDetailInventory = listResult;
+                $scope.model.filteredItems = listResult.length;
+                $scope.model.totalItems = listResult.length;
+                $scope.model.form.paginationInfo = result.data.paginationInfo;
+                $scope.model.hidden.oldPage = $scope.model.form.paginationInfo.page;
+            }
+        });
+    };
+
+    $scope.updateDetailInvetoryInPage = function (page,param){
+        var params = {
+                detailInventoryJson : JSON.stringify($scope.model.form.listDetailInventory)
+        };
+        InventoryService.updateDetailInvetoryInPage(params).then(
+            function(result) {
+             var warning = result.data.warning;
+             if(!ValidateUtil.isValidTextEmpty(warning)){
+                 DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                 return;
+             }
+             $scope.search(page,param);
+         });
+    }
+
+    $scope.excutionFilter = function(page, param, formFilterInvalid, update){
+        $scope.model.hidden.isFilterSubmited = true;
+        if(formFilterInvalid){
+            $scope.model.hidden.returnPage = $scope.model.hidden.oldPage;
+            return;
+        }else{
+            $scope.model.hidden.returnPage = null;
+        }
+        if(update && $scope.model.hidden.screenMode == 'UPDATE'){
+            $scope.updateDetailInvetoryInPage(page,param);
+        }else{
+            $scope.search(page,param);
+        }
+    };
+    $scope.init();
+
+    $scope.edit = function(param){
+        if($scope.model.form.inventoryExcution.progressStatus == '03'){
+            DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00269'));
+            return;
+        }else{
+            var params = { inventorySno : param.inventorySno,
+                           recodeNo : param.recodeNo}
+            InventoryService.checkData(params).then(
+                function(result) {
+                 var warning = result.data.warning;
+                 if(!ValidateUtil.isValidTextEmpty(warning)){
+                     DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                     return;
+                 }else{
+                     $scope.model.hidden.screenMode = 'UPDATE';
+                     $scope.model.hidden.isDisabled = false;
+                     var sessionLogin = angular.fromJson(sessionStorage.getItem("session"));
+                     if(!ValidateUtil.isValidTextEmpty(sessionLogin) && ValidateUtil.isValidTextEmpty($scope.model.form.inventoryExcution.inventoryUser)){
+                         $scope.model.form.inventoryExcution.inventoryUser = sessionLogin.userCd;
+                     }
+                 }
+             });
+        }
+    };
+
+    $scope.update = function (param, progressStatus,formInvalid){
+        $scope.model.hidden.isSubmited = true;
+        if(formInvalid){
+            return;
+        };
+        if(param.progressStatus == '03' || param.progressStatus == '04' ){
+            DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00272'));
+            return;
+        }
+        var message = progressStatus == '02' ? 'S00034' : 'S00041';
+        DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage(message))
+            .result.then(function(btn){
+            var params = {
+                    inventorySno : param.inventorySno,
+                    recodeNo : param.recodeNo,
+                    controlCd: param.controlCd,
+                    inventoryCountTime: new Date(param.inventoryCountTime),
+                    inventoryEndTime: progressStatus == '04' ? new Date(): '',
+                    inventoryUser: param.inventoryUser,
+                    remark : param.remark,
+                    progressStatus: progressStatus,
+                    detailInventoryJson : JSON.stringify($scope.model.form.listDetailInventory)
+            };
+            InventoryService.update(params).then(
+                function(result) {
+                    var warning =  result.data.warning;
+                    var success = result.data.success;
+                    if(!ValidateUtil.isValidTextEmpty(success)){
+                        var params = {
+                                inventorySno :result.data.inventorySno,
+                                recodeNo : result.data.recodeNo
+                        }
+                        sessionStorage.setItem("inventory", JSON.stringify(params));
+                        DialogsService.showNotify(Messages.getMessage('title.info'), success);
+                        $scope.model.hidden.screenMode = 'VIEW';
+                        $scope.model.hidden.isDisabled = true;
+                        $scope.getInventory(params);
+                    } else if(!ValidateUtil.isValidTextEmpty(warning)){
+                        DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                        return;
+                    }
+             });
+        },function(btn){ });
+    }
+
+    $scope.deleteData = function (param){
+        var params = {
+                inventorySno : param.inventorySno,
+                recodeNo : param.recodeNo
+        };
+        DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('S00005'))
+        .result.then(function(btn){
+            InventoryService.deleteData(params).then(
+                function(result) {
+                    var warning =  result.data.warning;
+                    var success = result.data.success;
+                    if(!ValidateUtil.isValidTextEmpty(success)){
+                        DialogsService.showNotify(Messages.getMessage('title.info'), success).result.then(function(btn){
+                            sessionStorage.removeItem("inventory");
+                            RouteService.gotoUrl("InventoryList");
+                        });
+                    } else if(!ValidateUtil.isValidTextEmpty(warning)){
+                        DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                        return;
+                    }
+             });
+        },function(btn){ });
+    }
+
+    $scope.resetFilter = function(){
+        $scope.model.form.inventoryFilter.filterWarehouseNo = '';
+        $scope.model.form.inventoryFilter.filterItemName = '';
+        $scope.model.form.inventoryFilter.filterItemCd = '';
+        $scope.model.form.inventoryFilter.filterItemCategory1 = '';
+        $scope.model.form.inventoryFilter.filterItemCategory2 = '';
+        $scope.model.form.inventoryFilter.filterItemCategory3 = '';
+        $scope.model.form.inventoryFilter.filterOnlyNotInputItem = '';
+        $scope.model.form.inventoryFilter.filterOnlyDiffItem = '';
+        $scope.model.form.inventoryFilter.filterOnlyInputItem = '';
+        $scope.model.form.inventoryFilter.filterSortKeys = ['WAREHOUSE_NO','ITEM_CD'];
+        $scope.model.form.inventoryFilter.filterSortAscDesc = 'ASC';
+    }
+
+    $scope.openDialog = function(item) {
+        var param = {
+            serialCd : item.serialCd,
+            itemCd : item.itemCd,
+            itemName : item.itemName,
+            detailFlag : false,
+            viewHist : true,
+            warehouseNo : item.warehouseNo,
+            warehouseName : item.warehouseName
+        };
+
+        sessionStorage.setItem('mstItemDialog',JSON.stringify(param));
+        DialogsService.showDialog('MstItemDialog', 'mstItemDialogCtrl', 'data', {size: '800'}).result.then(function(param) {
+        }, function () {
+            sessionStorage.removeItem('mstItemDialog');
+        });
+    };
+
+    $scope.backList = function(){
+        sessionStorage.removeItem("inventory");
+        RouteService.gotoUrl('InventoryList');
+    };
+
+    $scope.backEdit = function(){
+        $scope.getInit($scope.model.form.inventoryExcution);
+    }
+
+    //get inItemNum & outItemNum
+    $scope.onChangeItemNum = function (item, param, form){
+        if(!ValidateUtil.isValidTextEmpty(item.realItemSum)){
+            if(ValidateUtil.isValidTextEmpty(item.inventoryCountTime)){
+                item.inventoryCountTime = $scope.model.form.inventoryExcution.inventoryCountTime;
+            }
+            var params = {
+                    warehouseNo : item.warehouseNo,
+                    serialCd : item.serialCd,
+                    inventoryStartTime : param.inventoryStartTime,
+                    inventoryCountTime : item.inventoryCountTime
+            };
+            InventoryService.onChangeItemNum(params).then(
+                function(result) {
+                 var error = result.data.failed;
+                 if(!ValidateUtil.isValidTextEmpty(error)){
+                     DialogsService.showError(Messages.getMessage('system.error'), error);
+                     return;
+                 }else{
+                     var inItemNum = result.data.inItemNum;
+                     var outItemNum = result.data.outItemNum;
+                     item.diffItemSum = item.realItemSum - item.logicItemSum + outItemNum - inItemNum;
+                     form.inventoryCountTime.$setValidity('exexCheckTime', true);
+                 }
+             });
+        }else{
+            item.diffItemSum = '';
+            form.inventoryCountTime.$setValidity('exexCheckTime', true);
+        }
+    };
+
+    //check inventoryCountTime & inventoryStartTime
+    $scope.checkTime = function(item, form){
+        form.inventoryCountTime.$setValidity('exexCheckTime', true);
+        if(item.inventoryCountTime != null){
+            var inventoryCountTime = new Date(item.inventoryCountTime).getTime();
+            if(inventoryCountTime < $scope.model.form.inventoryExcution.inventoryStartTime){
+                form.inventoryCountTime.$setValidity('exexCheckTime', false);
+            }else{
+                $scope.onChangeItemNum(item, $scope.model.form.inventoryExcution, form);
+            }
+        }else{
+            if(!ValidateUtil.isValidTextEmpty(item.realItemSum) && !angular.isUndefined(item.inventoryCountTime)){
+                form.inventoryCountTime.$setValidity('exexCheckTime', false);
+            }
+        }
+    };
+
+    // Config date time picker
+    $scope.config = {
+        date: new Date(),
+        datepickerOptions: {
+            showWeeks: false,
+            startingDay: 0,
+            formatDayTitle: 'yyyy年 M月',
+            formatDay: 'd',
+            yearColumns: 4,
+            yearRows: 3
+        },
+        timepickerOptions:{
+            showMeridian : false,
+        }
+    };
+
+    $scope.openCalendar = function(item) {
+        item.open = true;
+    };
+
+
+    $scope.uploadFile = function() {
+        if(!StringUtils.isEmpty($scope.model.hidden.dataImport)){
+            var params = {
+                    importData : $scope.model.hidden.dataImport,
+                    importDataName : $scope.model.hidden.fileName
+            };
+            InventoryService.importData(params).then(
+                function(result) {
+                    var warning =  result.data.warning;
+                    var success = result.data.success;
+                    if(!ValidateUtil.isValidTextEmpty(success)){
+                        DialogsService.showNotify(Messages.getMessage('title.info'), success);
+                        var params = {
+                                inventorySno :$scope.model.form.inventoryExcution.inventorySno,
+                                recodeNo : $scope.model.form.inventoryExcution.recodeNo
+                        }
+                        $scope.getInventory(params);
+                    } else if(!ValidateUtil.isValidTextEmpty(warning)){
+                        DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                        return;
+                    }
+            });
+        }
+        $scope.model.hidden.dataImport = "";
+        $('input[name="import"]').wrap('<form>').parent('form').trigger('reset');
+        $('input[name="import"]').unwrap();
+    };
+
+    $scope.exportData=function(param){
+        var params = {
+                inventorySno : param.inventorySno,
+                recodeNo : param.recodeNo,
+                controlCd: param.controlCd,
+                inventoryStartTime : !ValidateUtil.isValidTextEmpty(param.inventoryStartTime) ? new Date(param.inventoryStartTime) : null,
+                inventoryCountTime : !ValidateUtil.isValidTextEmpty(param.inventoryCountTime) ? new Date(param.inventoryCountTime) : null,
+                inventoryEndTime : !ValidateUtil.isValidTextEmpty(param.inventoryEndTime) ? new Date(param.inventoryEndTime) : null,
+                progressStatusName : param.progressStatusName
+        };
+        var now = $filter('date')(new Date(), "yyyyMMdd");
+//        Utils.postToUrl("/InventoryExcution/exportData", angular.toJson(params));
+        ServerService.doDownload('/InventoryExcution/exportData',  params, "application/vnd.ms-excel", "Inventory_" + param.inventorySno + "_" + now + ".xlsx");
+    };
+}]);

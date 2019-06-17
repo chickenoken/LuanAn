@@ -1,0 +1,110 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision:  $  $Date:  $
+ * @author : quang-tung
+ */
+'use strict';
+
+exexSMSApp.factory('ChartDialogModel', [ 'BaseModel', function(BaseModel) {
+
+    var model = BaseModel.getInstance();
+    model.form = {
+            dataChart: [],
+            dataList: [],
+            listCd : []
+    };
+
+    model.hidden = {
+            targetTmp : '',
+            series : ["予","実"],
+            colors : ["#2196F3", "#F1DE41", "#009688", "#f44336", "#46BFBD", "#8bc34a", "#afd8f8"],
+            dataBarTmp: [],
+            dataRadarTmp: []
+        };
+
+    return model;
+}]);
+
+exexSMSApp.controller('chartRadarCtrl',
+        ['$timeout', '$scope', '$uibModalInstance', 'data', 'DialogsService', 'SalesSupportAnalysisService','ChartDialogModel', 'SalesSupportAnalysisModel',
+         function($timeout, $scope, $uibModalInstance, data, DialogsService, SalesSupportAnalysisService, ChartDialogModel, SalesSupportAnalysisModel) {
+
+    $scope.model = ChartDialogModel;
+    $scope.salesSupportAnalysis = SalesSupportAnalysisModel;
+
+    $scope.getInit = function() {
+        var index = $scope.salesSupportAnalysis.hidden.index;
+        if ($scope.salesSupportAnalysis.form.search.target == "0"){
+            $scope.model.hidden.targetTmp = "3";
+        }else if ($scope.salesSupportAnalysis.form.search.target == "1"){
+            var salesGroupCd = !ValidateUtil.isValidTextEmpty(data[index].listCd) ? data[index].listCd : [];
+            $scope.model.hidden.targetTmp = "4";
+        }else if ($scope.salesSupportAnalysis.form.search.target == "2"){
+            var salesUserCd = !ValidateUtil.isValidTextEmpty(data[index].listCd) ? data[index].listCd : [];
+            $scope.model.hidden.targetTmp = "5";
+        }
+
+        var param = {
+                salesUserCd: salesUserCd,
+                salesGroupCd: salesGroupCd,
+                target: !ValidateUtil.isValidTextEmpty($scope.model.hidden.targetTmp) ? $scope.model.hidden.targetTmp : "",
+                yearMonthStart : !ValidateUtil.isValidTextEmpty($scope.salesSupportAnalysis.form.search.yearMonthStart) ? $scope.salesSupportAnalysis.form.search.yearMonthStart : "",
+                yearMonthEnd : !ValidateUtil.isValidTextEmpty($scope.salesSupportAnalysis.form.search.yearMonthEnd) ? $scope.salesSupportAnalysis.form.search.yearMonthEnd : "",
+                selectNotNull : $scope.salesSupportAnalysis.form.search.selectNotNull ? "1" : "0"
+        };
+        SalesSupportAnalysisService.search(param).then(
+            function(result) {
+                var error =  result.data.failed;
+                if(!ValidateUtil.isValidTextEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                };
+                $scope.model.form.labels = $scope.salesSupportAnalysis.form.listLabel;
+                $scope.model.form.dataList = [];
+                var listDataRadarChart = result.data.listResult;
+                var listDataBarChart = data[index].listResult;
+                var listTitle = data[index].listName;
+                var length = listDataRadarChart.length > listDataBarChart.length ? listDataRadarChart.length : listDataBarChart.length;
+                var lengthA050001 = $scope.salesSupportAnalysis.form.listA050001.length;
+
+                for(var i = 0;i < lengthA050001 ; i++){
+                    $scope.model.hidden.dataBarTmp[i] = "0";
+                    $scope.model.hidden.dataRadarTmp[i] = "0";
+                }
+                for (var i = 0; i < length; i++) {
+                    var value = {
+                            title: !angular.isUndefined(listTitle[i]) ? listTitle[i] : "全体",
+                            data: [$scope.model.hidden.dataBarTmp, $scope.model.hidden.dataRadarTmp]
+                    };
+                    $scope.model.form.dataList.push(value);
+                }
+                angular.forEach(listDataRadarChart, function(item, i){
+                    var dataBarTmp = angular.copy($scope.model.hidden.dataBarTmp);
+                    angular.forEach(item, function(items, i){
+                       dataBarTmp[parseInt(items.activityType)-1] = items.activityPlansCount;
+                    });
+                    $scope.model.form.dataList[i].data[0] = angular.copy(dataBarTmp);
+                });
+                angular.forEach(listDataBarChart, function(item, i){
+                    var dataRadarTmp = angular.copy($scope.model.hidden.dataRadarTmp);
+                    angular.forEach(item, function(items, i){
+                        dataRadarTmp[parseInt(items.activityCode)-1] = items.activityCount;
+                    });
+                    $scope.model.form.dataList[i].data[1] = angular.copy(dataRadarTmp);
+                });
+                //Tung : resize modal
+                $timeout(function(){
+                    angular.element('.modal-dialog.w-900').css('max-width', '90%');
+                    angular.element('.modal-dialog.w-900').css('visibility', 'visible');
+                })
+            });
+    };
+    $scope.getInit();
+
+    $scope.close = function(){
+        $uibModalInstance.dismiss();
+    };
+}]);

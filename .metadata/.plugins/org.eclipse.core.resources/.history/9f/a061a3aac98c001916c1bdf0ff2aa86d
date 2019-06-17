@@ -1,0 +1,1764 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision: 2.0 $  $Date: 2017/11/15 $
+ * @author : quang-thien
+ */
+'use strict';
+/**
+ * Table :
+ */
+
+exexSMSApp.factory('MstStockControlModel', [ 'BaseModel', function(BaseModel) {
+    var model = BaseModel.getInstance();
+    model.form = {
+        stockEdit : {
+            stockaddressNo : '',
+            bankCd: '',
+            stockaddressPaymentCloseType : '',
+            stockaddressPaymentMaturity : ''
+        },
+        reportType : '',
+    };
+    model.listMstBank = [];
+    model.listGroup = [];
+    model.listUser = [];
+    model.listOther = [];
+    model.listOwnerStock = [];
+    model.listDept = [];
+    model.listSite = [];
+    model.listLeft = [];
+    model.listRight = [];
+    model.listL010016 = [];
+    model.listS020013 = [];
+    model.listS020015 = [];
+//    model.billAddress = {};
+    model.listTodo = [];
+    model.listB010003 = [];
+    model.listB010004 = [];
+
+    model.hidden = {
+        isSubmited: false,
+        isDisabled: false,
+        isExportSubmited: false,
+        screenMode: 'NEW',
+        fromScreen: 'mstStockList',
+        customerName: '',
+        releaseScope: '',
+        registStatus: '',
+        clientType : '',
+        releaseColor:'#FF5722',
+        registColor:'#FF5722',
+        clientColor : '#FF5722',
+        releaseScopeName: '',
+        registStatusName: '',
+        clientTypeName : '',
+        isShowExport: false,
+        listSite: [],
+        listDept: [],
+        listOwner: [],
+        checkUnique: [],
+        listDataAjax : [],
+        listSiteHeader: [],
+        listGroupSelect: []
+    };
+
+    return model;
+}]);
+
+exexSMSApp.controller('mstStockControlCtrl',
+        ['$scope', '$filter', 'MstStockControlModel', 'DialogsService', 'Messages', 'ServerService', 'RouteService',
+         function($scope, $filter, MstStockControlModel, DialogsService, Messages, ServerService, RouteService){
+
+    $scope.model = MstStockControlModel;
+
+    $scope.$on("CrmOwnerControl#loadOwner", function(evt, param) {
+        $scope.searchOwnerList();
+    });
+
+    $scope.$on("CrmSiteControl#loadSite", function(evt, param) {
+        $scope.searchSiteList();
+    });
+
+    $scope.$on("CrmDeptControl#loadDept", function(evt, param) {
+        $scope.searchDeptList();
+    });
+
+    $scope.init = function(){
+        $scope.model.hidden.isSubmited = false;
+
+        if(CompanyUtil.getCustomFlag(2) == '1'){
+            $scope.model.hidden.isShowExport = true;
+        }
+        $scope.getInit();
+
+        setTimeout(function() {
+            $('.timepicker').parent('.input-group').on('click', '.input-group-btn', function(e){
+                e.preventDefault();
+                $(this).parent('.input-group').find('.timepicker').timepicker('showWidget');
+            });
+            angular.element('.input-group input').keydown(function (e){
+                $(this).parent('.input-group').find('.timepicker').timepicker('hideWidget');
+            });
+        }, 1000);
+    };
+
+    $scope.loadPage = function(isInit){
+        $scope.model.hidden.isExportSubmited = false;
+        var stockaddressInfo = angular.fromJson(sessionStorage.getItem("stockaddressInfo"));
+        var param = {}
+        if(!StringUtils.isEmpty(stockaddressInfo)){
+            param.custCd =  stockaddressInfo.stockaddressNo,
+            param.custType = '0'
+        }
+        ServerService.doPost('MstStockControl/getStockDetail', param).then(
+            function(okResult) {
+                $scope.model.listLeft = okResult.data.listLeft;
+                $scope.model.listRight = okResult.data.listRight;
+                $scope.model.listOther = okResult.data.listOther;
+                if(!StringUtils.isEmpty(stockaddressInfo)) {
+                    $scope.model.listOwnerStock = okResult.data.listOwnerStock;
+                    $scope.model.listDept = okResult.data.listDept;
+                    /**get list site component
+                     * huy-du add: 2018/03/30
+                     * */
+                    var siteObj = okResult.data.listSite;
+                    if(!StringUtils.isEmpty(siteObj) && siteObj.length > 0){
+                        $scope.model.hidden.listSiteHeader = siteObj[0].listHeader;
+                    }
+                    $scope.model.listSite = okResult.data.listSite;
+                    $scope.model.listTodo = okResult.data.listTodo;
+                    $scope.model.form.stockEdit.stockaddressNo = stockaddressInfo.stockaddressNo;
+                    $scope.convertDataForView($scope.model.listLeft, $scope.model.listRight
+                            , $scope.model.listOther, $scope.model.listOwnerStock
+                            , $scope.model.listDept, $scope.model.listSite, isInit);
+                    $scope.model.hidden.createDate = okResult.data.createDate;
+                    $scope.model.hidden.createUserName = okResult.data.createUserName;
+                    $scope.model.hidden.lastUpdUserName = okResult.data.lastUpdUserName;
+                    $scope.model.hidden.lastUpdDate = okResult.data.lastUpdDate;
+                    $scope.model.form.stockEdit.stockaddressPaymentCloseType = okResult.data.stockaddressPaymentCloseType;
+                    $scope.model.form.stockEdit.stockaddressPaymentMaturity = okResult.data.stockaddressPaymentMaturity;
+                }
+            },
+            function(errResult){}
+        );
+    };
+
+    $scope.getInit = function() {
+        ServerService.doPost('MstStockControl/getInit', {}).then(
+            function(okResult) {
+                if(!ValidateUtil.isValidTextEmpty(okResult.data.failed)){
+                    DialogsService.showError(Messages.getMessage('system.error'),okResult.data.failed);
+                    return;
+                }else{
+                    $scope.model.listL010016 =  okResult.data.listL010016;
+                    $scope.model.listS020013 =  okResult.data.listS020013;
+                    $scope.model.listS020015 =  okResult.data.listS020015;
+                    $scope.model.listB010003 =  okResult.data.listB010003;
+                    $scope.model.listB010004 =  okResult.data.listB010004;
+                    $scope.model.listMstBank =  okResult.data.listMstBank;
+                    $scope.model.listGroup =  okResult.data.listGroup;
+                    $scope.model.listUser =  okResult.data.listUser;
+                    $scope.model.currentSitePage = 1;
+                    $scope.model.currentDeptPage = 1;
+                    $scope.model.currentOwnerPage = 1;
+                    $scope.model.entryLimit = 10;
+
+                    var stockaddressInfo = angular.fromJson(sessionStorage.getItem("stockaddressInfo"));
+                    if(!StringUtils.isEmpty(stockaddressInfo)){
+                        $scope.model.hidden.fromScreen = stockaddressInfo.fromScreen;
+                        $scope.model.hidden.screenMode = stockaddressInfo.screenMode;
+                        $scope.model.hidden.isDisabled = true;
+                        $scope.model.hidden.screenMode = 'VIEW';
+
+                    }
+                    $scope.loadPage(true);
+                }
+            },
+            function(errResult){}
+        );
+    };
+
+    $scope.addStock = function(param,formInvalid){
+       $scope.model.hidden.isSubmited = true;
+       $scope.model.hidden.isExportSubmited = false;
+       if (formInvalid) {
+           return;
+       }
+       for (var key in $scope.model.hidden.checkUnique) {
+           if ($scope.model.hidden.checkUnique[key]) {
+               return;
+           }
+       }
+       var params = {
+           stockaddressNo : param.stockaddressNo,
+           bankCd : param.bankCd,
+           stockaddressPaymentCloseType : param.stockaddressPaymentCloseType,
+           stockaddressPaymentMaturity : param.stockaddressPaymentMaturity,
+           listOther: angular.copy($scope.model.listOther),
+           listLeft: angular.copy($scope.model.listLeft),
+           listRight: angular.copy($scope.model.listRight)
+       };
+       /*if(!StringUtils.isEmpty($scope.model.billAddress.billaddressNo)){
+           params.billAddress =  angular.copy($scope.model.billAddress);
+       }*/
+       DialogsService.showConfirm(Messages.getMessage('title.confirm'),Messages.getMessage('S00003'))
+       .result.then(function(btn){
+          $scope.convertData(params);
+          ServerService.doPost('MstStockControl/addStock', params)
+          .then(
+              function(okResult) {
+                  if(!ValidateUtil.isValidTextEmpty(okResult.data.warning)){
+                      DialogsService.showWarning(Messages.getMessage('check.error'),okResult.data.warning);
+                  }else if(!ValidateUtil.isValidTextEmpty(okResult.data.failed)){
+                      DialogsService.showError(Messages.getMessage('system.error'),okResult.data.failed);
+                  }else{
+                      DialogsService.showNotify(Messages.getMessage('title.info'),okResult.data.success)
+                      .result.then(function(btn){
+                          if(!StringUtils.isEmpty(okResult.data.mstCustomer)){
+                              var mstCustomer = okResult.data.mstCustomer;
+                              var projectCustItemInfo = {
+                                      custCd: mstCustomer.custCd,
+                                      custName: mstCustomer.custName,
+                                      custType: true,
+                                      fromScreen : 'crmList',
+                                      searchParam: null
+                              };
+                              if(!StringUtils.isEmpty(mstCustomer.custName)){
+                                  $scope.model.hidden.customerName = mstCustomer.custName;
+                              }
+
+                              if(!StringUtils.isEmpty(mstCustomer.releaseScope) && mstCustomer.releaseScope == '0'){
+                                  $scope.model.hidden.releaseColor= '#26A69A';
+                              }
+                              $scope.model.hidden.releaseScope =  mstCustomer.releaseScope;
+                              $scope.model.hidden.releaseScopeName =  mstCustomer.releaseScopeName;
+
+                              if(!StringUtils.isEmpty(mstCustomer.registStatus) && mstCustomer.registStatus == '0'){
+                                  $scope.model.hidden.registColor= '#26A69A';
+                              }
+                              $scope.model.hidden.registStatus = mstCustomer.registStatus;
+                              $scope.model.hidden.registStatusName = mstCustomer.registStatusName;
+
+                              if(!StringUtils.isEmpty(mstCustomer.clientType)){
+                                  $scope.changeClientTypeColor(mstCustomer.clientType);
+                              }
+                              $scope.model.hidden.clientType = mstCustomer.clientType;
+                              $scope.model.hidden.clientTypeName = mstCustomer.clientTypeName;
+
+                              sessionStorage.setItem("projectCustItemInfo", JSON.stringify(projectCustItemInfo));
+
+                              var stockaddressInfo = {
+                                      stockaddressNo : mstCustomer.custCd,
+                                      fromScreen: $scope.model.hidden.fromScreen,
+                              };
+                              $scope.model.hidden.screenMode = 'VIEW';
+                              $scope.model.hidden.isDisabled = true;
+                              sessionStorage.setItem("stockaddressInfo", JSON.stringify(stockaddressInfo));
+                              $scope.loadPage(false);
+                          }
+                      });
+                  }
+              },
+              function(errResult){
+              });
+           },function(btn){
+           });
+    };
+
+    $scope.close = function() {
+        if($scope.model.hidden.fromScreen == 'mstStockList'){
+            sessionStorage.removeItem("stockaddressInfo");
+            RouteService.gotoUrl('MstStockList');
+        }else{
+            sessionStorage.removeItem("stockaddressInfo");
+            RouteService.gotoUrl('InterimRegistOwnerCardList');
+        }
+    };
+
+    $scope.closeEdit = function() {
+        if($scope.model.hidden.isDisabled){
+            if($scope.model.hidden.fromScreen == 'mstStockList'){
+                sessionStorage.removeItem("stockaddressInfo");
+                RouteService.gotoUrl('MstStockList');
+            }else{
+                sessionStorage.removeItem("stockaddressInfo");
+                RouteService.gotoUrl('InterimRegistOwnerCardList');
+            }
+        } else{
+            var session = angular.fromJson(sessionStorage.getItem("stockaddressInfo"));
+            var sessionParam = {
+                    stockaddressNo : $scope.model.form.stockEdit.stockaddressNo,
+                    fromScreen: session.fromScreen
+            };
+            sessionStorage.removeItem("stockaddressInfo");
+            sessionStorage.setItem("stockaddressInfo", JSON.stringify(sessionParam));
+
+            $scope.model.hidden.isDisabled = true;
+            $scope.model.hidden.screenMode = "VIEW";
+            $scope.model.hidden.checkUnique = [];
+            $scope.loadPage(true);
+        }
+    };
+
+    $scope.editStock = function(){
+        $scope.model.hidden.isDisabled = false;
+        $scope.model.hidden.screenMode = "EDIT";
+        $scope.loadPage(true);
+    }
+
+    $scope.updateStock = function(param,formInvalid) {
+        $scope.model.hidden.isSubmited = true;
+        $scope.model.hidden.isExportSubmited = false;
+        if (formInvalid) {
+            return;
+        }
+        for (var key in $scope.model.hidden.checkUnique) {
+            if ($scope.model.hidden.checkUnique[key]) {
+                return;
+            }
+        }
+        var params = {
+            stockaddressNo : param.stockaddressNo,
+            clientType : $scope.model.hidden.clientType,
+            bankCd : param.bankCd,
+            stockaddressPaymentCloseType : param.stockaddressPaymentCloseType,
+            stockaddressPaymentMaturity : param.stockaddressPaymentMaturity,
+            listOther: angular.copy($scope.model.listOther),
+            listLeft: angular.copy($scope.model.listLeft),
+            listRight: angular.copy($scope.model.listRight)
+        };
+//        if(!StringUtils.isEmpty($scope.model.billAddress.billaddressNo)){
+//            params.billAddress =  angular.copy($scope.model.billAddress);
+//        }
+        DialogsService.showConfirm(Messages.getMessage('title.confirm'),Messages.getMessage('S00004'))
+        .result.then(function(btn){
+           $scope.convertData(params);
+           ServerService
+           .doPost('MstStockControl/updateStock', params)
+           .then(
+               function(okResult) {
+                   if(!ValidateUtil.isValidTextEmpty(okResult.data.warning)){
+                       DialogsService.showWarning(Messages.getMessage('check.error'),okResult.data.warning);
+                   }else if(!ValidateUtil.isValidTextEmpty(okResult.data.failed)){
+                       DialogsService.showError(Messages.getMessage('system.error'),okResult.data.failed);
+                   }else{
+                       DialogsService.showNotify(Messages.getMessage('title.info'),okResult.data.success)
+                       .result.then(function(btn){
+                           if(!StringUtils.isEmpty(okResult.data.mstCustomer)){
+                               var mstCustomer = okResult.data.mstCustomer;
+                               if(!StringUtils.isEmpty(mstCustomer.custName)){
+                                   $scope.model.hidden.customerName = mstCustomer.custName;
+                               }
+
+                               if(!StringUtils.isEmpty(mstCustomer.releaseScope) && mstCustomer.releaseScope == '0'){
+                                   $scope.model.hidden.releaseColor= '#26A69A';
+                               }
+                               $scope.model.hidden.releaseScope =  mstCustomer.releaseScope;
+                               $scope.model.hidden.releaseScopeName =  mstCustomer.releaseScopeName;
+                               if(!StringUtils.isEmpty(mstCustomer.registStatus) && mstCustomer.registStatus == '0'){
+                                   $scope.model.hidden.registColor= '#26A69A';
+                               }
+                               $scope.model.hidden.registStatus = mstCustomer.registStatus;
+                               $scope.model.hidden.registStatusName = mstCustomer.registStatusName;
+
+                               if(!StringUtils.isEmpty(mstCustomer.clientType)){
+                                   $scope.changeClientTypeColor(mstCustomer.clientType);
+                               }
+                               $scope.model.hidden.clientType = mstCustomer.clientType;
+                               $scope.model.hidden.clientTypeName = mstCustomer.clientTypeName;
+
+                               $scope.model.listSite = okResult.data.listSite;
+                               $scope.model.listOwnerStock = okResult.data.listOwner;
+                               $scope.model.listDept = okResult.data.listDept;
+                           }
+
+                           $scope.model.hidden.screenMode = 'VIEW';
+                           $scope.model.hidden.isDisabled = true;
+                           var session = angular.fromJson(sessionStorage.getItem("stockaddressInfo"));
+                           var sessionParam = {
+                               stockaddressNo : mstCustomer.custCd,
+                               fromScreen: session.fromScreen
+                           };
+                           sessionStorage.removeItem("stockaddressInfo");
+                           sessionStorage.setItem("stockaddressInfo", JSON.stringify(sessionParam));
+                           $scope.loadPage(false);
+
+                       },function(btn){});
+                   }
+               },
+               function(errResult){
+               });
+        },function(btn){
+        });
+   };
+
+   $scope.deleteLogicStock = function(param) {
+       var params = {
+               stockaddressNo : param.stockaddressNo
+        };
+       DialogsService.showConfirm(Messages.getMessage('title.confirm'),Messages.getMessage('S00005'))
+       .result.then(function(btn){
+           ServerService.doPost('MstStockControl/deleteLogicStock', params).then(
+               function(okResult) {
+                   if(!ValidateUtil.isValidTextEmpty(okResult.data.warning)){
+                       DialogsService.showWarning(Messages.getMessage('check.error'),okResult.data.warning);
+                   }else if(!ValidateUtil.isValidTextEmpty(okResult.data.failed)){
+                       DialogsService.showError(Messages.getMessage('system.error'),okResult.data.failed);
+                   }else{
+                       DialogsService.showNotify(Messages.getMessage('title.info'), okResult.data.success)
+                       .result.then(function(btn){
+                           sessionStorage.removeItem("stockaddressInfo");
+                           RouteService.gotoUrl('MstStockList');
+                       });
+                   }
+               },
+               function(errResult){}
+           );
+       });
+   };
+
+    /**open dialog*/
+   $scope.openDialog = function(groupNo, param, mode, index) {
+       var result = '';
+       if('3' == groupNo){
+           if(mode == 'NEW'){
+               result = 'addSite';
+           }else if(mode == 'EDIT'){
+               result = 'editSite';
+           }
+       }else if('4' == groupNo){
+           if(mode == 'NEW'){
+               result = 'addDepart';
+           }else if(mode == 'EDIT'){
+               result = 'editDepart';
+           }
+       }else if('5' == groupNo){
+           if(mode == 'NEW'){
+               result = 'addOwner';
+           }else if(mode == 'EDIT'){
+               result = 'editOwner';
+           }
+       }else if('19' ==groupNo ){
+           result = 'addBillAddress';
+       }
+       var params = {
+               siteControl:{},
+               departControl:{},
+               msgControl:{}
+       };
+       switch (result) {
+           case 'addSite':
+               params.siteControl = {};
+               params.siteControl.index =   StringUtils.isEmpty(index) ? $scope.model.listSite.length : index;
+               params.siteControl.siteCd = '';
+               params.siteControl.custCd = $scope.model.hidden.custCd;
+               params.siteControl.custName = $scope.model.hidden.customerName;
+               params.screenMode = 'INSERT';
+               params.siteControl.flag = '0';
+               params.siteTitle = $scope.model.hidden.siteTitle;
+               var optionsSite = { size: 'site-control' };
+               DialogsService.showDialog('CrmSiteControl', 'crmSiteControlCtrl', params,optionsSite)
+               .result.then(function(params) {});
+               break;
+           case 'editSite':
+               if(!StringUtils.isEmpty(param.listData) && param.listData.length > 0){
+                   params.siteControl.custCd = param.listData[0].custCd;
+               }
+               params.siteControl.siteCd = param.siteCd;
+               params.siteControl.custName = $scope.model.hidden.customerName;
+               params.siteControl.index = index;
+               params.isDisabled = $scope.model.hidden.isDisabled;
+               params.screenMode = $scope.model.hidden.screenMode;
+               params.siteTitle = $scope.model.hidden.siteTitle;
+               $scope.checkDataSite(params);
+               break;
+           case 'addDepart':
+               params.departControl = {};
+               params.departControl.index = ValidateUtil.isValidTextEmpty(index) ? $scope.model.listDept.length : index;
+               params.departControl.departCd = "";
+               params.departControl.custCd = $scope.model.form.stockEdit.stockaddressNo;
+               params.departControl.flag = '0';
+               $scope.model.hidden.listOwner = [];
+               $scope.model.hidden.listSite = [];
+               if(!ValidateUtil.isValidTextEmpty($scope.model.listSite)){
+                   angular.forEach($scope.model.listSite, function(value, index){
+                       if('2' != value.flag){
+                           $scope.model.hidden.listSite.push({siteCd: value.siteCd, siteName: value.siteName});
+                       }
+                    });
+               }
+               params.listSite = $scope.model.hidden.listSite;
+               if(!ValidateUtil.isValidTextEmpty($scope.model.listOwnerStock)){
+                   angular.forEach($scope.model.listOwnerStock, function(value, index){
+                       if('2' != value.flag){
+                           $scope.model.hidden.listOwner.push({ownerCd: value.ownerCd, ownerName: value.name});
+                       }
+                    });
+               }
+               params.listOwner = $scope.model.hidden.listOwner;
+               var optionsDept = {size: 'dept-control'};
+               DialogsService.showDialog('CrmDeptControl', 'crmDeptControlCtrl', params,optionsDept)
+               .result.then(function(params) {});
+               break;
+           case 'editDepart':
+               params.departControl = param;
+               params.departControl.index = index;
+               if(params.departControl.deptCd.indexOf('NEW-') != -1){
+                   params.departControl.flag = '0';
+               }else{
+                   params.departControl.flag = '1';
+               }
+               params.isDisabled = $scope.model.hidden.isDisabled;
+               $scope.model.hidden.listOwner = [];
+               $scope.model.hidden.listSite = [];
+               if(!ValidateUtil.isValidTextEmpty($scope.model.listSite)){
+                   angular.forEach($scope.model.listSite, function(value, index){
+                       if('2' != value.flag){
+                           $scope.model.hidden.listSite.push({siteCd: value.siteCd, siteName: value.siteName});
+                       }
+                    });
+               }
+               params.listSite = $scope.model.hidden.listSite;
+               if(!ValidateUtil.isValidTextEmpty($scope.model.listOwnerStock)){
+                   angular.forEach($scope.model.listOwnerStock, function(value, index){
+                       if('2' != value.flag){
+                           $scope.model.hidden.listOwner.push({ownerCd: value.ownerCd, ownerName: value.name});
+                       }
+                    });
+               }
+               params.listOwner = $scope.model.hidden.listOwner;
+               $scope.checkDataDepart(params);
+               break;
+           case 'addOwner':
+               params.ownerControl = {};
+               params.ownerControl.index = ValidateUtil.isValidTextEmpty(index) ? $scope.model.listOwnerStock.length : index;
+               params.ownerControl.ownerCd = '';
+               params.ownerControl.isFileChange = false;
+               params.ownerControl.custCd = $scope.model.form.stockEdit.stockaddressNo;
+               params.ownerControl.flag = '0';
+               $scope.model.hidden.listDept = [];
+               $scope.model.hidden.listSite = [];
+               if(!ValidateUtil.isValidTextEmpty($scope.model.listSite)){
+                   angular.forEach($scope.model.listSite, function(value, index){
+                       if('2' != value.flag){
+                           $scope.model.hidden.listSite.push({siteCd: value.siteCd, siteName: value.siteName});
+                       }
+                    });
+               }
+               params.listSite = $scope.model.hidden.listSite;
+               if(!ValidateUtil.isValidTextEmpty($scope.model.listDept)){
+                   angular.forEach($scope.model.listDept, function(value, index){
+                       if('2' != value.flag){
+                           $scope.model.hidden.listDept.push({deptCd: value.deptCd, deptName: value.deptName});
+                       }
+                    });
+               }
+               params.listDept = $scope.model.hidden.listDept;
+               var options = {size: 'owner-control'};
+               DialogsService.showDialog('CrmOwnerControl', 'crmOwnerControlCtr', params,options)
+               .result.then(function(params) {});
+               break;
+           case 'editOwner':
+               params.ownerControl = param;
+               params.ownerControl.index = index;
+               if(params.ownerControl.ownerCd.indexOf('NEW-') != -1){
+                   params.ownerControl.flag = '0';
+               }else{
+                   params.ownerControl.flag = '1';
+               }
+               params.isDisabled = $scope.model.hidden.isDisabled;
+               $scope.model.hidden.listDept = [];
+               $scope.model.hidden.listSite = [];
+               if(!ValidateUtil.isValidTextEmpty($scope.model.listSite)){
+                   angular.forEach($scope.model.listSite, function(value, index){
+                       if('2' != value.flag){
+                           $scope.model.hidden.listSite.push({siteCd: value.siteCd, siteName: value.siteName});
+                       }
+                    });
+               }
+               params.listSite = $scope.model.hidden.listSite;
+               if(!ValidateUtil.isValidTextEmpty($scope.model.listDept)){
+                   angular.forEach($scope.model.listDept, function(value, index){
+                       if('2' != value.flag){
+                           $scope.model.hidden.listDept.push({deptCd: value.deptCd, deptName: value.deptName});
+                       }
+                    });
+               }
+               params.listDept = $scope.model.hidden.listDept;
+               $scope.checkDataOwner(params);
+               break;
+           case 'addBillAddress':
+               var options = {size: 'bill-control'};
+               var params = {fromScreen: 'businessCusstomer',
+                             rowData: param,
+                             billaddress: {billaddressNo: ''},
+                             isDisabled: false
+                            }
+               DialogsService.showDialog('MstBillControl', 'mstBillControlCtrl', params, options)
+               .result.then(function(param) {
+               });
+               break;
+       }
+   }
+
+    $scope.exportReport = function(param, formInvalid){
+        $scope.model.hidden.isExportSubmited = true;
+        var regex = /^[ァ-ンｧ-ﾝﾞﾟ 　]*$/;
+        var exexHankakuFormat = ($scope.model.hidden.custNameKana && regex.test($scope.model.hidden.custNameKana)) ? true : false;
+        if(StringUtils.isEmpty($scope.model.hidden.controlCd)
+            && (StringUtils.isEmpty($scope.model.hidden.recordeType)
+            || StringUtils.isEmpty($scope.model.hidden.countryType)
+            || StringUtils.isEmpty($scope.model.hidden.custNameKana)
+            || !exexHankakuFormat
+            || $scope.model.hidden.custNameKana.length < 2)){
+            DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00327'));
+            return;
+        }
+        if (formInvalid) {
+            return;
+        }
+        if(!StringUtils.isEmpty(param)){
+            var params = {
+                    reportName : param.codeName,
+                    reportCode : param.code,
+                    custCd : $scope.model.form.stockEdit.stockaddressNo,
+                    fromScreen : 'stockControl'
+            }
+            var fileName = param.codeName + DateUtils.getYYYYMMDD(new Date())+'.xlsx';
+            ServerService.doDownload('/MstStockControl/exportReport', params, 'application/vnd.ms-excel', fileName);
+        }
+    };
+
+    /**check data of site when create or edit*/
+    $scope.checkDataSite = function(param){
+        if(!ValidateUtil.isValidTextEmpty(param.siteControl.siteCd)
+                && param.siteControl.siteCd.indexOf('NEW-') === -1){
+            var params = {'custCd':param.siteControl.custCd,'siteCd':param.siteControl.siteCd};
+            ServerService
+            .doPost('MstStockControl/checkDataSite', params)
+            .then(
+                function(okResult) {
+                    if(!ValidateUtil.isValidTextEmpty(okResult.data.warning)){
+                        DialogsService.showWarning(Messages.getMessage('title.info'), okResult.data.warning)
+                        .result.then(function(btn){
+                             if(!ValidateUtil.isValidTextEmpty(okResult.data.checkCustomer)){
+                                 RouteService.gotoUrl('MstStockList');
+                             }else{
+                                 $scope.model.listSite.slice(param.siteControl.index,1);
+                                 return;
+                             }
+                             $scope.model.listSite.slice(param.siteControl.index,1);
+                             return;
+                         });
+                     }else if(!ValidateUtil.isValidTextEmpty(okResult.data.failed)){
+                         DialogsService.showError(Messages.getMessage('system.error'),okResult.data.failed);
+                         return;
+                     }
+                }
+            );
+        }
+        var optionsSite = { size: 'site-control' };
+        DialogsService.showDialog('CrmSiteControl', 'crmSiteControlCtrl', param,optionsSite)
+        .result.then(function(params) {});
+    };
+
+    /**check data of site when create or edit*/
+    $scope.checkDataDepart = function(param){
+        if(!ValidateUtil.isValidTextEmpty(param.departControl.deptCd)
+                && param.departControl.deptCd.indexOf('NEW-') === -1){
+            var params = {'custCd':param.departControl.custCd,'deptCd':param.departControl.deptCd};
+            ServerService
+            .doPost('MstStockControl/checkDataDepart', params)
+            .then(function(okResult) {
+                if(!ValidateUtil.isValidTextEmpty(okResult.data.warning)){
+                    DialogsService.showWarning(Messages.getMessage('title.info'),  okResult.data.warning)
+                    .result.then(function(btn){
+                         if(!ValidateUtil.isValidTextEmpty(okResult.data.checkCustomer)){
+                             RouteService.gotoUrl('MstStockList');
+                         }else{
+                             $scope.model.listDept.slice(param.deptControl.index,1);
+                             return;
+                         }
+                     });
+                 }else if(!ValidateUtil.isValidTextEmpty(okResult.data.failed)){
+                     DialogsService.showError(Messages.getMessage('system.error'),okResult.data.failed);
+                     return;
+                 }
+            });
+        }
+        var optionsDept = {size: 'dept-control'};
+        DialogsService.showDialog('CrmDeptControl', 'crmDeptControlCtrl', param, optionsDept)
+        .result.then(function(params) {});
+    };
+
+    /**check data of site when create or edit*/
+    $scope.checkDataOwner = function(param){
+        if(!ValidateUtil.isValidTextEmpty(param.ownerControl.ownerCd)
+                && param.ownerControl.ownerCd.indexOf('NEW-') === -1){
+            var params = {'custCd':param.ownerControl.custCd,'ownerCd':param.ownerControl.ownerCd};
+            ServerService
+            .doPost('MstStockControl/checkDataOwner', params)
+            .then(function(okResult) {
+                if(!ValidateUtil.isValidTextEmpty(okResult.data.warning)){
+                    DialogsService.showWarning(Messages.getMessage('title.info'),  okResult.data.warning)
+                    .result.then(function(btn){
+                         if(!ValidateUtil.isValidTextEmpty(okResult.data.checkCustomer)){
+                             RouteService.gotoUrl('MstStockList');
+                         }else{
+                             $scope.model.listOwnerStock.slice(param.ownerControl.index,1);
+                             return;
+                         }
+                     });
+                 }else if(!ValidateUtil.isValidTextEmpty(okResult.data.failed)){
+                     DialogsService.showError(Messages.getMessage('system.error'),okResult.data.failed);
+                     return;
+                 }
+            });
+        }
+        param.ownerControl.ownerCardInsert = true;
+        var options = {size: 'owner-control'};
+        DialogsService.showDialog('CrmOwnerControl', 'crmOwnerControlCtr', param, options)
+        .result.then(function(param) {});
+    };
+
+    /**get data form site control */
+    $scope.$on('businessCustomer#addMstSite', function(evt, param){
+
+        if($scope.model.listSite.length == 0){
+            $scope.model.listSite.push(param.siteData);
+            $scope.model.hidden.listSite.push({siteCd: param.siteData.siteCd, siteName: param.siteData.siteName});
+        }else{
+            var i = 0;
+            var length = $scope.model.listSite.length;
+            for(; i < length; i++){
+                if(i == param.siteData.index){
+                    $scope.model.listSite[i] = angular.copy(param.siteData);
+                    $scope.model.hidden.listSite[i]= {siteCd: param.siteData.siteCd, siteName: param.siteData.siteName};
+                    break;
+                }else if(i == length - 1){
+                    $scope.model.listSite.push(param.siteData);
+                    $scope.model.hidden.listSite.push({siteCd: param.siteData.siteCd, siteName: param.siteData.siteName});
+                }
+            }
+        }
+    });
+
+    /**get data from depart control */
+    $scope.$on('businessCustomer#addMstDepart', function(evt, param){
+        if($scope.model.listDept.length == 0){
+            $scope.model.listDept.push(param.departData);
+            $scope.model.hidden.listDept.push({deptCd: param.departData.deptCd, deptName: param.departData.deptName});
+        }else{
+            var i = 0;
+            var length = $scope.model.listDept.length;
+            for(; i < length; i++){
+                if(i == param.departData.index){
+                    $scope.model.listDept[i] = angular.copy(param.departData);
+                    $scope.model.hidden.listDept[i] = {deptCd: param.departData.deptCd, deptName: param.departData.deptName};
+                    break;
+                }else if(i == length - 1){
+                    $scope.model.listDept.push(param.departData);
+                    $scope.model.hidden.listDept.push({deptCd: param.departData.deptCd, deptName: param.departData.deptName});
+                }
+            }
+        }
+    });
+
+    /**get data from depart control */
+    $scope.$on('businessCustomer#addMstOwner', function(evt, param){
+        if($scope.model.listOwnerStock.length == 0){
+            $scope.model.listOwnerStock.push(param.ownerData);
+            $scope.model.hidden.listOwner.push({ownerCd: param.ownerData.ownerCd, ownerName: param.ownerData.name});
+        }else{
+            var i = 0;
+            var length = $scope.model.listOwnerStock.length;
+            for(; i < length; i++){
+                if(i == param.ownerData.index){
+                    $scope.model.listOwnerStock[i] = angular.copy(param.ownerData);
+                    $scope.model.hidden.listOwner[i] = {ownerCd: param.ownerData.ownerCd, ownerName: param.ownerData.name};
+                    break;
+                }else if(i == length - 1){
+                    $scope.model.listOwnerStock.push(param.ownerData);
+                    $scope.model.hidden.listOwner.push({ownerCd: param.ownerData.ownerCd, ownerName: param.ownerData.name});
+                }
+            }
+        }
+    });
+
+    /**get data from bill address control */
+    $scope.$on('customer#addMstBillAddress', function(evt, param){
+        if(!StringUtils.isEmpty($scope.model.listRight)){
+            angular.forEach($scope.model.listRight, function(value, index){
+                angular.forEach(value.listGroup, function(item, i){
+                    if(19 == item.lineNo){
+                        item.inputValue.push(param.billAddress.billaddressNo);
+                        $scope.billaddressChange(item, param.billAddress, true);
+                    }
+                });
+            });
+        }
+    });
+
+    /**remove when click x button*/
+    $scope.removeItem = function(groupNo, itemCd, index){
+        if($scope.model.hidden.isDisabled){
+            return;
+        }
+        if('3' == groupNo){
+            $scope.deleteSite(itemCd);
+        }else if('4' == groupNo){
+            $scope.deleteDept(itemCd);
+        }else if('5' == groupNo){
+            $scope.deleteOwner(itemCd);
+        }
+    }
+
+    /**event change value of postNo*/
+    $scope.changePostNo = function(value, lineNo){
+        if (value.length == 3) {
+            angular.element('#postNo2_' + lineNo).focus();
+        }
+    }
+
+    /**
+     * 住所検索
+     */
+    $scope.checkPostNumber = function(param, row){
+        var postNo = param;
+        if(StringUtils.isEmpty(postNo)) {
+            DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00207'));
+            return true;
+        }
+        if(ValidateUtil.isValidPostNo(postNo)) {
+            DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00018'));
+            return true;
+        }
+        var params = {'postNo':postNo};
+        ServerService.doPost('MstStockControl/checkPostNumber', params).then(
+            function(result) {
+                if(!StringUtils.isEmpty(result.data.warning)){
+                    DialogsService.showWarning(Messages.getMessage('check.error'), result.data.warning);
+                }else if(!StringUtils.isEmpty(result.data.failed)){
+                    DialogsService.showError(Messages.getMessage('system.error'), result.data.failed);
+                }else{
+                    row.address1 = result.data.address;
+                }
+
+            },
+            function(error) {}
+        );
+    };
+
+    /**select radio button*/
+    $scope.selectRadio = function(row, value){
+        row.inputValue = value;
+    }
+
+    /**
+     * get userCd when select change
+     */
+    $scope.billaddressChange = function(row, billAddress, newBill){
+        if(newBill){
+            $scope.model.hidden.listDataAjax = [];
+            var listTmp = $("select[name='billaddressAjax']").select2('data');
+            for (var i = 0; i < listTmp.length; i++) {
+                $scope.model.hidden.listDataAjax.push({
+                    no : listTmp[i].id,
+                    name : listTmp[i].text
+                });
+            };
+            $scope.model.hidden.listDataAjax.push({
+                no : billAddress.billaddressNo,
+                name : billAddress.billaddressName
+            });
+        }else {
+            if($scope.model.hidden.screenMode == 'VIEW'){
+                $scope.model.hidden.listDataAjax = [];
+                var listNo = angular.copy(row.inputValue).split(',');
+                var listName = angular.copy(row.billaddressName).split(',');
+                for (var i = 0; i < listNo.length; i++) {
+                    $scope.model.hidden.listDataAjax.push({
+                        no : listNo[i],
+                        name : listName[i]
+                    });
+                };
+            }
+        }
+    };
+
+    /**convert data before insert*/
+    $scope.convertData = function(paramData){
+        if(!StringUtils.isEmpty(paramData.listLeft)  && paramData.listLeft.length > 0){
+            angular.forEach(paramData.listLeft, function(value, index){
+                angular.forEach(value.listGroup, function(item, i){
+                    if('04'== item.controlType && item.listSgtDataSource.length > 0){
+                        if(!StringUtils.isEmpty(item.listDataSource)){
+                            var inputValue = "";
+                            angular.forEach(item.listSgtDataSource, function(data, k){
+                                if(!StringUtils.isEmpty(item.inputValue) && item.inputValue[k] == "1"){
+                                    inputValue += data.code+",";
+                                }
+                            });
+                            if(!StringUtils.isEmpty(inputValue)){
+                                var trim = inputValue.replace(/(^,)|(,$)/g, "");
+                                item.inputValue = trim;
+                            }else{
+                                item.inputValue = null;
+                            }
+                        }
+                    }
+                    if('09'== item.controlType){
+                        var postNo = {
+                                'postNo1': item.postNo1,
+                                'postNo2': item.postNo2,
+                                'address1': item.address1,
+                                'address2': item.address2
+                        }
+                        $scope.model.listLeft[index].listGroup[i].inputValue = JSON.stringify(postNo);
+                        item.inputValue = JSON.stringify(postNo);
+                        if(StringUtils.isEmpty(item.postNo1) && StringUtils.isEmpty(item.postNo2)
+                                && StringUtils.isEmpty(item.address1) && StringUtils.isEmpty(item.address2)) {
+                            item.inputValue = '';
+                        }
+                    }
+                    if('SITE_ADDRESS'== item.controlType){
+                        var postNo = {
+                                'postNo1': item.postNo1,
+                                'postNo2': item.postNo2,
+                                'address1': item.address1,
+                                'address2': item.address2
+                        }
+                        $scope.model.listLeft[index].listGroup[i].inputValue = JSON.stringify(postNo);
+                        item.inputValue = JSON.stringify(postNo);
+                        if(StringUtils.isEmpty(item.postNo1) && StringUtils.isEmpty(item.postNo2)
+                                && StringUtils.isEmpty(item.address1) && StringUtils.isEmpty(item.address2)) {
+                            item.inputValue = '';
+                        }
+                    }
+                    /*if('02'== item.controlType){
+                        item.inputValue = item.inputValueTimeStart + '-' + item.inputValueTimeEnd;
+                        delete item.inputValueTimeStart;
+                        delete item.inputValueTimeEnd;
+                    }*/
+                    if(('11'== item.controlType || item.controlType == 'MST_GROUP_LIST' || item.controlType == 'MST_USER_LIST')
+                            && !StringUtils.isEmpty(item.inputValue)){
+                        item.inputValue = item.inputValue.toString();
+                    }
+                    if('05'== item.controlType){
+                        delete item.isFileChange;
+                        delete item.checkSize;
+                        delete item.fileSize;
+                    }
+                    delete item.listSgtDataSource;
+                    delete item.detailKey;
+                    delete item.checkUnique;
+                    delete item.readOnly;
+                    delete item.backgroundColor;
+                    delete item.unitName;
+                });
+            });
+        }
+        if(!StringUtils.isEmpty(paramData.listRight) && paramData.listRight.length > 0){
+            angular.forEach(paramData.listRight, function(value, index){
+                angular.forEach(value.listGroup, function(item, i){
+                    if('04'== item.controlType && item.listSgtDataSource.length > 0){
+                        if(!StringUtils.isEmpty(item.listDataSource)){
+                            var inputValue = "";
+                            angular.forEach(item.listSgtDataSource, function(data, k){
+                                if(!StringUtils.isEmpty(item.inputValue) && item.inputValue[k] == "1"){
+                                    inputValue += data.code+",";
+                                }
+                            });
+                            if(!StringUtils.isEmpty(inputValue)){
+                                var trim = inputValue.replace(/(^,)|(,$)/g, "");
+                                item.inputValue = trim;
+                            }else{
+                                item.inputValue = null;
+                            }
+                        }
+                    }
+                    if('09'== item.controlType){
+                        var postNo = {
+                                'postNo1': item.postNo1,
+                                'postNo2': item.postNo2,
+                                'address1': item.address1,
+                                'address2': item.address2
+                        }
+                        $scope.model.listRight[index].listGroup[i].inputValue = JSON.stringify(postNo);
+                        item.inputValue = JSON.stringify(postNo);
+                        if(StringUtils.isEmpty(item.postNo1) && StringUtils.isEmpty(item.postNo2)
+                                && StringUtils.isEmpty(item.address1) && StringUtils.isEmpty(item.address2)) {
+                            item.inputValue = '';
+                        }
+                    }
+                    if('SITE_ADDRESS'== item.controlType){
+                        var postNo = {
+                                'postNo1': item.postNo1,
+                                'postNo2': item.postNo2,
+                                'address1': item.address1,
+                                'address2': item.address2
+                        }
+                        $scope.model.listRight[index].listGroup[i].inputValue = JSON.stringify(postNo);
+                        item.inputValue = JSON.stringify(postNo);
+                        if(StringUtils.isEmpty(item.postNo1) && StringUtils.isEmpty(item.postNo2)
+                                && StringUtils.isEmpty(item.address1) && StringUtils.isEmpty(item.address2)) {
+                            item.inputValue = '';
+                        }
+                    }
+                    /*if('02'== item.controlType){
+                        item.inputValue = item.inputValueTimeStart + '-' + item.inputValueTimeEnd;
+                        delete item.inputValueTimeStart;
+                        delete item.inputValueTimeEnd;
+                    }*/
+                    if(('11'== item.controlType || item.controlType == 'MST_GROUP_LIST' || item.controlType == 'MST_USER_LIST')
+                            && !StringUtils.isEmpty(item.inputValue)){
+                        item.inputValue = item.inputValue.toString();
+                    }
+                    if('05'== item.controlType){
+                        delete item.isFileChange;
+                        delete item.checkSize;
+                        delete item.fileSize;
+                    }
+                    delete item.listSgtDataSource;
+                    delete item.detailKey;
+                    delete item.checkUnique;
+                    delete item.readOnly;
+                    delete item.backgroundColor;
+                    delete item.unitName;
+                });
+            });
+        }
+        if(!StringUtils.isEmpty(paramData.listOther)  && paramData.listOther.length > 0){
+            angular.forEach(paramData.listOther, function(value, index){
+                angular.forEach(value.listGroup, function(item, i){
+                    if('04'== item.controlType && item.listSgtDataSource.length > 0){
+                        if(!StringUtils.isEmpty(item.listDataSource)){
+                            var inputValue = "";
+                            angular.forEach(item.listSgtDataSource, function(data, k){
+                                if(!StringUtils.isEmpty(item.inputValue) && item.inputValue[k] == "1"){
+                                    inputValue += data.code+",";
+                                }
+                            });
+                            if(!StringUtils.isEmpty(inputValue)){
+                                var trim = inputValue.replace(/(^,)|(,$)/g, "");
+                                item.inputValue = trim;
+                            }else{
+                                item.inputValue = null;
+                            }
+                        }
+                    }
+                    if('09'== item.controlType){
+                        var postNo = {
+                                'postNo1': item.postNo1,
+                                'postNo2': item.postNo2,
+                                'address1': item.address1,
+                                'address2': item.address2
+                        }
+                        $scope.model.listOther[index].listGroup[i].inputValue = JSON.stringify(postNo);
+                        item.inputValue = JSON.stringify(postNo);
+                        if(StringUtils.isEmpty(item.postNo1) && StringUtils.isEmpty(item.postNo2)
+                                && StringUtils.isEmpty(item.address1) && StringUtils.isEmpty(item.address2)) {
+                            item.inputValue = '';
+                        }
+                    }
+                    if('SITE_ADDRESS'== item.controlType){
+                        var postNo = {
+                                'postNo1': item.postNo1,
+                                'postNo2': item.postNo2,
+                                'address1': item.address1,
+                                'address2': item.address2
+                        }
+                        $scope.model.listOther[index].listGroup[i].inputValue = JSON.stringify(postNo);
+                        item.inputValue = JSON.stringify(postNo);
+                        if(StringUtils.isEmpty(item.postNo1) && StringUtils.isEmpty(item.postNo2)
+                                && StringUtils.isEmpty(item.address1) && StringUtils.isEmpty(item.address2)) {
+                            item.inputValue = '';
+                        }
+                    }
+                    /*if('02'== item.controlType){
+                        item.inputValue = item.inputValueTimeStart + '-' + item.inputValueTimeEnd;
+                        delete item.inputValueTimeStart;
+                        delete item.inputValueTimeEnd;
+                    }*/
+                    if(('11'== item.controlType || item.controlType == 'MST_GROUP_LIST' || item.controlType == 'MST_USER_LIST')
+                            && !StringUtils.isEmpty(item.inputValue)){
+                        item.inputValue = item.inputValue.toString();
+                    }
+                    if('05'== item.controlType){
+                        delete item.isFileChange;
+                        delete item.checkSize;
+                        delete item.fileSize;
+                    }
+                    delete item.listSgtDataSource;
+                    delete item.detailKey;
+                    delete item.checkUnique;
+                    delete item.readOnly;
+                    delete item.backgroundColor;
+                    delete item.unitName;
+                });
+            });
+        }
+//        if(!StringUtils.isEmpty(paramData.listSite)   && paramData.listSite.length > 0){
+//            angular.forEach(paramData.listSite, function(value, index){
+//                if(!StringUtils.isEmpty(value.postNo)) {
+//                    value.postNo = value.postNo.replace(' - ', '');
+//                }
+//            });
+//        }
+    }
+
+    /**convert data before view*/
+    $scope.convertDataForView = function(listLeft, listRight, listOther, listOwner, listDept, listSite, isInit){
+
+        if(!StringUtils.isEmpty(listLeft)){
+            // $scope.model.form.stockEdit.bankCd = listLeft[0].listGroup[1].bankCd;
+            angular.forEach(listLeft, function(value, index){
+                angular.forEach(value.listGroup, function(item, i){
+                    if(2 == item.lineNo){
+                        if(!StringUtils.isEmpty(item.inputValue)){
+                            $scope.model.hidden.customerName = item.inputValue;
+                        }
+                        if(isInit){
+                            //release scope
+                            if(!StringUtils.isEmpty(item.releaseScope) && item.releaseScope == '0'){
+                                $scope.model.hidden.releaseColor= '#26A69A';
+                            }
+                            $scope.model.hidden.releaseScope =  item.releaseScope;
+                            $scope.model.hidden.releaseScopeName =  item.releaseScopeName;
+                            //regis status
+                            if(!StringUtils.isEmpty(item.registStatus) && item.registStatus == '0'){
+                                $scope.model.hidden.registColor= '#26A69A';
+                            }
+                            $scope.model.hidden.registStatus = item.registStatus;
+                            $scope.model.hidden.registStatusName = item.registStatusName;
+                            //client type
+                            if(!StringUtils.isEmpty(item.clientType)){
+                                $scope.changeClientTypeColor(item.clientType);
+                            }
+                            $scope.model.hidden.clientType = item.clientType;
+                            $scope.model.hidden.clientTypeName = item.clientTypeName;
+                        }
+                        $scope.model.hidden.custNameKana = item.custNameKana;
+                        $scope.model.hidden.custCd = item.custCd;
+                    }
+                    $scope.convertCommonData(item);
+                });
+            });
+        }
+
+        if(!StringUtils.isEmpty(listRight)){
+            angular.forEach(listRight, function(value, index){
+                angular.forEach(value.listGroup, function(item, i){
+                    if(15 == item.lineNo || 16 == item.lineNo && typeof(item.inputValue) == 'string'){
+                        if(!StringUtils.isEmpty(item.inputValue)){
+                            item.inputValue = item.inputValue.split(',');
+                        }
+                    }
+                    if(19 == item.lineNo){
+                        if(!StringUtils.isEmpty(item.inputValue)){
+                            $scope.billaddressChange(item, null, false);
+                        }
+                    }
+                    $scope.convertCommonData(item);
+                });
+            });
+        }
+
+        if(!StringUtils.isEmpty(listOther)){
+            angular.forEach(listOther, function(value, index){
+                angular.forEach(value.listGroup, function(item, i){
+                    $scope.convertCommonData(item);
+                });
+            });
+        }
+
+        if(!StringUtils.isEmpty(listSite)){
+            angular.forEach(listSite, function(value, index){
+                value.flag = '1';
+                angular.forEach(value.listData, function(item, index){
+                    if('09'== item.controlType){
+                        if(!ValidateUtil.isValidTextEmpty(item.inputValue)){
+                            var postNo = StringUtils.isJson(item.inputValue) ? angular.fromJson(item.inputValue) : "";
+                            item.postNo1 = postNo.postNo1;
+                            item.postNo2 = postNo.postNo2;
+                            item.address1 = postNo.address1;
+                            item.address2 = postNo.address2;
+                            item.inputValue = '';
+                        }
+                    }
+                });
+            });
+        }
+
+        if(!StringUtils.isEmpty(listDept)){
+            angular.forEach(listDept, function(value, index){
+                value.flag = '1';
+            });
+        }
+
+        if(!StringUtils.isEmpty(listOwner)){
+            angular.forEach(listOwner, function(value, index){
+                value.flag = '1';
+            });
+        }
+    }
+
+    /**select checkBox button*/
+    $scope.selectCheckBox = function(row, value, index){
+        var replacement = value ? '1' : '0';
+        row.valueCheckBox = StringUtils.replaceAt(row.valueCheckBox, index, replacement);
+        row.inputValue = row.valueCheckBox;
+    }
+
+    /**convert common data*/
+    $scope.convertCommonData = function(item){
+
+        if('04'== item.controlType && !StringUtils.isEmpty(item.listSgtDataSource)){
+            var inputValue = [];
+            angular.forEach(item.listSgtDataSource, function(data, k){
+                if(!StringUtils.isEmpty(item.inputValue) && item.inputValue.indexOf(data.code) > -1){
+                    inputValue[k] = '1'
+                }else{
+                    inputValue[k] = '0';
+                }
+            });
+            if(inputValue.length > 0){
+                item.inputValue = inputValue;
+            }
+        }
+        if('09'== item.controlType){
+            if(!ValidateUtil.isValidTextEmpty(item.inputValue)){
+                var postNo = StringUtils.isJson(item.inputValue) ? angular.fromJson(item.inputValue) : "";
+                item.postNo1 = postNo.postNo1;
+                item.postNo2 = postNo.postNo2;
+                item.address1 = postNo.address1;
+                item.address2 = postNo.address2;
+            }
+        }
+        if('SITE_ADDRESS'== item.controlType){
+            if(!ValidateUtil.isValidTextEmpty(item.inputValue)){
+                var postNo = StringUtils.isJson(item.inputValue) ? angular.fromJson(item.inputValue) : "";
+                item.postNo1 = postNo.postNo1;
+                item.postNo2 = postNo.postNo2;
+                item.address1 = postNo.address1;
+                item.address2 = postNo.address2;
+            }
+        }
+        if('10'== item.controlType && !StringUtils.isEmpty(item.listSgtDataSource)){
+            if(!StringUtils.isEmpty(item.inputValue)){
+                angular.forEach(item.listSgtDataSource, function(val, index){
+                    if(val.code == item.inputValue){
+                        val.codeValue = item.inputValue;
+                    }
+                });
+            }
+        }
+
+        if(item.controlType == '11' || item.controlType == 'MST_GROUP_LIST' || item.controlType == 'MST_USER_LIST'){
+            if(!StringUtils.isEmpty(item.inputValue) && typeof(item.inputValue) == 'string'){
+                item.inputValue = item.inputValue.split(',');
+                if(item.controlType == 'MST_GROUP_LIST'){
+                    $scope.model.hidden.listGroupSelect[item.detailKey] = item.inputValue;
+                }
+            } else {
+                if(item.controlType == 'MST_GROUP_LIST'){
+                    $scope.model.hidden.listGroupSelect[item.detailKey] = [];
+                }
+            }
+        }
+
+        if('1'== item.lineNo && !item.detailFreeItemFlag){
+            $scope.model.hidden.controlCd = item.inputValue;
+        }
+
+        if('3'== item.lineNo && !item.detailFreeItemFlag){
+            $scope.model.hidden.custNameKana = item.inputValue;
+        }
+
+        if('200'== item.lineNo){
+            $scope.model.hidden.recordeType = item.inputValue;
+        }
+
+        if('201'== item.lineNo){
+            $scope.model.hidden.countryType = item.inputValue;
+        }
+    }
+
+    /**show dialog update release scope*/
+    $scope.showDialogUpdateReleaseScope = function(releaseScope){
+        if('0' != releaseScope){
+            var options = {size: '400'};
+            var data = {custCd: $scope.model.form.stockEdit.stockaddressNo,
+                                releaseScope: $scope.model.hidden.releaseScope,
+                                listS020013: $scope.model.listS020013
+                               }
+            DialogsService.showDialog('showUpdateReleaseScopeDialog','updateReleaseScopeDialogCtrl',data,options);
+        }
+    }
+
+    /**show dialog update client type*/
+    $scope.showDialogUpdateClientType = function(clientType){
+        if($scope.model.hidden.screenMode == 'EDIT'){
+            var options = {size: '400'};
+            var data = {custCd: $scope.model.hidden.custCd,
+                        clientType: $scope.model.hidden.clientType,
+                        listS020015: $scope.model.listS020015
+                       }
+            DialogsService.showDialog('showUpdateClientTypeDialog','updateClientTypeDialogCtrl',data,options).result.then(function(clientType) {
+                $scope.model.hidden.clientType = clientType;
+                if(!ValidateUtil.isValidTextEmpty($scope.model.listS020015)){
+                    angular.forEach($scope.model.listS020015, function(item, index){
+                        if(clientType == item.code){
+                            $scope.model.hidden.clientTypeName = item.codeName;
+                        }
+                    });
+                }
+
+                if($scope.model.hidden.clientType == '0'){
+                    $scope.model.hidden.clientColor= '#26A69A';
+                }else if ($scope.model.hidden.clientType == '1'){
+                    $scope.model.hidden.clientColor= '#FF5722';
+                } else {
+                    $scope.model.hidden.clientColor= '#3598DC';
+                }
+            });
+        }
+    }
+
+    /**公開範囲を更新。*/
+    $scope.$on('updateReleaseScope', function(ev, param){
+        $scope.model.hidden.releaseScope = param.releaseScope;
+        if(!ValidateUtil.isValidTextEmpty($scope.model.listS020013)){
+            angular.forEach($scope.model.listS020013, function(item, index){
+                if(param.releaseScope == item.code){
+                    $scope.model.hidden.releaseScopeName = item.codeName;
+                }
+            });
+        }
+        if($scope.model.hidden.releaseScope == '0'){
+            $scope.model.hidden.releaseColor= '#26A69A';
+        }else{
+            $scope.model.hidden.releaseColor= '#FF5722';
+        }
+    });
+
+    $scope.downloadFile = function(param){
+        if(!ValidateUtil.isValidTextEmpty(param.inputValue) && !param.isFileChange){
+            var params = {
+                    'stockaddressNo': $scope.model.form.stockEdit.stockaddressNo,
+                    'detailFreeItemFlag': param.detailFreeItemFlag,
+                    'lineNo' : param.lineNo
+            };
+            Utils.postToUrl("/MstStockControl/downloadFile", params);
+        }
+    };
+
+    $scope.resetFile  = function(e) {
+        e.wrap('<form>').parent('form').trigger('reset');
+        e.unwrap();
+    };
+
+    $scope.removeFile = function(row,parentIndex,index){
+        if($scope.model.hidden.isDisabled){
+            return;
+        }
+        row.binaryFile = '';
+        row.inputValue = '';
+        row.fileSize = '';
+        row.checkSize = false;
+        $scope.resetFile($('input[name="inputValueFile"]'));
+    };
+    $scope.gotoUrl = function(row){
+        var param = {
+            todoList : [row.todoNo],
+            listDataAjax : {no: row.todoNo, name: row.todoName},
+            searchFinished : true
+        }
+        sessionStorage.setItem("todoDetail", JSON.stringify(param));
+        sessionStorage.removeItem("todoCustomerList");
+        RouteService.gotoUrl('TodoCustomerList');
+    };
+
+    $scope.searchOwnerList = function(){
+        ServerService.doPost('CrmControl/getListOwner', $scope.model.form.stockEdit.stockaddressNo).then(
+            function(okResult) {
+                var error = okResult.data.failed;
+                var warning = okResult.data.warning;
+                if(!StringUtils.isEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                 }else if(!StringUtils.isEmpty(warning)){
+                     DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                     return;
+                 }
+                $scope.model.listOwnerStock = okResult.data.listOwner;
+                angular.forEach($scope.model.listOwnerStock , function(value, index){
+                    value.flag = '1';
+                });
+            },
+            function(errResult){}
+        );
+    };
+
+    $scope.searchSiteList = function(){
+        ServerService.doPost('CrmControl/getListSite', $scope.model.form.stockEdit.stockaddressNo).then(
+            function(okResult) {
+                var error = okResult.data.failed;
+                var warning = okResult.data.warning;
+                if(!StringUtils.isEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                 }else if(!StringUtils.isEmpty(warning)){
+                     DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                     return;
+                 }
+                /**load list site component
+                 * huy-du add 2018/03/30
+                 * */
+                var siteObj = okResult.data.listSite;
+                if(!StringUtils.isEmpty(siteObj) && siteObj.length > 0){
+                    $scope.model.hidden.listSiteHeader = siteObj[0].listHeader;
+                }
+                $scope.model.listSite = okResult.data.listSite;
+                angular.forEach($scope.model.listSite , function(value, index){
+                    value.flag = '1';
+                    angular.forEach(value.listData, function(item, index){
+                        if('09'== item.controlType){
+                            if(!ValidateUtil.isValidTextEmpty(item.inputValue)){
+                                var postNo = StringUtils.isJson(item.inputValue) ? angular.fromJson(item.inputValue) : "";
+                                item.postNo1 = postNo.postNo1;
+                                item.postNo2 = postNo.postNo2;
+                                item.address1 = postNo.address1;
+                                item.address2 = postNo.address2;
+                                item.inputValue = '';
+                            }
+                        }
+                    });
+                });
+            },
+            function(errResult){}
+        );
+    };
+
+    $scope.searchDeptList = function(){
+        ServerService.doPost('CrmControl/getListDept', $scope.model.form.stockEdit.stockaddressNo).then(
+            function(okResult) {
+                var error = okResult.data.failed;
+                var warning = okResult.data.warning;
+                if(!StringUtils.isEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                 }else if(!StringUtils.isEmpty(warning)){
+                     DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                     return;
+                 }
+                $scope.model.listDept = okResult.data.listDept;
+                angular.forEach($scope.model.listDept , function(value, index){
+                    value.flag = '1';
+                });
+            },
+            function(errResult){}
+        );
+    };
+
+    $scope.deleteSite = function(siteCd){
+        var param = {
+                custCd: $scope.model.form.stockEdit.stockaddressNo,
+                siteCd: siteCd,
+        }
+        DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('S00005'))
+        .result.then(function(btn){
+            ServerService.doPost('CrmSiteControl/delete', param).then(
+                    function(okResult) {
+                        var error = okResult.data.failed;
+                        var warning = okResult.data.warning;
+                        if(!StringUtils.isEmpty(error)){
+                            DialogsService.showError(Messages.getMessage('system.error'), error);
+                            return;
+                         }else if(!StringUtils.isEmpty(warning)){
+                             DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                             return;
+                         }
+                        $scope.searchSiteList();
+                    },
+                    function(errResult){}
+                );
+        });
+    };
+
+    $scope.deleteDept = function(deptCd){
+        var param = {
+                custCd: $scope.model.form.stockEdit.stockaddressNo,
+                deptCd: deptCd,
+        }
+        DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('S00005'))
+        .result.then(function(btn){
+            ServerService.doPost('CrmDeptControl/delete', param).then(
+                    function(okResult) {
+                        var error = okResult.data.failed;
+                        var warning = okResult.data.warning;
+                        if(!StringUtils.isEmpty(error)){
+                            DialogsService.showError(Messages.getMessage('system.error'), error);
+                            return;
+                         }else if(!StringUtils.isEmpty(warning)){
+                             DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                             return;
+                         }
+                        $scope.searchDeptList();
+                    },
+                    function(errResult){}
+                );
+        });
+    };
+
+    $scope.deleteOwner = function(ownerCd){
+        var param = {
+                custCd: $scope.model.form.stockEdit.stockaddressNo,
+                ownerCd: ownerCd,
+        }
+        DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('S00005'))
+        .result.then(function(btn){
+            ServerService.doPost('CrmOwnerControl/delete', param).then(
+                    function(okResult) {
+                        var error = okResult.data.failed;
+                        var warning = okResult.data.warning;
+                        if(!StringUtils.isEmpty(error)){
+                            DialogsService.showError(Messages.getMessage('system.error'), error);
+                            return;
+                         }else if(!StringUtils.isEmpty(warning)){
+                             DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                             return;
+                         }
+                        $scope.searchOwnerList();
+                    },
+                    function(errResult){}
+                );
+        });
+    };
+
+    $scope.init();
+
+    $scope.checkUnique = function(detail){
+        if(detail.checkUnique){
+            if(!StringUtils.isEmpty(detail.inputValue)){
+                var params = {
+                        detailFreeItemFlag: detail.detailFreeItemFlag,
+                        lineNo : detail.lineNo,
+                        inputValue: detail.inputValue,
+                        custCd: $scope.model.form.stockEdit.stockaddressNo
+                    };
+                ServerService
+                .doPost('CrmControl/checkUnique', params)
+                .then(
+                    function(okResult) {
+                        var error =  okResult.data.failed;
+                        var warning =  okResult.data.warning;
+                        if(!ValidateUtil.isValidTextEmpty(warning)){
+                            DialogsService.showWarning(Messages.getMessage('check.error'),
+                                    warning);
+                        }else if(!ValidateUtil.isValidTextEmpty(error)){
+                            DialogsService.showError(Messages.getMessage('system.error'),
+                                    error);
+                        }else{
+                            if(!okResult.data.isUnique){
+                                $scope.model.hidden.checkUnique[detail.detailKey] = true;
+                            }else{
+                                $scope.model.hidden.checkUnique[detail.detailKey] = false;
+                            }
+                        }
+                    },
+                function(errResult){
+                });
+            }else{
+                $scope.model.hidden.checkUnique[detail.detailKey] = false;
+            }
+        }
+    }
+
+    /**
+     * Tự động convert giá trị trong input thành 1 byte hoặc 2 byte như dưới đây
+     * AUTO_CONVERT_INPUT_TYPE = '02': chuyển giá trị input thành 1 byte
+     * AUTO_CONVERT_INPUT_TYPE = '03': chuyển giá trị input thành 2 byte
+     */
+    $scope.convertCharByInputType = function (detail) {
+        if (!StringUtils.isEmpty(detail.autoConvertInputType)) {
+            if (detail.controlType == '09') { //TUNG: controlType == '09' (Component Address)
+                switch (detail.autoConvertInputType) {
+                    case '02':
+                        if (!StringUtils.isEmpty(detail.address1)) {
+                            detail.address1 = StringUtils.convertDoubleToSingleChar(detail.address1);
+                        }
+                        if (!StringUtils.isEmpty(detail.address2)) {
+                            detail.address2 = StringUtils.convertDoubleToSingleChar(detail.address2);
+                        }
+                        break;
+                    case '03':
+                        if (!StringUtils.isEmpty(detail.address1)) {
+                            detail.address1 = StringUtils.convertSingleToDoubleChar(detail.address1);
+                        }
+                        if (!StringUtils.isEmpty(detail.address2)) {
+                            detail.address2 = StringUtils.convertSingleToDoubleChar(detail.address2);
+                        }
+                        break;
+                }
+            } else {
+                switch (detail.autoConvertInputType) {
+                    case '02':
+                        detail.inputValue = StringUtils.convertDoubleToSingleChar(detail.inputValue);
+                        break;
+                    case '03':
+                        detail.inputValue = StringUtils.convertSingleToDoubleChar(detail.inputValue);
+                        break;
+                }
+            }
+        }
+    }
+
+    $scope.changeClientTypeColor = function(clientType) {
+        if(clientType == '0'){
+            $scope.model.hidden.clientColor= '#26A69A';
+        }else if (clientType == '1'){
+            $scope.model.hidden.clientColor= '#FF5722';
+        } else  if (clientType == '2'){
+            $scope.model.hidden.clientColor= '#3598DC';
+        }
+    }
+
+    //Change value input has controlType = "06".
+    $scope.onChangeControlType06 = function(detail){
+        CalculateUtils.sumControlType12(detail, $filter);
+    }
+
+}]);
+
+exexSMSApp.controller('updateReleaseScopeDialogCtrl',['$rootScope','$scope','$uibModalInstance', 'ServerService', 'DialogsService', 'data', 'Messages',
+                                                      function($rootScope, $scope,  $uibModalInstance, ServerService, DialogsService, data, Messages){
+    $scope.model = data;
+    //-- Methods --//
+    $scope.update = function(){
+        if('0' == $scope.model.releaseScope.toString()){
+            DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('S00050'))
+            .result.then(function(btn){
+                $scope.updateReleaseScope();
+            })
+        }else{
+            $scope.updateReleaseScope();
+        }
+    }; // end done
+
+    $scope.no = function(){
+        $uibModalInstance.dismiss('close');
+    }; // end close
+
+    /**公開範囲を変更*/
+    $scope.updateReleaseScope = function(){
+        var param = {custCd: $scope.model.custCd, releaseScope: $scope.model.releaseScope.toString()}
+        ServerService.doPost('CrmControl/updateReleaseScope', param).then(
+        function(okResult) {
+                if(!ValidateUtil.isValidTextEmpty(okResult.data.failed)){
+                    DialogsService.showError(Messages.getMessage('system.error'), okResult.data.failed);
+                    return;
+                }else if(!ValidateUtil.isValidTextEmpty(okResult.data.warning)){
+                    DialogsService.showWarning(Messages.getMessage('check.error'), okResult.data.warning);
+                    return;
+                }else{
+                    $rootScope.$broadcast("updateReleaseScope", {releaseScope: $scope.model.releaseScope.toString()});
+                    $uibModalInstance.close();
+                }
+            },function(errResult){ }
+        );
+    }
+}]);
+
+exexSMSApp.controller('updateClientTypeDialogCtrl',['$scope','$uibModalInstance', 'ServerService', 'DialogsService', 'Messages', 'data',
+                                                    function($scope,  $uibModalInstance, ServerService, DialogsService, Messages, data){
+  $scope.model = data;
+
+  $scope.getInit = function() {
+      $scope.model.currentClientType = angular.copy(data.clientType);
+  }
+  $scope.getInit();
+
+  //-- Methods --//
+  $scope.update = function(){
+      $scope.checkForChangeClientType($scope.model.currentClientType);
+  }; // end done
+
+  $scope.no = function(){
+      $uibModalInstance.dismiss();
+  }; // end close
+
+  /**公開範囲を変更*/
+  $scope.checkForChangeClientType = function(currentClientType){
+      if(currentClientType == '0'){
+          if($scope.model.clientType == '0'){
+              $uibModalInstance.dismiss();
+          } else if ($scope.model.clientType == '1'){
+              $scope.checkRelationDataOfCustomer($scope.model.custCd);
+          } else if ($scope.model.clientType == '2'){
+              $uibModalInstance.close($scope.model.clientType);
+          }
+      } else if(currentClientType == '1'){
+          if($scope.model.clientType == '0'){
+              $scope.checkRelationDataOfStockAddress($scope.model.custCd);
+          } else if ($scope.model.clientType == '1'){
+              $uibModalInstance.dismiss();
+          } else if ($scope.model.clientType == '2'){
+              $uibModalInstance.close($scope.model.clientType);
+          }
+      } else if(currentClientType == '2'){
+          if($scope.model.clientType == '0'){
+              $scope.checkRelationDataOfStockAddress($scope.model.custCd);
+          } else if ($scope.model.clientType == '1'){
+              $scope.checkRelationDataOfCustomer($scope.model.custCd);
+          } else if ($scope.model.clientType == '2'){
+              $uibModalInstance.dismiss();
+          }
+      }
+  }
+
+  $scope.checkRelationDataOfCustomer = function(custCd){
+      ServerService.doPost('CrmControl/checkRelationDataOfCustomer', custCd).then(
+          function(okResult) {
+              var error =  okResult.data.failed;
+              var warning =  okResult.data.warning;
+              if(!ValidateUtil.isValidTextEmpty(warning)){
+                  DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+              }else if(!ValidateUtil.isValidTextEmpty(error)){
+                  DialogsService.showError(Messages.getMessage('system.error'), error);
+              }else{
+                  if(okResult.data.hasDataCustomer){
+                      DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00334'));
+                  } else {
+                      $uibModalInstance.close($scope.model.clientType);
+                  }
+              }
+          },
+          function(errResult){}
+      );
+  }
+
+  $scope.checkRelationDataOfStockAddress = function(custCd){
+      ServerService.doPost('CrmControl/checkRelationDataOfStockAddress', custCd).then(
+          function(okResult) {
+              var error =  okResult.data.failed;
+              var warning =  okResult.data.warning;
+              if(!ValidateUtil.isValidTextEmpty(warning)){
+                  DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+              }else if(!ValidateUtil.isValidTextEmpty(error)){
+                  DialogsService.showError(Messages.getMessage('system.error'), error);
+              }else{
+                  if(okResult.data.hasDataStockAddress){
+                      DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00335'));
+                  } else {
+                      $uibModalInstance.close($scope.model.clientType);
+                  }
+              }
+          },
+          function(errResult){}
+      );
+  }
+}]);

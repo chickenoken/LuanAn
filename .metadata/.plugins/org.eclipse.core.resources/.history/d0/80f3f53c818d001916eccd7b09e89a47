@@ -1,0 +1,89 @@
+/**
+ * 日付選択 祭日対応
+ *
+ * $Revision:  $  $Date:  $
+ *///exexdatepicker.js
+//htmlに、以下のcss,jsを追加する必要がある
+//		<link rel="stylesheet" type="text/css" href="../assets/jquery-ui-1.10.4/css/datePicker/jquery-ui-1.10.4.custom.css">
+//		<link rel="stylesheet" type="text/css" href="../assets/jquery-ui-1.10.4/css/datePicker/exexdatepicker.css">
+//		<script type="text/javascript" src="../assets/jquery-ui-1.10.4/js/jquery-ui-1.10.4.custom.js"></script>
+//		<script type="text/javascript" src="../assets/jquery-ui-1.10.4/js/i18n/datepicker-ja.js"></script>
+//		<script type="text/javascript" src="../assets/jquery-ui-1.10.4/js/exexdatepicker.js"></script>
+//参考：http://tech-sketch.jp/2011/12/datepicker.html
+//本機能を適応する場合は、inputにclaasにexexdatepickerを指定する
+//TODO:国際化対応は将来的課題(jsを分けるか、dateformatを指定できるようにするなどの対処は必要
+$(function() {
+  /* javascriptのDate関数に与える月は、0〜11であることに注意 */
+  //土日祝日を選択可能とするか
+  var allowselect = true;
+  //祭日リスト
+  var holidays = [];
+  /*
+   * 祝日・非営業日の定義
+   */
+  $(".exexdatepicker:not([disabled])").datepicker({
+    dateFormat: "yy/mm/dd",
+    numberOfMonths: 3,
+    showCurrentAtPos: 2,
+    showOn: "button",
+    buttonText: ' ',
+    buttonImageOnly: false,
+
+    // カレンダーがレンダリングされる直前に呼び出される
+    beforeShow: function(input, inst) {
+        if(holidays.length <= 0){
+          var date = $(input).datepicker("getDate") || new Date();
+          // その月の休日情報をajaxで取得
+          searchHolidays(date.getFullYear(), date.getMonth()+1, language);
+        }
+    },
+    // カレンダーの月が変更されたら呼び出される
+    onChangeMonthYear: function(year, month, inst) {
+      // その月の休日情報をajaxで取得
+      //searchHolidays(year, month);
+    },
+    beforeShowDay: function(day) {
+
+      var holiday = holidays[$.datepicker.formatDate('yymmdd', day)];
+      console.log(holiday);
+
+      var result = null;
+      // 祝日・非営業日定義に存在するか？
+      if (holiday) {
+          result =  [allowselect, "date-holiday"+holiday.type, holiday.title];
+        } else {
+          switch (day.getDay()) {
+            case 0: // 日曜日か？
+              result = [allowselect, "date-sunday"];
+              break;
+            case 6: // 土曜日か？
+              result = [allowselect, "date-saturday"];
+              break;
+            default:
+              result = [true, ""];
+              break;
+          }
+        }
+      return result;
+    }
+  });
+
+  function searchHolidays(year, month,lang) {
+    $.ajax({
+      //TODO: 国際化対応
+      url:      "data/"+ lang + "/holidays.txt", // 接続先のURL
+      type:     "GET",
+      data:     "year="+year+"&month="+month, // パラメータ
+      async:    false,
+      success:  function(json, status) {
+        // JSONで取得した休日情報を休日定義にマージ
+        // 同じ休日の情報を複数回取得した場合、新しく取得した情報で上書きされる
+        // （現状のスペックでは、休日を削除された場合は対応できない。ページのリロードが必要）
+        //var data = $.text(json);
+        data = $.parseJSON(json);
+        holidays = $.extend(holidays, data);
+      }
+    });
+  }
+});
+

@@ -1,0 +1,54 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision:  $  $Date:  $
+ * @author : trung-hieu
+ */
+'use strict';
+exexSMSApp.factory('advancesReceivedHistoryModel', [ 'BaseModel', function(BaseModel) {
+    var model = BaseModel.getInstance();
+    model.form = {
+            billaddress : {
+                billaddressName : '',
+                advancesReceivedBalance : ''
+            },
+            listAdvancesHistory: [],
+    };
+
+return model;
+
+}]);
+
+exexSMSApp.controller('advancesReceivedHistoryCtrl',
+        ['$rootScope', '$scope','advancesReceivedHistoryModel', 'DialogsService', '$uibModalInstance', 'ServerService', 'Messages', 'data', 'RouteService',
+         function($rootScope, $scope, advancesReceivedHistoryModel,  DialogsService, $uibModalInstance, ServerService, Messages, data, RouteService){
+
+        $scope.model = advancesReceivedHistoryModel;
+
+        $scope.init = function(){
+            $scope.model.form.billaddress.billaddressName = data.billaddressName;
+            $scope.model.form.billaddress.advancesReceivedBalance = data.advancesReceivedBalance;
+            $scope.getInit();
+        };
+
+        $scope.getInit = function(){
+            var param = {
+                    billaddressNo : data.billaddressNo
+            }
+            ServerService
+            .doPost('AdvancesReceivedControl/getAdvancesHistory', param).then(
+                function(okResult) {
+                    $scope.model.form.listAdvancesHistory = okResult.data.listAdvancesHistory;
+                },
+                function(errResult){}
+            );
+        };
+
+        $scope.init();
+
+        $scope.close = function() {
+            $uibModalInstance.dismiss('close');
+        };
+}]);

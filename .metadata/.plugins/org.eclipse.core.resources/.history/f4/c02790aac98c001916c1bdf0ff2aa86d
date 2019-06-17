@@ -1,0 +1,361 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision:  $  $Date:  $
+ * @author : minh-dao
+ */
+'use strict';
+
+exexSMSApp.factory('exExContractModel', [ 'BaseModel', function(BaseModel) {
+    var model = BaseModel.getInstance();
+    model.form = {
+            company : {
+                companyCd: '',
+                companyName : '',
+                delegate : '',
+                postNo : '',
+                postNo1 : '',
+                postNo2 : '',
+                address1 : '',
+                address2 : '',
+                tellNo : '',
+                tellNo1 : '',
+                tellNo2 : '',
+                tellNo3 : '',
+                faxNo : '',
+                fax1 : '',
+                fax2 : '',
+                fax3 : '',
+                mailAddress : '',
+                registUserCount : '',
+                workflow : '',
+                paymentMethod : '',
+                licenseExpiryDate : '',
+                license : '',
+                licenseName: '',
+                version : ''
+            },
+        };
+    model.listS010002 = [];
+    model.listS010004 = [];
+    model.listM060001 = [];
+    model.listM060003 = [];
+
+    model.hidden = {
+            isDisabled : false,
+            userDataStorage : '',
+            tmpData : ''
+         };
+
+    return model;
+
+} ]);
+
+exexSMSApp.controller('exExContractCtrl',
+        ['$scope', '$timeout', '$window', '$sce', 'exExContractModel', 'DialogsService', 'Messages', 'ServerService',
+         function($scope, $timeout, $window, $sce, exExContractModel, DialogsService, Messages, ServerService){
+
+    $scope.model = exExContractModel;
+
+    $scope.init = function(model){
+        $scope.getInit();
+    };
+
+    $scope.getInit = function() {
+        ServerService
+            .doPost('ExExContract/getInit', {})
+            .then(
+                    function(okResult) {
+                        var warning = okResult.data.warning;
+                        var error = okResult.data.failed;
+                        if(!ValidateUtil.isValidTextEmpty(error)){
+                            DialogsService.showError(Messages.getMessage('system.error'),error);
+                        }else if(!ValidateUtil.isValidTextEmpty(warning)){
+                            var dlg = DialogsService.showWarning(Messages.getMessage('title.info'),
+                                    warning);
+                             dlg.result.then(function(btn){
+                                 sessionStorage.clear();
+                                 $window.location = "Login";
+                             });
+                        } else{
+                            $scope.model.form.company = okResult.data.exexContract;
+                            $scope.model.hidden.tmpData = okResult.data.exexContract;
+                            $scope.model.hidden.userDataStorage = okResult.data.userDataStorage;
+                            var temppostNo = okResult.data.exexContract.postNo;
+                            $scope.model.form.company.postNo1 = temppostNo.substr(0,3);
+                            $scope.model.form.company.postNo2 = temppostNo.substr(3,4);
+                            if(!ValidateUtil.isValidTextEmpty(okResult.data.exexContract.tellNo)) {
+                                var tempTelephone = okResult.data.exexContract.tellNo.split("-");
+                                $scope.model.form.company.tellNo1 = tempTelephone[0];
+                                $scope.model.form.company.tellNo2 = tempTelephone[1];
+                                $scope.model.form.company.tellNo3 = tempTelephone[2];
+                            } else{
+                                $scope.model.form.company.tellNo1 = "";
+                                $scope.model.form.company.tellNo2 = "";
+                                $scope.model.form.company.tellNo3 = "";
+                            }
+                            if(!ValidateUtil.isValidTextEmpty(okResult.data.exexContract.faxNo)) {
+                                var tempFax = okResult.data.exexContract.faxNo.split("-");
+                                $scope.model.form.company.fax1 = tempFax[0];
+                                $scope.model.form.company.fax2 = tempFax[1];
+                                $scope.model.form.company.fax3 = tempFax[2];
+                            } else{
+                                 $scope.model.form.company.fax1 = "";
+                                 $scope.model.form.company.fax2 = "";
+                                 $scope.model.form.company.fax3 = "";
+                            }
+
+                            $scope.listS010002 =  okResult.data.listS010002;
+                            $scope.listS010004 =  okResult.data.listS010004;
+                            $scope.listM060001 =  okResult.data.listM060001;
+                            $scope.listM060003 =  okResult.data.listM060003;
+
+                            $scope.$watchCollection('model.form.company', function(newValue, oldValue){
+                                if(ValidateUtil.isValidTextEmpty(newValue.address1) && ValidateUtil.isValidTextEmpty(newValue.address2)) {
+                                    $scope.model.hidden.isDisabled = true;
+                                } else if( !ValidateUtil.isValidTextEmpty(oldValue.companyCd) && !angular.equals(newValue, oldValue)){
+                                    $scope.model.hidden.isDisabled = true;
+                                } else {
+                                    $scope.model.hidden.isDisabled = false;
+                                }
+                            });
+                        }
+                    },
+                    function(errResult){
+                    });
+    };
+    $scope.init();
+
+    $scope.$watchCollection('model.form.company', function(newValue, oldValue){
+        if(ValidateUtil.isValidTextEmpty(newValue.address1) && ValidateUtil.isValidTextEmpty(newValue.address2)) {
+            $scope.model.hidden.isDisabled = true;
+        } else if( !ValidateUtil.isValidTextEmpty(oldValue.companyCd) && !angular.equals(newValue, oldValue)){
+            $scope.model.hidden.isDisabled = true;
+        } else {
+            $scope.model.hidden.isDisabled = false;
+        }
+    });
+
+    /**
+     * 住所検索
+     */
+    $scope.checkPostNumber = function(param){
+        var postNo = param.postNo1 + param.postNo2;
+        if(ValidateUtil.isValidTextEmpty(postNo)) {
+            DialogsService.showWarning(Messages.getMessage('check.error'),
+                    Messages.getMessage('W00207'));
+            return true;
+        }
+        if(ValidateUtil.isValidPostNo(postNo)) {
+            DialogsService.showWarning(Messages.getMessage('check.error'),
+                    Messages.getMessage('W00018'));
+            return true;
+        }
+        var params = {'postNo':postNo};
+        ServerService
+            .doPost('ExExContract/checkPostNumber', params)
+            .then(
+                    function(okResult) {
+                        var error =  okResult.data.failed;
+                        var warning =  okResult.data.warning;
+                        if(!ValidateUtil.isValidTextEmpty(warning)){
+                            DialogsService.showWarning(Messages.getMessage('check.error'),warning);
+                        }else if(!ValidateUtil.isValidTextEmpty(error)){
+                            DialogsService.showError(Messages.getMessage('system.error'), error);
+                        }else{
+                            $scope.model.form.company.address1 = okResult.data.address;
+                        }
+                    },
+                    function(errResult){
+                    });
+    };
+
+    /**
+     * 解除のボタンをクリック。
+     */
+    $scope.cancel = function() {
+        var companyInfo = {
+                'companyCd' :  $scope.model.form.company.companyCd,
+                'companyName' : $scope.model.form.company.companyName,
+                'version' : $scope.model.form.company.version
+        };
+        sessionStorage.setItem("companyInfo", JSON.stringify(companyInfo));
+        $window.location = "ExExCancel";
+    };
+
+    /**
+     * 継続利用申込のボタンをクリック。
+     */
+    $scope.exexContinue = function() {
+        ServerService
+            .doPost('ExExContract/checkAddress', {})
+            .then(
+                    function(okResult) {
+                        var exexContract = okResult.data.exexContract;
+                        if(ValidateUtil.isValidTextEmpty(exexContract.address1) && ValidateUtil.isValidTextEmpty(exexContract.address2)){
+                            DialogsService.showWarning(Messages.getMessage('check.error'),
+                                    Messages.getMessage('W00193'),{size: '330'});
+                            return;
+                        }else  if(ValidateUtil.isValidTextEmpty(exexContract.tellNo)){
+                            DialogsService.showWarning(Messages.getMessage('check.error'),
+                                    Messages.getMessage('W00194'),{size: '360'});
+                            return;
+                        }else{
+                            var companyInfo = {
+                                    'companyCd' :  $scope.model.form.company.companyCd,
+                                    'companyName' : $scope.model.form.company.companyName
+                            };
+                            sessionStorage.setItem("companyInfo", JSON.stringify(companyInfo));
+                            $window.location = "ExExContinue";
+                        }
+                    },
+                    function(errResult){
+                    });
+    };
+
+    /**
+     * 会社を更新。
+     */
+    $scope.updateCompany = function(param, formInvalid) {
+        $scope.model.hidden.isSubmited = true;
+        if (formInvalid) {
+            return;
+        }
+        var params = {
+            companyName : param.companyName,
+            companyCd : param.companyCd,
+            delegate : param.delegate,
+            postNo : param.postNo1+param.postNo2,
+            address1 : param.address1,
+            address2 : param.address2,
+            tellNo : param.tellNo1 + "-" + param.tellNo2 + "-" + param.tellNo3,
+            faxNo : param.fax1 + "-" + param.fax2 + "-" + param.fax3,
+            mailAddress : param.mailAddress,
+            workflow : param.workflow,
+            paymentMethod : !ValidateUtil.isValidTextEmpty(param.paymentMethod) ? param.paymentMethod.toString() : '',
+            license : param.license,
+            licenseExpiryDate : param.licenseExpiryDate,
+            version : param.version
+        };
+        if($scope.validationPostNo(param)){
+            return;
+        };
+
+        if($scope.checkTelephone(param)){
+            return;
+        }
+        if($scope.checkFax(param)){
+            return;
+        }
+        if(ValidateUtil.isValidTextEmpty(param.postNo1) && ValidateUtil.isValidTextEmpty(param.postNo2)){
+            params.postNo = '';
+        }
+        if(ValidateUtil.isValidTextEmpty(param.tellNo1) && ValidateUtil.isValidTextEmpty(param.tellNo2) &&
+                ValidateUtil.isValidTextEmpty(param.tellNo3)){
+            params.tellNo = '';
+        }
+        if(ValidateUtil.isValidTextEmpty(param.fax1) && ValidateUtil.isValidTextEmpty(param.fax2) &&
+                ValidateUtil.isValidTextEmpty(param.fax3)){
+            params.faxNo = '';
+        }
+
+        var dlg = DialogsService.showConfirm(Messages.getMessage('title.confirm'),
+                Messages.getMessage('S00004'));
+        dlg.result.then(function(btn){
+            ServerService
+            .doPost('ExExContract/updateCompany', params)
+            .then(
+                    function(okResult) {
+                        var warning = okResult.data.warning;
+                        var error = okResult.data.failed;
+                        var success = okResult.data.success;
+                        if(!ValidateUtil.isValidTextEmpty(warning)){
+                            DialogsService.showWarning(Messages.getMessage('check.error'),warning);
+                        }else if(!ValidateUtil.isValidTextEmpty(error)){
+                            DialogsService.showError(Messages.getMessage('system.error'),error);
+                        }else{
+                            $scope.getInit();
+                            DialogsService.showNotify(Messages.getMessage('title.info'),success);
+                        }
+                    },
+                    function(errResult){
+                    });
+        },function(btn){
+        });
+    };
+
+    $scope.postNo1Change = function() {
+        if ($scope.model.form.company.postNo1.length == 3) {
+            angular.element('#postNo2').focus();
+        }
+    };
+
+    $scope.tellNo1Change =  function() {
+        if ($scope.model.form.company.tellNo1.length == 5) {
+            angular.element('#tellNo2').focus();
+        }
+    };
+
+    $scope.tellNo2Change =  function() {
+        if ($scope.model.form.company.tellNo2.length == 4) {
+            angular.element('#tellNo3').focus();
+        }
+    };
+
+    $scope.fax1Change = function () {
+        if ($scope.model.form.company.fax1.length == 5) {
+            angular.element('#fax2').focus();
+        }
+    };
+
+    $scope.fax2Change = function () {
+        if ($scope.model.form.company.fax2.length == 4) {
+            angular.element('#fax3').focus();
+        }
+    };
+
+    /**
+     * 電話番号をチェック。
+     */
+    $scope.checkTelephone = function (param) {
+        if(!ValidateUtil.isValidTextEmpty(param.tellNo1) || !ValidateUtil.isValidTextEmpty(param.tellNo2) ||
+                !ValidateUtil.isValidTextEmpty(param.tellNo3)){
+            if(ValidateUtil.isValidTextEmpty(param.tellNo1) || ValidateUtil.isValidTextEmpty(param.tellNo2) ||
+                    ValidateUtil.isValidTextEmpty(param.tellNo3)){
+                DialogsService.showWarning(Messages.getMessage('check.error'),
+                        Messages.getMessage('W00130'));
+                return true;
+            }
+        }
+    };
+
+    /**
+     * FAXをチェック。
+     */
+    $scope.checkFax = function (param) {
+        if(!ValidateUtil.isValidTextEmpty(param.fax1) || !ValidateUtil.isValidTextEmpty(param.fax2) ||
+                !ValidateUtil.isValidTextEmpty(param.fax3)){
+            if(ValidateUtil.isValidTextEmpty(param.fax1) || ValidateUtil.isValidTextEmpty(param.fax2) ||
+                    ValidateUtil.isValidTextEmpty(param.fax3)){
+                DialogsService.showWarning(Messages.getMessage('check.error'),
+                        Messages.getMessage('W00131'));
+                return true;
+            }
+        }
+    };
+
+    /**
+     * 郵便番号をチェック。
+     */
+    $scope.validationPostNo = function (param) {
+        if(!ValidateUtil.isValidTextEmpty(param.postNo1) || !ValidateUtil.isValidTextEmpty(param.postNo2)){
+            if((param.postNo1 + param.postNo2).length != 7){
+                DialogsService.showWarning(Messages.getMessage('check.error'),
+                        Messages.getMessage('W00018'));
+                return true;
+            }
+        }
+    };
+}]);

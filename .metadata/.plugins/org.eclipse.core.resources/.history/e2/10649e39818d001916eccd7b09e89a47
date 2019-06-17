@@ -1,0 +1,80 @@
+body.document-editor {
+    background: white;
+    display: block;
+    margin: 0.5cm auto 0.5cm;
+    box-shadow: 0 0 0.5cm rgba(0, 0, 0, 0.5);
+    padding: 30px;
+    font-size: 14px;
+    line-height: 20pt;
+    font-family: 'MS PMincho';
+}
+
+/** drag drop component css */
+body.document-editor .h-card {
+    background: #FFFDE3;
+    padding: 0.5px 0.5px;
+    border-bottom: 1px dashed #ccc;
+}
+
+body.document-editor h1 {
+    margin-bottom:1cm;
+}
+
+body.document-editor table {
+    border-collapse: collapse;
+}
+
+body.document-editor table td {
+    padding: 0px 5px;
+}
+
+/**A3 page size*/
+.page-size-A3-portrait{
+    width: 297mm !important;
+    height: 419mm !important;
+}
+.page-size-A3-landscape{
+    width: 420mm !important;
+    height: 296mm !important;
+}
+
+/**A4 page size*/
+.page-size-A4-portrait{
+    width: 210mm !important;
+    height: 296mm !important;
+
+}
+.page-size-A4-landscape{
+    width: 297mm !important;
+    height: 209mm !important;
+}
+
+/**A5 page size*/
+.page-size-A5-portrait{
+    width: 148mm !important;
+    height: 209mm !important;
+}
+.page-size-A5-landscape{
+    width: 210mm !important;
+    height: 147mm !important;
+}
+
+/**B5 page size*/
+.page-size-B5-portrait{
+    width: 176mm !important;
+    height: 250mm !important;
+}
+.page-size-B5-landscape{
+    width: 250mm !important;
+    height: 176mm !important;
+}
+
+/**B4 page size*/
+.page-size-B4-portrait{
+    width: 250mm !important;
+    height: 353mm !important;
+}
+.page-size-B4-landscape{
+    width: 353mm !important;
+    height: 250mm !important;
+}

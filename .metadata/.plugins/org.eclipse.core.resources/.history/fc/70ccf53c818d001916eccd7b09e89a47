@@ -1,0 +1,60 @@
+/**
+ * 日付選択 祭日対応
+ * 
+ * $Revision:  $  $Date:  $
+ */
+//exexdatepicker.js
+//bootstrap datepickerはバグ有りすぎるので、断念。
+$(function() {
+  /* javascriptのDate関数に与える月は、0〜11であることに注意 */
+  var minD = null;   //カレンダーでピックアップできる最前の日
+  var maxD = null; //カレンダーでピックアップできる最後の日
+  //土日祝日を選択可能とするかを指定する dafault=true
+  var allowselect = true;
+  if(datepicker_hodidayallowselect != null)
+	  allowselect = datepicker_hodidayallowselect;
+
+  //祭日リスト
+  var holidays = [];  
+  if(datepicker_holidays != null)
+	  holidays = datepicker_holidays;
+    
+  /* 
+   * 祝日・非営業日の定義
+   */
+  $(".exexdatepicker").datepicker({
+    dateFormat: "yy/mm/dd", 
+    minDate: minD,
+    maxDate: maxD,
+    language: "ja",
+    autoclose: true,
+    clearBtn: true,
+    beforeShowDay: function(day) {
+      
+      //jqueryUI版
+      //var holiday = holidays[$.datepicker.formatDate('yymmdd', day)];
+      //bootstrap-datepicker版
+      var holiday = holidays[dateToString(day)];
+
+      var result = null;
+      // 祝日・非営業日定義に存在するか？
+      if (holiday) {
+        result =  {enabled: allowselect , classes: "date-holiday"+holiday.type, tooltip : holiday.title};
+      } else {
+        switch (day.getDay()) {
+          case 0: // 日曜日か？
+              result =  {enabled: allowselect , classes: "date-sunday"};
+            break;
+          case 6: // 土曜日か？
+              result =  {enabled: allowselect , classes: "date-saturday"};
+            break;
+          default:
+            result = {enabled: true};
+            break;
+        }
+      }
+      return result;
+    }
+  });
+});
+

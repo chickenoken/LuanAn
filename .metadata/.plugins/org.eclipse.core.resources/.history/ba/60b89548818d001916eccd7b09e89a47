@@ -1,0 +1,171 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision: 1.0 $  $Date: 2015/06/02 $
+ * @author :  Quang-Thien
+ */
+
+'use strict';
+
+$(function(){
+
+    $(".icon-date-picker").click(function(e) {
+        e.preventDefault();
+        $("div.datetimepicker").removeClass('daterange-focus');
+        $(this).focus();
+    });
+
+    $("#orderDate").click(function(e) {
+        e.preventDefault();
+        $("div.datetimepicker").removeClass('daterange-focus');
+        $(this).focus();
+    });
+
+    $("#delPlanDate").click(function(e) {
+        e.preventDefault();
+        $("div.datetimepicker").removeClass('daterange-focus');
+        $(this).focus();
+    });
+
+    $("#billMonth").click(function(e) {
+        e.preventDefault();
+        $("div.datetimepicker").removeClass('daterange-focus');
+        $(this).focus();
+    });
+
+    $("#historyDate").click(function(e) {
+        e.preventDefault();
+        $("div.datetimepicker").removeClass('daterange-focus');
+        $(this).focus();
+    });
+
+    $("#orderDate").keydown(function(e) {
+        $("div.datetimepicker").removeClass('daterange-focus');
+        //$(this).focus();
+    });
+
+    $(".fromDate").click(function(e) {
+        e.preventDefault();
+        $("div.daterangepicker").removeClass('daterange-focus');
+        $("input[name='fromDate']").focus();
+        $("#fromDate").focus();
+    });
+
+    $(".toDate").click(function(e) {
+        e.preventDefault();
+        $("div.daterangepicker").removeClass('daterange-focus');
+        $("input[name='toDate']").focus();
+        $("#toDate").focus();
+    });
+
+    $(".fromDateNone").click(function(e) {
+        e.preventDefault();
+        $("div.daterangepicker").removeClass('daterange-focus');
+        $("input[name='fromDate1']").focus();
+        $("#fromDateNone").focus();
+    });
+
+    $(".toDateNone").click(function(e) {
+        e.preventDefault();
+        $("div.daterangepicker").removeClass('daterange-focus');
+        $("input[name='toDate1']").focus();
+        $("#toDateNone").focus();
+    });
+
+    $("#fromDate").click(function(e) {
+        e.preventDefault();
+        $("div.daterangepicker").removeClass('daterange-focus');
+        $("input[name='fromDate']").focus();
+        $("#fromDate").focus();
+    });
+
+    $("#toDate").click(function(e) {
+        e.preventDefault();
+        $("div.daterangepicker").removeClass('daterange-focus');
+        $("input[name='toDate']").focus();
+        $("#toDate").focus();
+    });
+
+    $("#fromDate").keydown(function(e) {
+        //if(e.keyCode == 9 || e.keyCode == 37 || e.keyCode == 38 || e.keyCode == 39 || e.keyCode == 40) {
+            $("div.daterangepicker").removeClass('daterange-focus');
+            $("input[name='fromDate']").focus();
+            $("#fromDate").focus();
+        //}
+    });
+
+    $("#toDate").keydown(function(e) {
+        //if((e.shiftKey && e.keyCode == 9) || e.keyCode == 37 || e.keyCode == 38 || e.keyCode == 39 || e.keyCode == 40) {
+            $("div.daterangepicker").removeClass('daterange-focus');
+            $("input[name='toDate']").focus();
+            $("#toDate").focus();
+        //}
+    });
+
+    // For none init data on range calendar
+    $("#fromDateNone").click(function(e) {
+        e.preventDefault();
+        $("div.daterangepicker").removeClass('daterange-focus');
+        $("input[name='fromDate1']").focus();
+        $("#fromDateNone").focus();
+    });
+
+    $("#toDateNone").click(function(e) {
+        e.preventDefault();
+        $("div.daterangepicker").removeClass('daterange-focus');
+        $("input[name='toDate1']").focus();
+        $("#toDateNone").focus();
+    });
+
+    $("#fromDateNone").keydown(function(e) {
+        //if(e.keyCode == 9 || e.keyCode == 37 || e.keyCode == 38 || e.keyCode == 39 || e.keyCode == 40) {
+            $("div.daterangepicker").removeClass('daterange-focus');
+            $("input[name='fromDate1']").focus();
+            $("#fromDateNone").focus();
+        //}
+    });
+
+    $("#toDateNone").keydown(function(e) {
+        //if((e.shiftKey && e.keyCode == 9) || e.keyCode == 37 || e.keyCode == 38 || e.keyCode == 39 || e.keyCode == 40) {
+            $("div.daterangepicker").removeClass('daterange-focus');
+            $("input[name='toDate1']").focus();
+            $("#toDateNone").focus();
+        //}
+    });
+
+/*    document.onkeydown = function(e) {
+        if (e.ctrlKey &&
+            (e.keyCode === 67 ||
+             e.keyCode === 86 ||
+             e.keyCode === 85 ||
+             e.keyCode === 117)) {
+            return false;
+        } else {
+            return true;
+        }
+    };*/
+
+    // This for enter in chosen select
+    $('.search-field input').keydown(function (e) {
+        if (e.which === 13 || e.keyCode === 13) {
+            var withDrop = $(this).parent().parent().parent().hasClass("chosen-with-drop");
+            var fields = $(this).parents('form:eq(0),body').find('input:visible:enabled:not(readonly), textarea:not(:disabled),button');
+            var index = fields.index(this);
+            if(index > -1 && (index+1) < fields.length && !withDrop){
+                fields.eq(index+1).focus();
+            }
+        }
+    });
+
+});
+/*
+$(function(){
+	$('ul.dropdown-menu [data-toggle=dropdown]').on('click', function(event) {
+		event.preventDefault();
+		event.stopPropagation();
+		$(this).parent().siblings().removeClass('open');
+		$(this).parent().toggleClass('open');
+	});
+});*/

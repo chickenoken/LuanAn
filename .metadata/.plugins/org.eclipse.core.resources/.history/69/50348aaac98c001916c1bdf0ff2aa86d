@@ -1,0 +1,779 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision: 1.0 $ $Date: 2014/06/09 $
+ * @author Minh-Thuan
+ * Table
+ */
+
+
+'use strict';
+
+exexSMSApp.factory('CrmDeptListModel', [ 'BaseModel', function(BaseModel) {
+    var model = BaseModel.getInstance();
+    model.form = {
+        search : {
+            keyword : '',
+            updDateFrom : '',
+            updDateTo : '',
+            createDateFrom : '',
+            createDateTo : '',
+            deptName : '',
+            custName : '',
+            custCdList : [],
+            salesGroupCd : [],
+            salesUserCd : [],
+            searchNo:'',
+            searchOrderKey : [],
+            searchOrderSort: ''
+        },
+        deptLists : [],
+        filtered : [],
+        listMstGroupType : [],
+
+        //TODO common pagination info
+        paginationInfo : {
+            page: 0,
+            pageSize: 20,
+            totalPage: 0,
+            totalRecord: 0,
+            from: 0,
+            to: 0
+        }
+    };
+    model.hidden = {
+        custCd : '',
+        custName : '',
+        isSubmitted : false,
+        paramSearch : '',
+        page : 0,
+        paginationPage : 0,
+        searchNo : '',
+        conditionCombineType : '',
+        isPopup : false,
+        deptDetailSearch : null,
+        totalPage : 0,
+        fromScreen : '',
+        listGroupSelect:[],
+        listGroupSelect2:[],
+        leftMenuWidth: 0,
+        tableHeight: 0,
+        heightPagination: 0,
+        listParamSearch : [],
+        label:{},
+        searchConditionName : '',
+        searchOrderKey : [{id: 1, model: 'updDate', name: angular.element('#updDateLabel').text()},
+                          {id: 2, model: 'createDate', name: angular.element('#createDateLabel').text()}
+                          ],
+
+        searchOrderSort : [{id: 1, model: 'desc', name: angular.element('#descLabel').text()},
+                           {id: 2, model: 'asc', name: angular.element('#ascLabel').text()}],
+
+        listSearch:[],
+        listTmp: [],
+        listDataAjax : [],
+    };
+    return model;
+}]);
+
+exexSMSApp.service('CrmDeptListService', ['$q', 'ServerService',function ($q, ServerService) {
+    var _self = this;
+
+    _self.initData = function(param) {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('CrmDeptList/getInit', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    _self.search = function(param) {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('CrmDeptList/search', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+}]);
+
+/**
+ * 案件一覧画面コントローラー
+ */
+exexSMSApp.controller('crmDeptListCtrl',
+            ['$cookies', '$scope', '$filter', 'DialogsService', 'RouteService', '$timeout', 'CrmDeptListService', 'Messages', 'ServerService', 'CrmDeptListModel',
+    function ($cookies, $scope, $filter, DialogsService, RouteService, $timeout, CrmDeptListService, Messages, ServerService, CrmDeptListModel) {
+
+    $scope.model = CrmDeptListModel;
+
+    // Config date time picker
+    $scope.config = {
+        date: new Date(),
+        datepickerOptions: {
+            showWeeks: false,
+            startingDay: 0,
+            formatDayTitle: 'yyyy年 M月',
+            formatDay: 'd',
+            yearColumns: 4,
+            yearRows: 3
+        },
+        timepickerOptions: {
+            showMeridian: false,
+        }
+    };
+
+    $scope.openCalendar = function () {
+        $scope.model.hidden.open = true;
+    };
+
+    $scope.newListParamSearch = function () {
+        $scope.model.hidden.listTmp = angular.copy($scope.model.hidden.listParamSearch);
+        for (var i = 0; i < $scope.model.hidden.listSearch.length; i++) {
+            var item = $scope.model.hidden.listSearch[i];
+            var removeIndex = $scope.model.hidden.listTmp.map(function (items) {
+                return items.model;
+            }).indexOf(item.model);
+            if (item.model == 'keyword') {
+                $scope.model.hidden.listTmp.splice(removeIndex, 1);
+            } else if (item.model == 'updDate') {
+                $scope.model.hidden.listTmp.splice(removeIndex, 1);
+            } else if (item.model == 'createDate') {
+                $scope.model.hidden.listTmp.splice(removeIndex, 1);
+            } else if (item.model == 'deptName') {
+                $scope.model.hidden.listTmp.splice(removeIndex, 1);
+            } else if (item.model == 'custName') {
+                $scope.model.hidden.listTmp.splice(removeIndex, 1);
+            } else if (item.model == 'custCdList') {
+                $scope.model.hidden.listTmp.splice(removeIndex, 1);
+            } else if (item.model == 'salesUserCd') {
+                $scope.model.hidden.listTmp.splice(removeIndex, 1);
+            } else if (item.model == 'salesGroupCd') {
+                $scope.model.hidden.listTmp.splice(removeIndex, 1);
+            }
+        }
+    };
+
+    $scope.prepareListParamSearch = function () {
+        var listParamSearch = $scope.model.hidden.listParamSearch;
+        var sessionLogin = angular.fromJson(sessionStorage.getItem("session"));
+        var sessionSearch = angular.fromJson(sessionStorage.getItem("crmDeptListSession"));
+        var deptDetailSearch = angular.fromJson(sessionStorage.getItem("crmDeptDetailSearch"));
+        for (var i = 0; i < $scope.model.hidden.listSearch.length; i++) {
+            var item = $scope.model.hidden.listSearch[i];
+            item.listDetailParam = angular.copy($scope.model.hidden.listTmp);
+            if (item.model == 'keyword') {
+                item.listDetailParam.push(listParamSearch[0]);
+            } else if (item.model == 'updDate') {
+                item.listDetailParam.push(listParamSearch[1]);
+                if (StringUtils.isEmpty(deptDetailSearch) && (StringUtils.isEmpty(sessionSearch) || (!StringUtils.isEmpty(sessionSearch) &&
+                        sessionSearch.updDateFrom === undefined && sessionSearch.updDateTo === undefined))) {
+                    $scope.model.form.search.updDateFrom = DateUtils.getPreviousMonth();
+                    $scope.model.form.search.updDateTo = DateUtils.getCurrentDate();
+                }
+            } else if (item.model == 'createDate') {
+                item.listDetailParam.push(listParamSearch[2]);
+                if (StringUtils.isEmpty(deptDetailSearch) && (StringUtils.isEmpty(sessionSearch) || (!StringUtils.isEmpty(sessionSearch) &&
+                        sessionSearch.createDateFrom === undefined && sessionSearch.createDateTo === undefined))) {
+                    $scope.model.form.search.createDateFrom = DateUtils.getPreviousMonth();
+                    $scope.model.form.search.createDateTo = DateUtils.getCurrentDate();
+                }
+            } else if (item.model == 'deptName') {
+                item.listDetailParam.push(listParamSearch[3]);
+            } else if (item.model == 'custName') {
+                item.listDetailParam.push(listParamSearch[4]);
+            } else if (item.model == 'custCdList') {
+                item.listDetailParam.push(listParamSearch[5]);
+            } else if (item.model == 'salesUserCd') {
+                item.listDetailParam.push(listParamSearch[6]);
+                if (!StringUtils.isEmpty(sessionLogin) && (!StringUtils.isEmpty(sessionSearch) && sessionSearch.salesUserCd == undefined) &&
+                    (StringUtils.isEmpty($scope.model.form.search.salesUserCd) || $scope.model.form.search.salesUserCd.length == 0)) {
+                    $scope.model.form.search.salesUserCd = [sessionLogin.userCd];
+                    var listTmp = [];
+                    listTmp.push({
+                        no: sessionLogin.userCd,
+                        name: sessionLogin.userName
+                    });
+                    $scope.model.hidden.listDataAjax[0] = listTmp;
+                }
+            } else if (item.model == 'salesGroupCd') {
+                item.listDetailParam.push(listParamSearch[7]);
+                if (!StringUtils.isEmpty(sessionLogin) && (!StringUtils.isEmpty(sessionSearch) && sessionSearch.salesGroupCd == undefined) &&
+                    (StringUtils.isEmpty($scope.model.form.search.salesGroupCd) || $scope.model.form.search.salesGroupCd.length == 0)) {
+                    $scope.model.form.search.salesGroupCd = !StringUtils.isEmpty(sessionLogin.groupCd) ? [sessionLogin.groupCd] : [];
+                }
+            }
+        }
+    };
+
+    $scope.prepareSessionSearch = function (session) {
+        var listSearch = [];
+        for (var key in session) {
+            var item = {};
+            if (key == 'keyword') {
+                $scope.model.form.search.keyword = session[key];
+                item.model = key;
+            } else if (key == 'updDateFrom') {
+                $scope.model.form.search.updDateFrom = session[key];
+                item.model = 'updDate';
+            } else if (key == 'updDateTo') {
+                $scope.model.form.search.updDateTo = session[key]
+            } else if (key == 'createDateFrom') {
+                $scope.model.form.search.createDateFrom = session[key];
+                item.model = 'createDate';
+            } else if (key == 'createDateTo') {
+                $scope.model.form.search.createDateTo = session[key]
+            } else if (key == 'deptName') {
+                $scope.model.form.search.deptName = session[key];
+                item.model = key;
+            } else if (key == 'custName') {
+                $scope.model.form.search.custName = session[key];
+                item.model = key;
+            } else if (key == 'custCdList') {
+                $scope.model.form.search.custCdList = session[key];
+                item.model = key;
+            } else if (key == 'salesUserCd') {
+                $scope.model.form.search.salesUserCd = session[key];
+                item.model = key;
+            } else if (key == 'salesGroupCd') {
+                $scope.model.form.search.salesGroupCd = session[key];
+                item.model = key;
+            }
+
+            if (!StringUtils.isEmpty(item.model)) {
+                listSearch.push(item);
+            }
+        };
+        $scope.model.hidden.listSearch = listSearch;
+        $scope.newListParamSearch();
+        $scope.prepareListParamSearch();
+    };
+
+    $scope.convertParamsSearch = function (page, param) {
+        var searchOrderKey = [];
+        if (!ValidateUtil.isValidTextEmpty(param.searchOrderKey)) {
+            for (var i = 0; i < param.searchOrderKey.length; i++) {
+                for (var j = 0; j < $scope.model.hidden.searchOrderKey.length; j++) {
+                    if (param.searchOrderKey[i] == $scope.model.hidden.searchOrderKey[j].id) {
+                        searchOrderKey.push($scope.model.hidden.searchOrderKey[j]);
+                    }
+                }
+            }
+        }
+        var params = {
+            searchOrderKeyStr: JSON.stringify(searchOrderKey),
+            searchOrderKey: param.searchOrderKey,
+            searchOrderSort: !StringUtils.isEmpty(param.searchOrderSort) ? param.searchOrderSort : '0',
+            page: page,
+            pageSize: $scope.model.form.paginationInfo.pageSize
+        }
+        for (var i = 0; i < $scope.model.hidden.listSearch.length; i++) {
+            var item = $scope.model.hidden.listSearch[i];
+            if (item.model == 'keyword') {
+                params.keyword = !StringUtils.isEmpty(param.keyword) ? param.keyword : null;
+            } else if (item.model == 'updDate') {
+                params.updDateFrom = !StringUtils.isEmpty(param.updDateFrom) ? new Date(param.updDateFrom) : null;
+                params.updDateTo = !StringUtils.isEmpty(param.updDateTo) ? new Date(param.updDateTo) : null;
+            } else if (item.model == 'createDate') {
+                params.createDateFrom = !StringUtils.isEmpty(param.createDateFrom) ? new Date(param.createDateFrom) : null;
+                params.createDateTo = !StringUtils.isEmpty(param.createDateTo) ? new Date(param.createDateTo) : null;
+            } else if (item.model == 'deptName') {
+                params.deptName = !StringUtils.isEmpty(param.deptName) ? param.deptName : null;
+            } else if (item.model == 'custName') {
+                params.custName = !StringUtils.isEmpty(param.custName) ? param.custName : null;
+            } else if (item.model == 'custCdList') {
+                params.custCdList = !StringUtils.isEmpty(param.custCdList) ? param.custCdList : [];
+            } else if (item.model == 'salesUserCd') {
+                params.salesUserCd = !StringUtils.isEmpty(param.salesUserCd) ? param.salesUserCd : [];
+            } else if (item.model == 'salesGroupCd') {
+                params.salesGroupCd = !StringUtils.isEmpty(param.salesGroupCd) ? param.salesGroupCd : [];
+            }
+        };
+
+        return params;
+    };
+
+    $scope.changeListParamSearch = function () {
+        $scope.newListParamSearch();
+        $scope.prepareListParamSearch();
+    };
+
+    $scope.newRowParamSearch = function () {
+        $scope.newListParamSearch();
+        var tmp = ""
+        var param = {
+            model: $scope.model.hidden.listTmp[0].model,
+            listDetailParam: $scope.model.hidden.listTmp
+        };
+        $scope.model.hidden.listSearch.push(param);
+        for (var i = 0; i < param.listDetailParam.length; i++) {
+            var tmp = $scope.model.hidden.listTmp[i];
+            if (param.model == tmp.model) {
+                param.listDetailParam.splice(i, 1);
+            }
+        };
+        $scope.prepareListParamSearch();
+        $timeout(function () {
+            $scope.setResize($scope.model.listHeight, $scope.model.hidden.leftMenuWidth);
+        }, 400)
+    };
+
+    $scope.removeItem = function (index) {
+        $scope.model.hidden.listSearch.splice(index, 1);
+        $scope.newListParamSearch();
+        $scope.prepareListParamSearch();
+    };
+
+    $scope.convertDataAjax = function (index, param) {
+        var list = [];
+        var listTmp = [];
+        if (index == 0) {
+            listTmp = $("select[id='salesUserCd']").select2('data')
+        } else if (index == 1) {
+            listTmp = $("select[id='custCd']").select2('data')
+        }
+        if (!StringUtils.isEmpty(listTmp)) {
+            for (var i = 0; i < listTmp.length; i++) {
+                list.push({
+                    no: listTmp[i].id,
+                    name: listTmp[i].text
+                });
+            };
+        }
+        param.listDataAjax[index] = list;
+        $scope.model.hidden.listDataAjax[index] = list;
+    }
+
+    $scope.$on("CrmDeptList#searchDept", function (evt, param) {
+
+        sessionStorage.removeItem("crmDeptListSession");
+        $scope.resetForm();
+        //Create default search condition
+        $scope.createDefaultSearchCondition();
+        $scope.model.hidden.isPopup = true;
+        var deptDetailSearch = angular.fromJson(sessionStorage.getItem("crmDeptDetailSearch"));
+        var params = {
+            listSearchConditionDetail: JSON.stringify(deptDetailSearch.listSearchConditionDetail),
+            listSearchConditionSort: JSON.stringify(deptDetailSearch.listSearchConditionSort),
+            conditionCombineType: $scope.model.hidden.conditionCombineType,
+            page: 1,
+            pageSize: $scope.model.form.paginationInfo.pageSize,
+            searchConditionName : deptDetailSearch.searchConditionName,
+            searchNo : deptDetailSearch.searchNo
+        }
+        if(!StringUtils.isEmpty(deptDetailSearch.keyword)){
+            params.keyword = deptDetailSearch.keyword;
+        }
+        $scope.model.hidden.deptDetailSearch = params;
+        $scope.doSearch(1, $scope.model.hidden.isPopup, params);
+    });
+
+    /**
+     * get init
+     */
+    $scope.getInit = function () {
+        CrmDeptListService.initData(null)
+            .then(function (result) {
+                $scope.model.form.listExport = result.data.listExport;
+                $scope.model.hidden.freeLabel = angular.fromJson(sessionStorage.getItem("freeLabel"));
+                $scope.model.hidden.listParamSearch = [
+                    {id: 1, model: 'keyword', name: angular.element('#keywordLabel').text()},
+                    {id: 2, model: 'updDate', name: angular.element('#updDateLabel').text()},
+                    {id: 3, model: 'createDate', name: angular.element('#createDateLabel').text()},
+                    //  {id: 4, model: 'deptName', name: $scope.model.hidden.freeLabel.deptNameFreeLabel},
+                    {id: 5, model: 'custName', name: angular.element('#custNameLabel').text()},
+                    {id: 6, model: 'custCdList', name: angular.element('#custCdLabel').text()},
+                    {id: 7, model: 'salesUserCd', name: angular.element('#salesUserCdLabel').text()},
+                    {id: 8, model: 'salesGroupCd', name: angular.element('#salesGroupCdLabel').text()}
+                ];
+
+                $scope.model.form.listMstGroup = result.data.listMstGroupType;
+
+                if (!ValidateUtil.isValidTextEmpty(result.data.listDeptControl)) {
+                    for (var i = 0; i < result.data.listDeptControl.length; i++) {
+                        var orderKey = {
+                            id: $scope.model.hidden.searchOrderKey.length + 1,
+                            detailFreeItemFlag: result.data.listDeptControl[i].detailFreeItemFlag,
+                            lineNo: result.data.listDeptControl[i].lineNo,
+                            name: result.data.listDeptControl[i].controlLabelName,
+                            model: 'deptControl_' + i,
+                        };
+                        $scope.model.hidden.searchOrderKey.push(orderKey);
+                    }
+                }
+
+                //Session search
+                $scope.searchWithSession();
+            });
+    };
+
+    $scope.searchWithSession = function(){
+
+        var crmDeptListSession = angular.fromJson(sessionStorage.getItem("crmDeptListSession"));
+        var crmDeptDetailSearch = angular.fromJson(sessionStorage.getItem("crmDeptDetailSearch"));
+        if (!StringUtils.isEmpty(crmDeptListSession)) {
+            $scope.model.form.search = crmDeptListSession;
+            $scope.prepareSessionSearch($scope.model.form.search);
+            $scope.doSearch(crmDeptListSession.page, false, $scope.model.form.search);
+        } else if (!StringUtils.isEmpty(crmDeptDetailSearch)) {
+            //Create default search condition
+            $scope.createDefaultSearchCondition();
+            $scope.model.hidden.isPopup = true;
+            $scope.model.hidden.deptDetailSearch = crmDeptDetailSearch;
+            $scope.doSearch(crmDeptDetailSearch.page, $scope.model.hidden.isPopup, crmDeptDetailSearch);
+        } else {
+            $scope.getDefaultSearch();
+        }
+    }
+
+    $scope.createDefaultSearchCondition = function () {
+        var defaultCondition = {
+            keyword: '',
+            updDateFrom: '',
+            updDateTo: ''
+        };
+        $scope.prepareSessionSearch(defaultCondition);
+    }
+
+
+    $scope.doSearch = function (page, isPopup, session, index) {
+
+        var param = {};
+        param.listDataAjax = [];
+        var searchOrderKey = [];
+
+        if (isPopup) {
+            param = angular.copy(session);
+            param.page = page;
+            sessionStorage.setItem("crmDeptDetailSearch", JSON.stringify(param));
+            $scope.model.hidden.searchConditionName = param.searchConditionName;
+            delete param.searchConditionName;
+            delete param.searchNo;
+        } else {
+            param = $scope.convertParamsSearch(page, $scope.model.form.search);
+            param.listDataAjax = [];
+            if (StringUtils.isEmpty(session)) {
+                if (!StringUtils.isEmpty($scope.model.form.search.salesUserCd) && $scope.model.form.search.salesUserCd.length > 0) {
+                    $scope.convertDataAjax(0, param);
+                }
+                if (!StringUtils.isEmpty($scope.model.form.search.custCdList) && $scope.model.form.search.custCdList.length > 0) {
+                    $scope.convertDataAjax(1, param);
+                }
+            } else {
+                if (!StringUtils.isEmpty(session.salesUserCd) && session.salesUserCd.length > 0) {
+                    $scope.model.hidden.listDataAjax[0] = session.listDataAjax[0];
+                    param.listDataAjax[0] = session.listDataAjax[0];
+                }
+                if (!StringUtils.isEmpty(session.custCdList) && session.custCdList.length > 0) {
+                    $scope.model.hidden.listDataAjax[1] = session.listDataAjax[1];
+                    param.listDataAjax[1] = session.listDataAjax[1];
+                }
+            }
+
+            sessionStorage.setItem("crmDeptListSession", JSON.stringify(param));
+            searchOrderKey = param.searchOrderKey;
+            delete param.searchOrderKey;
+        }
+        delete param.listDataAjax;
+        $scope.model.hidden.paramSearch = angular.copy(param);
+
+//        $scope.model.form.search.searchOrderKey = [];
+        CrmDeptListService.search(param).then(
+            function (result) {
+                $scope.model.form.search.searchOrderKey = isPopup ? [1] : angular.copy(searchOrderKey);
+                var error = result.data.failed;
+                var warning = result.data.warning;
+                if (!StringUtils.isEmpty(warning)) {
+                    DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                } else if (!StringUtils.isEmpty(error)) {
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                } else {
+                    $scope.model.form.paginationInfo = result.data.paginationInfo;
+                    $scope.model.form.listDept = result.data.listDept;
+                }
+
+                setTimeout(function () {
+                    // calcualte height of dept table
+                    $scope.setResize($scope.model.listHeight, $scope.model.hidden.leftMenuWidth);
+                });
+
+                // scroll header
+                $timeout(function(){
+                    $(document).ready(function(){
+                       $('.t-body').bind('scroll', fnscroll);
+                       function fnscroll(){
+                         $('.t-header').scrollLeft($('.t-body').scrollLeft());
+                       }
+                    });
+                }, 10);
+
+                //Tung : scrollTop
+                $('.t-body').scrollTop(0);
+            }
+        );
+    };
+
+    $scope.setResize = function (listHeight, leftMenuWidth) {
+        //START: KIEM TRA LOAI BROWSER
+        var scrollWidth = 0;
+        var ua = window.navigator.userAgent;
+        var msie = ua.indexOf("MSIE ");
+        var firefox = ua.indexOf("Firefox");
+        if (firefox > -1 || msie > -1 || !!navigator.userAgent.match(/Trident.*rv\:11\./)) { // If Internet Explorer, return version number
+            scrollWidth = 7;
+        }
+        //END: KIEM TRA LOAI BROWSER
+        $scope.scrollStyle = {};
+        var winWidth = $(window).width();
+        var winHeight = $(window).height();
+        $scope.model.hidden.heightTh = 37;
+
+        $scope.model.hidden.tableHeight = $('#collapse').height();
+        if ($scope.model.hidden.tableHeight == 0) {
+            $scope.model.hidden.tableHeight = 22
+        }
+        $scope.model.hidden.heightPagination = 0;
+        if ($scope.model.form.paginationInfo.totalRecord > 20) {
+            $scope.model.hidden.heightPagination = 54
+        }
+
+        var maxHeight = winHeight - ($scope.model.hidden.tableHeight + $scope.model.hidden.heightPagination + 202 + $scope.model.hidden.heightTh);
+        var widthResize = 95;
+        $scope.scrollStyle = {
+            "min-height": "350px",
+            "max-height": maxHeight + "px",
+            "width": winWidth - widthResize - leftMenuWidth - scrollWidth + 10 + "px",
+            "overflow": "scroll"
+        }
+
+        $scope.widthQ2 = {
+            "width": winWidth - widthResize - leftMenuWidth - scrollWidth + "px",
+            "overflow": "hidden",
+        }
+    }
+
+    $scope.$on('divResize', function () {
+        var menu = angular.element('div.menu-toggler').hasClass('mdi-editor-format-indent-decrease');
+        if (!menu) {
+            $scope.model.hidden.leftMenuWidth = 190;
+        } else {
+            $scope.model.hidden.leftMenuWidth = 0;
+        }
+        $timeout(function () {
+            $scope.calWidthSubTable();
+        }, 400);
+    });
+
+    $(window).resize(function () {
+        // calc width div process
+        $timeout(function () {
+            $scope.setResize($scope.model.listHeight, $scope.model.hidden.leftMenuWidth);
+        }, 400);
+    });
+
+    $scope.$watch(function () {
+        return angular.element('#deptList').height();
+    }, function (newValue) {
+        if ($scope.model.listHeight == newValue) {
+            return;
+        }
+        $scope.model.listHeight = angular.element('#deptList').height();
+        $scope.setResize(newValue, $scope.model.hidden.leftMenuWidth);
+    });
+
+    $scope.openSearchCondition = function () {
+        var options = {
+            size: '1300'
+        };
+        var crmDeptDetailSearch = angular.fromJson(sessionStorage.getItem("crmDeptDetailSearch"));
+        var searchNo = '';
+        if(!StringUtils.isEmpty(crmDeptDetailSearch)){
+            searchNo = crmDeptDetailSearch.searchNo;
+        }
+        DialogsService.showDialog('MstSearchCondition', 'mstSearchConditionCtrl', { fromScreen: 'CrmDeptList', searchNo : searchNo}, options);
+    };
+
+    $scope.init = function (model) {
+        $scope.getInit();
+    };
+
+    $scope.search = function () {
+        sessionStorage.removeItem("crmDeptDetailSearch");
+        $scope.model.hidden.isPopup = false;
+        $scope.doSearch(1, false);
+    };
+
+    $scope.init();
+
+    $scope.resetForm = function () {
+        $scope.model.hidden.custCd = '';
+        $scope.model.form.search.keyword = '';
+        $scope.model.form.search.updDateFrom = null;
+        $scope.model.form.search.updDateTo = null;
+        $scope.model.form.search.createDateFrom = null;
+        $scope.model.form.search.createDateTo = null;
+        $scope.model.form.search.salesGroupCd = [];
+        $scope.model.form.search.salesUserCd = [];
+        $scope.model.form.search.custName = '';
+        $scope.model.form.search.custCdList = [];
+        $scope.model.form.search.deptName = '';
+        $scope.model.hidden.listDataAjax = [];
+    };
+
+    /**download file */
+    $scope.downloadFile = function(param){
+        if(!StringUtils.isEmpty(param.inputValue) && !param.isFileChange){
+            var detailFreeItemFlag = 0;
+            if(!ValidateUtil.isValidTextEmpty(param.detailFreeItemFlag) && param.detailFreeItemFlag){
+                detailFreeItemFlag = 1;
+            }
+            var params = {
+                    'custCd': param.custCd,
+                    'deptCd': param.deptCd,
+                    'detailFreeItemFlag': detailFreeItemFlag,
+                    'lineNo' : param.lineNo
+            };
+            Utils.postToUrl("/CrmDeptControl/downloadFile", params);
+        }
+    };
+
+    $scope.openDialog = function(mode, deptData, index){
+
+        var params = {};
+        if(mode == "INSERT"){
+            params.departControl = {};
+            params.departControl.deptCd = '';
+            params.departControl.custCd = '';
+            params.departControl.custName = '';
+            params.screenMode = mode;
+            params.businessOwnerFlag = true;
+        } else {
+            params.departControl = {};
+            params.departControl.index =  index;
+            params.departControl.deptCd = deptData.deptCd;
+            params.departControl.custCd = deptData.custCd;
+            params.departControl.custName = deptData.custName;
+            params.screenMode = mode;
+            params.businessOwnerFlag = true;
+        }
+        var optionsDept = { size: 'auto' };
+        DialogsService.showDialog('CrmDeptControl', 'crmDeptControlCtrl', params, optionsDept)
+        .result.then(function(params) {
+            // TRUE when met CRUD event
+            if(params){
+                //Session search
+                $scope.searchWithSession();
+            }
+        });
+    }
+
+    $scope.exportCSV = function(param){
+        var params = {};
+        var deptDetailSearch = angular.fromJson(sessionStorage.getItem("crmDeptDetailSearch"));
+        if (!StringUtils.isEmpty(deptDetailSearch)){
+            params = deptDetailSearch;
+            delete params.searchConditionName;
+            delete params.searchNo;
+        } else {
+            params = $scope.convertParamsSearch(0, param);
+            delete params.searchOrderKey;
+        }
+
+        params.exportCsv = param.exportCsv.outputName;
+        params.outputNo = param.exportCsv.outputNo;
+
+        var fileName = FileUtils.replaceSpecialCharacter(params.exportCsv) + '_' + DateUtils.getYYYYMMDD(new Date());
+        var fileType = '.xlsx';
+        var limit = 10000;
+        if($scope.model.hidden.countCustomer > limit){
+            DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00329', limit.toString()));
+            return;
+        }
+        ServerService.doDownload('/CrmDeptList/exportData',  params, 'application/vnd.ms-excel', fileName + fileType);
+    };
+
+    $scope.getDefaultSearch = function() {
+        var params = {
+           searchType : '4'
+        };
+        ServerService.doPost('MstSearchCondition/getDefaultSearch', params).then(
+            function(okResult){
+                var error = okResult.data.failed;
+                var warning = okResult.data.warning;
+                if (!StringUtils.isEmpty(error)) {
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                } else if (!StringUtils.isEmpty(warning)) {
+                    DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                }else{
+                    var result = okResult.data;
+                    $scope.model.hidden.isPopup = true;
+                    if(StringUtils.isEmpty(result.listSearchDetail) || result.listSearchDetail.length == 0){
+                        $scope.openSearchCondition();
+                    }else{
+                        $scope.createCustomerDetailSearch(result.listSearchDetail, result.listSearchSort, result.searchDefault);
+                        $scope.$broadcast("CrmDeptList#searchDept");
+                    }
+                }
+            }
+        );
+    }
+
+    $scope.createCustomerDetailSearch = function (listSearchDetail, listSearchSort, searchDefault) {
+        var listSearchConditionDetail = [];
+        var listSearchConditionSort = [];
+        var session = {};
+        if(searchDefault.saveType == '1'){
+            for (var i = 0; i < listSearchDetail.length; i++) {
+                var detail = listSearchDetail[i];
+                var entity = {
+                    searchNo : detail.searchNo,
+                    lineNo : i+1,
+                    detailFreeItemFlag : detail.detailFreeItemFlag,
+                    detailLineNo : detail.detailLineNo,
+                    searchValue : detail.searchValue,
+                    searchTableName : detail.searchTableName,
+                    comparisonType : detail.comparisonType,
+                    controlType : detail.controlType
+                };
+                listSearchConditionDetail.push(entity);
+            }
+            session.listSearchConditionDetail = listSearchConditionDetail;
+            for (var i = 0; i < listSearchSort.length; i++) {
+                var detail = listSearchSort[i];
+                var entity = {
+                    searchNo : detail.searchNo,
+                    lineNo : i+1,
+                    sortDetailFreeItemFlag : detail.sortDetailFreeItemFlag,
+                    sortDetailLineNo : detail.sortDetailLineNo,
+                    sortTableName : detail.sortTableName,
+                    sortOrder : detail.sortOrder
+                };
+                listSearchConditionSort.push(entity);
+            }
+            session.listSearchConditionSort = listSearchConditionSort;
+        }else{
+            session.keyword = listSearchDetail[0].searchValue;
+        }
+        session.searchNo = searchDefault.searchNo;
+        session.searchConditionName = searchDefault.searchConditionName;
+        $scope.model.hidden.conditionCombineType = searchDefault.conditionCombineType;
+        sessionStorage.setItem("crmDeptDetailSearch", JSON.stringify(session));
+    };
+
+}]);

@@ -1,0 +1,142 @@
+'use strict';
+
+exexSMSApp.factory('MstIconListModel',['BaseModel', function(BaseModel){
+    var model = BaseModel.getInstance();
+     model.form ={
+        condition:{
+            iconNoCondition:'',
+            iconNameCondition:''
+        },
+
+        list : [],
+        filtered : []
+    };
+     model.iconEdit = {
+        companyCd : '',
+        iconName : '',
+        iconNo : '',
+        iconBinaryData : ''
+     };
+     model.hidden = {
+        userDataStorage : 0
+     };
+
+        return model;
+}]);
+
+
+exexSMSApp.controller('MstIconList',
+        ['$scope', '$timeout', 'DialogsService', 'MstIconListModel', 'Messages', 'ServerService',
+         function($scope, $timeout, DialogsService, MstIconListModel, Messages, ServerService){
+
+    $scope.model = MstIconListModel;
+
+    $scope.init = function(){
+        $scope.model.currentPage = 1; //current page
+        $scope.model.entryLimit = 10; //max no of items to display in a page
+        $scope.model.filteredItems = $scope.model.form.list.length; //Initially for no filter
+        $scope.model.totalItems = $scope.model.form.list.length;
+        if($scope.model.form.list.length > 0){
+            $scope.model.beginValFilter = 1;
+        }else{
+            $scope.model.beginValFilter = 0;
+        }
+
+        $scope.setPage = function(pageNo) {
+            $scope.currentPage = pageNo;
+        };
+
+        $scope.model.filter = function() {
+            $timeout(function() {
+                $scope.model.filteredItems = $scope.model.form.filtered.length;
+                if($scope.model.form.filtered.length > 0){
+                    $scope.model.beginValFilter = 1;
+                }else{
+                    $scope.model.beginValFilter = 0;
+                }
+            }, 10);
+        };
+
+        $scope.getIconList();
+    };
+
+    $scope.$on("MstIconList#search", function(evt) {
+        $scope.getIconList();
+    });
+
+    $scope.getIconList = function(){
+        var params = {
+              iconName : $scope.model.iconEdit.iconName
+        };
+
+        ServerService
+        .doPost('MstIconList/search', params)
+        .then(
+            function(okResult) {
+                var error = okResult.data.failed;
+                var warning = okResult.data.warning;
+                if(!ValidateUtil.isValidTextEmpty(error)){
+                     DialogsService.showError(Messages.getMessage('check.error'), error);
+                     return;
+                }else if(!ValidateUtil.isValidTextEmpty(warning)){
+                     DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                     $scope.model.form.list = [];
+                     return;
+                }else{
+                     $scope.model.form.list = okResult.data.iconList;
+                     $scope.model.hidden.userDataStorage = okResult.data.dataStorage;
+                     $scope.model.hidden.maxDataStorage = parseFloat(okResult.data.maxDataStorage);
+                     if($scope.model.form.list.length > 0){
+                         $scope.model.beginValFilter = 1;
+                     }else{
+                         $scope.model.beginValFilter = 0;
+                     }
+                     $scope.model.filteredItems = $scope.model.form.list.length;
+                     $scope.model.totalItems = $scope.model.form.list.length;
+                }
+            },
+            function(errResult){
+            });
+    };
+
+    $scope.openDialog = function(result){
+        var options = {
+                 size: '500',
+            };
+        var param = {
+               iconNo: !ValidateUtil.isValidTextEmpty(result.iconNo) ? result.iconNo : '',
+               iconName : !ValidateUtil.isValidTextEmpty(result.iconName) ? result.iconName : '',
+               userDataStorage : $scope.model.hidden.userDataStorage,
+               maxDataStorage : $scope.model.hidden.maxDataStorage
+        };
+        switch (result){
+            case 'addIcon':
+                var dlg = DialogsService.showDialog('MstIconControl', 'mstIconControllerDialogCtrl', param,options);
+                dlg.result.then(function(param) {});
+                break;
+            default:
+                ServerService
+                .doPost('MstIconList/checkData', param)
+                .then(
+                    function(okResult) {
+                        var error = okResult.data.failed;
+                        var warning = okResult.data.warning;
+                        if(!ValidateUtil.isValidTextEmpty(warning)){
+                            DialogsService.showErrorWarning(Messages.getMessage('check.error'),warning);
+                            $scope.getIconList($scope.model.form.condition);
+                            return;
+                        }else if(!ValidateUtil.isValidTextEmpty(error)){
+                            DialogsService.showError(Messages.getMessage('system.error'),error);
+                            return;
+                        }else{
+                            var dlg = DialogsService.showDialog('MstIconControl', 'mstIconControllerDialogCtrl', param, options);
+                            dlg.result.then(function(param) {
+                            });
+                        }
+                    },
+                    function(errResult){
+                    });
+           break;
+       }
+  };
+}]);

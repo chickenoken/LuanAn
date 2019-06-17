@@ -1,0 +1,83 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision:  $  $Date:  $
+ */
+
+'use strict';
+
+exexSMSApp.factory('salEstimateControlExportDialogModel', [ 'BaseModel', function(BaseModel) {
+
+    var model = BaseModel.getInstance();
+
+    model.form = {
+        dialog : {
+            exportLanguage : '1',
+            exportPriceFlg : false,
+            exportContactInfo : ''
+        },
+        listUD00022 : []
+    };
+
+    model.hidden = {
+        parentProjectSno : ''
+    };
+
+    return model;
+}]);
+
+exexSMSApp.controller('salEstimateControlExportDialogCtrl',
+                ['$scope', '$uibModalInstance', 'salEstimateControlExportDialogModel', 'data', 'DialogsService', 'Messages', 'ServerService', '$cookies','$filter',
+         function($scope, $uibModalInstance, salEstimateControlExportDialogModel, data, DialogsService, Messages, ServerService, $cookies, $filter){
+
+    $scope.model = salEstimateControlExportDialogModel;
+
+    $scope.close = function() {
+        $uibModalInstance.dismiss('close');
+    };
+
+    $scope.init = function(){
+        $scope.model.hidden.parentProjectSno = data.parentProjectSno;
+        ServerService.doPost('SalEstimateControlExportDialog/getInit', {}).then(
+            function(okResult) {
+                if(!StringUtils.isEmpty(okResult.data.failed)){
+                    DialogsService.showError(Messages.getMessage('system.error') ,okResult.data.failed);
+                    return;
+                } else{
+                    $scope.model.form.listUD00022 = okResult.data.listUD00022;
+                    var cookies = angular.fromJson($cookies.get("SalEstimateControlExportDialog"));
+                    if(!StringUtils.isEmpty(cookies)) {
+                        $scope.model.form.dialog = cookies;
+                    }
+                }
+            }
+        );
+    };
+
+    $scope.init();
+
+    $scope.download = function(param){
+
+        var cookies = angular.toJson(param);
+        $cookies.put("SalEstimateControlExportDialog", cookies);
+        var fileName = '';
+        if(param.exportLanguage == '2') {
+            fileName = '01_見積書_英語'
+        }else {
+            if($scope.model.hidden.parentProjectSno == 'P00-00000') {
+                fileName = '03_見積書_部品';
+            }else {
+                fileName ='02_見積書_新台';
+            }
+        }
+        param.estimateSno = data.estimateSno;
+        param.recodeNo = data.recodeNo;
+        param.parentProjectSno = data.parentProjectSno;
+        ServerService.doDownload('/SalEstimateControlExportDialog/exportExcelDialog', param, "application/vnd.ms-excel", fileName + '_' + $filter('date')(new Date(), "yyyyMMdd") + '.xlsx');
+        $uibModalInstance.close();
+    };
+
+}]);
+

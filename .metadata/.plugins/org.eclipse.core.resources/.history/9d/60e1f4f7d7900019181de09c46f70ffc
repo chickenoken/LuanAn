@@ -1,0 +1,76 @@
+
+var qlnv = angular.module("qlnvApp", []);
+
+qlnv.factory('quanLyNhanVienModel',[ function(){
+    var model = [];
+
+    model.form = {
+       search : {
+           maNv : '',
+           tenNv : ''
+       },
+       listNhanVien : [],
+       listShow : []
+    }
+
+    model.hidden = {
+        isShow : false,
+        pageNum : 0
+    }
+
+    return model;
+}]);
+
+qlnv.controller("quanLyNhanVienCtrl",  ['$scope', '$http', '$filter','$rootScope','quanLyNhanVienModel',
+    function($scope, $http, $filter, $rootScope, quanLyNhanVienModel){
+
+    $scope.model = quanLyNhanVienModel;
+
+    $scope.test = function (){
+        for(var i =0 ; i < 5 ; i++){
+            var param = {
+                maNv : i,
+                tenNv : 'test',
+                role : 'admin',
+                taiKhoan : 'test01',
+                matKhau : '23'
+            };
+            $scope.model.form.listNhanVien.push(param);
+        }
+        $scope.getPage($scope.model.form.listNhanVien);
+        $scope.showList(1);
+    };
+
+    $scope.test();
+
+    $scope.search = function (param){
+        var httpParams = {
+                headers: {'X-CSRF-TOKEN': $('meta[name=_csrf]').attr("content")},
+                method: 'POST',
+                url: 'login/dangNhap',
+                data: angular.copy(param)
+            };
+
+    };
+
+    $scope.getPage = function(list){
+        var pageTemp = 0;
+        for(var i = 0 ; i < list.length; i++){
+            if(i % 5 == 0){
+                pageTemp++;
+            }
+        }
+        $scope.model.hidden.page = pageTemp + 1;
+    }
+
+    $scope.showList = function (page){
+        var listTemp = [];
+        for(var i = (5 * page) ; i < (5 * page) + 5; i++){
+            if(!StringUtils.isEmpty($scope.model.form.listNhanVien[i])){
+                listTemp.push($scope.model.form.listNhanVien[i]);
+            }
+        }
+        $scope.model.form.listShow = listTemp;
+    }
+
+}]);

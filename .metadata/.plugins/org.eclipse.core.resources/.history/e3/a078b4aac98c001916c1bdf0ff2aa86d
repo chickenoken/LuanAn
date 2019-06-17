@@ -1,0 +1,278 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision: $ $Date: $
+ * @author huy-du
+ */
+'use strict';
+
+exexSMSApp.factory('SalRptListModel', [ 'BaseModel', function(BaseModel) {
+    var model = BaseModel.getInstance();
+    model.form = {
+        salRptListModule : {
+                billSno : '',
+                recodeNo : '',
+                billMonth : '',
+                billDate : '',
+                postNo: '',
+                postNo1: '',
+                postNo2: '',
+                address1:'',
+                address2:'',
+                custCd:'',
+                custName:'',
+                sumBillPrice : '',
+                projectName: '',
+                itemName : '',
+                itemPrice: '',
+                itemSum : '',
+                itemUnit : '',
+                sumPrice : '',
+                billAddressName : '',
+                price : '',
+                balanceCarriedForward : '',
+                sumTax : '',
+
+            },
+            listSalRpt : [],
+            listD010001 : [],
+            listS010006 : [],
+            listInvoice : [],
+            filtered : []
+
+        };
+
+    model.hidden = {
+            version : '',
+            redirectUrl : '',
+            isDisabledDate : false,
+            isDisabledMonth : false,
+            screenMode: 'VIEW',
+            exportName: 'SALRPTLIST',
+            billType: ''
+        };
+
+    model.setup = function(model) {};
+
+    return model;
+}]);
+exexSMSApp.controller('salRptListCtrl',
+        ['$rootScope','$scope', 'DialogsService', 'RouteService','ServerService','SalRptListService', 'SalRptListModel', 'Messages', 'HeaderModel',
+         function($rootScope, $scope, DialogsService, RouteService, ServerService, SalRptListService, SalRptListModel, Messages, HeaderModel) {
+    /**アコーディオン Start**/
+
+    $scope.model = SalRptListModel;
+    $scope.modelHeader = HeaderModel;
+
+    $scope.init = function (){
+
+        $scope.oneAtATime = true;
+
+        setTimeout(function() {
+            $scope.getInit();
+        }, 100);
+
+        $scope.getInit = function() {
+            var salDemand = angular.fromJson(sessionStorage.getItem("salDemand"));
+            $scope.model.hidden.redirectUrl = salDemand.redirectUrl;
+
+            var params = {
+                  billSno : salDemand.billSno,
+                  recodeNo : salDemand.recodeNo,
+            };
+            ServerService.doPost('SalRptList/getInit', params)
+            .then(
+            /* success function */
+            function(result) {
+                var error = result.data.failed;
+                if(!ValidateUtil.isValidTextEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'),error);
+                }else{
+                    $scope.model.form.listSalRpt = result.data.salrptList;
+                    var billDate = result.data.salrptList[0].billDate;
+                    var billMonth = result.data.salrptList[0].billMonth;
+                    $scope.model.hidden.billType = result.data.salrptList[0].billType;
+                    if(!ValidateUtil.isValidTextEmpty(billDate)){
+                        $scope.model.form.salRptListModule.billDate = billDate;
+                        $scope.model.hidden.isDisabledDate = true;
+                    }
+                    if(!ValidateUtil.isValidTextEmpty(billMonth)){
+                        var year = billMonth.substring(0,4);
+                        var month = billMonth.substring(4,6);
+                        $scope.model.form.salRptListModule.billMonth = year+"/"+month;
+                        $scope.model.hidden.isDisabledMonth = true;
+                    }
+                    $scope.model.form.listD010001 = result.data.listD010001;
+                    $scope.model.form.listS010006 = result.data.listS010006;
+                    $scope.model.form.listInvoice = result.data.listInvoice;
+                    $scope.model.form.salRptListModule = result.data.salrptList[0];
+
+                    var postNo = $scope.model.form.salRptListModule.postNo;
+                    if(!ValidateUtil.isValidTextEmpty(postNo)) {
+                        $scope.model.form.salRptListModule.postNo1 = postNo.substring(0,3);
+                        $scope.model.form.salRptListModule.postNo2 = postNo.substring(3,7);
+                    } else{
+                        $scope.model.form.salRptListModule.postNo1 = "";
+                        $scope.model.form.salRptListModule.postNo2 = "";
+                    }
+                }
+            });
+        };
+    };
+
+    /** START: USE FOR EXPORT REPORT */
+    $scope.$on($scope.model.hidden.exportName + "#downloadReport", function(evt, param) {
+        $scope.download(param);
+    });
+
+    $scope.$on($scope.model.hidden.exportName + "#exportReport", function(evt, param) {
+        $scope.showCustomReport(param);
+    });
+    /** END: USE FOR EXPORT REPORT */
+
+    $scope.download = function(downloadType){
+        if(downloadType == '1'){
+            var options = {size: '500'};
+            DialogsService.showDialog('DemandOutputExportDialog','DemandOutputExportDialogCtrl', {},options).result.then(
+                function(btn){
+                    var salDemand = angular.fromJson(sessionStorage.getItem("salDemand"));
+                    var nameExport = (salDemand.billType == '1') ? "請求一覧(締め)" : "請求書(都度)";
+                    var fileName = nameExport + '_' + DateUtils.getYYYYMMDD(new Date());
+                    var params = {
+                        issueDate: btn.issueDate,
+                        issueSalesOffice: btn.issueSalesOffice,
+                        outputDivision: btn.outputDivision,
+                        remark: btn.remark,
+                        billType : salDemand.billType,
+                        listBillSno : [salDemand.billSno]
+                    }
+                    ServerService.doDownload('/SalDemandOutput/downloadSalOutputExcel', params, "application/vnd.ms-excel", fileName + ".xlsx");
+                }
+            );
+        }else{
+            var nameExport = "請求用_INVOICE";
+            var fileName = nameExport + '_' + DateUtils.getYYYYMMDD(new Date());
+            var salDemand = angular.fromJson(sessionStorage.getItem("salDemand"));
+            var params = {
+                listBillSno : [salDemand.billSno]
+            }
+            ServerService.doDownload('/SalDemandOutput/downloadInvoiceSalOutputExcel', params, "application/vnd.ms-excel", fileName + ".xlsx");
+        }
+    };
+
+    /**show ckeditor report*/
+    $scope.showCustomReport = function(param){
+        var listObjSno = [];
+        listObjSno.push($scope.model.form.salRptListModule.billSno + '_' + $scope.model.form.salRptListModule.recodeNo);
+        var listBillType = [];
+        listBillType.push($scope.model.form.salRptListModule.billType);
+        var params ={'invoiceType': '04',
+                    'objSno': listObjSno,
+                    'recodeNo': $scope.model.form.salRptListModule.recodeNo,
+                    'billType' : listBillType,
+                    'tempNoCustomer': param.tempNo
+                   };
+        DialogsService.showDialog('InvoiceTemplate/getCustomReportPage', 'CustomReportCtrl', params, {size: 1100});
+    }
+
+    /**redirect to url*/
+     $scope.gotoUrl = function(){
+         RouteService.gotoUrl($scope.model.hidden.redirectUrl);
+     };
+
+     $scope.update = function(){
+         var dlg = DialogsService.showConfirm(Messages.getMessage('title.confirm'),
+                 Messages.getMessage('S00004'));
+         dlg.result.then(function(btn){
+             var salDemand = $scope.model.form.salRptListModule;
+             var params = {
+                 billSno : !StringUtils.isEmpty(salDemand.billSno) ? salDemand.billSno : "",
+                 recodeNo : !StringUtils.isEmpty(salDemand.recodeNo) ? salDemand.recodeNo : "",
+                 billName : !StringUtils.isEmpty(salDemand.billName) ? salDemand.billName : "",
+                 delPlanDate: !StringUtils.isEmpty(salDemand.delPlanDate) ? new Date(salDemand.delPlanDate) : null,
+                 delPlace: !StringUtils.isEmpty(salDemand.delPlace) ? salDemand.delPlace : "",
+                 paymentTerms: !StringUtils.isEmpty(salDemand.paymentTerms) ? salDemand.paymentTerms : "",
+                 dueDate: !StringUtils.isEmpty(salDemand.dueDate) ? new Date(salDemand.dueDate) : null,
+                 billDate: !StringUtils.isEmpty(salDemand.billDate) ? new Date(salDemand.billDate) : null,
+                 remark: !StringUtils.isEmpty(salDemand.remark) ? salDemand.remark : "",
+                 paymentMaturity: !StringUtils.isEmpty(salDemand.paymentMaturity) ? new Date(salDemand.paymentMaturity) : null,
+                 paymentMethod: !StringUtils.isEmpty(salDemand.paymentMethod) ? salDemand.paymentMethod : "",
+                 billPrefix: !StringUtils.isEmpty(salDemand.billPrefix) ? salDemand.billPrefix : "",
+                 // postNo: !StringUtils.isEmpty(salDemand.postNo) ? salDemand.postNo : "",
+                 postNo: salDemand.postNo1 + salDemand.postNo2,
+                 address1: !StringUtils.isEmpty(salDemand.address1) ? salDemand.address1 : "",
+                 address2: !StringUtils.isEmpty(salDemand.address2) ? salDemand.address2 : "",
+             };
+             ServerService.doPost('SalRptList/updateData', params).then(
+                 function(okResult) {
+                     if(!ValidateUtil.isValidTextEmpty(okResult.data.success)){
+                         var dlg = DialogsService.showNotify(Messages.getMessage('title.info'),okResult.data.success);
+                         $scope.model.hidden.screenMode = 'VIEW';
+                     } else {
+                         if(!ValidateUtil.isValidTextEmpty(okResult.data.failed)){
+                             DialogsService.showError(Messages.getMessage('system.error'),
+                                     okResult.data.failed);
+                         }else{
+                             DialogsService.showWarning(Messages.getMessage('check.error'),
+                                     okResult.data.warning);
+                         }
+                     }
+                 }
+             );
+         });
+     }
+
+     $scope.checkPostNumber = function(param){
+         var postNo = param.postNo1 + param.postNo2;
+         if(ValidateUtil.isValidTextEmpty(postNo))
+         {
+             DialogsService.showWarning(Messages.getMessage('check.error'),
+                     Messages.getMessage('W00207'));
+             return true;
+         }
+         if(ValidateUtil.isValidPostNo(postNo))
+         {
+             DialogsService.showWarning(Messages.getMessage('check.error'),
+                     Messages.getMessage('W00018'));
+             return true;
+         }
+         var params = {'postNo':postNo};
+         ServerService
+         .doPost('MstBillControl/checkPostNumber', params)
+         .then(
+             function(okResult) {
+                 var error =  okResult.data.failed;
+                 var warning =  okResult.data.warning;
+                 if(!ValidateUtil.isValidTextEmpty(warning)){
+                     DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                 }else if(!ValidateUtil.isValidTextEmpty(error)){
+                     DialogsService.showError(Messages.getMessage('system.error'), error);
+                 }else{
+                     $scope.model.form.salRptListModule.address1 = okResult.data.address;
+                     $scope.model.form.salRptListModule.address2 = "";
+                 }
+             },
+             function(errResult){
+             });
+     };
+
+    /**アコーディオン End**/
+    $scope.init();
+
+}]);
+
+exexSMSApp.controller('customDialogCtrl',function($rootScope,$scope,$uibModalInstance){
+    $rootScope.data = {
+            paymentDate : '',
+            screen: 'SalDemandOutput',
+        };
+    //-- Methods --//
+    $scope.done = function(){
+        $uibModalInstance.close($rootScope.data);
+    }; // end done
+    $scope.no = function(){
+        $uibModalInstance.dismiss('no');
+    }; // end close
+});

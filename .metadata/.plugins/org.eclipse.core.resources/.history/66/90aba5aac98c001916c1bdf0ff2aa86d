@@ -1,0 +1,473 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision: 1.0 $  $Date: 2014/06/23 $
+ * @author quang-thien
+ */
+
+'use strict';
+
+exexSMSApp.factory('MstUserControlModel', [ 'BaseModel', function(BaseModel) {
+    // モデルのベースをBaseModelとする。
+    var model = BaseModel.getInstance();
+    // サーバーと連携する画面項目の定義R
+    model.form = {
+        userEdit : {
+            userName : '',
+            employeeNo : null,
+            loginId : null,
+            position : null,
+            mailAddress : '',
+            password : '',
+            passwordConfirm : '',
+            accountLockCode : '',
+            userCd : '',
+            roleCd : '',
+            version : '',
+            relationUserCd : '',
+            pageAfterLogin : '',
+            listGroupCd: []
+        },
+        password : '',
+        passwordConfirm : ''
+    };
+
+    model.label = {
+            password : '',
+            passwordConfirm : ''
+            }
+
+    model.M030001 = [];
+    model.S020017 = [];
+    model.listA010002 = [];
+    model.listCate01 = [];
+    model.listMstRole = [];
+    model.listMstUser = [];
+    model.listMstAnalyticsDataFilter = [];
+    model.listTopPage = [];
+
+    model.hidden = {
+            ptId : null,
+            viewActive: true,
+            userCd : '',
+            isSubmited : false,
+            maxlength : 20,
+        };
+
+    /*
+     * 画面項目を初期化する。
+     */
+    model.setup = function(model) {};
+
+    return model;
+} ]);
+
+exexSMSApp.controller('mstUserControlCtrl',
+        ['$rootScope', '$scope', '$uibModalInstance', 'DialogsService', 'MstUserControlModel', 'data', 'Messages', 'ServerService',
+         function($rootScope, $scope, $uibModalInstance, DialogsService, MstUserControlModel, data, Messages, ServerService){
+
+    $scope.model = MstUserControlModel;
+
+    if(!ValidateUtil.isValidTextEmpty(data.user)){
+        $scope.model.listMstAnalyticsDataFilter = [];
+        $scope.model.form.userEdit = {
+            userCd : data.user.userCd,
+            userName : data.user.userName,
+            employeeNo: data.user.employeeNo,
+            loginId: data.user.loginId,
+            position: data.user.position,
+            mailAddress : data.user.mailAddress,
+            lastLoginDate : data.user.lastLoginDate,
+            accountLock : data.user.accountLock,
+            relationUserCd : data.user.relationUserCd,
+            pageAfterLogin : data.user.pageAfterLogin
+        };
+
+        if(!ValidateUtil.isValidTextEmpty($scope.model.form.userEdit.userCd)) {
+            ServerService.doPost('MstUserControl/getUser', $scope.model.form.userEdit).then(
+                function(okResult) {
+                    $scope.model.form.userEdit = okResult.data.resultUser;
+                    $scope.model.form.userEdit.passwordConfirm = okResult.data.resultUser.password;
+
+                    $scope.model.M030001 = okResult.data.M030001;
+                    $scope.model.S020017 = okResult.data.S020017;
+                    $scope.model.listMstRole = okResult.data.listMstRole;
+                    $scope.model.listMstUser = okResult.data.listMstUser;
+                    $scope.model.listMstAnalyticsDataFilter = okResult.data.listMstAnalyticsDataFilter;
+                    $scope.addNewAnalyticsFilter();
+                    $scope.model.form.userEdit.relationUserCd = [];
+                    $scope.model.hidden.maxlength = 50;
+
+                    angular.forEach($scope.model.listMstUser, function(item, i){
+                        if(item.userCd == $scope.model.form.userEdit.userCd){
+                            $scope.model.listMstUser.splice(i, 1);
+                        }
+                    });
+
+                    if(!ValidateUtil.isValidTextEmpty(okResult.data.listMstRelationUser)){
+                        angular.forEach(okResult.data.listMstRelationUser, function(item, i){
+                            $scope.model.form.userEdit.relationUserCd.push(item.userCd);
+                        });
+                    }
+
+                    if( $scope.model.form.userEdit.accountLock == false){
+                        $scope.model.form.userEdit.accountLockCode = "0";
+                    }else{
+                        $scope.model.form.userEdit.accountLockCode = "1";
+                    }
+                    $("#password").prop('maxLength', 50);
+                    $("#passwordConfirm").prop('maxLength', 50);
+                    var sessionLogin = angular.fromJson(sessionStorage.getItem("session"));
+                    if(!ValidateUtil.isValidTextEmpty(sessionLogin)){
+                        if(angular.equals(sessionLogin.userCd, $scope.model.form.userEdit.userCd)){
+                            $scope.model.hidden.viewActive = false;
+                        }else{
+                            $scope.model.hidden.viewActive = true;
+                        }
+                        $scope.model.hidden.showAnalytics = CompanyUtil.getCustomFlag(4);
+                        if($scope.model.hidden.showAnalytics == '1'){
+                            $('.modal-dialog.w-660').removeClass('w-660').addClass('w-user-control');
+                        }
+                    }
+                }
+            );
+        }
+    } else {
+        $scope.model.form = {
+            userEdit : {
+                userName : '',
+                employeeNo : '',
+                loginId : '',
+                position : '',
+                mailAddress : '',
+                password : '',
+                passwordConfirm : '',
+                accountLockCode : '',
+                userCd : '',
+                relationUserCd : '',
+                listGroupCd:[]
+            },
+        };
+        $scope.model.listMstAnalyticsDataFilter = [];
+    }
+
+    $scope.getInit = function(){
+        ServerService.doPost('MstUserControl/getInit', {}).then(
+            function(okResult) {
+                var error = okResult.data.failed;
+                var warning = okResult.data.warning;
+                if(!ValidateUtil.isValidTextEmpty(error)){
+                     DialogsService.showError(Messages.getMessage('system.error'),error);
+                     return;
+                } else if(!ValidateUtil.isValidTextEmpty(warning)){
+                    DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                    return;
+                } else {
+                    $scope.model.M030001 = okResult.data.M030001;
+                    $scope.model.S020017 = okResult.data.S020017;
+                    $scope.model.listA010002 = okResult.data.listA010002;
+                    $scope.model.listCate01 = okResult.data.listCate01;
+                    $scope.model.listMstRole = okResult.data.listMstRole;
+                    $scope.model.listMstUser = okResult.data.listMstUser;
+                    $scope.model.listTopPage = okResult.data.listPageAfterLogin;
+                    $scope.model.listMstGroup = okResult.data.listMstGroupType;
+                    if($scope.model.listMstAnalyticsDataFilter.length == 0){
+                        $scope.addNewAnalyticsFilter();
+                    }
+                    $scope.model.label.password = $("#passwordLabel").html();
+                    $scope.model.label.passwordConfirm = $("#passwordConfirmLabel").html();
+
+                    $scope.model.hidden.showAnalytics = CompanyUtil.getCustomFlag(4);
+                    if($scope.model.hidden.showAnalytics == '1'){
+                        $('.modal-dialog.w-660').removeClass('w-660').addClass('w-user-control');
+                    }
+                }
+            }
+        );
+    };
+
+    $scope.init = function(){
+
+        $scope.getInit();
+
+        $scope.close = function() {
+            $uibModalInstance.dismiss('close');
+        };
+
+        /**
+         * ユーザー覧を選択します。
+         */
+        $scope.loadListUser = function(params) {
+            $rootScope.$broadcast("MstUser#editUser",params);
+        };
+
+        $scope.getUserForEdit = function(param){
+            $scope.model.form.user = param;
+        };
+
+        $scope.onKeyPress = function () {
+            $scope.model.hidden.maxlength = 20;
+        };
+        $scope.model.hidden.isSubmited = false;
+    };
+    $scope.init();
+
+    /**
+     * ロジックユーザーを登録します。
+     */
+    $scope.addUser = function(param, formInvalid){
+        $scope.model.hidden.isSubmited = true;
+        if (formInvalid) {
+            return;
+        }
+        var params = {
+                userName : param.userName,
+                employeeNo : param.employeeNo,
+                loginId : param.loginId,
+                position : param.position,
+                mailAddress : param.mailAddress,
+                password : param.password,
+                passwordConfirm : param.passwordConfirm,
+                accountLockCode : "0",
+                userCd : param.userCd,
+                roleCd : param.roleCd.toString(),
+                relationUserCd : param.relationUserCd.toString(),
+                listMstAnalyticsDataFilter : JSON.stringify($scope.model.listMstAnalyticsDataFilter),
+                pageAfterLogin : param.pageAfterLogin,
+                listGroupCd : param.listGroupCd
+            };
+        DialogsService.showConfirm(Messages.getMessage('title.confirm'),Messages.getMessage('S00003'))
+        .result.then(function(btn){
+            ServerService.doPost('MstUserControl/insert', params).then(
+                function(okResult) {
+                    var success = okResult.data.success;
+                    var warning = okResult.data.warning;
+                    var error = okResult.data.failed;
+                    var email = okResult.data.exist_email;
+                    if (!ValidateUtil.isValidTextEmpty(success)) {
+                        DialogsService.showNotify(Messages.getMessage('title.info'),success);
+                        $uibModalInstance.dismiss('close');
+                        var params ={
+                            param:{
+                                userName : "",
+                                accountLockCode : ""
+                            },
+                        };
+                        $scope.loadListUser(params);
+                    } else if(!ValidateUtil.isValidTextEmpty(warning)){
+                        DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                        return;
+                    }else if(!ValidateUtil.isValidTextEmpty(error)){
+                        DialogsService.showError(Messages.getMessage('system.error'), error);
+                        return;
+                    }else if(!ValidateUtil.isValidTextEmpty(email)){
+                        DialogsService.showWarning(Messages.getMessage('check.error') , email);
+                        return;
+                    }
+                }
+            );
+        });
+    };
+
+    /**
+     * ロジックユーザーを更新します。
+     */
+    $scope.updateUser = function(param, formInvalid){
+        $scope.model.hidden.isSubmited = true;
+        if (formInvalid) {
+            return;
+        }
+        var params = {
+                userCd : param.userCd,
+                employeeNo: param.employeeNo,
+                loginId: param.loginId,
+                position: param.position,
+                userName : param.userName,
+                mailAddress : param.mailAddress,
+                password : param.password,
+                passwordConfirm : param.passwordConfirm,
+                accountLockCode : param.accountLockCode.toString(),
+                roleCd : param.roleCd.toString(),
+                relationUserCd: param.relationUserCd.toString(),
+                version : param.version,
+                listMstAnalyticsDataFilter : JSON.stringify($scope.model.listMstAnalyticsDataFilter),
+                pageAfterLogin : param.pageAfterLogin,
+                listGroupCd : param.listGroupCd
+        };
+
+        DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('S00004'))
+        .result.then(function(btn){
+            ServerService.doPost('MstUserControl/update', params).then(
+                function(okResult) {
+                    var sessionLogin = angular.fromJson(sessionStorage.getItem("session"));
+                    if(!StringUtils.isEmpty(sessionLogin)){
+                        if(angular.equals(sessionLogin.userCd, param.userCd)){
+                            $rootScope.$broadcast("Header#initData");
+                        }
+                    }
+                    var success = okResult.data.success;
+                    var warning = okResult.data.warning;
+                    var error = okResult.data.failed;
+                    var email = okResult.data.exist_email;
+                    if (!StringUtils.isEmpty(success)) {
+                        DialogsService.showNotify(Messages.getMessage('title.info'),success)
+                        .result.then(function(btn){
+                            $uibModalInstance.dismiss('close');
+                            var params ={
+                                   param:{
+                                       userName : "",
+                                       accountLockCode : ""
+                                   },
+                            };
+                            $scope.loadListUser(params);
+                        })
+
+                    } else if(!StringUtils.isEmpty(warning)){
+                        warning = warning.replace('&lt;', '<');
+                        warning = warning.replace('&gt;', '>');
+                        DialogsService.showWarning(Messages.getMessage('check.error'),warning);
+                        return;
+                    }else if(!StringUtils.isEmpty(error)){
+                        DialogsService.showError(Messages.getMessage('system.error'),error);
+                        return;
+                    }else if(!StringUtils.isEmpty(email)){
+                        DialogsService.showWarning(Messages.getMessage('check.error'), email);
+                        return;
+                    }
+                }
+            );
+       });
+   };
+
+
+   /**
+   *ロジックユーザーを削除します。
+   */
+    $scope.deleteLogicUser = function(param) {
+        var params = {
+            userCd : param.userCd,
+            employeeNo : param.employeeNo,
+            loginId : param.loginId,
+            position : param.position,
+            userName : param.userName,
+            mailAddress : param.mailAddress,
+            password : param.password,
+            passwordConfirm : param.passwordConfirm,
+            accountLockCode : param.accountLockCode.toString(),
+            relationUserCd: param.relationUserCd.toString(),
+            version : param.version
+         };
+        var form = $('#userForm');
+        DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('S00005'))
+        .result.then(function(btn){
+            ServerService.doPost('MstUserControl/delete', params).then(
+                function(okResult) {
+                    var success = okResult.data.success;
+                    var warning = okResult.data.warning;
+                    var error = okResult.data.failed;
+                    if (!ValidateUtil.isValidTextEmpty(success)) {
+                        DialogsService.showNotify(Messages.getMessage('title.info'),success);
+                        $uibModalInstance.dismiss('close');
+                        var params ={
+                                param:{
+                                    userName : "",
+                                    accountLockCode : ""
+                                },
+                            };
+                        $scope.loadListUser(params);
+                    } else  if(!ValidateUtil.isValidTextEmpty(warning)){
+                        DialogsService.showWarning(Messages.getMessage('check.error'),warning);
+                        return;
+                    }else if(!ValidateUtil.isValidTextEmpty(error)){
+                        DialogsService.showError(Messages.getMessage('system.error'),error);
+                        return;
+                    }
+                },
+                function(errResult){}
+            );
+        });
+    };
+
+    setTimeout(function() {
+        angular.element('.search-field input').keydown(function (e) {
+            if (e.which === 13 || e.keyCode === 13) {
+                var withDrop = $(this).parent().parent().parent().hasClass("chosen-with-drop");
+                var fields = $(this).parents('form:eq(0),body').find('input:visible:enabled:not(readonly), textarea:not(:disabled),button');
+                var index = fields.index(this);
+                if(index > -1 && (index+1) < fields.length && !withDrop){
+                    fields.eq(index+1).focus();
+                }
+            }
+        });
+    }, 100);
+
+
+    /**
+     * open dialog
+     */
+    $scope.openDialog = function(result, detail, index) {
+        $scope.model.hidden.isSubmited = false;
+        var options = {size: 'auto'};
+        var param = null;
+        switch (result) {
+            case 'searchItem':
+                DialogsService.showDialog('SearchItem', 'searchItemCtrl', param,options).result.then(function () {}, function () {
+                    if(sessionStorage.getItem("product")){
+                        var item = JSON.parse(sessionStorage.getItem("product"));
+                        if(!StringUtils.isEmpty(item.itemCd)){
+                            detail.dataIndividualName = item.itemName;
+                            detail.dataIndividualCd = item.serialCd;
+                            $scope.changeFilterType(index);
+                        }
+                    }
+                });
+                break;
+            default:
+              break;
+        };
+    };
+
+    $scope.addNewAnalyticsFilter = function(){
+        var item = {
+            filterNo: '',
+            restrictionType:'',
+            userCd:'',
+            filterType:'',
+            filterTypeName:'',
+            dataCodeType:'',
+            dataCode:'',
+            dataCodeName:'',
+            dataIndividualCd:'',
+            dataIndividualName:'',
+        }
+        $scope.model.listMstAnalyticsDataFilter.push(item);
+    }
+
+    $scope.changeFilterType = function(index) {
+        if(index == $scope.model.listMstAnalyticsDataFilter.length - 1 ){
+            $scope.addNewAnalyticsFilter();
+        }
+    };
+
+    $scope.removeItem = function(index) {
+        if($scope.model.listMstAnalyticsDataFilter.length == 1){
+            var item = {
+                filterNo: '',
+                restrictionType:'',
+                userCd:'',
+                filterType:'',
+                filterTypeName:'',
+                dataCodeType:'',
+                dataCode:'',
+                dataCodeName:'',
+                dataIndividualCd:'',
+                dataIndividualName:'',
+            }
+            $scope.model.listMstAnalyticsDataFilter[0] = item;
+            return;
+        }
+        $scope.model.listMstAnalyticsDataFilter.splice(index, 1);
+    };
+}]);

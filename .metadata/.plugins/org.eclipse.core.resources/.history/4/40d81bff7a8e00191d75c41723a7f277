@@ -1,0 +1,23 @@
+package org.planning.net.dao;
+
+import org.planning.net.entity.NhanVien;
+import org.seasar.doma.Dao;
+import org.seasar.doma.Select;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
+import org.planning.net.dao.impl.*;
+
+@Dao
+@InjectConfig
+@Configuration
+@Profile("\net\.apt_generated\\org\\planning\\net\\dao\\impl")
+@ComponentScan("")
+public interface testDoma {
+
+    @Select
+    String testDoma(String test);
+
+    @Select
+    NhanVien selectByTaiKhoanAndPass(String taiKhoan, String matKhau);
+}

@@ -1,0 +1,48 @@
+
+/* PAGINATION */
+div#pagination-top ul.pagination-small {
+  margin-bottom: 0px;
+  vertical-align: bottom;
+}
+/*** LABEL ***/
+.exex-text-align {
+  text-align: right;
+}
+/*** END LABEL ***/
+
+/*** RESPONSIVE ***/
+@media only screen and (max-width: 1024px) {
+  .exex-form .form-group, .exex-form-mst .form-group {
+    margin-bottom: 0px;
+  }
+  .form-horizontal .control-label {
+    padding-top: 7px;
+    margin-bottom: 0;
+    text-align: right;
+  }
+  #collapseLabel a:after {
+    font-family: 'Glyphicons Halflings';
+    content: "\e113";
+    color: #398FD3;
+  }
+  #collapseLabel a.collapsed:after {
+    content: "\e114";
+  }
+}
+
+@media only screen and (max-width: 993px) {
+  .col-md-1, .col-md-10, .col-md-11, .col-md-12, .col-md-2, .col-md-3,
+    .col-md-4, .col-md-5, .col-md-6, .col-md-7, .col-md-8, .col-md-9 {
+    padding-right: 0px;
+    padding-left: 0px;
+  }
+  .exex-text-align {
+    text-align: start !important;
+  }
+  #daterange.input-group {
+    padding-left: 0px !important;
+    padding-right: 0px !important;
+  }
+}
+
+/*** END RESPONSIVE ***/

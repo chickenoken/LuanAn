@@ -1,0 +1,222 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision: $ $Date: $
+ * @author Tan-Duc
+ *
+ */
+
+'use strict';
+
+exexSMSApp.factory('CrmChangeListModel', [ 'BaseModel', function(BaseModel, $timeout) {
+
+    var model = BaseModel.getInstance();
+
+    model.form = {
+        condition :{
+            custCd: '',
+            fromDate : '',
+            toDate : '',
+            changeUser : '',
+            changeType : '',
+            changeMsg : ''
+        },
+        listChange: [],
+        filtered : [],
+        listCust : [],
+    };
+
+    model.hidden = {
+        custCd : '',
+        custType : '',
+        custName : '',
+        page : 0,
+        paginationPage : 0,
+        totalPage : 0,
+        fromScreen : '',
+    };
+
+    model.listC030001 = [];
+
+    return model;
+} ]);
+
+exexSMSApp.controller('crmChangeListCtrl',
+        ['$scope', '$filter', '$window', '$timeout', 'DialogsService', 'CrmChangeListModel', 'Messages', 'ServerService',
+         function($scope, $filter, $window, $timeout, DialogsService, CrmChangeListModel, Messages, ServerService) {
+
+    $scope.model = CrmChangeListModel;
+
+    /** 媒体 Suggest* */
+    $scope.init = function(model) {
+        $scope.getInit();
+        $scope.model.form.condition.historyDate ={
+            startDate : $filter('date')(DateUtils.getPreviousMonth(), "yyyy/MM/dd"),
+            endDate : $filter('date')(new Date(), "yyyy/MM/dd"),
+        };
+        var scheduleControl = angular.fromJson(sessionStorage.getItem("scheduleControl"));
+        if(null != scheduleControl){
+            $scope.model.form.condition.custName = scheduleControl.custName;
+        }
+        var projectCustItemInfo = angular.fromJson(sessionStorage.getItem("projectCustItemInfo"));
+        if(null != projectCustItemInfo){
+            $scope.model.hidden.custCd = projectCustItemInfo.custCd;
+            $scope.model.hidden.custType = projectCustItemInfo.custType;
+            $scope.model.hidden.custName = projectCustItemInfo.custName;
+            if(!ValidateUtil.isValidTextEmpty(projectCustItemInfo.curPage)){
+                $scope.model.hidden.page = projectCustItemInfo.curPage;
+                $scope.model.hidden.paginationPage = projectCustItemInfo.paginationPage;
+                $scope.model.hidden.fromScreen = projectCustItemInfo.fromScreen;
+                $scope.model.hidden.totalPage = !ValidateUtil.isValidTextEmpty(projectCustItemInfo.listCust) ? projectCustItemInfo.listCust.length : 0;
+                $scope.model.hidden.listCust = projectCustItemInfo.listCust;
+            }
+        }
+    };
+
+    $scope.convertParamSearch = function(param){
+        var custCd = $scope.model.hidden.custCd.toString();
+        var startDate = "";
+        var endDate = "";
+        var screenFrom = angular.element('#fromDate').html();
+        var screenTo = angular.element('#toDate').html();
+
+        if(!ValidateUtil.isValidTextEmpty(param.historyDate.startDate)){
+            startDate = (!ValidateUtil.isValidTextEmpty(screenFrom) && !ValidateUtil.isValidTextEmpty(param.historyDate.startDate)) ?
+                    $filter('date')(new Date(param.historyDate.startDate).getTime(),"yyyy/MM/dd 00:00:00") : "";
+            endDate = (!ValidateUtil.isValidTextEmpty(screenTo) && !ValidateUtil.isValidTextEmpty(param.historyDate.endDate)) ?
+                    $filter('date')(new Date(param.historyDate.endDate).getTime(),"yyyy/MM/dd 23:59:59") : "";
+        }
+
+        var params = {
+            custCd: !ValidateUtil.isValidTextEmpty(custCd)  ? custCd.toString() : "",
+            fromDate :startDate,
+            toDate : endDate,
+            changeUser : $scope.model.form.condition.changeUser,
+            changeType : $scope.model.form.condition.changeType,
+            changeMsg : $scope.model.form.condition.changeMsg,
+        };
+        return params;
+    };
+
+    $scope.getInit = function(){
+        ServerService
+            .doPost('CrmChangeList/getInit', {})
+            .then(
+                function(okResult) {
+                    if(!ValidateUtil.isValidTextEmpty(okResult.data.failed)){
+                        DialogsService.showError(Messages.getMessage('system.error'), okResult.data.failed);
+                        return;
+                    }
+                    $scope.model.listC030001 =  okResult.data.listC030001;
+                    $scope.searchChangeList();
+                },
+                function(errResult){alert(errResult);});
+    };
+
+    $scope.searchChangeList = function(param) {
+        var params = $scope.convertParamSearch($scope.model.form.condition);
+        ServerService
+            .doPost('CrmChangeList/search', params)
+            .then(
+                function(okResult) {
+                    if (!ValidateUtil.isValidTextEmpty(okResult.data.warning)) {
+                        DialogsService.showWarning(Messages.getMessage('check.error'), okResult.data.warning);
+                        return;
+                    }else if(!ValidateUtil.isValidTextEmpty(okResult.data.failed)){
+                        DialogsService.showError(Messages.getMessage('system.error'),
+                                okResult.data.failed);
+                    }else{
+                        console.log(okResult.data.changeList);
+                        if(okResult.data.changeList != null){
+                            $scope.model.form.listChange = okResult.data.changeList;
+                            if(okResult.data.changeList.length > 0){
+                                $scope.model.beginValFilter = 1;
+                            }else{
+                                $scope.model.beginValFilter = 0;
+                            }
+                            $scope.model.filteredItems = $scope.model.form.listChange.length;
+                            $scope.model.totalItems = $scope.model.form.listChange.length;
+
+                            // Table Paging
+                            $scope.model.currentPage = 1; //current page
+                            $scope.model.entryLimit = 20; //max no of items to display in a page
+                            $scope.model.number = 20;
+                            $scope.model.filteredItems = $scope.model.form.listChange.length; //Initially for no filter
+                            $scope.model.totalItems = $scope.model.form.listChange.length;
+                            if($scope.model.form.listChange.length > 0){
+                                $scope.model.beginValFilter = 1;
+                            }else{
+                                $scope.model.beginValFilter = 0;
+                            }
+
+                            $scope.setPage = function(pageNo) {
+                                $scope.currentPage = pageNo;
+                            };
+
+                            $scope.model.filter = function() {
+                                $timeout(function() {
+                                    $scope.model.filteredItems = $scope.model.form.filtered.length;
+                                    if($scope.model.form.filtered.length > 0){
+                                        $scope.model.beginValFilter = 1;
+                                    }else{
+                                        $scope.model.beginValFilter = 0;
+                                    }
+                                }, 100);
+                            };
+                            // End Table Paging
+                        }else{
+                            $scope.model.form.listChange = [];
+                        }
+                    }
+                },
+                function(errResult){});
+    };
+
+    $scope.sfaProjectList = function (){
+        sessionStorage.removeItem("projectCustItemInfo");
+        $window.location = 'SfaProjectList';
+    };
+
+    $scope.salesReportList = function (){
+        sessionStorage.removeItem("projectCustItemInfo");
+        $window.location = 'SalesReportList';
+    };
+
+    $scope.backCrmControl = function (){
+        $window.location = 'CrmControl';
+    };
+
+    $scope.init();
+
+    $scope.$on("CrmChangeList#searchHistoryProjectList", function(evt, param) {
+        $scope.searchChangeList($scope.model.form.condition);
+    });
+
+    $scope.resetForm = function(){
+        angular.element('#fromDate').html("");
+        angular.element('#toDate').html("");
+        ObjectUtil.resetEmpty($scope.model.form.condition);
+    };
+
+    $scope.prePage = function(){
+        $scope.model.hidden.page -= 1;
+        $scope.model.hidden.paginationPage = Math.ceil($scope.model.hidden.page / 20);
+        var custCd = $scope.model.hidden.listCust[$scope.model.hidden.page-1].custCd;
+        $scope.model.form.condition.custCd = $scope.model.hidden.listCust[$scope.model.hidden.page-1].custCd;
+        $scope.model.hidden.custName = $scope.model.hidden.listCust[$scope.model.hidden.page-1].custName;
+        $scope.model.hidden.custCd = $scope.model.hidden.listCust[$scope.model.hidden.page-1].custCd;
+        $scope.searchChangeList($scope.model.form.condition);
+    };
+
+    $scope.nextPage = function(){
+        $scope.model.hidden.page += 1;
+        $scope.model.hidden.paginationPage = Math.ceil($scope.model.hidden.page / 20);
+        var custCd = $scope.model.hidden.listCust[$scope.model.hidden.page-1].custCd;
+        $scope.model.form.condition.custCd = $scope.model.hidden.listCust[$scope.model.hidden.page-1].custCd;
+        $scope.model.hidden.custName = $scope.model.hidden.listCust[$scope.model.hidden.page-1].custName;
+        $scope.model.hidden.custCd = $scope.model.hidden.listCust[$scope.model.hidden.page-1].custCd;
+        $scope.searchChangeList($scope.model.form.condition);
+    };
+}]);

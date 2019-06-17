@@ -1,0 +1,2461 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision: 1.0 $ $Date: 2016/05/20 $
+ * @author Quang-Thien
+ */
+'use strict';
+
+exexSMSApp.factory('SfaProjectProcessManagementModel', [ 'BaseModel', '$rootScope', function(BaseModel, $rootScope) {
+
+    var model = BaseModel.getInstance();
+
+    model.form = {
+        listProcess : [],
+        listSubProcess : [],
+        business: {
+            projectSno : '',
+            projectName : '',
+            custCd : '',
+            custName : '',
+            businessCd : '',
+            businessName : '',
+            processNoPointer : '',
+            status : '',
+            currentProcessName : '',
+            isCloseProject : '',
+            version : '',
+
+            listP010004 : [],
+            listMstGroup : [],
+            listUser : [],
+            listProcessSetting : [],
+            isConfirm : false
+        },
+        modal : {
+            businessCd : '',
+            processGroupNo : '',
+            processNo : '',
+            processName : '',
+            workflowFlag : true,
+            referenceAuthority : '',
+            accountCd : '',
+            processGroupRead : '',
+            processUserRead : '',
+            processGroupCd : '',
+            groupName : '',
+            processUserCd : '',
+            userName : '',
+            alertDay : '',
+            iconNo : '',
+            processExplain : '',
+            controlLabelName : '',
+            controlType : '',
+            requireFlag : '',
+            listDetailProcess : []
+        },
+        modalGroup : {
+            processGroupNo : '',
+            processGroupName : '',
+            iconNo : '',
+            groupName : ''
+        },
+        modelTemplate : {
+            businessCdTemplate : '',
+            isSubmitted : false,
+            listTemplateBusinessProcess : []
+        },
+        listP010004 : [],
+        listS010013 : [],
+        listS010014 : [],
+        listP010003 : [],
+        listMstGroup : [],
+        listUser : [],
+        listEstimate : [],
+        listReceive : [],
+        listEXEXBusiness : []
+    };
+
+    model.hidden = {
+        indexPushListProcess : 0,
+        isDisabled : true,
+        isSubProcess : true,
+        redirectUrl : '',
+        indexUpdate : 0,
+        indexParent : 0,
+        listIndexAddGroup : [],
+        isGroupUpdate : false,
+        indexGroupUpdate : 0,
+        status : '03',
+        isShowDiscription : true,
+        screenMode : '',
+        userDataStorage: 0,
+        //viewScreen : '',
+        sumFileSize: 0,
+        checkSize : false,
+        isFileChange: false,
+        isShowGroup : false,
+        processNo : '',
+        positionNo : 0,
+        listEXEX11No : [],
+        groupCd : ''
+    };
+    return model;
+}]);
+
+exexSMSApp.service('SfaProjectProcessManagementService', ['$q', 'ServerService', 'DialogsService',
+                                                function ($q, ServerService, DialogsService) {
+    var _self = this;
+
+    _self.initData = function(param) {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('SfaProjectProcessManagement/initData', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    _self.initDataEXEX = function(param) {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('SfaProjectProcessManagement/initDataEXEX', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    _self.update = function(param) {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('SfaProjectProcessManagement/update', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    _self.nextProcessAuto = function(param) {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('SfaProjectProcessManagement/nextProcessAuto', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    _self.nextProcess = function(param) {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('SfaProjectProcessManagement/nextProcess', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    _self.returnProcess = function(param) {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('SfaProjectProcessManagement/returnProcess', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    _self.returnData = function(param) {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('SfaProjectProcessManagement/returnData', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    _self.closeProject = function(param) {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('SfaProjectProcessManagement/closeProject', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    _self.initProjProcessSetting = function(param) {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('SfaProjectProcessSetting/getInit', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    _self.doDownloadEst = function(param) {
+        var options = {size : '500'};
+        return DialogsService.showDialog('SalEstimateControlExportDialog','salEstimateControlExportDialogCtrl', param, options);
+    };
+
+    _self.doDownloadRsv = function(param) {
+        var options = {size : '500'};
+        return DialogsService.showDialog('SalRsvExportDialog', 'salRsvExportDialogCtrl', param, options);
+    };
+
+    _self.doDownloadDec = function(param) {
+        var options = {size : '800'};
+        return DialogsService.showDialog('SalDecideProcessExportDialog', 'salDecideProcessExportDialogCtrl', param, options);
+    };
+
+    _self.doDownloadOrd = function(param) {
+        return ServerService.doDownload('/SalOrderControl/downloadSalSell',  param, 'application/pdf', "ORDER01_PDF.pdf");
+    };
+
+    _self.doDownloadSto = function(param) {
+        return ServerService.doDownload('/SalStockControl/downloadSalStock',  param, 'application/pdf', "STOCK_PDF.pdf");
+    };
+
+}]);
+
+exexSMSApp.controller('SfaProjectProcessManagementCtrl',
+        ['$rootScope', '$scope','SfaProjectProcessManagementModel', 'RouteService', 'ServerService', 'SfaProjectProcessManagementService', 'DialogsService','HeaderModel', 'Messages', 'SfaPPMDialogModel','$filter',
+         function($rootScope, $scope, SfaProjectProcessManagementModel, RouteService, ServerService, SfaProjectProcessManagementService, DialogsService, HeaderModel, Messages, SfaPPMDialogModel, $filter ) {
+
+    $scope.model = SfaProjectProcessManagementModel;
+    $scope.modelHeader = HeaderModel;
+    $scope.sfaPPMDialogModel = SfaPPMDialogModel;
+
+    $scope.close = function () {
+        sessionStorage.removeItem('prjBusiness');
+        $scope.$dismiss('cancel');
+    };
+
+    $scope.getInit = function(){
+        $scope.model.hidden.listEXEX11No = [];
+        var param = angular.fromJson(sessionStorage.getItem("prjBusiness"));
+        if(!StringUtils.isEmpty(param.screenMode)){
+            $scope.model.hidden.screenMode = param.screenMode;
+        }
+        if(!StringUtils.isEmpty(param.processNo)) {
+            $scope.model.hidden.processNo = param.processNo;
+        }
+        if(!StringUtils.isEmpty(param.positionNo)) {
+            $scope.model.hidden.positionNo = param.positionNo;
+        }
+        $scope.model.hidden.redirectUrl = param.redirectUrl;
+
+        var params =  {
+            businessCd: param.businessCd,
+            projectSno: param.projectSno,
+            processNo: param.processNo,
+            processGroupNo: param.processGroupNo,
+            positionNo: param.positionNo
+        }
+
+        SfaProjectProcessManagementService.initData(params).then(
+            function(result) {
+                if(!ValidateUtil.isValidTextEmpty(result.data.warning)){
+                    DialogsService.showError(Messages.getMessage('system.error'), result.data.failed).result.then(function() {
+                        sessionStorage.removeItem("prjBusiness");
+                        RouteService.gotoUrl('SfaProjectList');
+                    });
+                    return;
+                }
+                $scope.model.form.business = result.data.business;
+                $scope.model.form.listProcess = result.data.listProcess;
+                $scope.model.form.listUser = result.data.listUser;
+                $scope.model.form.listMstGroup = result.data.listMstGroup;
+                $scope.model.form.oldFileBinary = [];
+
+                angular.forEach($scope.model.form.listProcess, function(items, i){
+                    angular.forEach(items.listSubProcess, function(detail, subKey){
+                        angular.forEach(detail.listDetailProcess, function(item, y){
+                            // file
+                            if(items.controlType == "05"){
+                                $scope.model.form.oldFileBinary.push(items.binaryFile);
+                            }
+                            // check box
+                            if('04'== item.controlType && !StringUtils.isEmpty(item.listDataSource) && item.listSgtDataSource.length > 0 && typeof(item.inputValue) == 'string'){
+                                var inputValue = [];
+                                angular.forEach(item.listSgtDataSource, function(data, k){
+                                    if(!StringUtils.isEmpty(item.inputValue) && item.inputValue.indexOf(data.code) > -1){
+                                        inputValue[k] = '1'
+                                    }else{
+                                        inputValue[k] = '0';
+                                    }
+                                });
+                                if(inputValue.length > 0){
+                                    item.inputValue = inputValue;
+                                }
+                            }
+                            // address
+                            if('09'== item.controlType){
+                                if(!StringUtils.isEmpty(item.inputValue)){
+                                    var postNo = StringUtils.isJson(item.inputValue) ? angular.fromJson(item.inputValue) : "";
+                                    item.postNo1 = postNo.postNo1;
+                                    item.postNo2 = postNo.postNo2;
+                                    item.address1 = postNo.address1;
+                                    item.address2 = postNo.address2;
+                                }
+                            }
+                            // radio
+                            if('10'== item.controlType && !StringUtils.isEmpty(item.listSgtDataSource)){
+                                if(!StringUtils.isEmpty(item.inputValue)){
+                                    item.inputValue = item.inputValue.toString();
+                                }
+                            }
+
+                            // multiple select box
+                            if(item.controlType == '11' || item.controlType == 'MST_GROUP_LIST' || item.controlType == 'MST_USER_LIST'){
+                                if(!StringUtils.isEmpty(item.inputValue) && typeof(item.inputValue) == 'string') {
+                                    item.inputValue = item.inputValue.split(',');
+                                    if(detail.controlType == 'MST_GROUP_LIST'){
+                                        $scope.model.hidden.listGroupSelect[item.processNo+item.lineNo] = item.inputValue;
+                                    }
+                                } else {
+                                    if(detail.controlType == 'MST_GROUP_LIST'){
+                                        $scope.model.hidden.listGroupSelect[item.processNo+item.lineNo] = [];
+                                    }
+                                }
+                            }
+
+                            // EXEX11
+                            if(item.controlType == 'EXEX11' && !StringUtils.isEmpty(item.workNo)){
+                                var listWorkNo = item.workNo.split(',');
+                                var listConnectWorkNo = item.connectWorkNo.split(',');
+                                for (var i = 0; i < listWorkNo.length; i++) {
+                                    var dataWorkNo = {
+                                        workNo : listWorkNo[i],
+                                        connectWorkNo : listConnectWorkNo[i]
+                                    }
+                                    $scope.model.hidden.listEXEX11No.push(dataWorkNo);
+                                }
+                            }
+
+                            if(item.processNo == 3 && item.lineNo == 1 && !StringUtils.isEmpty(item.inputValue)){
+                                $scope.model.hidden.groupCd = item.inputValue;
+                            }
+                        });
+                    });
+                });
+                $scope.model.hidden.status = result.data.business.status;
+                $scope.initDataEXEX();
+                $scope.initBusinessProcess();
+            }
+        );
+        setTimeout(function() {
+            $('.timepicker').parent('.input-group').on('click', '.input-group-btn', function(e){
+                e.preventDefault();
+                $(this).parent('.input-group').find('.timepicker').timepicker('showWidget');
+            });
+            angular.element('.input-group input').keydown(function (e){
+                $(this).parent('.input-group').find('.timepicker').timepicker('hideWidget');
+            });
+        }, 1000);
+    };
+    $scope.init = function(){
+        sessionStorage.removeItem("projectSno");
+        sessionStorage.removeItem("salEstimate");
+        sessionStorage.removeItem("receiveItemInfo");
+        sessionStorage.removeItem("salDecideProcess");
+        sessionStorage.removeItem("salSell");
+        sessionStorage.removeItem("salStock");
+        sessionStorage.removeItem("processDetail");
+        $scope.getInit();
+    };
+    $scope.init();
+
+    $scope.initDataEXEX = function(){
+        var param = {
+                projectSno : $scope.model.form.business.projectSno,
+                custCd : $scope.model.form.business.custCd,
+                businessCd : $scope.model.form.business.businessCd
+        };
+        SfaProjectProcessManagementService
+            .initDataEXEX(param)
+            .then(
+                function(result) {
+                    $scope.model.form.listEstimate = result.data.listEstimate;
+                    $scope.model.form.listReceive = result.data.listReceive;
+                    $scope.model.form.listEXEXBusiness = result.data.listEXEXBusiness;
+                    $scope.model.hidden.userDataStorage = result.data.dataStorage;
+                    $scope.model.hidden.maxDataStorage = parseFloat(result.data.maxDataStorage);
+                }
+            );
+    };
+
+    $scope.initBusinessProcess = function(){
+        var param = {
+                projectSno : $scope.model.form.business.projectSno,
+                businessCd : $scope.model.form.business.businessCd
+        };
+        SfaProjectProcessManagementService.initProjProcessSetting(param).then(
+            function(result) {
+                $scope.model.form.business.listProcessSetting = result.data.listProcessSetting.listProcessSetting;
+                $scope.model.form.business.listP010004 = result.data.listP010004;
+                $scope.model.form.business.listMstGroup = result.data.listMstGroup;
+                $scope.model.form.business.listUser = result.data.listUser;
+            });
+    };
+
+    $scope.convertData = function(business, listProcess){
+        var params = {};
+        params.businessCd = business.businessCd;
+        params.businessName = business.businessName;
+        params.status = $scope.model.hidden.status;
+        var listProcessTmp = angular.copy(listProcess);
+        params.listProcess = JSON.stringify(listProcessTmp);
+        return params;
+    };
+
+    $scope.backList = function(){
+        sessionStorage.removeItem("prjBusiness");
+        RouteService.gotoUrl($scope.model.hidden.redirectUrl);
+    };
+
+    $scope.openProcessSetting = function(){
+        var options = {
+                size: 'process'
+            };
+        DialogsService.showDialog('SfaProjectProcessSetting', 'sfaProjectProcessSettingProcessCtrl', {}, options).result.then(function(param) { });
+    };
+
+    $scope.showRequestAuth = function(index, index1, isSubmitted, processData, invalid){
+        processData.isSubmitted = true;
+        var opts = {
+            size: '875',
+        };
+        if(invalid) {
+            return;
+        }
+        var lastProcess = $scope.model.form.business.lastProcessPositionNo;
+        angular.forEach($scope.model.form.listProcess, function(value, key){
+            angular.forEach(value.listSubProcess, function(subValue, subKey){
+                if(parseInt($scope.model.form.business.processNoPointer) === subValue.positionNo){
+                    console.log(subValue);
+                    if((value.nextReturn === '0' && !StringUtils.isEmpty(value.processGroupNo))
+                            || ( StringUtils.isEmpty(value.processGroupNo) && ( subValue.canEdit === '0' || subValue.userEdit === '0'))){
+                        DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00222'));
+                        return;
+                    }else {
+                        if(!$scope.checkProcessRequiredCondition(subValue, 'W00225')){
+                            //TODO show dialog request workflow
+                            var param = {
+                                processData : processData,
+                                projectSno : $scope.model.form.business.projectSno,
+                                workNo : '',
+                                recodeNo : '1'
+                            };
+                            DialogsService.showDialog('ProjectProcessRequest', 'ProjectProcessRequestCtrl', param, opts);
+                        }
+                    }
+                }
+            });
+        });
+    };
+
+    $scope.showRequestAuthForGroup = function(group, formInvalid) {
+        for (var i = 0; i < group.listSubProcess.length; i++) {
+            var processData = group.listSubProcess[i];
+            processData.isSubmitted = true;
+        }
+        if(formInvalid) {
+            return;
+        }
+
+        var groupProcessData = [];
+        for (var i = 0; i < group.listSubProcess.length; i++) {
+            var processData = group.listSubProcess[i];
+            groupProcessData.push({
+                processData : processData,
+                projectSno : $scope.model.form.business.projectSno,
+                workNo : '',
+                recodeNo : '1'
+            });
+        }
+
+        var params = {
+            group: true,
+            processGroupName : group.processGroupName,
+            groupProcessData : groupProcessData
+        };
+        var opts = {
+            size: '875'
+        };
+        //TODO show dialog request workflow
+        DialogsService.showDialog('ProjectProcessRequest', 'ProjectProcessRequestCtrl', params, opts);
+    }
+
+    $scope.editProcess = function(documentStatus, processData, groupData){
+        processData = angular.copy(processData);
+        var params = {
+            businessCd : processData.businessCd,
+            processNo : processData.processNo,
+            processVersion : processData.version,
+            projectSno : processData.projectSno,
+            workflowApplyNo : processData.workflowApplyNo,
+            documentStatus : '',
+            controlType : '',
+            workNo : ''
+        };
+        if(!StringUtils.isEmpty(groupData)) {
+            params.processGroupNo = groupData.processGroupNo;
+        }
+        var defConfirmMsg = '';
+
+        // Check tighten data receive
+        for(var i = 0; i < processData.listDetailProcess.length; i++){
+            var value = processData.listDetailProcess[i];
+            if(value.controlType === 'EXEX02' && !StringUtils.isEmpty(value.rcvTightenStatus) && value.rcvTightenStatus === '02'){
+                DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00309'));
+                return;
+            }
+            if(value.controlType === 'EXEX06' && !StringUtils.isEmpty(value.orderTightenStatus) && value.orderTightenStatus === '02'){
+                DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00313'));
+                return;
+            }
+            // check sales had payment.
+            if(value.controlType === 'EXEX03' && !StringUtils.isEmpty(value.paymentNo)){
+                if(StringUtils.isEmpty(defConfirmMsg)) {
+                    defConfirmMsg = 'W00336';
+                }
+            }
+            // check stock had spend.
+            if(value.controlType === 'EXEX07' && !StringUtils.isEmpty(value.spendNo)){
+                if(StringUtils.isEmpty(defConfirmMsg)) {
+                    defConfirmMsg = 'W00337';
+                }
+            }
+        }
+
+        if(documentStatus === '02'){
+            if(StringUtils.isEmpty(defConfirmMsg)) {
+                defConfirmMsg = 'W00228';
+            }
+        } else if(documentStatus === '03' || documentStatus === '04' || documentStatus === '05') {
+            if(StringUtils.isEmpty(defConfirmMsg)) {
+                defConfirmMsg = 'W00229';
+            }
+        }
+
+        if(documentStatus === '02'){
+            params.documentStatus = '04';
+            DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage(defConfirmMsg))
+                .result.then(function(btn){
+                    processData.isDisabled = false;
+                    SfaProjectProcessManagementService
+                        .returnData(params)
+                        .then(
+                            function(result) {
+                                if(!StringUtils.isEmpty(result.data.warning)){
+                                    DialogsService.showWarning(Messages.getMessage('check.error'), result.data.warning);
+                                    return;
+                                }else{
+                                    $rootScope.$broadcast("Header#initData");
+                                    $scope.getInit();
+                                }
+                            }
+                        );
+                },function(btn){});
+        }else if(documentStatus === '03' || documentStatus === '04' || documentStatus === '05') {
+            params.documentStatus = '01';
+            DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage(defConfirmMsg))
+                .result.then(function(btn){
+                    processData.isDisabled = false;
+                    SfaProjectProcessManagementService.returnData(params).then(
+                        function(result) {
+                            if(!StringUtils.isEmpty(result.data.warning)){
+                                DialogsService.showWarning(Messages.getMessage('check.error'),
+                                        result.data.warning);
+                                return;
+                            }else{
+                                $rootScope.$broadcast("Header#initData");
+                                $scope.getInit();
+                            }
+                        }
+                    );
+                },function(btn){});
+        }
+    };
+
+    $scope.update = function(){
+        var params = $scope.convertParamUpdate();
+        if($scope.model.hidden.checkSize){
+            DialogsService.showWarning(Messages.getMessage('check.error'),
+                    Messages.getMessage('W00252',(Messages.getMessage('MAX_UPLOAD_FILE')/1024/1024).toString() + 'MB'));
+            return;
+        }
+        var dataStorageTmp = parseFloat($scope.model.hidden.sumFileSize) + parseFloat($scope.model.hidden.userDataStorage);
+        if(dataStorageTmp > $scope.model.hidden.maxDataStorage){
+            DialogsService.showWarning(Messages.getMessage('check.error'),Messages.getMessage('W00253'));
+            return;
+        }
+        DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('S00004'))
+            .result.then(function(btn){
+                SfaProjectProcessManagementService.update(params).then(
+                    function(result) {
+                        if(!StringUtils.isEmpty(result.data.warning)){
+                            DialogsService.showWarning(Messages.getMessage('check.error'), result.data.warning);
+                            return;
+                        }else if(result.data.confirm === 'confirm'){
+                            DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('W00221'))
+                                .result.then(function(btn){
+                                    $scope.nextProcessAuto();
+                                }, function(btn){
+                                    $scope.getInit();
+                                }
+                            );
+                        }else{
+                            DialogsService.showNotify(Messages.getMessage('title.info'), Messages.getMessage('S00007')).result.then(function(btn){
+                                // close dialog when update from SfaProjectList/SubProjectList/SfaProjectControl/SubProjectControl
+                                if (typeof $scope.$dismiss === "function") {
+                                    $scope.$dismiss('close');
+                                } else {
+                                    $scope.getInit();
+                                }
+                            });
+                        }
+                    }
+                );
+            }
+        );
+    };
+
+    $scope.convertParamUpdate = function(){
+        var result = $scope.convertDetailProcess();
+        var dataStorageTmp = parseFloat($scope.model.hidden.userDataStorage) + parseFloat($scope.model.hidden.sumFileSize);
+        var params = {
+                businessCd : $scope.model.form.business.businessCd,
+                projectSno : $scope.model.form.business.projectSno,
+                processNoPointer : $scope.model.form.business.processNoPointer,
+                processData : JSON.stringify(result),
+                userDataStorage : dataStorageTmp,
+
+        };
+        return params;
+    };
+
+    $scope.convertDetailProcess = function(){
+        $scope.model.hidden.sumFileSize = 0;
+        $scope.model.hidden.checkSize = false;
+        var param = angular.copy($scope.model.form.listProcess);
+        var result = [];
+        angular.forEach(param, function(value, key){
+            angular.forEach(value.listSubProcess, function(subValue, subKey){
+                if(!subValue.isDisabled){
+                    delete subValue.groupEdit;
+                    delete subValue.isSubmitted;
+                    result.push(subValue);
+                }
+                angular.forEach(subValue.listDetailProcess, function(item, i){
+                    // check box
+                    if('04'== item.controlType && item.listSgtDataSource.length > 0){
+                        if(!StringUtils.isEmpty(item.listDataSource)){
+                            var inputValue = "";
+                            angular.forEach(item.listSgtDataSource, function(data, k){
+                                if(!StringUtils.isEmpty(item.inputValue) && item.inputValue[k] == "1"){
+                                    inputValue += data.code+",";
+                                }
+                            });
+                            if(!StringUtils.isEmpty(inputValue)){
+                                var trim = inputValue.replace(/(^,)|(,$)/g, "");
+                                item.inputValue = trim;
+                            }else{
+                                item.inputValue = null;
+                            }
+                        }
+                    }
+                    // address
+                    if('09'== item.controlType){
+                        var postNo = {
+                                'postNo1': item.postNo1,
+                                'postNo2': item.postNo2,
+                                'address1': item.address1,
+                                'address2': item.address2
+                        }
+                        item.inputValue = JSON.stringify(postNo);
+                        if(StringUtils.isEmpty(item.postNo1) && StringUtils.isEmpty(item.postNo2)
+                                && StringUtils.isEmpty(item.address1) && StringUtils.isEmpty(item.address2)) {
+                            item.inputValue = '';
+                        }
+                    }
+                    // multiple select box
+                    if(('11'== item.controlType || 'MST_GROUP_LIST'==item.controlType || 'MST_USER_LIST'==item.controlType)
+                            && !StringUtils.isEmpty(item.inputValue)){
+                        item.inputValue = item.inputValue.toString();
+                    }
+
+                    var fileSize = !StringUtils.isEmpty(item.fileSize) ? item.fileSize : 0;
+                    if(fileSize > (5*1024*1024)){
+                        $scope.model.hidden.checkSize = true;
+                    }
+                    $scope.model.hidden.sumFileSize += parseFloat(fileSize);
+                });
+            });
+        });
+        return result;
+    };
+
+    $scope.gotoRsvEXEX = function(controlType, detailData, item){
+        var projectItemInfo = {
+                pPJM : 'PJM',
+                custCd : detailData.custCd,
+                projectSno : $scope.model.form.business.projectSno,
+                businessCd : detailData.businessCd,
+                processNo : detailData.processNo,
+                recodeNo : item.recodeNo,
+                lineNo : detailData.lineNo,
+                controlType : detailData.controlType,
+                workNo : item.salesSno,
+                connectWorkNo : detailData.connectWorkNo,
+                documentStatus : '',
+                workflowFlag : '',
+                redirectUrl : 'SfaProjectProcessManagement',
+                reservationSno : item.reservationSno,
+                rsvRecodeNo : item.rsvRecodeNo
+        };
+        sessionStorage.removeItem("customerInfo");
+        sessionStorage.setItem("projectSno", JSON.stringify(projectItemInfo));
+        if(!StringUtils.isEmpty(controlType) && controlType === 'EXEX03'){
+            sessionStorage.removeItem("salDecideProcess");
+            RouteService.gotoUrl('SalDecideProcess');
+        }
+    };
+
+    $scope.gotoEXEX = function(controlType, detailData, item, data){
+        var prjBusiness = angular.fromJson(sessionStorage.getItem("prjBusiness"));
+        delete prjBusiness.positionNo;
+        delete prjBusiness.processNo;
+        sessionStorage.setItem("prjBusiness", JSON.stringify(prjBusiness));
+
+        var projectItemInfo = {
+            pPJM : 'PJM',
+            custCd : prjBusiness.custCd,
+            custName : prjBusiness.custName,
+            billaddressNo : prjBusiness.billaddressNo,
+            billaddressName : prjBusiness.billaddressName,
+            projectSno : prjBusiness.projectSno,
+            projectName : prjBusiness.projectName,
+            controlCd : prjBusiness.controlCd,
+            businessCd : detailData.businessCd,
+            processNo : detailData.processNo,
+            recodeNo : detailData.recodeNo,
+            lineNo : detailData.lineNo,
+            controlType : detailData.controlType,
+            inputValue : detailData.inputValue,
+            documentStatus : item.documentStatus,
+            workflowFlag : item.workflowFlag,
+            redirectUrl : 'SfaProjectProcessManagement',
+            screenName : detailData.inputValue,
+            toScreen : controlType,
+            isSalEXEX : true,
+            isSalEXEXProcess : true
+        };
+        if(!StringUtils.isEmpty(data)) {
+            projectItemInfo.workNo = data.workNo;
+            projectItemInfo.connectWorkNo = data.connectWorkNo;
+        } else {
+            projectItemInfo.workNo = detailData.workNo;
+            projectItemInfo.connectWorkNo = detailData.connectWorkNo;
+        }
+        if(!StringUtils.isEmpty(detailData.inputValue) && (detailData.inputValue === 'EXEX06' || detailData.inputValue === 'EXEX07')){
+            if(!StringUtils.isEmpty(controlType) && (controlType === 'EXEX01' || controlType === 'EXEX02' || controlType === 'EXEX03')){
+                projectItemInfo.isSalEXEX = false;
+            }
+        }
+
+        if(controlType === 'EXEX03' && $scope.model.form.listReceive.length > 0) {
+            projectItemInfo.rcvSno = $scope.model.form.listReceive[0].rcvSno;
+            projectItemInfo.rcvName = $scope.model.form.listReceive[0].rcvName;
+        }
+
+        sessionStorage.removeItem("customerInfo");
+        sessionStorage.setItem("projectSno", JSON.stringify(projectItemInfo));
+        if(!StringUtils.isEmpty(controlType) && controlType === 'EXEX01'){
+            sessionStorage.removeItem("salEstimate");
+            RouteService.gotoUrl('SalEstimateControl');
+        }else if(!StringUtils.isEmpty(controlType) && controlType === 'EXEX02'){
+            sessionStorage.removeItem("receiveItemInfo");
+            RouteService.gotoUrl('SalRsvControl');
+        }else if(!StringUtils.isEmpty(controlType) && controlType === 'EXEX03'){
+            sessionStorage.removeItem("salDecideProcess");
+            RouteService.gotoUrl('SalDecideProcess');
+        }else if(!StringUtils.isEmpty(controlType) && controlType === 'EXEX06'){
+            RouteService.gotoUrl('SalOrderControl');
+        }else if(!StringUtils.isEmpty(controlType) && controlType === 'EXEX07'){
+            RouteService.gotoUrl('SalStockControl');
+        }else if(!StringUtils.isEmpty(controlType) && controlType === 'EXEX10'){
+            sessionStorage.removeItem("rcvReservation");
+            RouteService.gotoUrl('ReceiveReservationControl');
+        }
+    };
+
+    $scope.onChangeEXEXList = function(row){
+        var param = {
+            projectSno : $scope.model.form.business.projectSno,
+            creatingClass : row.inputValue
+        }
+        ServerService.doPost('SfaProjectProcessManagement/onChangeEXEXList', param).then(
+            function(okResult) {
+                row.listEXEXBusinessData = okResult.data.listEXEXBusinessData;
+            }
+        );
+    };
+
+    $scope.onChangeEXEXData = function(connectWorkNo, row){
+        if(!StringUtils.isEmpty(connectWorkNo)){
+            angular.forEach(row.listEXEXBusinessData, function(value, key){
+                if(connectWorkNo === value.refWorkNo){
+                    row.inputValue = value.creatingClass;
+                }
+            });
+        }
+    };
+
+    $scope.gotoSpecialEXEX = function(controlType, row){
+        if(controlType === 'EXEX04'){
+            var salDemand = {
+                    'billSno' :  row.billSno,
+                    'recodeNo' : row.recodeNo,
+                    'billType' : row.billType,
+                    'screenMode' : "VIEW",
+                    'isDisabled' : true,
+                    'redirectUrl' : 'SfaProjectProcessManagement'
+            };
+            sessionStorage.setItem("salDemand", JSON.stringify(salDemand));
+            RouteService.gotoUrl('SalRptList');
+        }else if(controlType === 'EXEX05'){
+            var passingParamOrderItem = {
+                    'paymentNo' : row.paymentNo,
+                    'add' : false,
+                    'detail' : true,
+                    'edit' : false,
+                    'list' : true,
+                    'redirectUrl' : 'SfaProjectProcessManagement'
+               };
+            sessionStorage.setItem("passingParamOrderItem", JSON.stringify(passingParamOrderItem));
+            RouteService.gotoUrl('SalDepositControl');
+        }else if(controlType === 'EXEX08'){
+            var salPay = {
+                    'spendNo' : row.spendNo,
+                    'stockaddressNo' : row.stockaddressNo,
+                    'add' : false,
+                    'detail' : true,
+                    'edit' : false,
+                    'list' : true,
+                    'redirectUrl' : 'SfaProjectProcessManagement'
+            };
+            sessionStorage.setItem("passingSalPayItem", JSON.stringify(salPay));
+            RouteService.gotoUrl('SalPayControl');
+        }
+    };
+
+    $scope.gotoEXEXConnectWorkNo = function(controlType, detailData, item){
+        var projectItemInfo = {
+                pPJM : 'PJM',
+                custCd : detailData.custCd,
+                projectSno : $scope.model.form.business.projectSno,
+                businessCd : detailData.businessCd,
+                processNo : detailData.processNo,
+                recodeNo : detailData.recodeNo,
+                lineNo : detailData.lineNo,
+                controlType : detailData.controlType,
+                workNo : detailData.connectWorkNo,
+                connectWorkNo : detailData.connectWorkNo,
+                documentStatus : item.documentStatus,
+                workflowFlag : item.workflowFlag,
+                redirectUrl : 'SfaProjectProcessManagement'
+        };
+        sessionStorage.setItem("projectSno", JSON.stringify(projectItemInfo));
+        if(!ValidateUtil.isValidTextEmpty(controlType) && controlType === 'EXEX02'){
+            sessionStorage.removeItem("salEstimate");
+            RouteService.gotoUrl('SalEstimateControl');
+        }else if(!ValidateUtil.isValidTextEmpty(controlType) && controlType === 'EXEX03'){
+            sessionStorage.removeItem("receiveItemInfo");
+            RouteService.gotoUrl('SalRsvControl');
+        }
+    };
+
+    $scope.nextProcessAuto = function(){
+        var processGroupNo = '';
+        var processNo = '';
+        angular.forEach($scope.model.form.listProcess, function(value, key){
+            angular.forEach(value.listSubProcess, function(subValue, subKey){
+                if(parseInt($scope.model.form.business.processNoPointer) === subValue.positionNo){
+                    processGroupNo = value.processGroupNo;
+                    processNo = subValue.processNo
+                }
+            });
+        });
+        var params = {
+                businessCd : $scope.model.form.business.businessCd,
+                projectSno : $scope.model.form.business.projectSno,
+                processNoPointer : $scope.model.form.business.processNoPointer,
+                processGroupNo : processGroupNo,
+                processNo : processNo
+        };
+        SfaProjectProcessManagementService.nextProcessAuto(params).then(
+            function(result) {
+                // close dialog when next from SfaProjectList/SubProjectList/SfaProjectControl/SubProjectControl
+                if (typeof $scope.$close === "function") {
+                    $scope.$close();
+                } else {
+                    $scope.getInit();
+                }
+                // broadcast load time line processSfaProjectList/SubProjectList/SfaProjectControl/SubProjectControl
+                $rootScope.$broadcast("SfaProjectProcessMNM#loadNextBack",{});
+
+                DialogsService.showNotify(Messages.getMessage('title.info'), Messages.getMessage('S00024'));
+            }
+        );
+    };
+
+    $scope.nextProcess = function(){
+        // var lastProcess = $scope.model.form.listProcess[$scope.model.form.listProcess.length - 1].positionNo;
+        var lastProcess = $scope.model.form.business.lastProcessPositionNo;
+        var processGroupNo = '';
+        var processNo = '';
+        var params = {
+                businessCd : $scope.model.form.business.businessCd,
+                projectSno : $scope.model.form.business.projectSno,
+                processNoPointer : $scope.model.form.business.processNoPointer,
+                processGroupNo : processGroupNo,
+                processNo : processNo,
+                processVersion : '',
+                positionNo : ''
+        };
+        for (var i = 0; i < $scope.model.form.listProcess.length; i++) {
+            var value = $scope.model.form.listProcess[i];
+            // check workflow group process
+            if(value.workflowFlag && value.documentStatus !== '03'){
+                DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00225'));
+                return;
+            }
+            for (var j = 0; j < value.listSubProcess.length; j++) {
+                var subValue = value.listSubProcess[j];
+                if(parseInt($scope.model.form.business.processNoPointer) === subValue.positionNo){
+                    params.processGroupNo = value.processGroupNo;
+                    params.processNo = subValue.processNo;
+                    params.processVersion = subValue.version;
+                    params.positionNo = value.positionNo;
+                    if((value.nextReturn === '0' && !StringUtils.isEmpty(value.processGroupNo))
+                            || ( ValidateUtil.isValidTextEmpty(value.processGroupNo) && ( subValue.canEdit === '0' || subValue.userEdit === '0'))){
+                        DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00222'));
+                        return;
+                    }else if(parseInt(lastProcess) === parseInt(subValue.positionNo)){
+                        DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00223'));
+                        return;
+                    }else if(subValue.workflowFlag){
+                        if(subValue.documentStatus !== '03'){
+                            DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00225'));
+                            return;
+                        }else if(subValue.documentStatus === '03'){
+                            if(!StringUtils.isEmpty(subValue.processGroupNo)){
+                                if($scope.checkAllWf03(value.listSubProcess)){
+                                    DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00225'));
+                                    return;
+                                }
+                                if(!$scope.checkSubRequiredCondition(value.listSubProcess, 'W00225')){
+                                    //TODO update server
+                                    params.processData = JSON.stringify($scope.convertDetailProcess());
+                                    $scope.nextProcessServer(params);
+                                }
+                            }else{
+                                //TODO update server
+                                params.processData = JSON.stringify($scope.convertDetailProcess());
+                                $scope.nextProcessServer(params);
+                            }
+                        }
+                    }else{
+                        if(!StringUtils.isEmpty(subValue.processGroupNo)){
+                            if($scope.checkAllWf03(value.listSubProcess)){
+                                DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00225'));
+                                return;
+                            }
+                            if(!$scope.checkSubRequiredCondition(value.listSubProcess, 'W00225')){
+                                //TODO update server
+                                params.processData = JSON.stringify($scope.convertDetailProcess());
+                                $scope.nextProcessServer(params);
+                            }
+                        }else{
+                            if(!$scope.checkSubRequiredCondition(value.listSubProcess, 'W00225')){
+                                //TODO update server
+                                params.processData = JSON.stringify($scope.convertDetailProcess());
+                                $scope.nextProcessServer(params);
+                            }
+                        }
+                    }
+                }
+            };
+        };
+    };
+
+    $scope.nextProcessServer = function(params){
+        DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('S00026')).result.then(function(btn){
+            SfaProjectProcessManagementService
+                .nextProcess(params)
+                .then(
+                    function(result) {
+                        if(!StringUtils.isEmpty(result.data.warning)){
+                            DialogsService.showWarning(Messages.getMessage('check.error'), result.data.warning);
+                            return;
+                        }else{
+                            // close dialog when next from SfaProjectList/SubProjectList/SfaProjectControl/SubProjectControl
+                            if (typeof $scope.$close === "function") {
+                                $scope.$close();
+                            } else {
+                                $scope.getInit();
+                            }
+                            // broadcast load time line processSfaProjectList/SubProjectList/SfaProjectControl/SubProjectControl
+                            $rootScope.$broadcast("SfaProjectProcessMNM#loadNextBack",{});
+                            DialogsService.showNotify(Messages.getMessage('title.info'), Messages.getMessage('S00024'));
+                        }
+                    }
+                );
+        },function(btn){});
+    };
+
+    $scope.returnProcessServer = function(defConfirmMsg, params){
+        DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage(defConfirmMsg)).result.then(function(btn){
+            SfaProjectProcessManagementService.returnProcess(params).then(
+                function(result) {
+                    if(!StringUtils.isEmpty(result.data.warning)){
+                        DialogsService.showWarning(Messages.getMessage('check.error'), result.data.warning);
+                    }else{
+                        // close dialog when next from SfaProjectList/SubProjectList/SfaProjectControl/SubProjectControl
+                        if (typeof $scope.$close === "function") {
+                            $scope.$close();
+                        } else {
+                            $scope.getInit();
+                        }
+                        // broadcast load time line processSfaProjectList/SubProjectList/SfaProjectControl/SubProjectControl
+                        $rootScope.$broadcast("SfaProjectProcessMNM#loadNextBack",{});
+
+                        DialogsService.showNotify(Messages.getMessage('title.info'), Messages.getMessage('S00025'));
+                    }
+                }
+            );
+        });
+    };
+
+    $scope.closeProject = function(){
+        var params = {
+            projectSno : $scope.model.form.business.projectSno
+        };
+        DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('W00255')).result.then(function(btn){
+            SfaProjectProcessManagementService.closeProject(params).then(
+                function(result) {
+                    $scope.getInit();
+                    if(!ValidateUtil.isValidTextEmpty(result.data.warning)){
+                        DialogsService.showWarning(Messages.getMessage('check.error'), result.data.warning);
+                    }else{
+                        DialogsService.showNotify(Messages.getMessage('title.info'), Messages.getMessage('S00028'));
+                    }
+                }
+            );
+        });
+    };
+
+    /**
+     * check all item required in process when click on button workflow
+     */
+    $scope.checkProcessRequiredCondition = function(process, msgId){
+        var validation = false;
+        angular.forEach(process.listDetailProcess, function(subValue, subKey){
+
+            // check box
+            if('04'== subValue.controlType && subValue.listSgtDataSource.length > 0){
+                if(!StringUtils.isEmpty(subValue.listDataSource)){
+                    var inputValue = "";
+                    angular.forEach(subValue.listSgtDataSource, function(data, k){
+                        if(!StringUtils.isEmpty(subValue.inputValue) && subValue.inputValue[k] == "1"){
+                            inputValue += data.code+",";
+                        }
+                    });
+                    if(!validation && subValue.requireFlag && StringUtils.isEmpty(inputValue)){
+                        validation = true;
+                        DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00230'));
+                        return validation;
+                    }
+                }
+            }
+            // address
+            if('09'== subValue.controlType){
+                var postNo = {
+                        'postNo1': subValue.postNo1,
+                        'postNo2': subValue.postNo2,
+                        'address1': subValue.address1,
+                        'address2': subValue.address2
+                }
+                subValue.inputValue = JSON.stringify(postNo);
+                if(StringUtils.isEmpty(subValue.postNo1) && StringUtils.isEmpty(subValue.postNo2)
+                        && StringUtils.isEmpty(subValue.address1) && StringUtils.isEmpty(subValue.address2)) {
+                    subValue.inputValue = '';
+                }
+                if(!validation && subValue.requireFlag && StringUtils.isEmpty(subValue.inputValue)){
+                    validation = true;
+                    DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00230'));
+                    return validation;
+                }
+            }
+
+            if(!validation && subValue.requireFlag && (StringUtils.isEmpty(subValue.inputValue) && StringUtils.isEmpty(subValue.workNo))){
+                validation = true;
+                DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00230'));
+                return validation;
+            }
+            // check reservation_status != 11
+            if(subValue.controlType === 'EXEX10' && subValue.reservationStatus !== '11'){
+                validation = true;
+                DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00275'));
+                return validation;
+            }
+        });
+        return validation;
+    };
+
+    $scope.checkSubRequiredCondition = function(listSubProcess, msgId){
+        var validation = false;
+        angular.forEach(listSubProcess, function(value, subKey){
+            if(value.isDisabled){
+                value.isSubmitted = true;
+            }
+
+            angular.forEach(value.listDetailProcess, function(subValue, subKey){
+
+                // check box
+                if('04'== subValue.controlType && subValue.listSgtDataSource.length > 0){
+                    if(!StringUtils.isEmpty(subValue.listDataSource)){
+                        var inputValue = "";
+                        angular.forEach(subValue.listSgtDataSource, function(data, k){
+                            if(!StringUtils.isEmpty(subValue.inputValue) && subValue.inputValue[k] == "1"){
+                                inputValue += data.code+",";
+                            }
+                        });
+                        if(!validation && subValue.requireFlag && StringUtils.isEmpty(inputValue)){
+                            validation = true;
+                            DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00230'));
+                            return validation;
+                        }
+                    }
+                }
+                // address
+                if('09'== subValue.controlType){
+                    var postNo = {
+                            'postNo1': subValue.postNo1,
+                            'postNo2': subValue.postNo2,
+                            'address1': subValue.address1,
+                            'address2': subValue.address2
+                    }
+                    subValue.inputValue = JSON.stringify(postNo);
+                    if(StringUtils.isEmpty(subValue.postNo1) && StringUtils.isEmpty(subValue.postNo2)
+                            && StringUtils.isEmpty(subValue.address1) && StringUtils.isEmpty(subValue.address2)) {
+                        subValue.inputValue = '';
+                    }
+                    if(!validation && subValue.requireFlag && StringUtils.isEmpty(subValue.inputValue)){
+                        validation = true;
+                        DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00230'));
+                        return validation;
+                    }
+                }
+
+                if(!validation && subValue.requireFlag && (StringUtils.isEmpty(subValue.inputValue) && StringUtils.isEmpty(subValue.workNo))){
+                    validation = true;
+                    DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00230'));
+                    return validation;
+                }
+                // check reservation_status != 11
+                if(subValue.controlType === 'EXEX10' && subValue.reservationStatus !== '11'){
+                    validation = true;
+                    DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00275'));
+                    return validation;
+                }
+            });
+        });
+        return validation;
+    };
+
+    $scope.checkAllWf03 = function(listSubProcess, msgId){
+        var validation = false;
+        angular.forEach(listSubProcess, function(value, subKey){
+            if(value.isDisabled){
+                value.isSubmitted = true;
+            }
+            if(value.workflowFlag && value.documentStatus !== '03'){
+                validation = true;
+                return validation;
+            }
+        });
+        return validation;
+    };
+
+    $scope.returnProcess = function(){
+        // var firstProcess = $scope.model.form.listProcess[0].positionNo;
+        var firstProcess = $scope.model.form.business.firstProcessPositionNo;
+        var processGroupNo = '';
+        var processNo = '';
+        var params = {
+                businessCd : $scope.model.form.business.businessCd,
+                projectSno : $scope.model.form.business.projectSno,
+                processNoPointer : $scope.model.form.business.processNoPointer,
+                processGroupNo : processGroupNo,
+                processNo : processNo,
+                processVersion : '',
+                positionNo : ''
+        };
+        var defConfirmMsg = '';
+
+        for (var i = 0; i < $scope.model.form.listProcess.length; i++) {
+            var value = $scope.model.form.listProcess[i];
+            for (var j = 0; j < value.listSubProcess.length; j++) {
+                var subValue = value.listSubProcess[j];
+                if(parseInt($scope.model.form.business.processNoPointer) === subValue.positionNo){
+                    // Check tighten data receive
+                    for(var i = 0; i < subValue.listDetailProcess.length; i++){
+                        var tmpValue = subValue.listDetailProcess[i];
+                        if(tmpValue.controlType === 'EXEX02' && !StringUtils.isEmpty(tmpValue.rcvTightenStatus) && tmpValue.rcvTightenStatus === '02'){
+                            DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00308'));
+                            return;
+                        }
+                        if(tmpValue.controlType === 'EXEX06' && !StringUtils.isEmpty(tmpValue.orderTightenStatus) && tmpValue.orderTightenStatus === '02'){
+                            DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00312'));
+                            return;
+                        }
+                        // check sales had payment.
+                        if(tmpValue.controlType === 'EXEX03' && !StringUtils.isEmpty(tmpValue.paymentNo)){
+                            if(StringUtils.isEmpty(defConfirmMsg)) {
+                                defConfirmMsg = 'W00336';
+                            }
+                        }
+                        // check stock had spend.
+                        if(tmpValue.controlType === 'EXEX07' && !StringUtils.isEmpty(tmpValue.spendNo)){
+                            if(StringUtils.isEmpty(defConfirmMsg)) {
+                                defConfirmMsg = 'W00337';
+                            }
+                        }
+                    }
+                    if(StringUtils.isEmpty(defConfirmMsg)) {
+                        defConfirmMsg = 'S00027';
+                    }
+
+                    params.processGroupNo = value.processGroupNo;
+                    params.processNo = subValue.processNo;
+                    params.processVersion = subValue.version;
+                    params.positionNo = value.positionNo;
+                    if((value.nextReturn === '0' && !ValidateUtil.isValidTextEmpty(value.processGroupNo))
+                            || ( ValidateUtil.isValidTextEmpty(value.processGroupNo) && ( subValue.canEdit === '0' || subValue.userEdit === '0'))){
+                        DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00222'));
+                        return;
+                    }else if(parseInt(firstProcess) === parseInt(subValue.positionNo)){
+                        DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00226'));
+                        return;
+                    }else if(subValue.workflowFlag){
+                        if(subValue.documentStatus === '02'){
+                            DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00227'));
+                            return;
+                        }else if(!ValidateUtil.isValidTextEmpty(subValue.processGroupNo)){
+                            if(!$scope.checkReturnCondition(value.listSubProcess, 'W00227')){
+                                //TODO update server
+                                $scope.returnProcessServer(defConfirmMsg, params);
+                            }
+                            return;
+                        }else{
+                            //TODO update server
+                            $scope.returnProcessServer(defConfirmMsg, params);
+                            return;
+                        }
+                    }else {
+                        if(!ValidateUtil.isValidTextEmpty(subValue.processGroupNo)){
+                            if(!$scope.checkReturnCondition(value.listSubProcess, 'W00227')){
+                                //TODO update server
+                                $scope.returnProcessServer(defConfirmMsg, params);
+                            }
+                            return;
+                        }else{
+                            //TODO update server
+                            $scope.returnProcessServer(defConfirmMsg, params);
+                            return;
+                        }
+                    }
+                }
+            };
+        };
+    };
+
+
+    $scope.checkReturnCondition = function(listSubProcess, msgId){
+        var validation = false;
+        for (var i = 0; i < listSubProcess.length; i++) {
+            var value = listSubProcess[i];
+            if(value.isDisabled){
+                value.isSubmitted = true;
+            }
+            if(value.documentStatus === '02'){
+                validation = true;
+                DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage(msgId));
+                return validation;
+            }
+        };
+        return validation;
+    };
+
+    $scope.$on("PJMProcess#hasWF", function(evt, param) {
+        DialogsService.showNotify(Messages.getMessage('title.info'), Messages.getMessage('S00006'));
+        $scope.getInit();
+    });
+
+    $scope.$on("PJMProcess#loadUpdate", function(evt, param) {
+        $scope.getInit();
+    });
+
+    $scope.downloadFile = function(param){
+        if(!ValidateUtil.isValidTextEmpty(param.inputValue) && !param.isFileChange){
+            var params = {
+                    'projectSno': $scope.model.form.business.projectSno,
+                    'businessCd': param.businessCd,
+                    'processNo': param.processNo,
+                    'lineNo' : param.lineNo,
+                    'recodeNo': param.recodeNo
+            };
+            Utils.postToUrl("/ProjectInformationControl/downloadFile", params);
+        }
+    };
+
+    $scope.resetFile  = function(e) {
+        e.wrap('<form>').parent('form').trigger('reset');
+        e.unwrap();
+    };
+
+    $scope.removeFile = function(row,parentIndex,index){
+        row.binaryFile = '';
+        row.inputValue = '';
+        row.fileSize = '';
+        row.checkSize = false;
+        $scope.resetFile($('input[name="inputValueFile"]'));
+    };
+
+
+    /**
+     * PDFレポートを輸出する
+     */
+    $scope.doDownload = function (controlType, item, data){
+        switch (controlType) {
+            case 'EXEX01':
+                if(!StringUtils.isEmpty(item)){
+                    var prjBuiness = angular.fromJson(sessionStorage.getItem('prjBuiness'));
+                    var params = {
+                        estimateSno : item.workNo,
+                        recodeNo : item.recodeNo,
+                        parentProjectSno : prjBuiness.parentProjectSno
+                     };
+                    SfaProjectProcessManagementService.doDownloadEst(params);
+                 }
+                break;
+            case 'EXEX02':
+                if(!StringUtils.isEmpty(item)){
+                    var params = {
+                        rcvSno : item.workNo,
+                        recodeNo : item.recodeNo
+                     };
+                    SfaProjectProcessManagementService.doDownloadRsv(params);
+                 }
+                break;
+            case 'EXEX03': case 'EXEX11':
+                if(!StringUtils.isEmpty(item)){
+                    var params = {
+                        salesSno : item.workNo,
+                        recodeNo : item.recodeNo
+                     };
+                    SfaProjectProcessManagementService.doDownloadDec(params);
+                 }
+                break;
+            case 'EXEX06':
+                if(!StringUtils.isEmpty(item)){
+                    var params = {
+                         orderSno : item.workNo,
+                         recodeNo : item.recodeNo
+                     };
+                    SfaProjectProcessManagementService.doDownloadOrd(params);
+                 }
+                break;
+            case 'EXEX07':
+                if(!StringUtils.isEmpty(item)){
+                    var params = {
+                         stockSno : item.workNo,
+                         recodeNo : item.recodeNo
+                     };
+                    SfaProjectProcessManagementService.doDownloadSto(params);
+                 }
+                break;
+        }
+    };
+
+    $scope.addRowProcess = function(actionMode, index, position, listDetail){
+
+        var tmpListDetail = angular.copy(listDetail);
+
+        // convert data before update
+        angular.forEach(tmpListDetail, function(value, key){
+            // check box
+            if('04'== value.controlType && value.listSgtDataSource.length > 0){
+                if(!StringUtils.isEmpty(value.listDataSource)){
+                    var inputValue = "";
+                    angular.forEach(value.listSgtDataSource, function(data, k){
+                        if(!StringUtils.isEmpty(value.inputValue) && value.inputValue[k] == "1"){
+                            inputValue += data.code+",";
+                        }
+                    });
+                    if(!StringUtils.isEmpty(inputValue)){
+                        var trim = inputValue.replace(/(^,)|(,$)/g, "");
+                        value.inputValue = trim;
+                    }else{
+                        value.inputValue = null;
+                    }
+                }
+            }
+            // address
+            if('09'== value.controlType){
+                var postNo = {
+                        'postNo1': value.postNo1,
+                        'postNo2': value.postNo2,
+                        'address1': value.address1,
+                        'address2': value.address2
+                }
+                value.inputValue = JSON.stringify(postNo);
+                if(StringUtils.isEmpty(value.postNo1) && StringUtils.isEmpty(value.postNo2)
+                        && StringUtils.isEmpty(value.address1) && StringUtils.isEmpty(value.address2)) {
+                    value.inputValue = '';
+                }
+            }
+            // multiple select box
+            if(('11'== value.controlType || 'MST_GROUP_LIST'==value.controlType || 'MST_USER_LIST'==value.controlType)
+                    && !StringUtils.isEmpty(value.inputValue)){
+                value.inputValue = value.inputValue.toString();
+            }
+        });
+        var options = {
+                size: '1085'
+            };
+        var param = {
+                projectSno : $scope.model.form.business.projectSno,
+                businessCd : $scope.model.form.business.businessCd,
+                processNo : listDetail[0].processNo,
+                processVersion : listDetail[0].processVersion,
+                index : index + position,
+                position : position,
+                actionMode : actionMode,
+                listDetailProcess : tmpListDetail
+        }
+        DialogsService.showDialog('SfaProjectProcessAddRowPrcDetail', 'AddRowProcessDetailsDialogCtrl', param, options);
+    };
+
+    /**
+     * delete 1 row detail process control (when work_no is null )
+     */
+    $scope.removeRowProcess = function(actionMode, index, row, listDetail){
+
+        if(!StringUtils.isEmpty(row.workNo)){
+            DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00265'));
+            return;
+        }
+
+        DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('S00005')).result.then(function(btn){
+            if(listDetail.length > 1){
+                listDetail.splice(index, 1);
+            }
+            var param = {
+                    projectSno : $scope.model.form.business.projectSno,
+                    businessCd : $scope.model.form.business.businessCd,
+                    processNo : $scope.model.form.business.processNo,
+                    controlType : row.controlType,
+                    workNo : row.workNo,
+                    connectWorkNo : row.connectWorkNo,
+                    actionMode : actionMode
+            };
+
+            // convert data before delete
+            angular.forEach(listDetail, function(value, key){
+                // check box
+                if('04'== value.controlType && value.listSgtDataSource.length > 0){
+                    if(!StringUtils.isEmpty(value.listDataSource)){
+                        var inputValue = "";
+                        angular.forEach(value.listSgtDataSource, function(data, k){
+                            if(!StringUtils.isEmpty(value.inputValue) && value.inputValue[k] == "1"){
+                                inputValue += data.code+",";
+                            }
+                        });
+                        if(!StringUtils.isEmpty(inputValue)){
+                            var trim = inputValue.replace(/(^,)|(,$)/g, "");
+                            value.inputValue = trim;
+                        }else{
+                            value.inputValue = null;
+                        }
+                    }
+                }
+                // address
+                if('09'== value.controlType){
+                    var postNo = {
+                            'postNo1': value.postNo1,
+                            'postNo2': value.postNo2,
+                            'address1': value.address1,
+                            'address2': value.address2
+                    }
+                    value.inputValue = JSON.stringify(postNo);
+                    if(StringUtils.isEmpty(value.postNo1) && StringUtils.isEmpty(value.postNo2)
+                            && StringUtils.isEmpty(value.address1) && StringUtils.isEmpty(value.address2)) {
+                        value.inputValue = '';
+                    }
+                }
+                // multiple select box
+                if(('11'== value.controlType || 'MST_GROUP_LIST'== value.controlType || 'MST_USER_LIST'== value.controlType)
+                        && !StringUtils.isEmpty(value.inputValue)){
+                    value.inputValue = value.inputValue.toString();
+                }
+            });
+
+            param.listDetailProcess = JSON.stringify(listDetail);
+            param.processNo = row.processNo;
+            param.processVersion = row.processVersion;
+            ServerService.doPost('SfaProjectProcessManagement/addRowDetailProcess', param).then(
+                function(okResult) {
+                    if(!StringUtils.isEmpty(okResult.data.warning)){
+                        DialogsService.showWarning(Messages.getMessage('check.error'), okResult.data.warning);
+                        return;
+                    }else if(!StringUtils.isEmpty(okResult.data.success)){
+                        DialogsService.showNotify(Messages.getMessage('title.info'), okResult.data.success);
+                        $scope.getInit();
+                    }
+                }
+            );
+        });
+    };
+
+    $scope.$on("SfaProjectProcessMNM#loadInit", function(evt, param) {
+        $scope.getInit();
+    });
+
+    $scope.doTighten = function(item, screen){
+        var listSno = [];
+        var listRecodeNo = [];
+        listSno.push(item.workNo);
+        if('EXEX02' === screen){
+            listRecodeNo.push(item.rcvRecodeNo);
+        }else{
+            listRecodeNo.push(item.orderRecodeNo);
+        }
+        var param = {
+                listSno : listSno,
+                listRecodeNo : listRecodeNo,
+                screen : screen
+        }
+        DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('W11010')).result.then(function() {
+            ServerService.doPost('SalCommon/updateTightenStatus', param)
+            .then(
+                function(result) {
+                    if(!ValidateUtil.isValidTextEmpty(result.data)){
+                        if(undefined !=  result.data.warning && null !=  result.data.warning){
+                            DialogsService.showWarning(Messages.getMessage('check.error'), result.data.warning);
+                            return;
+                        }else{
+                            DialogsService.showNotify(Messages.getMessage('title.info'), result.data.success)
+                            .result.then(function(btn){
+                                $scope.getInit();
+                            });
+                        }
+                    }
+                }
+            );
+        });
+    };
+
+    /**
+     * Dialog process
+     *
+     *
+     */
+
+    $scope.addProcess = function(item, parentIndex, index, group){
+        var options = {
+            size: '1270'
+        };
+        if(!StringUtils.isEmpty(group)) {
+            $scope.sfaPPMDialogModel.hidden.groupWorkflowFlag = group.workflowFlag;
+        }
+
+        DialogsService.showDialog('SfaPPMDialog', 'SfaPPMDialogCtrl', {},options).result.then(function(param) { });
+
+        $scope.sfaPPMDialogModel.hidden.indexPushListProcess = index;
+        var itemTmp = {
+            'orderId': '',
+            'controlLabelName': '',
+            'controlType': '',
+            'listDataSource': '',
+            'requireFlag': '',
+            'editPermission': '1',
+            'inputData': ''
+        };
+
+        $scope.sfaPPMDialogModel.form.modal.processNo = '';
+        $scope.sfaPPMDialogModel.form.modal.processName = '';
+        $scope.sfaPPMDialogModel.form.modal.workflowFlag = false;
+        $scope.sfaPPMDialogModel.form.modal.referenceAuthority = '';
+        $scope.sfaPPMDialogModel.form.modal.accountCd = '';
+        $scope.sfaPPMDialogModel.form.modal.processGroupRead = '';
+        $scope.sfaPPMDialogModel.form.modal.processUserRead = '';
+        $scope.sfaPPMDialogModel.form.modal.processGroupCd = '';
+        $scope.sfaPPMDialogModel.form.modal.groupName = '';
+        $scope.sfaPPMDialogModel.form.modal.processUserCd = '';
+        $scope.sfaPPMDialogModel.form.modal.userName = '';
+        $scope.sfaPPMDialogModel.form.modal.alertDay = '';
+        $scope.sfaPPMDialogModel.form.modal.exportFileCd = '';
+        $scope.sfaPPMDialogModel.form.modal.iconNo = '';
+        $scope.sfaPPMDialogModel.form.modal.iconBinaryData = '';
+        $scope.sfaPPMDialogModel.form.modal.processExplain = '';
+        $scope.sfaPPMDialogModel.form.modal.listDetailProcess = [];
+        $scope.sfaPPMDialogModel.form.modal.listDetailProcess.push(itemTmp);
+        $scope.sfaPPMDialogModel.form.modal.processGroupNo = item.processGroupNo;
+
+        $scope.sfaPPMDialogModel.hidden.isSubProcess = true;
+        $scope.sfaPPMDialogModel.hidden.isDisabled = true;
+        $scope.sfaPPMDialogModel.hidden.modalProcess.isControlType = false;
+        $scope.sfaPPMDialogModel.hidden.modalProcess.isEXEX040508 = false;
+        $scope.sfaPPMDialogModel.hidden.screenMode = 'INSERT';
+
+        if(StringUtils.isEmpty(item.positionNo)){
+            $scope.sfaPPMDialogModel.hidden.positionNo = 0;
+        }else {
+            $scope.sfaPPMDialogModel.hidden.positionNo = item.positionNo;
+        }
+    };
+
+    $scope.editItemProcess = function(row, parentIndex, index, group){
+
+        var options = {
+            size: '1270',
+        };
+
+        $scope.sfaPPMDialogModel.hidden.groupWorkflowFlag = group.workflowFlag;
+        DialogsService.showDialog('SfaPPMDialog', 'SfaPPMDialogCtrl', {},options).result.then(function(param) { });
+
+        $scope.sfaPPMDialogModel.hidden.indexUpdate = index;
+        $scope.sfaPPMDialogModel.hidden.indexParent = parentIndex;
+        $scope.sfaPPMDialogModel.hidden.isDisabled = false;
+        $scope.sfaPPMDialogModel.hidden.isSubProcess = true;
+        $scope.sfaPPMDialogModel.hidden.modalProcess.isControlType = false;
+        $scope.sfaPPMDialogModel.hidden.modalProcess.isEXEX040508 = false;
+        $scope.sfaPPMDialogModel.hidden.screenMode = 'UPDATE';
+        $scope.sfaPPMDialogModel.form.modal = angular.copy($scope.model.form.listProcess[parentIndex].listSubProcess[index]);
+        if(!StringUtils.isEmpty($scope.sfaPPMDialogModel.form.modal.alertDay)){
+            $scope.sfaPPMDialogModel.form.modal.alertDay = $scope.sfaPPMDialogModel.form.modal.alertDay.toString();
+        }
+        if(!StringUtils.isEmpty($scope.sfaPPMDialogModel.form.modal.referenceAuthority)){
+            $scope.sfaPPMDialogModel.form.modal.referenceAuthority = $scope.sfaPPMDialogModel.form.modal.referenceAuthority.split(',');
+        }
+        angular.forEach($scope.sfaPPMDialogModel.form.modal.listDetailProcess, function(value, key){
+            if(value.requireFlag) {
+                value.requireFlag = '1';
+            }
+
+            // check box
+            if('04'== value.controlType && value.listSgtDataSource.length > 0){
+                if(!StringUtils.isEmpty(value.listDataSource)){
+                    var inputValue = "";
+                    angular.forEach(value.listSgtDataSource, function(data, k){
+                        if(!StringUtils.isEmpty(value.inputValue) && value.inputValue[k] == "1"){
+                            inputValue += data.code+",";
+                        }
+                    });
+                    if(!StringUtils.isEmpty(inputValue)){
+                        var trim = inputValue.replace(/(^,)|(,$)/g, "");
+                        value.inputValue = trim;
+                    }else{
+                        value.inputValue = null;
+                    }
+                }
+            }
+            // address
+            if('09'== value.controlType){
+                var postNo = {
+                        'postNo1': value.postNo1,
+                        'postNo2': value.postNo2,
+                        'address1': value.address1,
+                        'address2': value.address2
+                }
+                value.inputValue = JSON.stringify(postNo);
+                if(StringUtils.isEmpty(value.postNo1) && StringUtils.isEmpty(value.postNo2)
+                        && StringUtils.isEmpty(value.address1) && StringUtils.isEmpty(value.address2)) {
+                    value.inputValue = '';
+                }
+            }
+            // multiple select box
+            if(('11'== value.controlType || 'MST_GROUP_LIST'==value.controlType || 'MST_USER_LIST'==value.controlType)
+                    && !StringUtils.isEmpty(value.inputValue)){
+                value.inputValue = value.inputValue.toString();
+            }
+        });
+        var itemTmp = {
+            'orderId': '',
+            'controlLabelName': '',
+            'controlType': '',
+            'listDataSource' : '',
+            'requireFlag': '1',
+            'editPermission':'1',
+            'inputData': ''
+        };
+        if($scope.sfaPPMDialogModel.form.modal.listDetailProcess.length == 0){
+            $scope.sfaPPMDialogModel.form.modal.listDetailProcess.push(itemTmp);
+        }
+    };
+
+    $scope.deleteProcess = function(item, parentIndex, index){
+        DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('S00005')).result.then(function(btn){
+//            if($scope.model.form.listProcess[parentIndex].listSubProcess.length > 1){
+//                $scope.model.form.listProcess[parentIndex].listSubProcess.splice(index, 1);
+//            }else{
+//                $scope.model.form.listProcess.splice(parentIndex, 1);
+//            }
+            $scope.onDelProcess(item);
+        },function(btn){ });
+    }
+
+    $scope.onDelProcess = function(item){
+        var param = {
+                projectSno : item.projectSno,
+                businessCd : item.businessCd,
+                processNo : item.processNo,
+                positionNo : item.positionNo
+        };
+        ServerService
+            .doPost('SfaProjectProcessManagement/deleteProcess', param)
+            .then(
+                function(okResult) {
+                    var msgObj = okResult.data.msgResult;
+                    if(msgObj.rtnCd === 0){
+                        DialogsService.showNotify(Messages.getMessage('title.info'), msgObj.messages)
+                        .result.then(function(btn){
+                            $rootScope.$broadcast("PJMProcess#loadUpdate",{});
+                        });
+                    }else {
+                        DialogsService.showWarning(Messages.getMessage('check.error'), msgObj.messages);
+                    }
+                },
+                function(errResult){
+                });
+    }
+
+    /* select process add to group */
+    $scope.selectProcess = function(index, row, selected){
+        if(selected){
+            $scope.sfaPPMDialogModel.hidden.listKeyAddGroup.push({ positionNo : row.positionNo, processNo : row.processNo});
+            $scope.sfaPPMDialogModel.hidden.listIndexAddGroup.push(index);
+        }else{
+            var i = arrObjIndex($scope.sfaPPMDialogModel.hidden.listKeyAddGroup, row.processNo , 'processNo');
+            var y = $scope.model.hidden.listIndexAddGroup.indexOf(index);
+            if(i != -1) {
+                $scope.sfaPPMDialogModel.hidden.listKeyAddGroup.splice(i, 1);
+            }
+            if(y != -1) {
+                $scope.model.hidden.listIndexAddGroup.splice(y, 1);
+            }
+        }
+        var len = $scope.sfaPPMDialogModel.hidden.listKeyAddGroup.length;
+        $scope.sfaPPMDialogModel.hidden.listKeyAddGroup.sort(function(a, b) {
+            return a.positionNo - b.positionNo;
+        });
+        if(len > 0){
+            if(len === 1){
+                $scope.model.hidden.isShowGroup = true;
+            }else{
+                var tmp = 0;
+                angular.forEach($scope.sfaPPMDialogModel.hidden.listKeyAddGroup, function(value, key){
+                    if((key + 1) != 1 ){
+                        if(tmp + 1 != parseInt(value.positionNo)){
+                            $scope.model.hidden.isShowGroup = false;
+                            return;
+                        }else{
+                            $scope.model.hidden.isShowGroup = true;
+                        }
+                    }
+                    tmp = value.positionNo;
+                });
+            }
+        } else{
+            $scope.model.hidden.isShowGroup = false;
+        }
+    };
+
+    function arrObjIndex(arr, searchTerm, property) {
+        for(var i = 0, len = arr.length; i < len; i++) {
+            if (arr[i][property] === searchTerm){
+                return i;
+            }
+        }
+        return -1;
+    };
+
+    /**
+     * add process to group
+     */
+    $scope.addGroupOpen = function(isGroupUpdate){
+        var options = {
+            size: '800'
+        };
+        var params = {
+            processGroupName: '',
+            groupGroupCd: '',
+            groupUserCd: '',
+            iconNo: '',
+            iconBinaryData : '',
+            workflowFlag : false,
+            isGroupUpdate : isGroupUpdate,
+            screenMode : 'INSERT'
+        };
+        DialogsService.showDialog('MstProcessGroup', 'SfaPPMGroupDialogCtrl', params,options)
+        .result.then(function(param) {
+            $scope.model.hidden.isShowGroup = false;
+            $scope.sfaPPMDialogModel.hidden.listIndexAddGroup = [];
+            $scope.sfaPPMDialogModel.hidden.listKeyAddGroup = [];
+        });
+        /*$scope.sfaPPMDialogModel.form.modalGroup.processGroupName = '';
+        $scope.sfaPPMDialogModel.form.modalGroup.groupGroupCd = '';
+        $scope.sfaPPMDialogModel.form.modalGroup.groupUserCd = '';
+        $scope.sfaPPMDialogModel.form.modalGroup.iconNo = '';
+        $scope.sfaPPMDialogModel.form.modalGroup.iconBinaryData = '';
+        $scope.sfaPPMDialogModel.hidden.isGroupUpdate = isGroupUpdate;*/
+    };
+
+    /**
+     * edit group name
+     */
+    $scope.editGroupName = function(parentIndex, items, isGroupUpdate){
+        var options = {
+            size: '800'
+        };
+        var params = {
+            processGroupNo : items.processGroupNo,
+            processGroupName: items.processGroupName,
+            groupGroupCd: items.groupGroupCd,
+            groupUserCd: items.groupUserCd,
+            iconNo: items.iconNo,
+            iconBinaryData : items.iconBinaryData,
+            workflowFlag : items.workflowFlag,
+            isGroupUpdate : isGroupUpdate,
+            indexGroupUpdate : parentIndex,
+            screenMode : 'UPDATE'
+        };
+        DialogsService.showDialog('MstProcessGroup', 'SfaPPMGroupDialogCtrl', params,options)
+        .result.then(function(param) {
+            $scope.sfaPPMDialogModel.hidden.listIndexAddGroup = [];
+            $scope.sfaPPMDialogModel.hidden.listKeyAddGroup = [];
+        });
+
+        /*$scope.sfaPPMDialogModel.hidden.isGroupUpdate = isGroupUpdate;
+        $scope.sfaPPMDialogModel.hidden.indexGroupUpdate = parentIndex;
+        $scope.sfaPPMDialogModel.form.modalGroup.processGroupNo = items.processGroupNo;
+        $scope.sfaPPMDialogModel.form.modalGroup.processGroupName = items.processGroupName;
+        $scope.sfaPPMDialogModel.form.modalGroup.groupGroupCd = items.groupGroupCd;
+        $scope.sfaPPMDialogModel.form.modalGroup.groupUserCd = items.groupUserCd;
+        $scope.sfaPPMDialogModel.form.modalGroup.iconNo = items.iconNo;
+        $scope.sfaPPMDialogModel.form.modalGroup.iconBinaryData = items.iconBinaryData;
+        $scope.sfaPPMDialogModel.hidden.listIndexAddGroup = [];
+        $scope.sfaPPMDialogModel.hidden.listKeyAddGroup = [];
+        $scope.sfaPPMDialogModel.hidden.screenMode = 'UPDATE';*/
+    };
+
+    /**
+     * ungroup process
+     */
+    $scope.unGroup = function(parentIndex, items){
+
+        DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('W00258')).result.then(function(btn){
+            var param = {
+                    actionMode : 'DELETE',
+                    projectSno : $scope.model.form.business.projectSno,
+                    businessCd : $scope.model.form.business.businessCd,
+                    processGroupNo : items.processGroupNo
+            }
+            ServerService.doPost('SfaProjectProcessManagement/updateGroupProcess', param).then(
+                function(okResult) {
+                    var msgObj = okResult.data.msgResult;
+                    if(msgObj.rtnCd === 0){
+                        DialogsService.showNotify(Messages.getMessage('title.info'), msgObj.messages).result.then(function(btn){
+                            $rootScope.$broadcast("PJMProcess#loadUpdate",{});
+                        });
+                    }else {
+                        DialogsService.showWarning(Messages.getMessage('check.error'), msgObj.messages);
+                    }
+                }
+            );
+        });
+    };
+
+    /**
+     * 住所検索
+     */
+    $scope.checkPostNumber = function(param, row){
+        var postNo = param;
+        if(StringUtils.isEmpty(postNo)) {
+            DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00207'));
+            return true;
+        }
+        if(ValidateUtil.isValidPostNo(postNo)) {
+            DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00018'));
+            return true;
+        }
+        var params = {'postNo':postNo};
+        ServerService.doPost('SalCommon/checkPostNumber', params).then(
+            function(okResult) {
+                if(!StringUtils.isEmpty(okResult.data.warning)){
+                    DialogsService.showWarning(Messages.getMessage('check.error'), okResult.data.warning);
+                }else if(!StringUtils.isEmpty(okResult.data.failed)){
+                    DialogsService.showError(Messages.getMessage('system.error'), okResult.data.failed);
+                }else{
+                    row.address1 = okResult.data.address;
+                }
+            }
+        );
+    };
+
+    $scope.openDialog = function(row) {
+        var options = {size: '350'};
+        var param = {
+            projectSno : $scope.model.form.business.projectSno,
+            businessCd : $scope.model.form.business.businessCd,
+            processNo : row.processNo,
+            lineNo : row.lineNo,
+            recodeNo : row.recodeNo
+        };
+        DialogsService.showDialog('CreateRealVoucher', 'CreateRealVoucherCtrl', param, options).result.then(function(param) {
+            $scope.getInit();
+        });
+    }
+
+    $scope.changeGroup = function(groupCd) {
+        angular.forEach($scope.model.form.listProcess, function(items, i){
+            angular.forEach(items.listSubProcess, function(detail, subKey){
+                angular.forEach(detail.listDetailProcess, function(item, y){
+                    console.log(item.processNo + "_" + item.lineNo);
+                    if(item.processNo == 3 && item.lineNo == 2){
+                        item.inputValue = "";
+                        item.inputValueName = "";
+                    }
+                });
+            })
+        });
+        if (!StringUtils.isEmpty(groupCd)) {
+            $scope.model.hidden.groupCd = groupCd;
+        } else {
+            $scope.model.hidden.groupCd = "";
+        }
+    };
+
+    $scope.billaddressChange = function (billaddressNo, detail) {
+        if (!StringUtils.isEmpty(billaddressNo)) {
+            ServerService.doPost('SfaProjectControl/onChangeBill', billaddressNo).then(
+                function (okResult) {
+                    var error = okResult.data.failed;
+                    var warning = okResult.data.warning;
+                    if (!StringUtils.isEmpty(error)) {
+                        DialogsService.showError(Messages.getMessage('system.error'), error);
+                        return;
+                    } else if (!StringUtils.isEmpty(warning)) {
+                        DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                        return;
+                    }else{
+                        if (!StringUtils.isEmpty(okResult.data.billAddress)) {
+                            detail.inputValueName = okResult.data.billAddress.controlCd;
+                            var data = okResult.data.billAddress;
+                            angular.forEach(detail.listDetailProcess, function (detail, j) {
+                                if (detail.lineNo == 2) {
+                                    detail.inputValue = data.billaddressName;
+                                }
+                                else if (detail.lineNo == 3) {
+                                    detail.inputValue = data.billaddressNameKana;
+                                }
+                                else if (detail.lineNo == 4) {
+                                    detail.inputValue = data.billAddress;
+                                }
+                                else if (detail.lineNo == 5) {
+                                    detail.inputValue = data.telephoneNo;
+                                }
+                                else if (detail.lineNo == 6) {
+                                    detail.inputValue = data.faxNo;
+                                }
+                                else if (detail.lineNo == 7) {
+                                    detail.inputValue = data.billDeptName;
+                                }
+                                else if (detail.lineNo == 8) {
+                                    detail.inputValue = data.billOwnerName;
+                                }
+                            })
+                        }
+                    }
+                }
+            )
+        } else {
+            detail.inputValueName = '';
+            angular.forEach(detail.listDetailProcess, function (detail, j) {
+                if (detail.lineNo == 2) {
+                    detail.inputValue = '';
+                }
+                else if (detail.lineNo == 3) {
+                    detail.inputValue = '';
+                }
+                else if (detail.lineNo == 4) {
+                    detail.inputValue = '';
+                }
+                else if (detail.lineNo == 5) {
+                    detail.inputValue = '';
+                }
+                else if (detail.lineNo == 6) {
+                    detail.inputValue = '';
+                }
+                else if (detail.lineNo == 7) {
+                    detail.inputValue = '';
+                }
+                else if (detail.lineNo == 8) {
+                    detail.inputValue = '';
+                }
+            })
+        }
+    };
+
+    $scope.warehouseChange = function(warehouseNo, detail){
+        if(!StringUtils.isEmpty(warehouseNo)) {
+            ServerService.doPost('CrmSiteControl/onChangeWarehouse', warehouseNo).then(
+                function (okResult) {
+                    var error = okResult.data.failed;
+                    if (!StringUtils.isEmpty(error)) {
+                        DialogsService.showError(Messages.getMessage('system.error'), error);
+                        return;
+                    } else {
+                        var data = okResult.data.warehouseData;
+                        angular.forEach(detail.listDetailProcess, function (detail, j) {
+                            if (detail.lineNo == 2) {
+                                detail.inputValue = data.warehouseName;
+                            }
+                            else if (detail.lineNo == 3) {
+                                detail.inputValue = data.warehouseNameKana;
+                            }
+                            else if (detail.lineNo == 4) {
+                                detail.inputValue = data.address;
+                            }
+                            else if (detail.lineNo == 5) {
+                                detail.inputValue = data.telephoneNo;
+                            }
+                            else if (detail.lineNo == 6) {
+                                detail.inputValue = data.faxNo;
+                            }
+                            else if (detail.lineNo == 7) {
+                                detail.inputValue = data.warehouseDept;
+                            }
+                            else if (detail.lineNo == 8) {
+                                detail.inputValue = data.warehouseOwner;
+                            }
+                        })
+                    }
+                }
+            );
+        } else {
+            detail.inputValueName = '';
+            angular.forEach(detail.listDetailProcess, function (detail, j) {
+                if (detail.lineNo == 2) {
+                    detail.inputValue = '';
+                }
+                else if (detail.lineNo == 3) {
+                    detail.inputValue = '';
+                }
+                else if (detail.lineNo == 4) {
+                    detail.inputValue = '';
+                }
+                else if (detail.lineNo == 5) {
+                    detail.inputValue = '';
+                }
+                else if (detail.lineNo == 6) {
+                    detail.inputValue = '';
+                }
+                else if (detail.lineNo == 7) {
+                    detail.inputValue = '';
+                }
+                else if (detail.lineNo == 8) {
+                    detail.inputValue = '';
+                }
+            })
+        }
+    };
+
+
+    /**
+     * Add process from template process
+     * access from SfaProjectProcessManagement
+     */
+    $scope.addProcessFromTemplate = function(item) {
+        var options = {
+            size: '400'
+        };
+        DialogsService.showDialog('AddProcessFromTemplateBusinessProcess', 'sfaProjectAddProcessFromTemplateCtrl', item, options).result.then(function(param) { });
+    };
+    /**
+     * Add process from template process
+     * access from SfaSubProjectList / SfaSubProjectControl / SfaProjectList / SfaProjectControl
+     */
+    $scope.addProcessFromTemplateOther = function() {
+        var options = {
+            size: '400'
+        };
+        DialogsService.showDialog('AddProcessFromTemplateBusinessProcess', 'sfaProjectAddProcessFromTemplateCtrl', $scope.model.form.listProcess[0].listSubProcess[0], options).result.then(function(param) { });
+    };
+
+    $scope.exportDialog = function(item){
+        if(item.exportFileCd == '1'){
+            var options = {size: '400'};
+            var param = {
+               exportFileName : item.exportFileName,
+               custCd : $scope.model.form.business.custCd,
+               exportFileCd : item.exportFileCd
+            }
+            DialogsService.showDialog('SfaProjectProcessExportDialog', 'sfaProjectProcessExportDialogCtrl', param, options);
+        }else if(item.exportFileCd == '2'){
+            var fileName = item.exportFileName;
+            var prjBusiness = angular.fromJson(sessionStorage.getItem("prjBusiness"));
+            var params = {
+                karteProjectSno : prjBusiness.projectSno,
+                custCd : $scope.model.form.business.custCd,
+                contractProjectSno : prjBusiness.parentProjectSno,
+                exportFileCd : item.exportFileCd
+            };
+            ServerService.doDownload('/SfaProjectProcessExportDialog/exportExcelDialog', params, "application/vnd.ms-excel", fileName + '_' + $filter('date')(new Date(), "yyyyMMdd") + '.xlsx');
+        }
+    };
+}]);
+
+
+exexSMSApp.controller('AddRowProcessDetailsDialogCtrl',
+        ['$rootScope', '$scope', '$uibModalInstance', 'ServerService', 'DialogsService', 'data', 'Messages',
+        function($rootScope, $scope, $uibModalInstance, ServerService, DialogsService, data, Messages) {
+
+    $scope.model = {
+        form : {
+            projectSno : '',
+            businessCd : '',
+            processNo : '',
+            processVersion : '',
+            controlType : '',
+            workNo : '',
+            connectWorkNo : '',
+            listDetailProcess : [{
+                'lineNo' : '',
+                'positionNo' : '',
+                'controlLabelName': '',
+                'controlType': '',
+                'listDataSource': '',
+                'requireFlag': '1',
+                'editPermission':'1'
+            }],
+            listP010003 : [],
+            listP010006 : [],
+            listS010013 : []
+        },
+        hidden : {
+            isSubmitted : false,
+            indexAdd : 0,
+            actionMode : '',
+            listDetailProcess : []
+        }
+    };
+
+    $scope.init = function(){
+        var itemTmp = {
+            'lineNo' : '',
+            'positionNo' : '',
+            'controlLabelName': '',
+            'controlType': '',
+            'listDataSource': '',
+            'requireFlag': '1',
+            'editPermission':'1',
+            'inputData': ''
+        };
+        ServerService.doPost('SfaProjectProcessAddRowPrcDetail/initData', {}).then(
+            function(okResult) {
+                $scope.model.form.projectSno = data.projectSno;
+                $scope.model.form.businessCd = data.businessCd;
+                $scope.model.form.processNo = data.processNo;
+                $scope.model.form.processVersion = data.processVersion
+                $scope.model.form.controlType = data.controlType;
+                $scope.model.form.workNo = data.workNo;
+                $scope.model.form.connectWorkNo = data.connectWorkNo;
+                $scope.model.hidden.actionMode = data.actionMode;
+                $scope.model.hidden.listDetailProcess = data.listDetailProcess;
+                $scope.model.hidden.indexAdd = data.index;
+                angular.forEach(okResult.data.listP010003, function(item, index){
+                    if(item.code !== 'EXEX04' && item.code !== 'EXEX05' && item.code !== 'EXEX08' ){
+                        $scope.model.form.listP010003.push(item);
+                    }
+                });
+                $scope.model.form.listP010006 = okResult.data.listP010006;
+                $scope.model.form.listS010013 = okResult.data.listS010013;
+                $scope.model.form.listMstCode = okResult.data.listMstCode;
+            }
+        );
+    };
+
+    $scope.update = function(isInvalid){
+        $scope.model.hidden.isSubmitted = true;
+        if(isInvalid) {
+            return;
+        }
+        DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('S00004')).result.then(function(btn){
+            var param = {
+                    projectSno : $scope.model.form.projectSno,
+                    businessCd : $scope.model.form.businessCd,
+                    processNo : $scope.model.form.processNo,
+                    actionMode : $scope.model.hidden.actionMode,
+                    processVersion : $scope.model.form.processVersion
+            };
+            var listDetailProcess = [];
+
+            if($scope.model.form.listDetailProcess[0].requireFlag === '1'){
+                $scope.model.form.listDetailProcess[0].requireFlag = true;
+            }else{
+                $scope.model.form.listDetailProcess[0].requireFlag = false;
+            }
+            $scope.model.hidden.listDetailProcess.splice($scope.model.hidden.indexAdd, 0, $scope.model.form.listDetailProcess[0]);
+            param.listDetailProcess = JSON.stringify($scope.model.hidden.listDetailProcess);
+
+            ServerService.doPost('SfaProjectProcessManagement/addRowDetailProcess', param).then(
+                function(okResult) {
+                    if(!ValidateUtil.isValidTextEmpty(okResult.data.warning)){
+                        DialogsService.showWarning(Messages.getMessage('check.error'), okResult.data.warning);
+                        return;
+                    }else if(!ValidateUtil.isValidTextEmpty(okResult.data.success)){
+                        DialogsService.showNotify(Messages.getMessage('title.info'), okResult.data.success);
+                        $rootScope.$broadcast("SfaProjectProcessMNM#loadInit",{});
+                    }
+                    $uibModalInstance.dismiss('close');
+                }
+            );
+        });
+    };
+
+    $scope.close = function() {
+        $uibModalInstance.dismiss('close');
+    };
+
+}]);
+
+exexSMSApp.controller('sfaProjectProcessSettingProcessCtrl',
+        ['$rootScope', '$scope', '$uibModalInstance', 'SfaProjectProcessManagementModel', 'ServerService', 'DialogsService', 'Messages',
+        function($rootScope, $scope, $uibModalInstance, SfaProjectProcessManagementModel, ServerService, DialogsService, Messages) {
+
+    $scope.model = SfaProjectProcessManagementModel;
+
+    $scope.init = function(){
+    };
+
+    $scope.close = function() {
+        $uibModalInstance.dismiss('close');
+    };
+
+    $scope.update = function(){
+        var param = {};
+        $scope.convertDataProcess(param);
+        ServerService.doPost('SfaProjectProcessManagement/updaetSettingProcess', param).then(
+            function(okResult) {
+                $uibModalInstance.dismiss('close');
+                $rootScope.$broadcast("PJMProcess#loadUpdate",{});
+            }
+        );
+    };
+
+    $scope.convertDataProcess = function(param){
+        var groupProcess = [];
+        var process = [];
+        angular.forEach($scope.model.form.business.listProcessSetting, function(value, key){
+            if(!value.isDisabled){
+                if(!ValidateUtil.isValidTextEmpty(value.processGroupNo) && !ValidateUtil.isValidTextEmpty(value.processGroupName)){
+                    var tmp = {
+                            companyCd: value.companyCd,
+                            projectSno: value.projectSno,
+                            businessCd: value.businessCd,
+                            processGroupNo: value.processGroupNo,
+                            processGroupName: value.processGroupName,
+                            groupGroupCd: value.groupGroupCd,
+                            groupUserCd: value.groupUserCd,
+                            iconNo: value.iconNo
+                    };
+                    groupProcess.push(tmp);
+                }
+                angular.forEach(value.lstProjectGroupProcess, function(subValue, subKey){
+                    if(!ValidateUtil.isValidTextEmpty(subValue.deadlineDate)){
+                        subValue.deadlineDate = new Date(subValue.deadlineDate);
+                    }else{
+                        subValue.deadlineDate = '';
+                    }
+                    process.push(subValue);
+                });
+            }
+        });
+        param.listGroupProcessSetting = JSON.stringify(groupProcess);
+        param.listProcessSetting = JSON.stringify(process);
+        param.projectSno = $scope.model.form.business.projectSno;
+        param.businessCd = $scope.model.form.business.businessCd;
+    };
+
+}]);
+
+
+exexSMSApp.controller('sfaProjectAddProcessFromTemplateCtrl',
+        ['$rootScope', '$scope', '$uibModalInstance', 'SfaProjectProcessManagementModel', 'ServerService', 'DialogsService', 'Messages', 'data',
+        function($rootScope, $scope, $uibModalInstance, SfaProjectProcessManagementModel, ServerService, DialogsService, Messages, data) {
+
+    $scope.model = SfaProjectProcessManagementModel;
+
+    $scope.init = function(){
+        ServerService
+            .doPost('AddProcessFromTemplateBusinessProcess/initData', {})
+            .then(
+                function(okResult) {
+                    $scope.model.form.modelTemplate.listTemplateBusinessProcess = okResult.data.listTemplateBusinessProcess;
+                },
+                function(errResult){
+                });
+    };
+
+    $scope.close = function() {
+        $uibModalInstance.dismiss('close');
+    };
+
+    $scope.updateAddTemplateBusinessProcess = function(isInvalid){
+        $scope.model.form.modelTemplate.isSubmitted = true;
+        if(isInvalid) {
+            return;
+        }
+        DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('W00377')).result.then(function(btn){
+            var param = $scope.convertParam();
+            ServerService.doPost('SfaProjectProcessManagement/updateAddTemplateBusinessProcess', param).then(
+                function(okResult) {
+                    var msgObj = okResult.data.msgResult;
+                    if(msgObj.rtnCd === 0){
+                        DialogsService.showNotify(Messages.getMessage('title.info'), msgObj.messages).result.then(function(btn){
+                            $uibModalInstance.dismiss('close');
+                            $rootScope.$broadcast("PJMProcess#loadUpdate",{});
+                            // broadcast load time line processSfaProjectList/SubProjectList/SfaProjectControl/SubProjectControl
+                            $rootScope.$broadcast("SfaProjectProcessMNM#loadNextBack",{});
+                        });
+                    }else {
+                        DialogsService.showWarning(Messages.getMessage('check.error'), msgObj.messages);
+                    }
+                }
+            );
+        });
+    };
+
+    $scope.convertParam = function(){
+        var param = {};
+        param.version = data.version;
+        param.positionNo = data.positionNo;
+        param.processNo = data.processNo;
+        param.businessCd = data.businessCd;
+        param.projectSno = data.projectSno;
+        param.businessCdTemplate = $scope.model.form.modelTemplate.businessCdTemplate;
+        return param;
+    };
+}]);
+
+exexSMSApp.factory('SfaProjectProcessExportDialog', [ 'BaseModel', function(BaseModel) {
+
+    var model = BaseModel.getInstance();
+
+    model.form = {
+        dialog : {
+            exportContract : '1',
+        }
+      };
+    return model;
+}]);
+
+exexSMSApp.controller('sfaProjectProcessExportDialogCtrl',
+        ['$scope', '$uibModalInstance', 'SfaProjectProcessExportDialog', 'ServerService', '$filter', 'data',
+ function($scope, $uibModalInstance, SfaProjectProcessExportDialog, ServerService, $filter, data){
+
+    $scope.model = SfaProjectProcessExportDialog;
+
+    $scope.close = function() {
+        $uibModalInstance.dismiss('close');
+    };
+
+    $scope.download = function(param){
+        var fileName = data.exportFileName;
+        var prjBusiness = angular.fromJson(sessionStorage.getItem("prjBusiness"));
+        var params = {
+            karteProjectSno : prjBusiness.projectSno,
+            custCd : data.custCd,
+            contractProjectSno : prjBusiness.parentProjectSno,
+            exportContract : $scope.model.form.dialog.exportContract,
+            exportFileCd : data.exportFileCd
+        };
+        ServerService.doDownload('/SfaProjectProcessExportDialog/exportExcelDialog', params, "application/vnd.ms-excel", fileName + '_' + $filter('date')(new Date(), "yyyyMMdd") + '.xlsx');
+        $uibModalInstance.close();
+    }
+}]);

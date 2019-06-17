@@ -1,0 +1,95 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ * SalEstimateControlService
+ *
+ * @author quang-tung
+ *
+ * @version $Revision:  $  $Date:  $
+ */
+'use strict';
+
+exexSMSApp.service('LoginService', ['$q', 'ServerService',function ($q, ServerService) {
+    var _self = this;
+
+    _self.initData = function(param) {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('Login/getInit', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    _self.login = function(param) {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('Login/logon', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    _self.selectGroupLogin = function(param) {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('Login/selectGroupLogin', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    _self.onChangeBusinessType = function(param) {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('Sample/onChangeBusinessType', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    _self.getFreeLabel = function(param) {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('Login/selectFreeLabel', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+}]);

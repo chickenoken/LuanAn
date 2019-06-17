@@ -1,0 +1,11 @@
+<%@ tag pageEncoding="utf-8"%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
+
+<%@ attribute name="src" required="true"%>
+
+<c:set var="baseUrl">
+  <c:url value="/resources"></c:url>
+</c:set>
+
+<%-- <link href="${baseUrl}/${src}" rel="stylesheet" media="screen"></link> --%>
+<link href="${baseUrl}/${src}" rel="stylesheet"></link>

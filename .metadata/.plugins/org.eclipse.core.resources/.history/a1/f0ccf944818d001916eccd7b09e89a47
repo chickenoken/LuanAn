@@ -1,0 +1,234 @@
+#mailRegForm.exex-form table label:after {
+  content: "";
+}
+
+input[type="radio"][disabled] {
+  height: 13px;
+  width: 13px;
+}
+
+textarea#message {
+  min-height: auto;
+  height: 44px;
+  width: 100%;
+  resize: none;
+  background: none;
+  border: none;
+  color: gray;
+}
+
+tr#maildestination td {
+  border: 1px solid #39b3d7;
+  color: white;
+  background: #39b3d7;
+}
+
+td#buttonAdd {
+  text-align: center;
+}
+
+td#buttonAdd {
+  border-left: 2px solid transparent;
+  border-right: 1px solid transparent;
+}
+
+td#typeTo {
+  border-right: 1px solid transparent;
+}
+
+th#userB, th#emailB, th#checkB {
+  padding-top: 4px;
+  padding-bottom: 4px;
+  vertical-align: middle;
+}
+
+tr#maildestination {
+  height: 50px;
+}
+
+td#userB, td#emailB {
+  word-break: break-all;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  vertical-align: middle;
+}
+
+td#checkB {
+  vertical-align: middle;
+  text-align: center;
+}
+
+:checked+tr {
+  color: green;
+  font-weight: bold;
+}
+
+.display-min-width {
+  min-width: 100%;
+}
+
+.scrollbar-custom-1::-webkit-scrollbar {
+  width: 10px;
+  height: 12px;
+}
+
+.scrollbar-custom-1::-webkit-scrollbar-button {
+  background: #DDDDDD;
+  height: 10px;
+  width: 10px;
+}
+
+.scrollbar-custom-1::-webkit-scrollbar-button:vertical {
+  height: 12px;
+  border-color: transparent;
+  border-width: 2px 0;
+}
+
+.scrollbar-custom-1::-webkit-scrollbar-button:vertical:decrement {
+  background-image:
+    url(http://trac.webkit.org/export/41842/trunk/LayoutTests/scrollbars/resources/vertical-decrement-arrow.png);
+  background-repeat: no-repeat, repeat-y;
+  background-position: 2px 2px, 1px 1px;
+}
+
+.scrollbar-custom-1::-webkit-scrollbar-button:vertical:increment {
+  background-image:
+    url(http://trac.webkit.org/export/41842/trunk/LayoutTests/scrollbars/resources/vertical-increment-arrow.png);
+  background-repeat: no-repeat, repeat-y;
+  background-position: 2px 2px, 1px 1px;
+}
+
+.scrollbar-custom-1::-webkit-scrollbar:hover {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+.scrollbar-custom-1::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.1);
+  -webkit-border-radius: 7px;
+  -moz-border-radius: 7px;
+  border-radius: 7px;
+  opacity: 0;
+  filter: alpha(opacity = 0);
+  -o-transition: background-color .2s linear, opacity .2s linear;
+  -webkit-transition: background-color.2s linear, opacity .2s linear;
+  -moz-transition: background-color .2s linear, opacity .2s linear;
+  transition: background-color .2s linear, opacity .2s linear;
+}
+
+.scrollbar-custom-1::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(0, 0, 0, 0.2);
+  width: 12px;
+  -webkit-border-radius: 7px;
+  -moz-border-radius: 7px;
+  border-radius: 7px;
+  opacity: 0;
+  filter: alpha(opacity = 0);
+  -o-transition: background-color .2s linear, opacity .2s linear;
+  -webkit-transition: background-color.2s linear, opacity .2s linear;
+  -moz-transition: background-color .2s linear, opacity .2s linear;
+  transition: background-color .2s linear, opacity .2s linear;
+}
+
+.scrollbar-custom-1::-webkit-scrollbar-button {
+  width: 0px;;
+  height: 0px;
+  display: inline;
+}
+
+#mailDestList .slimScrollDiv {
+  height: auto !important;
+  max-height: 550px !important;
+}
+
+#tableMailDest {
+  height: auto !important;
+  max-height: 550px !important;
+}
+
+.modal-dialog.w-sendmail {
+  margin: 30px auto;
+  width: 420px;
+}
+
+tr#maildestination .md-radio label>span.check {
+  opacity: 1 !important;
+  background: #FFF !important;
+}
+
+tr#maildestination .md-radio label>span.box {
+  border-color: #FFF;
+}
+
+#mailBodyTab .nav-tabs>li>a {
+  border-radius: 4px 4px 0 0;
+}
+
+#mailBodyTab .tab-content {
+  background: #f3f9ff;
+  border: 1px solid #3598dc;
+  border-top: none;
+  padding: 10px;
+}
+
+#mailBodyTab .nav-tabs {
+  border-bottom: 1px solid #3598dc;
+  margin-bottom: 0px;
+}
+
+#mailBodyTab .nav-tabs>li:not(.active )>a {
+  font-weight: bold;
+}
+
+#mailBodyTab .nav-tabs>li>a {
+  border-bottom-color: #3598dc;
+  margin-right: 0;
+}
+
+#mailBodyTab .nav-tabs>li.active>a {
+  font-weight: bolder;
+  background-color: #f3f9ff;;
+  border: 1px solid #3598dc;
+  border-bottom-color: transparent;
+  color: #005094;
+}
+
+#mailBodyTab .nav>li:not(.active )>a {
+  color: #333;
+  background-color: #fafcfb;
+  border-color: #e2f2ff #e2f2ff #3598dc;
+}
+
+.has-error #mailBodyTab .nav-tabs>li.active>a {
+    background: white;
+    color: #ff5500;
+    border: 1px solid #ff5500;
+    border-bottom-color: transparent;
+}
+
+.has-error #mailBodyTab .nav-tabs {
+    border-bottom: 1px solid #ff5500;
+    margin-bottom: 0px;
+}
+
+.has-error #mailBodyTab .nav>li:not(.active )>a {
+    border-color: #f8d0be #f8d0be #ff5500;
+}
+
+.has-error #mailBodyTab .tab-content {
+    background: white;
+    border: 1px solid #ff5500;
+    border-top: none;
+}
+
+.has-error textarea#mailBody.form-control {
+    box-shadow: none;
+    border-color: #9fa4ab !important;
+}
+
+.cke_dialog_ui_input_select{
+    display: table !important;
+}
+
+input[name="importHtml"]{
+  cursor: pointer;
+}

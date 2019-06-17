@@ -1,0 +1,490 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision: 1.0 $  $Date: 2014/06/06 $
+ * @author : minh-dao
+ */
+
+/**
+ * Table :
+ */
+
+'use strict';
+
+exexSMSApp.factory('MstBillControlModel', [ 'BaseModel', function(BaseModel) {
+    var model = BaseModel.getInstance();
+    model.form = {
+        billaddress :{
+            billaddressNo: '',
+            billaddressName : '',
+            billOwnerName:'',
+            paymentMaturity: '',
+            remark:'',
+            billStartMonth:'',
+            billPrefix: '',
+            postNo : '',
+            address1 : '',
+            address2 : '',
+            telephoneNo : '',
+            faxNo :'',
+            billType : '',
+            billCloseType : '',
+            taxCode : '',
+            version: '',
+            isAlreadyHaveBill: false,
+            controlCd : '',
+            billaddressNameKana : '',
+            collectType : [],
+            collectCondition : [],
+            billOutputFlag : '',
+            salesOfficeCd : [],
+            billDeptName : '',
+            billOutputFlag : ''
+        },
+        listBilladdressKey : []
+    };
+    model.listB010001 = [];
+    model.listB010003 = [];
+    model.listB010004 = [];
+    model.listS010006 = [];
+    model.listUD00008 = [];
+    model.listUD00015 = [];
+    model.listUD00016 = [];
+    model.listUD00022 = [];
+    model.hidden = {
+        isSubmited : false,
+        isDisabled : false,
+        isDisabledCloseType : true,
+        billStartMonth : '',
+        fromScreen: '',
+        rowData:  ''
+    };
+    return model;
+}]);
+
+exexSMSApp.controller('mstBillControlCtrl',
+        ['$rootScope', '$scope', '$uibModalInstance', '$filter', '$timeout', 'MstBillControlModel', 'data', 'DialogsService', 'Messages', 'ServerService',
+         function($rootScope, $scope, $uibModalInstance, $filter, $timeout, MstBillControlModel, data ,DialogsService, Messages, ServerService) {
+    $scope.model = MstBillControlModel;
+
+    $scope.init = function(){
+        $scope.model.form.listBilladdressKey = [];
+        $scope.getInit();
+    };
+
+    $scope.$on("MstBillControl#loadData", function (evt, value) {
+        $scope.loadPage(value);
+    });
+
+    $scope.loadPage = function(billaddressNo){
+        // isDisabled = TRUE WHEN lOAD POP UP FROM CUSTOMER VIEW
+        $scope.model.hidden.isDisabled = !StringUtils.isEmpty(data.isDisabled) ? data.isDisabled : false;
+        var params = {'billaddressNo' : billaddressNo};
+        ServerService.doPost('MstBillControl/getBillAddress', params).then(
+            function(okResult) {
+                var error = okResult.data.failed;
+                var warning = okResult.data.warning;
+                if(!StringUtils.isEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'),error);
+                    return;
+                } else if(!StringUtils.isEmpty(warning)){
+                    DialogsService.showWarning(Messages.getMessage('check.error'),warning);
+                    return;
+                } else{
+                    $scope.model.form.billaddress = angular.copy(okResult.data.resultEntity);
+                    $scope.convertDataForView(okResult.data.resultEntity);
+                }
+            }
+        );
+    };
+
+    $scope.getInit = function() {
+        ServerService.doPost('MstBillControl/getInit', {}).then(
+            function(okResult) {
+                var error = okResult.data.failed;
+                if(!StringUtils.isEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'),error);
+                }else{
+                    $scope.listB010001 =  okResult.data.listB010001;
+                    $scope.listB010003 =  okResult.data.listB010003;
+                    $scope.listB010004 =  okResult.data.listB010004;
+                    $scope.listS010006 =  okResult.data.listS010006;
+                    $scope.listUD00008 = okResult.data.listUD00008;
+                    $scope.listUD00015 = okResult.data.listUD00015;
+                    $scope.listUD00016 = okResult.data.listUD00016;
+                    $scope.listUD00022 = okResult.data.listUD00022;
+                    if(StringUtils.isEmpty($scope.listS010006)){
+                        $scope.model.form.billaddress.billPrefix = '';
+                    }else{
+                        if(StringUtils.isEmpty(data.billaddressNo)){
+                            $scope.model.form.billaddress.billPrefix = [$scope.listS010006[1].code];
+                            $scope.model.hidden.isDisabledCloseType = true;
+                            $scope.model.form.billaddress.billStartMonth = '';
+                            $scope.model.hidden.screenMode = 'INSERT';
+
+                            $('#custCdAutocomplete ~ span #select2-custCdAutocomplete-container').empty();
+                            $scope.model.form.billaddress.billaddressName = "";
+                            $scope.model.hidden.billStartMonth = '';
+                            $scope.model.hidden.fromScreen = data.fromScreen;
+                            $scope.model.hidden.rowData = data.rowData;
+                            $scope.model.form.billaddress = data.billaddress;
+                            $scope.model.form.billaddress.isAlreadyHaveBill = false;
+                            $scope.convertDataForView(data.billaddress);
+                            $scope.addNewRow(-1);
+                        }else{
+                            $scope.loadPage(data.billaddress.billaddressNo);
+                            $scope.initBilladdressKey(data.billaddress.billaddressNo);
+                            $scope.model.hidden.screenMode = 'UPDATE';
+                        }
+                    }
+                }
+            }
+        );
+    };
+
+    $scope.close = function() {
+        $uibModalInstance.dismiss('close');
+    };
+
+    $scope.checkDuplicateBilladdressKey = function(list){
+        var tmpList = list.map(function(detail){
+            var keyword1 = detail.keyword1.trim();
+            var keyword2 = detail.keyword2.trim();
+            var keyword3 = detail.keyword3.trim();
+            return keyword1 + keyword2 + keyword3;
+        });
+        var isDuplicate = tmpList.some(function(detailTmp, idx){
+            return tmpList.indexOf(detailTmp) != idx;
+        });
+        return isDuplicate;
+    }
+
+    $scope.addBillAddress = function(param, formInvalid) {
+        $scope.model.hidden.isSubmited = true;
+        if (formInvalid) {
+            return;
+        }
+        if($scope.checkDuplicateBilladdressKey($scope.model.form.listBilladdressKey)){
+            return DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00382'));
+        }
+        DialogsService.showConfirm(Messages.getMessage('title.confirm'),Messages.getMessage('S00003'))
+        .result.then(function(btn){
+            var params = {
+                billaddressName : param.billaddressName,
+                billOwnerName : param.billOwnerName,
+                postNo : param.postNo,
+                address1 : param.address1,
+                address2 : param.address2,
+                telephoneNo : param.telephoneNo,
+                faxNo : param.faxNo,
+                billType : param.billType,
+                billCloseType : param.billCloseType,
+                billPrefix : param.billPrefix,
+                paymentMaturity : param.paymentMaturity,
+                billStartMonth : DateUtils.getStringBillMonthByYM(param.billStartMonth),
+                remark : param.remark,
+                taxCode : param.taxCode,
+                controlCd : param.controlCd,
+                billaddressNameKana : param.billaddressNameKana,
+                collectType : param.collectType,
+                collectCondition :param.collectCondition,
+                billOutputFlag : param.billOutputFlag,
+                salesOfficeCd : param.salesOfficeCd,
+                billDeptName : param.billDeptName
+            };
+
+            var listBilladdressKey = angular.copy($scope.model.form.listBilladdressKey);
+            if(listBilladdressKey.length > 1) {
+                listBilladdressKey.pop();
+                for (var i = 0; i < listBilladdressKey.length; i++) {
+                    var billaddressKey = listBilladdressKey[i];
+                    billaddressKey.keyword1 = billaddressKey.keyword1.trim();
+                    billaddressKey.keyword2 = billaddressKey.keyword2.trim();
+                    billaddressKey.keyword3 = billaddressKey.keyword3.trim();
+                }
+                params.listBilladdressKey = listBilladdressKey;
+            } else {
+                params.listBilladdressKey = [];
+            }
+            ServerService.doPost('MstBillControl/addBillAddress', params).then(function(okResult) {
+                var warning = okResult.data.warning;
+                var error = okResult.data.failed;
+                var success = okResult.data.success;
+                if(!StringUtils.isEmpty(warning)){
+                    DialogsService.showWarning(Messages.getMessage('check.error'),warning);
+                } else if(!StringUtils.isEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'),error);
+                } else {
+                    DialogsService.showNotify(Messages.getMessage('title.info'), success).result.then(function(btn) {
+                        if(!StringUtils.isEmpty($scope.model.hidden.fromScreen) &&
+                                $scope.model.hidden.fromScreen == 'businessCusstomer'){
+                            params.billaddressNo = okResult.data.billaddressNo;
+                            $rootScope.$broadcast("customer#addMstBillAddress",{
+                                billAddress : params,
+                                rowData: $scope.model.hidden.rowData
+                            });
+                        }
+                        $uibModalInstance.close();
+                    });
+                }
+            });
+        });
+    };
+
+    $scope.updateBillAddress = function(param,formInvalid) {
+        $scope.model.hidden.isSubmited = true;
+        if (formInvalid) {
+            return;
+        }
+        if($scope.checkDuplicateBilladdressKey($scope.model.form.listBilladdressKey)){
+            return DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00382'));
+        }
+        DialogsService.showConfirm(Messages.getMessage('title.confirm'),Messages.getMessage('S00004'))
+        .result.then(function(btn){
+             var params = {
+                 billOwnerName : param.billOwnerName,
+                 billaddressNo : param.billaddressNo,
+                 billaddressName : param.billaddressName,
+                 postNo : param.postNo,
+                 address1 : param.address1,
+                 address2 : param.address2,
+                 telephoneNo : param.telephoneNo,
+                 faxNo : param.faxNo,
+                 billType : param.billType,
+                 billCloseType : param.billCloseType,
+                 billPrefix : param.billPrefix,
+                 billStartMonth : DateUtils.getStringBillMonthByYM(param.billStartMonth),
+                 paymentMaturity : param.paymentMaturity,
+                 remark : param.remark,
+                 taxCode : param.taxCode,
+                 advancesReceivedBalance: param.advancesReceivedBalance,
+                 version : param.version,
+                 controlCd : param.controlCd,
+                 billaddressNameKana : param.billaddressNameKana,
+                 collectType : param.collectType,
+                 collectCondition :param.collectCondition,
+                 billOutputFlag : param.billOutputFlag,
+                 salesOfficeCd : param.salesOfficeCd,
+                 billDeptName : param.billDeptName,
+            };
+
+             var listBilladdressKey = angular.copy($scope.model.form.listBilladdressKey);
+             if(listBilladdressKey.length > 1) {
+                 listBilladdressKey.pop();
+                 for (var i = 0; i < listBilladdressKey.length; i++) {
+                     var billaddressKey = listBilladdressKey[i];
+                     billaddressKey.keyword1 = billaddressKey.keyword1.trim();
+                     billaddressKey.keyword2 = billaddressKey.keyword2.trim();
+                     billaddressKey.keyword3 = billaddressKey.keyword3.trim();
+                 }
+                 params.listBilladdressKey = listBilladdressKey;
+             } else {
+                 params.listBilladdressKey = [];
+             }
+            ServerService.doPost('MstBillControl/updateBillAddress', params).then(
+                function(okResult) {
+                    var warning = okResult.data.warning;
+                    var error = okResult.data.failed;
+                    var success = okResult.data.success;
+                    if(!StringUtils.isEmpty(warning)){
+                        DialogsService.showWarning(Messages.getMessage('check.error'),warning);
+                    }else if(!StringUtils.isEmpty(error)){
+                        DialogsService.showError(Messages.getMessage('system.error'),error);
+                    }else{
+                        DialogsService.showNotify(Messages.getMessage('title.info'),success);
+                        $uibModalInstance.close();
+                    }
+                }
+            );
+        });
+    };
+
+    $scope.deleteBillAddress = function(param) {
+        var params = {
+            billaddressNo : param.billaddressNo,
+            billOwnerName : param.billOwnerName,
+            billaddressName : param.billaddressName,
+            postNo : param.postNo,
+            address1 : param.address1,
+            address2 : param.address2,
+            telephoneNo : param.telephoneNo,
+            faxNo : param.faxNo,
+            billType : param.billType,
+            billCloseType : param.billCloseType,
+            billPrefix : param.billPrefix,
+            billStartMonth : DateUtils.getStringBillMonthByYM(param.billStartMonth),
+            paymentMaturity : param.paymentMaturity,
+            remark : param.remark,
+            taxCode : param.taxCode,
+            advancesReceivedBalance: param.advancesReceivedBalance,
+            controlCd : param.controlCd,
+            billaddressNameKana : param.billaddressNameKana,
+            collectType : param.collectType,
+            collectCondition :param.collectCondition,
+            billOutputFlag : param.billOutputFlag,
+            salesOfficeCd : param.salesOfficeCd,
+            billDeptName : param.billDeptName
+        };
+
+        DialogsService.showConfirm(Messages.getMessage('title.confirm'),Messages.getMessage('S00005'))
+        .result.then(function(btn){
+            ServerService.doPost('MstBillControl/deleteBillAddress', params).then(
+                function(okResult) {
+                    var warning = okResult.data.warning;
+                    var error = okResult.data.failed;
+                    var success = okResult.data.success;
+                    if(!StringUtils.isEmpty(warning)){
+                        DialogsService.showWarning(Messages.getMessage('check.error'),warning);
+                    }else if(!StringUtils.isEmpty(error)){
+                        DialogsService.showError(Messages.getMessage('system.error'),error);
+                    }else{
+                        DialogsService.showNotify(Messages.getMessage('title.info'),success);
+                        $uibModalInstance.close();
+                    }
+                }
+            );
+        });
+    };
+
+    /**
+     * 住所検索
+     */
+    $scope.checkPostNumber = function(postNo){
+        if(StringUtils.isEmpty(postNo)){
+            DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00207'));
+            return true;
+        }
+        if(ValidateUtil.isValidPostNo(postNo)){
+            DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00018'));
+            return true;
+        }
+        var params = { postNo : postNo };
+        ServerService.doPost('MstBillControl/checkPostNumber', params).then(
+            function(okResult) {
+                var error =  okResult.data.failed;
+                var warning =  okResult.data.warning;
+                if(!StringUtils.isEmpty(warning)){
+                    DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                }else if(!StringUtils.isEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                }else{
+                    $scope.model.form.billaddress.address1 = okResult.data.address;
+                }
+            }
+        );
+    };
+
+    $scope.goTo = function(billType) {
+        var tmpbillType = billType;
+        if(!StringUtils.isEmpty(tmpbillType)){
+            if(tmpbillType == "1"){
+                if(StringUtils.isEmpty($scope.model.form.billaddress.billStartMonth)){
+                    $scope.model.form.billaddress.billStartMonth = $scope.model.hidden.billStartMonth;
+                }
+                $scope.model.hidden.isDisabledCloseType = false;
+            }else if(tmpbillType == "2"){
+                if(StringUtils.isEmpty($scope.model.hidden.billStartMonth)){
+                    $scope.model.hidden.billStartMonth = $scope.model.form.billaddress.billStartMonth;
+                }
+                $scope.model.hidden.isDisabledCloseType = true;
+                $scope.model.form.billaddress.billStartMonth = '';
+            }
+        }else{
+            $scope.model.hidden.isDisabledCloseType = true;
+            $scope.model.form.billaddress.billStartMonth = '';
+        }
+    };
+
+    $scope.$watch('model.form.billaddress.billaddressNo', function(newVal, oldVal) {
+        if (!StringUtils.isEmpty(newVal)) {
+            $('input[name=billaddressName]').focus();
+        }
+    });
+
+    $scope.$watch('model.form.billaddress.billType', function() {
+        $scope.model.hidden.isSubmited = false;
+        if(!StringUtils.isEmpty($scope.model.form.billaddress.billType) && $scope.model.form.billaddress.billType == '1'){
+            $scope.model.hidden.requiredBillCloseType = true;
+        }else{
+            $scope.model.hidden.requiredBillCloseType = false;
+            $scope.model.form.billaddress.billCloseType = '';
+        }
+    });
+
+    /**convert data for view*/
+    $scope.convertDataForView = function(billAddress){
+        $scope.model.hidden.billStartMonth = '';
+        $scope.model.form.billaddress.billStartMonth = DateUtils.getBillMonthFromString(billAddress.billStartMonth);
+        if(billAddress.billType == "1"){
+            $scope.model.hidden.isDisabledCloseType=false;
+        }else{
+            $scope.model.hidden.isDisabledCloseType=true;
+        }
+    }
+
+    $scope.showAdvancesReceived = function(mode){
+        switch(mode){
+            case 'INSERT':
+                var options = {size: '800'};
+                var param = {
+                    billaddressNo: $scope.model.form.billaddress.billaddressNo,
+                    billaddressName: $scope.model.form.billaddress.billaddressName,
+                }
+                DialogsService.showDialog('AdvancesReceivedControl', 'advancesReceivedCtrl', param, options);
+                break;
+            case 'VIEW':
+                var options = {size: '800'};
+                var param = {
+                    billaddressNo: $scope.model.form.billaddress.billaddressNo,
+                    billaddressName: $scope.model.form.billaddress.billaddressName,
+                    advancesReceivedBalance: $scope.model.form.billaddress.advancesReceivedBalance,
+                }
+                DialogsService.showDialog('AdvancesReceivedHistory', 'advancesReceivedHistoryCtrl', param, options);
+                break;
+            default:
+                break;
+        }
+    }
+
+    $scope.initBilladdressKey = function(billaddressNo){
+        ServerService.doPost('/MstBillControl/initBilladdressKey', billaddressNo).then(
+            function(okResult){
+                var error = okResult.data.failed;
+                var warning = okResult.data.warning;
+                if(!StringUtils.isEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'),error);
+                    return;
+                } else if(!StringUtils.isEmpty(warning)){
+                    DialogsService.showWarning(Messages.getMessage('check.error'),warning);
+                    return;
+                } else{
+                    $scope.model.form.listBilladdressKey = okResult.data.listBilladdressKey;
+                    $scope.addNewRow($scope.model.form.listBilladdressKey.length - 1);
+                }
+            }
+        );
+    }
+
+    $scope.addNewRow = function(index){
+        var length = $scope.model.form.listBilladdressKey.length;
+        if(length == (index + 1)){
+            var params = {
+                keyword1 : '',
+                keyword2 : '',
+                keyword3 : ''
+            }
+            $scope.model.form.listBilladdressKey.push(params);
+            $('.rpt-list').animate({scrollTop:$('.rpt-list').height()}, 'fast');
+        }
+    };
+
+    $scope.removeRow = function(index) {
+        var lastRow = $scope.model.form.listBilladdressKey.length - 1;
+        if(!lastRow == 0){
+            $scope.model.form.listBilladdressKey.splice(index, 1);
+        }
+    };
+
+}]);

@@ -1,0 +1,330 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version
+ * @author quang-tung
+ */
+
+'use strict';
+
+exexSMSApp.factory('SetItemModel', [ 'BaseModel', '$rootScope', function(BaseModel, $rootScope) {
+
+    var model = BaseModel.getInstance();
+
+    model.form = {
+            setItem : {
+                setSerialCd : '',
+                setJanCd: '',
+                setItemCd:'',
+                setItemName:'',
+                setWarehouseNo:'0000000000',
+                setWarehouseName : '倉庫なし',
+                setItemSum:'',
+                setItemSum:'',
+                changeDate: ''
+            },
+           detailSetItem:[]
+      };
+
+    model.hidden = {
+            isSubmited : false,
+            doGroup : false,
+            viewMode: false,
+            createMode : false
+        };
+
+    return model;
+} ]);
+
+/**
+ * 品目一覧コントローラ
+ */
+exexSMSApp.controller('setItemCtrl',
+        ['ServerService', '$scope', '$uibModalInstance', 'DialogsService', '$timeout', 'SetItemModel', 'data', 'Messages',
+         function(ServerService, $scope, $uibModalInstance, DialogsService, $timeout, SetItemModel, data, Messages){
+
+    $scope.model = SetItemModel;
+
+    /**
+     * close popup
+     */
+    $scope.close = function() {
+        $scope.model.hidden.isSubmited = false;
+        $uibModalInstance.close(false);
+    };
+
+    $scope.init = function(){
+        $scope.model.hidden.messageItem = Messages.getMessage('W00304');
+        if(!StringUtils.isEmpty(data.fromScreen)){
+            $scope.resetForm();
+            if(!StringUtils.isEmpty(data.changeNo)){
+                $scope.model.hidden.createMode = false;
+                $scope.model.hidden.viewMode = true;
+                $scope.getSetItemChange(data.changeNo);
+            }else {
+                $scope.model.form.setItem.changeDate = new Date();
+                $scope.model.hidden.createMode = true;
+                $scope.model.hidden.viewMode = false;
+                $scope.model.hidden.doGroup = (data.changeType == "1" ? true : false);
+            }
+        }else{
+            $scope.model.hidden.createMode = false;
+            $scope.model.hidden.viewMode = false;
+            $scope.model.form.setItem.changeDate = new Date();
+            $scope.model.form.setItem.setSerialCd = data.serialCd;
+            $scope.model.form.setItem.setJanCd = data.janCd;
+            $scope.model.form.setItem.setItemCd = data.itemCd;
+            $scope.model.form.setItem.setItemName = data.itemName;
+            $scope.model.form.setItem.setItemSumChange = '';
+            $scope.model.form.setItem.setWarehouseNo = '0000000000';
+            $scope.model.form.setItem.setWarehouseName = '倉庫なし';
+            $scope.model.hidden.doGroup = data.doGroup;
+            $scope.onChangeWarehouse($scope.model.form.setItem, true);
+        }
+        setTimeout(function(){
+            if($scope.model.hidden.doGroup){
+                $scope.model.hidden.labelSetItemSumChange = angular.element('#doGroup').text();
+                $scope.model.hidden.labelChangeDate = angular.element('#doGroupChangeDate').text();
+            }else {
+                $scope.model.hidden.labelSetItemSumChange = angular.element('#unGroup').text();
+                $scope.model.hidden.labelChangeDate = angular.element('#unGroupChangeDate').text();
+            }
+        })
+    };
+
+    $scope.selectItem = function(setSerialCd){
+        if(!StringUtils.isEmpty(setSerialCd)){
+            $scope.model.form.setItem.setSerialCd = setSerialCd;
+            $scope.onChangeWarehouse($scope.model.form.setItem, true);
+        }else {
+            $scope.resetForm();
+        }
+    }
+
+    $scope.getSetItemChange = function(changeNo){
+        ServerService.doPost('SetItemChangeList/getSetItemChange', changeNo).then(
+            function(okResult) {
+                var error = okResult.data.failed;
+                var warning = okResult.data.warning;
+                if(!StringUtils.isEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                }
+                else if(!StringUtils.isEmpty(warning)){
+                    DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                    return;
+                }else{
+                    $scope.model.form.setItem = okResult.data.setItem;
+                    $scope.model.form.detailSetItem = okResult.data.detailSetItem;
+                    $scope.model.hidden.doGroup = (okResult.data.setItem.changeType == "1" ? true : false);
+                    $scope.onChangeWarehouse($scope.model.form.setItem, true);
+                }
+            },
+            function(errResult){}
+        )
+    }
+
+    $scope.onChangeWarehouse = function(param, isInit){
+            setTimeout(function(){
+                if($scope.model.hidden.createMode){
+                    var warehouse = $("select[name='setWarehouseNo']").select2('data');
+                    if(!StringUtils.isEmpty(warehouse) && warehouse.length > 0){
+                        $scope.model.form.setItem.setWarehouseName = warehouse[0].text;
+                    }
+                }
+            })
+        if(!StringUtils.isEmpty(param.setWarehouseNo) && !StringUtils.isEmpty(param.setSerialCd)){
+            var params = {
+                    setSerialCd :param.setSerialCd,
+                    setWarehouseNo : param.setWarehouseNo,
+                    partWarehouseNo : param.setWarehouseNo
+            }
+            ServerService.doPost('SetItemControl/getSetItem', params).then(function(okResult) {
+                var error = okResult.data.failed;
+                if(!ValidateUtil.isValidTextEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'),error);
+                     return;
+                }
+                $scope.model.form.setItem.setItemCd = okResult.data.setItem.setItemCd;
+                $scope.model.form.setItem.setJanCd = okResult.data.setItem.setJanCd;
+                $scope.model.form.setItem.setItemSum = okResult.data.setItem.setItemSum;
+                $scope.model.form.setItem.setItemUnit = okResult.data.setItem.setItemUnit;
+                $scope.model.form.setItem.setItemUnitName = okResult.data.setItem.setItemUnitName;
+                $scope.model.form.setItem.setPackageQuantity = okResult.data.setItem.setPackageQuantity;
+                if(!$scope.model.hidden.viewMode){
+                    $scope.onChangeDetailWarehouse(param, true, null, isInit);
+                }
+            },
+            function(errResult){});
+        }else {
+
+        }
+    };
+
+    $scope.onChangeDetailWarehouse = function(item, mode, index, isInit){
+        var params = {
+                setSerialCd :$scope.model.form.setItem.setSerialCd
+        };
+        var partWarehouseTmp = '';
+        if(mode){
+            params.partWarehouseNo = $scope.model.form.setItem.setWarehouseNo;
+        }else{
+            partWarehouseTmp = angular.copy(item.partWarehouseNo)
+            params.partSerialCd = item.partSerialCd;
+            params.partWarehouseNo = item.partWarehouseNo;
+            params.partItemUnit = item.partItemUnit;
+        }
+        ServerService.doPost('SetItemControl/getDetailSetItem', params).then(function(okResult) {
+            var error = okResult.data.failed;
+            if(!ValidateUtil.isValidTextEmpty(error)){
+                DialogsService.showError(Messages.getMessage('system.error'),error);
+                 return;
+            }
+            var detailTmp = okResult.data.detailSetItem;
+            var detailSetItem = $scope.model.form.detailSetItem;
+            if(mode){
+                if(isInit){
+                    angular.forEach(detailTmp, function(item, i){
+                        item.partWarehouseName = $scope.model.form.setItem.setWarehouseName;
+                        item.partWarehouseNo = $scope.model.form.setItem.setWarehouseNo;
+                        item.isChange = false;
+                    });
+                    detailSetItem = detailTmp;
+                }else{
+                    angular.forEach(detailTmp, function(item, i){
+                        if(!detailSetItem[i].isChange){
+                            detailSetItem[i].partWarehouseName = $("select[name='setWarehouseNo']").select2('data')[0].text;
+                            detailSetItem[i].partWarehouseNo = $scope.model.form.setItem.setWarehouseNo;
+                            detailSetItem[i].partItemValidItemSum = item.partItemValidItemSum;
+                        }
+                    });
+                }
+            }else{
+                var detailSetItemTmp = okResult.data.detailSetItem[0];
+                detailSetItem[index].partItemCd = detailSetItemTmp.partItemCd;
+                detailSetItem[index].partItemName = detailSetItemTmp.partItemName;
+                detailSetItem[index].partItemSumInSet = detailSetItemTmp.partItemSumInSet;
+                detailSetItem[index].partItemUnit = detailSetItemTmp.partItemUnit;
+                detailSetItem[index].partItemUnitName = detailSetItemTmp.partItemUnitName;
+                detailSetItem[index].partJanCd = detailSetItemTmp.partJanCd;
+                detailSetItem[index].partPackageQuantity = detailSetItemTmp.partPackageQuantity;
+                detailSetItem[index].partItemValidItemSum = detailSetItemTmp.partItemValidItemSum;
+                detailSetItem[index].partWarehouseNo = partWarehouseTmp;
+                detailSetItem[index].isChange = true;
+            }
+            $scope.model.form.detailSetItem = detailSetItem;
+            $scope.calWidth();
+            $scope.onChangeSetItemSum($scope.model.form.setItem);
+        },
+        function(errResult){});
+    };
+
+    $scope.onChangeSetItemSum = function(param){
+        var setItemSumChange = parseInt(param.setItemSumChange);
+        angular.forEach($scope.model.form.detailSetItem, function(item, i){
+            item.partItemSumChange = item.partItemSumInSet*setItemSumChange;
+            $scope.checkItemSum(item);
+        });
+        if(setItemSumChange>param.setItemSum && !$scope.model.hidden.doGroup){
+            $scope.model.hidden.checkItemSum = true;
+        }else{
+            $scope.model.hidden.checkItemSum = false;
+        }
+        $scope.calWidth();
+    };
+
+    $scope.calWidth = function(){
+        $timeout(function(){
+            var isChrome = !!window.chrome && !!window.chrome.webstore;
+            var heightTable = $("#tableClone1")[0].offsetHeight;
+            if(!isChrome && heightTable > 246){
+                $scope.model.hidden.widthHeader = {"width": "calc(100% - 17px)"};
+                return;
+            }else if (isChrome && heightTable > 246){
+                $scope.model.hidden.widthHeader = {"width": "calc(100% - 10px)"};
+                return;
+            }
+            $scope.model.hidden.widthHeader = {"width": "100%"};
+        },100);
+    }
+
+
+    $scope.setItemChange = function(formInvalid){
+        $scope.model.hidden.isSubmited = true;
+        if(formInvalid){
+            return;
+        }
+
+        if($scope.model.hidden.doGroup){
+            for (var i = 0; i < $scope.model.form.detailSetItem.length; i++) {
+                var item = $scope.model.form.detailSetItem[i];
+                if($scope.checkItemSum(item)){
+                    return;
+                };
+            }
+        }else{
+            if($scope.model.hidden.checkItemSum){
+                return;
+            }
+        }
+
+        var param = {
+                changeDate : !StringUtils.isEmpty($scope.model.form.setItem.changeDate) ? new Date($scope.model.form.setItem.changeDate) : null,
+                setWarehouseNo : $scope.model.form.setItem.setWarehouseNo,
+                setSerialCd : $scope.model.form.setItem.setSerialCd,
+                setItemSumChange : $scope.model.form.setItem.setItemSumChange,
+                setItemUnit : $scope.model.form.setItem.setItemUnit,
+                setPackageQuantity : $scope.model.form.setItem.setPackageQuantity,
+                detailSetItem : JSON.stringify($scope.model.form.detailSetItem),
+                doGroup : $scope.model.hidden.doGroup
+        };
+        var messageConfirm = $scope.model.hidden.doGroup ? 'S00047' : 'S00048';
+        DialogsService.showConfirm(Messages.getMessage('title.confirm'),Messages.getMessage(messageConfirm)).result.then(function(btn){
+            ServerService.doPost('SetItemControl/setItemChange', param).then(
+                function(okResult) {
+                    var result = okResult.data;
+                    var success = result.success;
+                    var warning = result.warning;
+                    if (!ValidateUtil.isValidTextEmpty(success)) {
+                        DialogsService.showNotify(Messages.getMessage('title.info'), success).result.then(function(btn){
+                            $uibModalInstance.close(true);
+                        });
+                    }else {
+                        DialogsService.showWarning(Messages.getMessage('check.error'),warning);
+                    }
+                },
+                function(errResult){}
+            );
+        },function(btn){});
+    }
+
+    $scope.resetForm = function(){
+        $scope.model.form.detailSetItem = [];
+        $scope.model.form.setItem.setSerialCd = '';
+        $scope.model.form.setItem.setJanCd = '';
+        $scope.model.form.setItem.setItemCd = '';
+        $scope.model.form.setItem.setItemName = '';
+        $scope.model.form.setItem.setItemSum = '';
+        $scope.model.form.setItem.setItemSumChange = '';
+        $scope.model.form.setItem.setItemUnit = '';
+        $scope.model.form.setItem.setItemUnitName = '';
+        $scope.model.form.setItem.setPackageQuantity = '';
+        $scope.model.form.setItem.setWarehouseNo = '0000000000';
+        $scope.model.form.setItem.setWarehouseName = '倉庫なし';
+        $scope.model.form.setItem.changeDate = '';
+    }
+
+    $scope.init();
+
+    $scope.checkItemSum = function (item){
+        if(item.partItemSumChange > item.partItemValidItemSum && $scope.model.hidden.doGroup){
+            item.checkItemSum = true;
+            return true;
+        }else{
+            item.checkItemSum = false;
+            return false;
+        }
+    }
+}]);

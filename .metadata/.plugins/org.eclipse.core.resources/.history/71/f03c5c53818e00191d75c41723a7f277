@@ -1,0 +1,19 @@
+package org.planning.net.dao;
+
+/** */
+@javax.annotation.Generated(value = { "Doma", "2.3.1" }, date = "2019-06-14T15:49:01.153+0700")
+public class testDomaImpl extends org.seasar.doma.internal.jdbc.dao.AbstractDao implements org.planning.net.dao.testDoma {
+
+    static {
+        org.seasar.doma.internal.Artifact.validateVersion("2.3.1");
+    }
+
+    /**
+     * @param config the config
+     */
+    @javax.inject.Inject()
+    public testDomaImpl(@javax.inject.Named("config") org.seasar.doma.jdbc.Config config) {
+        super(config);
+    }
+
+}

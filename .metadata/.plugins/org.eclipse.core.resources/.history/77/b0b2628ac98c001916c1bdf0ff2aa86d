@@ -1,0 +1,456 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision: $ $Date: $
+ * @author huy-du
+ */
+
+'use strict';
+
+exexSMSApp.factory('SalesAnalyticsModel', ['BaseModel', function(BaseModel) {
+
+    var model = BaseModel.getInstance();
+    model.form = {
+            search : {
+                aggregateData : '1',
+                aggregateDataName : '',
+                aggregateType : '1',
+                aggregateTypeName : '',
+                month : '',
+                yearMonthStart: DateUtils.getFirstYYYYMM(),
+                yearMonthEnd: DateUtils.getLastYYYYMM(),
+                yearStart: DateUtils.getPrevious3YearYYYYMM(),
+                yearEnd: DateUtils.getCurrentYYYYMM(),
+                aggregateDate: '',
+                ankenBetsu: '',
+                objects: '',
+                objectsName: [],
+                noSalesData: true
+            },
+            listAggregateData : [],
+            listAggregateType : [],
+            listObject : [],
+            listMonth:[],
+            listAnkenBetsu: []
+    };
+
+    model.hidden = {
+        viewName : false,
+        viewAnkenBetsu :false,
+        nodata: false,
+        ankenBetsuLength: 0,
+        viewNoDataCheckbox : false,
+        tmpYearStart : DateUtils.getPrevious3YearYYYYMM(),
+        tmpYearEnd : DateUtils.getCurrentYYYYMM(),
+        templateUrl: getContextPath() + '/TotalSalesAnalytics/getPage',
+        isFilter: false,
+    }
+
+    return model;
+} ]);
+
+exexSMSApp.controller('SalesAnalyticsCtrl', ['$rootScope', '$scope', '$filter', '$window', '$timeout', 'ServerService','DialogsService', 'SalesAnalyticsModel', 'Messages',
+                                             function($rootScope, $scope, $filter, $window, $timeout,serverService, dialogsService, salesAnalyticsModel, Messages) {
+    $scope.model = salesAnalyticsModel;
+    $scope.calendarType = 3;
+    $scope.status = '';
+    $scope.model.form.search.aggregateDate = {
+        startDate: $filter('date')(DateUtils.getCurrentDatePreviousMonthForString(), "yyyy/MM/dd"),
+        endDate: $filter('date')(DateUtils.getCurrentDateForString(), "yyyy/MM/dd")
+    };
+
+    /**
+     * 初期
+     */
+    $scope.init = function(){
+        serverService.doPost('SalesAnalytics/getInit', null)
+        .then(
+        /* success function */
+        function(result) {
+            if(!ValidateUtil.isValidTextEmpty(result)){
+                $scope.model.form.listAggregateData = result.data.listA010001;
+                $scope.model.form.listAggregateType = result.data.listA030001;
+                $scope.model.form.listMonth = result.data.listS010015;
+                $scope.model.hidden.isFilter = result.data.isFilter;
+            }
+            $scope.changeTitlePanel();
+            var sessionLogin = angular.fromJson(sessionStorage.getItem("session"));
+            if(!ValidateUtil.isValidTextEmpty(sessionLogin)){
+                $scope.model.form.search.month = sessionLogin.accountClosingMonth;
+            }
+        },
+        /* error function */
+        function(error) {});
+    }
+
+    $scope.init()
+
+    /**
+     * テンプレートを変更
+     */
+    $scope.changeTemplate = function(){
+        var templateUrl = '';
+        $scope.model.form.search.aggregateType = '1';
+        $scope.model.form.search.objects='';
+        $scope.changeAggregateType();
+        $scope.model.form.search.ankenBetsu = '';
+        $scope.changeAnkenBetsu();
+        switch($scope.model.form.search.aggregateData){
+            case '1':
+                templateUrl = getContextPath() + '/TotalSalesAnalytics/getPage';
+                $scope.model.hidden.viewName = false;
+                $scope.model.hidden.viewNoDataCheckbox = false;
+                $scope.model.hidden.viewAnkenBetsu = false;
+                $scope.model.form.search.noSalesData = false;
+                break;
+            case '2':
+                templateUrl = getContextPath() + '/ProjectAnalytics/getPage';
+                $scope.model.hidden.viewName = true;
+                $scope.model.hidden.viewNoDataCheckbox = true;
+                $scope.model.hidden.viewAnkenBetsu = false;
+                $scope.model.form.search.noSalesData = true;
+                break;
+            case '3':
+                templateUrl = getContextPath() + '/CustomerAnalytics/getPage';
+                $scope.model.hidden.viewName = true;
+                $scope.model.hidden.viewNoDataCheckbox = true;
+                $scope.model.hidden.viewAnkenBetsu = true;
+                $scope.model.form.search.noSalesData = true;
+                $scope.model.form.listAnkenBetsu = [
+                                                     {code: '1', codeName : Messages.getMessage('common.chart.label.036')},
+                                                     {code: '2', codeName : Messages.getMessage('common.chart.label.039')},
+                                                     {code: '3', codeName : Messages.getMessage('common.chart.label.040')},
+                                                     {code: '4', codeName : Messages.getMessage('common.chart.label.038')},
+                                                     {code: '6', codeName : Messages.getMessage('common.chart.label.050')}];
+                break;
+            case '4':
+                templateUrl = getContextPath() + '/SalesGroupAnalytics/getPage';
+                $scope.model.hidden.viewName = true;
+                $scope.model.hidden.viewNoDataCheckbox = true;
+                $scope.model.hidden.viewAnkenBetsu = true;
+                $scope.model.form.search.noSalesData = true;
+                $scope.model.form.listAnkenBetsu = [
+                                                     {code: '1', codeName : Messages.getMessage('common.chart.label.036')},
+                                                     {code: '3', codeName : Messages.getMessage('common.chart.label.037')},
+                                                     {code: '4', codeName : Messages.getMessage('common.chart.label.038')}];
+                break;
+            case '5':
+                templateUrl = getContextPath() + '/SalesUserAnalytics/getPage';
+                $scope.model.hidden.viewName = true;
+                $scope.model.hidden.viewNoDataCheckbox = true;
+                $scope.model.hidden.viewAnkenBetsu = true;
+                $scope.model.form.search.noSalesData = true;
+                $scope.model.form.listAnkenBetsu = [
+                                                     {code: '1', codeName : Messages.getMessage('common.chart.label.036')},
+                                                     {code: '3', codeName : Messages.getMessage('common.chart.label.037')}];
+                break;
+            case '6':
+                templateUrl = getContextPath() + '/ItemAnalytics/getPage';
+                $scope.model.hidden.viewName = false;
+                $scope.model.hidden.viewNoDataCheckbox = true;
+                $scope.model.hidden.viewAnkenBetsu = true;
+                $scope.model.form.search.noSalesData = true;
+                $scope.model.form.listAnkenBetsu = [
+                                                    {code: '7', codeName : Messages.getMessage('common.chart.label.051')}];
+                break;
+            case '7':
+                templateUrl = getContextPath() + '/BillAnalytics/getPage';
+                $scope.model.hidden.viewName = true;
+                $scope.model.hidden.viewNoDataCheckbox = true;
+                $scope.model.hidden.viewAnkenBetsu = true;
+                $scope.model.form.search.noSalesData = true;
+                $scope.model.form.listAnkenBetsu = [{code: '3', codeName : Messages.getMessage('common.chart.label.037')}];
+                break;
+            case '8':
+                templateUrl = getContextPath() + '/CustomerClassAnalytics/getPage';
+                $scope.model.hidden.viewName = true;
+                $scope.model.hidden.viewNoDataCheckbox = true;
+                $scope.model.hidden.viewAnkenBetsu = true;
+                $scope.model.form.search.noSalesData = true;
+                $scope.model.form.listAnkenBetsu = [{code: '5', codeName : Messages.getMessage('common.chart.label.049')}];
+                break;
+        }
+            var aggregateData = $scope.model.form.search.aggregateData;
+            if(!ValidateUtil.isValidTextEmpty(aggregateData)){
+                serverService.doPost('SalesAnalytics/getObject', {aggregateData: $scope.model.form.search.aggregateData})
+                .then(
+                 /*success function */
+                function(result) {
+                    if(!ValidateUtil.isValidTextEmpty(result)){
+                        if(!ValidateUtil.isValidTextEmpty(result.data.listObject)){
+                            $scope.model.form.listObject = result.data.listObject;
+                        }
+                    }
+                    $scope.changeTitlePanel();
+                },
+                 /*error function */
+                function(error) {});
+            }
+        $scope.model.hidden.templateUrl = templateUrl;
+    }
+
+    /**
+     * 年を変更
+     */
+    $scope.$watch('model.form.search.yearStart',function(){
+        var yearVar = new Date($scope.model.form.search.yearStart + '/01');
+        if(!ValidateUtil.isValidTextEmpty(yearVar)){
+            var monthVar = parseInt($scope.model.form.search.month);
+            var clearDate = null;
+            var month = null;
+            if(monthVar == 12){
+                month = '01';
+                clearDate= yearVar.getFullYear() + '/' + month;
+            }else{
+                monthVar = (monthVar + 1) < 10 ? '0' + (monthVar + 1) : monthVar + 1;
+                clearDate= yearVar.getFullYear() + '/' + monthVar;
+            }
+            angular.element('#yearStart').val(clearDate);
+        }else{
+            angular.element('#yearStart').val('');
+        }
+    });
+
+    /**
+     * 年を変更
+     */
+    $scope.$watch('model.form.search.yearEnd',function(){
+        var yearVar = new Date($scope.model.form.search.yearEnd + '/01');
+        if(!ValidateUtil.isValidTextEmpty(yearVar)){
+            var monthVar = parseInt($scope.model.form.search.month);
+            var clearDate = null;
+            var month = null;
+            monthVar = monthVar < 10 ? '0' + monthVar : monthVar;
+            clearDate= yearVar.getFullYear() + '/' + monthVar;
+            angular.element('#yearEnd').val(clearDate);
+        }else{
+            angular.element('#yearEnd').val('');
+        }
+    });
+
+    /**
+     * 月を変更
+     */
+    $scope.changeMonth = function(){
+        if(ValidateUtil.isValidTextEmpty($scope.model.form.search.month)){
+            var sessionLogin = angular.fromJson(sessionStorage.getItem("session"));
+            if(!ValidateUtil.isValidTextEmpty(sessionLogin)){
+                $scope.model.form.search.month = sessionLogin.accountClosingMonth;
+            }
+        }
+        var yearVar = new Date($scope.model.hidden.tmpYearStart  + '/01');
+        if(!ValidateUtil.isValidTextEmpty(yearVar)){
+            var monthVar = parseInt($scope.model.form.search.month);
+            var clearDate = null;
+            var month = null;
+            if(monthVar == 12){
+                month = '01';
+                clearDate= yearVar.getFullYear() + '/' + month;
+            }else{
+                monthVar = (monthVar + 1) < 10 ? '0' + (monthVar + 1) : monthVar + 1;
+                clearDate= yearVar.getFullYear() + '/' + monthVar;
+            }
+            angular.element('#yearStart').val(clearDate);
+            $scope.model.form.search.yearStart = clearDate;
+        }else{
+            angular.element('#yearStart').val('');
+        }
+
+        yearVar = new Date($scope.model.hidden.tmpYearEnd + '/01');
+        if(!ValidateUtil.isValidTextEmpty(yearVar)){
+            var monthVar = parseInt($scope.model.form.search.month);
+            var clearDate = null;
+            var month = null;
+            monthVar = monthVar < 10 ? '0' + monthVar : monthVar;
+            clearDate= yearVar.getFullYear() + '/' + monthVar;
+            angular.element('#yearEnd').val(clearDate);
+            $scope.model.form.search.yearEnd = clearDate;
+        }else{
+            angular.element('#yearEnd').val('');
+        }
+    };
+
+    /**
+     * 集計
+     */
+    $scope.salesAnalyticAction = function(option){
+            $scope.model.hidden.nodata = false;
+            var startDate = '';
+            var endDate = '';
+            var yearStart = '';
+            var yearEnd = '';
+            var aggregateType = $scope.model.form.search.aggregateType;
+            if(!ValidateUtil.isValidTextEmpty(aggregateType)){
+                if(aggregateType === '3' || aggregateType === '4'){
+                    $scope.model.form.search.yearMonthStart =  DateUtils.getFirstYYYYMM();
+                    $scope.model.form.search.yearMonthEnd = DateUtils.getLastYYYYMM();
+                    yearStart = DateUtils.getFirstYYYYMM();
+                    yearEnd = DateUtils.getLastYYYYMM();
+                }else if(aggregateType === '1'){
+                    startDate =  DateUtils.getCurrentDatePreviousMonthForString() ;
+                    endDate =   DateUtils.getCurrentDateForString();
+                    yearStart = DateUtils.getFirstYYYYMM();
+                    yearEnd = DateUtils.getLastYYYYMM();
+                    $scope.model.form.search.month
+                }else if(aggregateType === '2'){
+                    $scope.model.form.search.yearMonthStart =  DateUtils.getFirstYYYYMM();
+                    $scope.model.form.search.yearMonthEnd = DateUtils.getLastYYYYMM();
+                    startDate =  DateUtils.getCurrentDatePreviousMonthForString() ;
+                    endDate =   DateUtils.getCurrentDateForString();
+                    yearStart = angular.element('#yearStart').val();
+                    yearEnd = angular.element('#yearEnd').val();
+                    if(ValidateUtil.isValidTextEmpty(yearStart) && ValidateUtil.isValidTextEmpty(yearEnd)){
+                        $scope.model.form.search.yearStart = null;
+                        $scope.model.form.search.yearEnd = null;
+                    }
+                }
+                var aggregateDate = $scope.model.form.search.aggregateDate;
+                if(!StringUtils.isEmpty(aggregateDate.startDate) && !StringUtils.isEmpty(aggregateDate.endDate)){
+                    startDate = !ValidateUtil.isValidTextEmpty(aggregateDate.startDate) ? aggregateDate.startDate.toString() : DateUtils.getCurrentDatePreviousMonthForString() ;
+                    endDate = !ValidateUtil.isValidTextEmpty(aggregateDate.endDate) ? aggregateDate.endDate.toString() : DateUtils.getCurrentDateForString();
+                }
+            }
+
+            var obj = $scope.model.form.search.objects;
+            var ankenBetsu = $scope.model.form.search.ankenBetsu;
+            var aggregateData = $scope.model.form.search.aggregateData;
+            var month = $scope.model.form.search.month;
+            var param =  {
+                                    aggregateFromDate : !ValidateUtil.isValidTextEmpty(startDate) ? startDate : null,
+                                    aggregateToDate : !ValidateUtil.isValidTextEmpty(endDate) ? endDate : null,
+                                    aggregateData : !ValidateUtil.isValidTextEmpty(aggregateData) ? aggregateData.toString() : '',
+                                    aggregateType : !ValidateUtil.isValidTextEmpty(aggregateType) ? aggregateType.toString() : '',
+                                    month : !ValidateUtil.isValidTextEmpty(month) ? month.toString() : '',
+                                    yearMonthStart: $scope.model.form.search.yearMonthStart,
+                                    yearMonthEnd: $scope.model.form.search.yearMonthEnd,
+                                    yearStart:  yearStart,
+                                    yearEnd: yearEnd,
+                                    listObjects : !ValidateUtil.isValidTextEmpty(obj) ? obj.toString() : null,
+                                    ankenBetsu: !ValidateUtil.isValidTextEmpty(ankenBetsu) ? ankenBetsu.toString() : '',
+                                    ankenBetsuLength:  $scope.model.hidden.ankenBetsuLength,
+                                    noSalesData : $scope.model.form.search.noSalesData ? '1' : '0'
+                                  };
+        $scope.changeTitlePanel();
+        var status = !ValidateUtil.isValidTextEmpty(aggregateType) ? aggregateType.toString() : '';
+        /**check data before export Excel*/
+        var pr = angular.copy(param);
+        delete pr.ankenBetsuLength;
+        serverService.doPost('SalesAnalytics/checkData', pr)
+        .then(
+        /* success function */
+        function(result) {
+            if(!ValidateUtil.isValidTextEmpty(result)){
+                if(!ValidateUtil.isValidTextEmpty(result.data.warning)){
+                    $scope.model.hidden.nodata = false;
+                    dialogsService.showWarning(Messages.getMessage('check.error'), result.data.warning, {size : 'sm',});
+                    return;
+                }else{
+                    $scope.model.hidden.nodata = false;
+                    if(option === '1'){
+                        $scope.$broadcast("aggregate", {data: param, status: status});
+                    }else  if(option === '2'){
+                        $scope.$broadcast("exportExcel", {data: param, status: status});
+                    }
+                }
+            }
+        },function(error) {});
+
+    };
+
+    /**
+     * 表頭を変化
+     */
+    $scope.changeAggregateType = function(){
+        $scope.titlePanel = '　';
+        var aggregateType = $scope.model.form.search.aggregateType;
+        if(!ValidateUtil.isValidTextEmpty(aggregateType)){
+            if(aggregateType.toString() == '1'){
+                $scope.changeTitlePanel()
+                $scope.calendarType = 3;
+            }else if(aggregateType.toString() == '2'){
+                $scope.changeTitlePanel()
+                $scope.calendarType = 4;
+                $scope.changeMonth();
+            }else if(aggregateType.toString() == '3'){
+                $scope.changeTitlePanel()
+                $scope.calendarType = 1;
+            }else{
+                $scope.changeTitlePanel()
+                $scope.calendarType = 1;
+            }
+        }
+
+        $scope.model.form.search.yearMonthStart = DateUtils.getFirstYYYYMM();
+        $scope.model.form.search.yearMonthEnd = DateUtils.getLastYYYYMM();
+        var sessionLogin = angular.fromJson(sessionStorage.getItem("session"));
+        if(!ValidateUtil.isValidTextEmpty(sessionLogin)){
+            $scope.model.form.search.month = sessionLogin.accountClosingMonth;
+            $scope.changeMonth();
+            $scope.changeTitlePanel();
+        }
+        $scope.model.form.search.aggregateDate = {
+            startDate: $filter('date')(DateUtils.getPreviousMonth(), "yyyy/MM/dd"),
+            endDate: $filter('date')(DateUtils.getCurrentDateForString(), "yyyy/MM/dd")
+        };
+    };
+
+    $scope.$on('divResize', function() {
+        $scope.$broadcast('divChangeSize');
+    });
+
+    /**
+     * 表頭を変化
+     */
+    $scope.changeAnkenBetsu = function(){
+        var ankenBetsu = $scope.model.form.search.ankenBetsu;
+        if(!ValidateUtil.isValidTextEmpty(ankenBetsu)){
+            ankenBetsu = ankenBetsu.toString();
+            $scope.model.hidden.ankenBetsuLength = 1;
+            if(ankenBetsu === '4'){
+                $scope.model.hidden.ankenBetsuLength = 2;
+            }
+        }else{
+            $scope.model.hidden.ankenBetsuLength = 0;
+        }
+    };
+
+    /**
+     * 表題欄を変化
+     */
+    $scope.changeTitlePanel = function(){
+        var aggregateData = $scope.model.form.search.aggregateData;
+        $scope.titlePanel = '　';
+        if(!ValidateUtil.isValidTextEmpty(aggregateData)){
+            var index = parseInt(aggregateData.toString()) - 1;
+            var txt = $scope.model.form.listAggregateData[index].codeName;
+            var aggregateType = $scope.model.form.search.aggregateType;
+            if(!ValidateUtil.isValidTextEmpty(aggregateType)){
+                if(aggregateType.toString() == '1'){
+                    $scope.titlePanel = '　' + txt + '　' + Messages.getMessage('common.chart.label.031', $scope.model.form.search.yearMonthStart + ',' + $scope.model.form.search.yearMonthEnd);
+                }else if($scope.model.form.search.aggregateType.toString() == '2'){
+                    $scope.titlePanel = '　' + txt + '　' + Messages.getMessage('common.chart.label.032', $scope.model.form.search.yearStart + ',' + $scope.model.form.search.yearEnd);
+                }else if(aggregateType.toString() == '3'){
+                    var startDate = "";
+                    var endDate = "";
+                    var aggregateDate = $scope.model.form.search.aggregateDate;
+                    if(!ValidateUtil.isValidTextEmpty(aggregateDate)){
+                            startDate = !ValidateUtil.isValidTextEmpty(aggregateDate.startDate) ? aggregateDate.startDate.toString() : "";
+                            endDate = !ValidateUtil.isValidTextEmpty(aggregateDate.endDate) ? aggregateDate.endDate.toString() : "";
+                    }
+                    $scope.titlePanel = '　' + txt + '　' + Messages.getMessage('common.chart.label.033', startDate + ',' + endDate);
+                }else{
+                    var startDate = "";
+                    var endDate = "";
+                    var aggregateDate = $scope.model.form.search.aggregateDate;
+                    if(!ValidateUtil.isValidTextEmpty(aggregateDate)){
+                        startDate = !ValidateUtil.isValidTextEmpty(aggregateDate.startDate) ? aggregateDate.startDate.toString() : "";
+                        endDate = !ValidateUtil.isValidTextEmpty(aggregateDate.endDate) ? aggregateDate.endDate.toString() : "";
+                    }
+                    $scope.titlePanel = '　' + txt + '　' + Messages.getMessage('common.chart.label.034', startDate + ',' + endDate);
+                }
+            }
+        }
+    };
+}]);

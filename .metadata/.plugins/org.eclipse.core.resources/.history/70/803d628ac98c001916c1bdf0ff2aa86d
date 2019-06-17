@@ -1,0 +1,447 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision: $ $Date: $
+ * @author huy-du
+ */
+
+'use strict';
+
+exexSMSApp.factory('ProjectAnalyticsModel', ['BaseModel', '$rootScope', function(BaseModel, $rootScope) {
+
+    var model = BaseModel.getInstance();
+    model.form = {
+            listHeader :[],
+            listTotalSales: [],
+            listName:[],
+            listSubName:[]
+    }
+
+    model.chartData = {
+            listObject: [],
+            listHeader: [],
+            lengthObject: 0,
+            value: '',
+            type: ''
+    }
+
+    model.hidden = {
+            chart: false,
+            viewChart: false,
+            viewTable : false,
+            sumPrice: true,
+            feeTaxSumPrice: true,
+            itemCost: true,
+            grossMargin: true,
+            grossMarginRate: true,
+            itemSum: true,
+            viewLine: '0',
+            listDataTmp :[],
+            left: 355,
+            itemHeight : 125,
+            heightOneRow: 25,
+            itemHeightItem : 133,
+            heightOneRowItem: 17,
+            hideAll : false,
+            chartWith : 0,
+            tableWidth: 1325,
+            innerNotNullWidth: 1206,
+            heightHeader: 30,
+            outerMaxWidth : 1000,
+            innerHeight: 715,
+            noSalesData: true,
+            ankenBetsuLength: 0,
+            colspan: 12,
+            listObject: [],
+            nodata: false,
+            selectAll : false
+    }
+    return model;
+} ]);
+
+exexSMSApp.controller('ProjectAnalyticsCtrl', ['$rootScope', '$scope', '$filter', '$window', '$timeout','ServerService','DialogsService','ProjectAnalyticsModel', 'Messages', 'HeaderModel',
+                                               function($rootScope, $scope, $filter, $window, $timeout, ServerService, DialogsService, ProjectAnalyticsModel, Messages, HeaderModel) {
+    $scope.model = ProjectAnalyticsModel;
+    $scope.modelHeader = HeaderModel;
+    $scope.model.checkIndex = [];
+    $scope.model.listIndex = [];
+    $scope.model.hidden.listObject = [];
+    $scope.status = '';
+    $scope.titlePanel = '　案件別(月毎: 2015/01 　～　 2015/12)';
+    $scope.model.hidden.chartWith = $window.outerWidth - 200;
+    $scope.model.hidden.viewChart = false;
+    $scope.calTabelWidth = function(){
+        if($scope.status != undefined && $scope.status !== null){
+          $timeout(function() {
+            var width = 0;
+            var widthOuter = 0;
+            var widthTableLeft = 0;
+            var widthTableMiddle = 0;
+            var widthTableMiddleLabel = 0;
+            var widthTableRight  = 0;
+            var innerHeight = 0;
+            var subWidth = 0;
+            widthOuter = parseInt(angular.element('.outer').width());
+            widthTableLeft = parseInt(angular.element('#table-left').width());
+            widthTableMiddle = parseInt(angular.element('#table-middle-label').width());
+            widthTableRight  = parseInt(angular.element('#table-right').width());
+            innerHeight = parseInt(angular.element('#table-middle').height());
+            subWidth = widthTableLeft + widthTableRight + widthTableMiddle + 24;
+            width = widthOuter - subWidth;
+            $scope.model.hidden.tableWidth = width + 15;
+            $scope.model.hidden.innerHeight = innerHeight + 12;
+          },500);
+        }
+    };
+
+    /**
+     * 集計
+     */
+    $scope.$on('aggregate', function(evt, param){
+        $scope.status = '';
+        $scope.model.hidden.viewTable = false;
+        $scope.model.hidden.selectAll = false;
+        $scope.model.hidden.nodata = true;
+        $scope.model.hidden.ankenBetsuLength = param.data.ankenBetsuLength;
+        delete param.data.ankenBetsuLength;
+        ServerService.doPost('ProjectAnalytics/aggregate', param.data).then(
+        /* success function */
+        function(result) {
+            if(!ValidateUtil.isValidTextEmpty(result.data)){
+                if(undefined !=  result.data.warning && null !=  result.data.warning){
+                    DialogsService.showWarning(Messages.getMessage('check.error'), result.data.warning, {size : 'sm',});
+                  return;
+                }else{
+                    $scope.status = param.status.toString();
+                    $scope.model.hidden.tickRotate = 0;
+                    $scope.model.hidden.heightHeader = 32;
+                    $scope.model.form.listHeader = result.data.listHeader;
+                    $scope.model.form.listTotalSales = angular.fromJson(result.data.listResult);
+                    $scope.model.hidden.colspan = $scope.model.form.listHeader.length;
+                    $scope.model.hidden.sumPrice = true;
+                    $scope.model.hidden.feeTaxSumPrice = true;
+                    $scope.model.hidden.itemCost = true;
+                    $scope.model.hidden.grossMargin = true;
+                    $scope.model.hidden.grossMarginRate = true;
+                    $scope.model.hidden.itemSum = true;
+                    $scope.model.hidden.viewTable = true;
+                    $scope.model.checkIndex = [];
+                    $scope.model.hidden.listObject = [];
+                    if(!ValidateUtil.isValidTextEmpty($scope.model.form.listTotalSales)){
+                        $scope.model.hidden.viewTable = true;
+                        $scope.model.hidden.nodata = false;
+                    }
+                    $scope.calHeight();
+                    $scope.calTabelWidth();
+                }
+            }
+        },
+        /* error function */
+        function(result) {});
+    });
+
+    /**
+     * Excelを出す。
+     */
+    $scope.$on('exportExcel', function(evt, param){
+        $scope.model.hidden.ankenBetsuLength = param.data.ankenBetsuLength;
+        delete param.data.ankenBetsuLength;
+        var fileName = '案件別売上_' + DateUtils.getYYYYMMDD(new Date());
+        ServerService.doDownload('/ProjectAnalytics/exportExcel', param.data
+                , 'application/vnd.ms-excel', fileName + '.xlsx');
+    });
+
+    /**
+     * hide row when uncheck
+     */
+    $scope.hideRow = function(index){
+      if($scope.model.hidden.sumPrice && index == 0){
+        return true;
+      }else if($scope.model.hidden.feeTaxSumPrice && index == 1){
+        return true;
+      }else if($scope.model.hidden.itemCost && index == 2){
+        return true;
+      }else if($scope.model.hidden.grossMargin && index == 3){
+        return true;
+      }else if($scope.model.hidden.grossMarginRate && index == 4){
+        return true;
+      }else if($scope.model.hidden.itemSum && index == 5){
+        return true;
+      }else{
+        return false;
+      }
+    };
+
+    /**
+     * check row is last row
+     */
+    $scope.lastRow = function(index, mode){
+      var tmpIndex = 0;
+      var countRowTmp = 0;
+      if($scope.model.hidden.sumPrice){
+        tmpIndex = 0;
+        countRowTmp += 1;
+      }
+      if($scope.model.hidden.feeTaxSumPrice){
+        tmpIndex = 1;
+        countRowTmp += 1;
+      }
+      if($scope.model.hidden.itemCost){
+        tmpIndex = 2;
+        countRowTmp += 1;
+      }
+      if($scope.model.hidden.grossMargin){
+        tmpIndex = 3;
+        countRowTmp += 1;
+      }
+      if($scope.model.hidden.grossMarginRate){
+        tmpIndex = 4;
+        countRowTmp += 1;
+      }
+      if(index == tmpIndex){
+         return true;
+      }else{
+          return false;
+      }
+    };
+
+    //Hide row when check
+    $scope.hideLastRow = function(index){
+        if(index != ""){
+           return false;
+        }else{
+          return true;
+        }
+    };
+
+    /**
+    * calculate the height of tables
+    **/
+    $scope.calHeight= function(){
+      if(!$scope.modelHeader.login.permission.san0200Access){
+        $scope.model.hidden.itemCost = false;
+        $scope.model.hidden.grossMargin = false;
+        $scope.model.hidden.grossMarginRate = false;
+      }
+      var height = 0;
+      var countRowTmp = 0;
+      // $scope.checkListItem();
+      if($scope.model.hidden.sumPrice){
+        height += 1;
+        countRowTmp += 1;
+      }
+      if($scope.model.hidden.feeTaxSumPrice){
+        height += 1;
+        countRowTmp += 1;
+      }
+      if($scope.model.hidden.itemCost){
+        height += 1;
+        countRowTmp += 1;
+      }
+      if($scope.model.hidden.grossMargin){
+        height += 1;
+        countRowTmp += 1;
+      }
+      if($scope.model.hidden.grossMarginRate){
+        height += 1;
+        countRowTmp += 1;
+      }
+      if(countRowTmp == 1){
+          $scope.model.hidden.heightOneRow = 40;
+          $scope.model.hidden.itemHeight = 40;
+      }else{
+        $scope.model.hidden.heightOneRow = 27;
+        $scope.model.hidden.itemHeight = height*27;
+      }
+      if(height == 0){
+        $scope.model.hidden.hideAll = true;
+        $scope.model.hidden.viewChart = false;
+      }else{
+        $scope.model.hidden.hideAll = false;
+      }
+      $scope.calTabelWidth();
+//      $scope.showViewLine($scope.model.hidden.viewLine);
+    };
+
+
+    /**
+     * ショーチャート
+     */
+    $scope.hideChart = function(){
+        for (var i = 0; i < $scope.model.checkIndex.length; i++) {
+            if($scope.model.checkIndex[$scope.model.listIndex[i]]){
+                return true;
+            }
+        };
+        return false;
+    };
+
+    /**
+     * show chart
+     */
+    $scope.showChartLine= function(index, object){
+        $scope.model.axisLabel = "円";
+        var listObject = $scope.model.hidden.listObject;
+        var lengthObject = listObject.length;
+        var check = $scope.model.checkIndex[index];
+        if(check){
+            listObject.splice(index, 0, object);
+        }else{
+            for(var i = 0; i < lengthObject; i++){
+                if(object.projectSno === listObject[i].projectSno){
+                    listObject.splice(i, 1);
+                    break;
+                }
+            }
+        }
+        $scope.showViewLine($scope.model.hidden.viewLine);
+    };
+
+    /**show chart in popup*/
+    $scope.showChart = function(){
+        $scope.model.chartData.type = 'LINE';
+        var data = angular.copy($scope.model.chartData);
+        var listObject = $scope.model.hidden.listObject;
+        var lengthObject = listObject.length;
+        data.lengthObject = lengthObject;
+        data.listObject = listObject;
+        data.status = $scope.status;
+        if(!ValidateUtil.isValidTextEmpty(data.listObject)){
+            var i = 0, length = data.listObject.length;
+            for(;i < length;i++){
+                data.listObject[i].objectName = data.listObject[i].projectName;
+            }
+            var options = {size: '900'};
+            DialogsService.showDialog('SalesAnalyticsChartDialog','SalesAnalyticsChartCtrl', data, options);
+        }else{
+            DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00261'), {size : '355',});
+            return;
+        }
+    }
+
+    /**
+     *
+     */
+    $scope.checkAggregate = function(){
+        if($scope.model.hidden.viewLine == 0 && $scope.model.hidden.sumPrice){
+            return true;
+        }
+        if($scope.model.hidden.viewLine == 1 && $scope.model.hidden.feeTaxSumPrice){
+            return true;
+        }
+        if($scope.model.hidden.viewLine == 2 && $scope.model.hidden.itemCost){
+            return true;
+        }
+        if($scope.model.hidden.viewLine == 3 && $scope.model.hidden.grossMargin){
+            return true;
+        }
+        if($scope.model.hidden.viewLine == 4 && $scope.model.hidden.grossMarginRate){
+            return true;
+        }
+        return false;
+    };
+
+    /*Show/hide line in chart*/
+    $scope.showViewLine = function(value){
+        //Show/hide 1 line
+        if($scope.checkAggregate()){
+            var listObject = $scope.model.hidden.listObject;
+            if(listObject.length != 0){
+                var lengthObject = listObject.length;
+                $scope.model.chartData.listObject = listObject;
+                $scope.model.chartData.listHeader = $scope.model.form.listHeader;
+                $scope.model.chartData.lengthObject = lengthObject;
+                $scope.model.chartData.value = value;
+                $scope.model.hidden.viewChart = true;
+            }else{
+                $scope.model.hidden.viewChart = false;
+            }
+        } else {
+            $scope.model.chartData.listObject = listObject;
+            $scope.model.chartData.lengthObject = lengthObject;
+            $scope.model.chartData.value = 9999;
+            $scope.model.chartData.listHeader = $scope.model.form.listHeader;
+        }
+    };
+
+      $scope.$watch('model.checkIndex', function () {
+          $scope.showViewLine($scope.model.hidden.viewLine);
+      }, true);
+
+    $scope.modifyTickChart = function(){
+        if($scope.status == "3"){
+            $timeout(function() {
+                var svg  = document.querySelector('svg');
+                if(svg != undefined && svg != null){
+                    // get our tspans element
+                    var tspans = svg.querySelectorAll('tspan');
+                    // transform it to an array so the clones don't add to the list
+                    var ts = Array.prototype.slice.call(tspans);
+
+                    for(var i = 0; i<ts.length; i++){
+                        // get the content
+                        var cont = ts[i].textContent.split('～');
+                        // that wasn't the good one...
+                        if(cont.length<2) continue;
+                        // create a clone
+                        var clone_2 = ts[i].cloneNode(1);
+                        // set the text to the new line
+                        if(!ValidateUtil.isValidTextEmpty(cont[1])){
+                            clone_2.textContent = cont[1].replace(/[\s]/g, '');
+                        }
+                        // space it a litlle bit more
+                        clone_2.setAttribute('dy', '0.9em');
+                        var clone_1 = ts[i].cloneNode(1);
+                        // set the text to the new line
+                        if(!ValidateUtil.isValidTextEmpty(cont[1])){
+                            clone_1.textContent = '~';//cont[1].replace(/[\s]/g, '');
+                        }
+                        // space it a litlle bit more
+                        clone_1.setAttribute('dy', '0.8em');
+                        // set the good text to the upperline
+                        if(!ValidateUtil.isValidTextEmpty(cont[0])){
+                            ts[i].textContent = cont[0].replace(/[\s]/g, '');
+                        }
+                        // append our clone
+                        ts[i].parentNode.insertBefore(clone_2, ts[i].nextSibling);
+                        ts[i].parentNode.insertBefore(clone_1, ts[i].nextSibling);
+                    }
+                };
+            }, 500);
+        }else if($scope.status == '4'){
+            $scope.model.hidden.tickRotate = -40;
+        }
+    }
+
+    $scope.logResize = function () {
+        $scope.modifyTickChart();
+        $scope.calTabelWidth();
+    };
+
+    /**
+     * div resize
+     */
+    $scope.$on('divChangeSize', function() {
+        $scope.calTabelWidth();
+    });
+
+    $scope.changeChartData = function(value){
+        if($scope.model.hidden.viewLine == 4){
+            $scope.model.axisLabel = "%";
+        }else {
+            $scope.model.axisLabel = "円";
+        }
+        $scope.showViewLine(value);
+    }
+
+    //Check all
+    $scope.onCheckAll = function(){
+        for (var i = 0; i < $scope.model.form.listTotalSales.length; i++) {
+            var object = $scope.model.form.listTotalSales[i];
+            $scope.model.checkIndex[i] = $scope.model.hidden.selectAll;
+            $scope.showChartLine(i, object);
+        }
+    }
+}]);

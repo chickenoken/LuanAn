@@ -1,0 +1,82 @@
+
+var app = angular.module("myApp", []);
+
+app.factory('loginModel',[ function(){
+    var model = [];
+
+    model.form = {
+       login : {
+           taiKhoan : '',
+           matKhau : ''
+       }
+    }
+
+    model.hidden = {
+        isShow : false
+    }
+
+    return model;
+}]);
+
+app.controller("myCtrl",  ['$scope', '$http', '$filter','$rootScope','loginModel',
+    function($scope, $http, $filter, $rootScope, loginModel){
+
+    $scope.model = loginModel;
+
+    $scope.dangNhap = function(){
+        var params = {
+            taiKhoan : $scope.model.form.login.taiKhoan,
+            matKhau : $scope.model.form.login.matKhau
+        };
+        var httpParams = {
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name=_csrf]').attr("content")
+                },
+                method: 'POST',
+                url: url,
+                data: angular.copy(params)
+            };
+        httpParams.actionStartDate = new Date();
+        if (appConfig.DEBUG) {
+            $log.debug(DateUtils.getNowString() + ' [ACTION   START] : ' + httpParams.url);
+            $log.debug('PARAM: ('+action+')', angular.toJson(params));
+        }
+        $http(httpParams).success(function(data, status, headers, config) {
+            if (appConfig.DEBUG) {
+                var actionEndDate = new Date();
+                $log.debug(DateUtils.getNowString() + ' [ACTION   END  ] : ' + config.url + ' [' + (actionEndDate - config.actionStartDate) + 'ms]');
+                $log.debug('RESULT: ' , angular.copy(data));
+                //$log.debug('RESULT: ' , angular.toJson(angular.copy(data)));
+            }
+
+            if (appConfig.DEBUG) {
+                var callbackStartDate = new Date();
+                $log.debug(DateUtils.getNowString() + ' [CALLBACK START] : ' + config.url);
+            }
+
+
+
+        $http({
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'},
+            method: 'POST',
+            url: 'login/dangNhap',
+            param : angular.copy(params)}).then(function (okResult){
+                if(!StringUtils.isEmpty(okResult.data.isNv)){
+                    sessionStorage.setItem("session", JSON.stringify(okResult.data.isNv));
+                    window.location.href = window.location.origin + '/net/trangChu';
+                }else{
+                    $scope.model.hidden.isShow = true;
+                }
+             },function (error){
+             }
+         );
+        $scope.$broadcast('app-finish-loading')
+     }
+
+    $scope.troVe = function(){
+        window.location.href = window.location.origin + '/net/trangChu';
+    }
+
+}]);

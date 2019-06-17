@@ -1,0 +1,9 @@
+
+public class testConnection {
+
+    String dbURL = "jdbc:sqlserver://localhost;databaseName=EMPDB;user=sa;password=sa";
+    Connection conn = DriverManager.getConnection(dbURL);
+    if (conn != null) {
+     System.out.println("Connected");
+    }
+}

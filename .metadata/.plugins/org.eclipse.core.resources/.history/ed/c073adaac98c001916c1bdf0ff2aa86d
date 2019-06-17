@@ -1,0 +1,267 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision: 1.0 $  $Date: 2014/06/06 $
+ * @author Quang-Thien
+ */
+
+/**
+ * Table :
+ */
+
+'use strict';
+
+exexSMSApp.factory('SalBillControlModel', [ 'BaseModel', function(BaseModel) {
+
+    var model = BaseModel.getInstance();
+
+    model.form = {
+            condition : {
+                billMonth : '',
+                billCloseType : '',
+                billaddressName : ''
+            },
+            listB010003 :[],
+            listBillAddress :[]
+    };
+    model.filteredItems = '';
+
+    model.hidden = {
+            flag : true,
+            selectAll: false,
+            lastCloseMonth : ''
+            //showTable : false
+    };
+
+    model.setup = function(model) {};
+
+    return model;
+} ]);
+
+exexSMSApp.controller('salBillControlCtrl',
+        ['$scope', '$timeout', 'DialogsService', 'SalBillControlModel', 'Messages', 'ServerService', '$filter',
+         function($scope, $timeout, DialogsService, SalBillControlModel, Messages, ServerService, $filter) {
+
+    $scope.model = SalBillControlModel;
+
+    $scope.init = function(model) {
+
+        $timeout(function() {
+            $scope.getInit({});
+            $scope.getBill();
+        } , 10);
+
+        $scope.getInit = function(param) {
+            ServerService.doPost('SalBillControl/getInit', param).then(
+                    function(okResult) {
+                        $scope.model.form.listB010003 = okResult.data.listB010003;
+                        $scope.model.filteredItems = [];
+                }
+            );
+        };
+
+        $scope.getBill = function(param){
+
+            var billMonth = !StringUtils.isEmpty(param) ? DateUtils.getStringBillMonthByYM(param.billMonth) : "";
+            var params ={
+                billMonth : billMonth,
+                billCloseType : !StringUtils.isEmpty(param) ? param.billCloseType.toString() : "",
+                billaddressName : !StringUtils.isEmpty(param) ? param.billaddressName : "",
+            };
+            ServerService.doPost('SalBillControl/getBill', params).then(
+                function(okResult) {
+                    if(!StringUtils.isEmpty(okResult.data.warning)){
+                        DialogsService.showWarning(Messages.getMessage('check.error'),
+                                okResult.data.warning);
+                    }else if(!StringUtils.isEmpty(okResult.data.error)){
+                        DialogsService.showError(Messages.getMessage('system.error'),
+                                okResult.data.error);
+                    }else{
+                        $scope.model.form.listBill = okResult.data.listBill;
+                        $scope.model.filteredItems = okResult.data.listBill.length;
+                        if(!StringUtils.isEmpty(okResult.data.company.lastCloseMonth)){
+                            var closeMonth = okResult.data.company.lastCloseMonth;
+                            $scope.model.hidden.lastCloseMonth = [closeMonth.slice(0,4), '/', closeMonth.slice(4,6)].join('');
+                        }
+                        if(!StringUtils.isEmpty($scope.model.filteredItems)){
+                            $scope.model.hidden.showTable = true;
+                        }else{
+                            $scope.model.hidden.showTable = false;
+                        }
+                        $scope.model.form.listBillAddress = [];
+                        $scope.model.hidden.selectedAll = false;
+                    }
+                }
+            );
+        };
+    };
+
+    $scope.init();
+
+    $scope.checkAllBill = function(){
+        if (!$scope.model.hidden.selectedAll) {
+            $scope.model.form.listBillAddress = [];
+        } else {
+            $scope.model.form.listBillAddress = angular.copy($scope.model.form.listBill);
+        }
+        angular.forEach($scope.model.form.listBill, function (item) {
+            item.billSelected = $scope.model.hidden.selectedAll;
+        });
+    };
+
+    $scope.checkBill = function(billSelected,index,param){
+        var params ={
+                beforeCloseDate: param.beforeCloseDate,
+                billCloseType: param.billCloseType,
+                billMonth: param.billMonth,
+                billaddressName: param.billaddressName,
+                billaddressNo: param.billaddressNo,
+                closeEndDate: param.closeEndDate,
+                closeStartDate: param.closeStartDate,
+                version: param.version
+            };
+//        if(!StringUtils.isEmpty(billSelected) && billSelected == true){
+//            $scope.model.form.listBillAddress.splice( $.inArray(params,$scope.model.form.listBillAddress) ,1 );
+//        }else{
+//            $scope.model.form.listBillAddress.push(params);
+//        }
+        if(billSelected){
+            $scope.model.form.listBillAddress.push(params);
+        }else{
+            for(var i=0;i<$scope.model.form.listBillAddress.length;i++){
+                if($scope.model.form.listBillAddress[i].billaddressNo==params.billaddressNo)
+                    $scope.model.form.listBillAddress.splice(i,1);
+            }
+        }
+        if($scope.model.form.listBillAddress.length == $scope.model.form.listBill.length){
+            $scope.model.hidden.selectedAll = true;
+        }else{
+            $scope.model.hidden.selectedAll = false;
+        }
+    };
+
+    $scope.doExecute = function(condition, billList){
+        if(billList != null && billList.length > 0){
+            DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('S00011')).result.then(function(btn){
+                var params ={
+                    billMonth : '',
+                    billCloseType : '',
+                    listBillAddressNo : []
+                };
+                if(billList.length == 1){
+                    params.billMonth = billList[0].billMonth;
+                    params.billCloseType = billList[0].billCloseType;
+                    params.listBillAddressNo = billList;
+                    $scope.model.hidden.flag = true;
+                }
+                for(var i = 1; i < billList.length;++i){
+                    if((billList[i].billCloseType == billList[i-1].billCloseType) && (billList[i].billMonth == billList[i-1].billMonth)){
+                        $scope.model.hidden.flag = true;
+                        params.billMonth = billList[i].billMonth;
+                        params.billCloseType = billList[i].billCloseType;
+                        params.listBillAddressNo = billList;
+                    }else{
+                        $scope.model.hidden.flag = false;
+                        break;
+                    }
+                }
+                if($scope.model.hidden.flag == false){
+                    DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00204'));
+                }else{
+                    ServerService.doPost('SalBillControl/doExecute', params).then(
+                        function(okResult) {
+                            if(!StringUtils.isEmpty(okResult.data.success)){
+                                DialogsService.showNotify(Messages.getMessage('title.info'),
+                                        okResult.data.success);
+                                var param ={
+                                    billMonth : condition.billMonth,
+                                    billCloseType : !StringUtils.isEmpty(condition.billCloseType) ? condition.billCloseType.toString() : "",
+                                    billaddressName : condition.billaddressName
+                                };
+                                $scope.getBill(param);
+                            } else {
+                                if(!StringUtils.isEmpty(okResult.data.failed)){
+                                    DialogsService.showError(Messages.getMessage('system.error'),
+                                            okResult.data.failed);
+                                }else{
+                                    DialogsService.showWarning(Messages.getMessage('check.error'),
+                                            okResult.data.warning);
+                                }
+                            }
+                        }
+                    );
+                }
+            });
+        }else{
+            DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00075'));
+        }
+    };
+
+    $scope.doCancel = function(condition,billList){
+        if(billList != null && billList.length > 0){
+            DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('S00014')).result.then(function(btn){
+                var params ={
+                    billMonth : '',
+                    billCloseType : '',
+                    listBillAddressNo : []
+                };
+                if(billList.length == 1){
+                    params.billMonth = billList[0].billMonth;
+                    params.billCloseType = billList[0].billCloseType;
+                    params.listBillAddressNo = billList;
+                    $scope.model.hidden.flag = true;
+                }
+                for(var i = 1; i < billList.length;++i){
+                    if((billList[i].billCloseType == billList[i-1].billCloseType) && (billList[i].billMonth == billList[i-1].billMonth)){
+                        $scope.model.hidden.flag = true;
+                        params.billMonth = billList[i].billMonth;
+                        params.billCloseType = billList[i].billCloseType;
+                        params.listBillAddressNo = billList;
+                    }else{
+                        $scope.model.hidden.flag = false;
+                        break;
+                    }
+                }
+                for(var i = 0; i < billList.length; ++i){
+                    if(!StringUtils.isEmpty(billList[i].beforeCloseDate)){
+                        var dateMonth = $filter('date')(billList[i].beforeCloseDate, "yyyy/MM");
+                        if(new Date($scope.model.hidden.lastCloseMonth) >= new Date(dateMonth)){
+                            DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00370') + $scope.model.hidden.lastCloseMonth);
+                            return;
+                        }
+                    }
+                }
+                if($scope.model.hidden.flag == false){
+                    DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00204'));
+                }else{
+                    ServerService.doPost('SalBillControl/doCancel', params).then(
+                        function(okResult) {
+                            if(!StringUtils.isEmpty(okResult.data.success)){
+                                DialogsService.showNotify(Messages.getMessage('title.info'),
+                                        okResult.data.success);
+                                var param ={
+                                    billMonth : condition.billMonth,
+                                    billCloseType : !StringUtils.isEmpty(condition.billCloseType) ? condition.billCloseType.toString() : "",
+                                    billaddressName : condition.billaddressName
+                                };
+                                $scope.getBill(param);
+                            } else {
+                                if(!StringUtils.isEmpty(okResult.data.failed)){
+                                    DialogsService.showError(Messages.getMessage('system.error'),
+                                            okResult.data.failed);
+                                }else{
+                                    DialogsService.showWarning(Messages.getMessage('check.error'),
+                                            okResult.data.warning);
+                                }
+                            }
+                        }
+                    );
+                }
+            });
+        }else{
+            DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00075'));
+        }
+    };
+}]);

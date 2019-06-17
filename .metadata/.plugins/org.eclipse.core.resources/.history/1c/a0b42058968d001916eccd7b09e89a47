@@ -1,0 +1,5 @@
+package org.planning.net.dao;
+
+public @interface InjectConfig {
+
+}

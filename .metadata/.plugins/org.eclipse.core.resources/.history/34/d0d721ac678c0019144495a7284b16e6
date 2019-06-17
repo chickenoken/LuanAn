@@ -1,0 +1,8 @@
+package org.planning.net.logic;
+
+import org.springframework.stereotype.Component;
+
+@Component
+public class LoginLogicImpl {
+
+}

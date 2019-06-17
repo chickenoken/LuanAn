@@ -1,0 +1,175 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ * SalEstimateControlService
+ *
+ * @author quang-tung
+ *
+ * @version $Revision:  $  $Date:  $
+ */
+'use strict';
+
+exexSMSApp.service('StockTransferService', ['$q', 'ServerService',function ($q, ServerService) {
+    var _self = this;
+
+    _self.initData = function(param) {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('StockTransferList/getInit', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    _self.search = function(param) {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('StockTransferList/search', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    _self.isExistData = function(param) {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('StockTransferList/isExistData', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    _self.checkWorkFlow = function(param) {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('SalCommon/checkWorkFlow', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    _self.insert = function(param) {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('StockTransferControl/insert', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    _self.update = function(param) {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('StockTransferControl/update', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    _self.sdelete = function(param) {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('StockTransferControl/delete', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    _self.inquiry = function(param) {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('StockTransferControl/inquiry', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    _self.checkData = function(param) {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('StockTransferControl/checkData', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    _self.getInit = function(param) {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('StockTransferControl/getInit', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+}]);

@@ -1,0 +1,683 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision:  $ $Date:  $
+ * @author quang-tung
+ */
+
+'use strict';
+
+exexSMSApp.factory('MailRegistrationModel', [ 'BaseModel', function(BaseModel) {
+
+    var model = BaseModel.getInstance();
+    model.form = {
+        registration : {
+            mailCd : '',
+            mailSendType : false,
+            mailSubject : '',
+            mailBody : '',
+            mailSendStatus : '0',
+            mailSendDate : '',
+            mstMailUserCd : '',
+            lstMailDestination : []
+        }
+    };
+    model.file ={
+            fileData: '',
+            fileName : '',
+            fileType : '',
+            fileSize : '',
+            isFileChange :false
+    };
+    model.hidden = {
+        screenMode : 'INSERT',
+        selectedAll : false,
+        isDisabled : false,
+        isSubmited : false,
+        labelCustName : '',
+        labelOwnerName : '',
+        labelTrackingData : '',
+        labelTrackingMail : '',
+        labelPrefix : '',
+        listSelected : [],
+        redirectUrl : 'MailList',
+        createSalesReport : false,
+        isHtmlTab : true,
+        isStockMode : false
+    };
+    return model;
+}]);
+
+exexSMSApp.controller('MailRegistrationCtrl',
+    ['$scope', 'MailRegistrationModel','orderByFilter', 'DialogsService', 'Messages', 'ServerService', 'RouteService',
+     function($scope , MailRegistrationModel, orderByFilter, DialogsService, Messages, ServerService, RouteService ) {
+
+    $scope.model = MailRegistrationModel;
+
+    $scope.getInit = function() {
+        sessionStorage.removeItem('mailDestination');
+        ServerService.doPost('MailRegistration/getInit', null).then(
+            function(okResult) {
+                $scope.model.form.listMailServer = okResult.data.listMailServer;
+                $scope.model.form.listS020004 = okResult.data.mailSendStatus;
+                var sessionLogin = angular.fromJson(sessionStorage.getItem("session"));
+
+                if($scope.model.form.listMailServer.length == 0){
+                    DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00212'))
+                    .result.then(function() {
+                        sessionStorage.removeItem("mailListDetail");
+                        RouteService.gotoUrl("MstMailSetting");
+                    });
+                    return;
+                }else{
+                    angular.forEach($scope.model.form.listMailServer, function(item, i){
+                        if(sessionLogin.userCd == item.userCd){
+                            $scope.model.form.registration.mstMailUserCd = item.userCd;
+                        }
+                    })
+                }
+            }
+        );
+    };
+
+    /** 初期* */
+    $scope.init = function(model){
+        $scope.model.hidden.isInit = true;
+        $scope.model.hidden.labelCustName = angular.element('#custNameLabel').text();
+        $scope.model.hidden.labelOwnerName = angular.element('#ownerNameLabel').text();
+        $scope.model.hidden.labelTrackingData = angular.element('#trackingDataLabel').text();
+        $scope.model.hidden.labelTrackingMail = angular.element('#trackingMailLabel').text();
+        $scope.model.hidden.labelPrefix = angular.element('#prefixLabel').text();
+        $scope.getInit();
+
+        $scope.model.form.registration.mailSendType=1;
+        var mailListDetail = angular.fromJson(sessionStorage.getItem("mailListDetail"));
+        if(null != mailListDetail){
+            $scope.model.hidden.screenMode = mailListDetail.screenMode;
+            $scope.model.hidden.isDisabled = mailListDetail.isDisabled;
+            $scope.model.hidden.redirectUrl = mailListDetail.redirectUrl;
+            $scope.getMailDetail(mailListDetail);
+        };
+
+        var mailCreateDetail = angular.fromJson(sessionStorage.getItem("mailCreateDetail"));
+        if(null != mailCreateDetail){
+            var param = {
+                listSelected: [],
+                listCustCd : mailCreateDetail
+            }
+            ServerService.doPost('MailDestinationSearch/getOwnerList', param)
+            .then(function(okResult) {
+                $scope.model.form.registration.lstMailDestination = okResult.data.listOwner;
+            },
+            function(errResult){});
+        }
+
+        var mailTodoCustomer = angular.fromJson(sessionStorage.getItem("mailTodoCustomer"));
+        if(null != mailTodoCustomer){
+            $scope.model.form.registration.lstMailDestination = mailTodoCustomer;
+            sessionStorage.removeItem("mailTodoCustomer");
+        }
+
+        $('iframe.cke_wysiwyg_frame').contents().find("#body-editor").addClass('page-size-A4-portrait');
+    };
+
+    $scope.openDialog = function(result) {
+        var lstMailDestination = $scope.model.form.registration.lstMailDestination;
+        switch (result) {
+            case '1':
+                $scope.model.hidden.isStockMode = false;
+                $scope.model.hidden.listSelected = [];
+                if(lstMailDestination.length > 0){
+                    angular.forEach(lstMailDestination, function(item, i){
+                        var custCd = !StringUtils.isEmpty(item.destCustCd) ? item.destCustCd : "";
+                        var ownerCd = !StringUtils.isEmpty(item.destOwnerCd) ? item.destOwnerCd : "";
+                        var key = custCd + ownerCd;
+                        if(!StringUtils.isEmpty(key) && $scope.model.hidden.listSelected.indexOf(key) == -1){
+                            $scope.model.hidden.listSelected.push(key);
+                        }
+                    })
+                };
+                var  options = {
+                    size: 'mail',
+                };
+                DialogsService.showDialog('MailDestinationSearch', 'MailDestinationSearchControl', $scope.model.hidden.listSelected, options)
+                .result.then(function(param) {
+                    $scope.model.form.registration.lstMailDestination = orderByFilter($scope.model.form.registration.lstMailDestination,['name','mailAddress'],false);
+                    angular.forEach($scope.model.form.registration.lstMailDestination, function(item, i){
+                        delete item.checked;
+                    })
+                });
+            break;
+            case '2':
+                var  options = {
+                    size: '1300',
+                };
+                DialogsService.showDialog('MailDestinationList', 'MailDestinationListControl', lstMailDestination, options)
+                .result.then(function(param) {
+                });
+            break;
+            case '3':
+                $scope.model.hidden.isStockMode = true;
+                $scope.model.hidden.listSelected = [];
+                if(lstMailDestination.length > 0){
+                    angular.forEach(lstMailDestination, function(item, i){
+                        var custCd = !StringUtils.isEmpty(item.destCustCd) ? item.destCustCd : "";
+                        var ownerCd = !StringUtils.isEmpty(item.destOwnerCd) ? item.destOwnerCd : "";
+                        var key = custCd + ownerCd;
+                        if(!StringUtils.isEmpty(key) && $scope.model.hidden.listSelected.indexOf(key) == -1){
+                            $scope.model.hidden.listSelected.push(key);
+                        }
+                    })
+                };
+                var  options = {
+                    size: 'mail',
+                };
+                DialogsService.showDialog('MailDestinationSearch', 'MailDestinationSearchControl', $scope.model.hidden.listSelected, options)
+                .result.then(function(param) {
+                    $scope.model.form.registration.lstMailDestination = orderByFilter($scope.model.form.registration.lstMailDestination,['name','mailAddress'],false);
+                    angular.forEach($scope.model.form.registration.lstMailDestination, function(item, i){
+                        delete item.checked;
+                    })
+                });
+            break;
+            case 'testSendMail':
+                var  options = {
+                    size: 'sendmail',
+                };
+                DialogsService.showDialog('TestSendMail', 'testSendMailCtrl', $scope.model.form.registration , options);
+            break;
+        };
+    };
+
+    /**
+     * GET MAIL DETAIL
+     */
+    $scope.getMailDetail = function(param) {
+        var params = {
+                mailCd : param.mailCd
+        }
+        ServerService.doPost('MailRegistration/getMailDetail', params)
+        .then(function(okResult) {
+            var warning = okResult.data.warning;
+            if(!StringUtils.isEmpty(warning)){
+                DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                return;
+            }
+            $scope.model.form.registration = okResult.data.mailView;
+            if($scope.model.form.registration.mailSendType==null){
+                $scope.model.form.registration.mailSendType=1;
+            }
+        },
+        function(errResult){});
+    };
+    $scope.init();
+
+    /**
+     * SEND MAIL
+     */
+    $scope.sendMail = function(){
+        DialogsService.showConfirm(Messages.getMessage('title.confirm'),Messages.getMessage('S00021'))
+        .result.then(function(btn){
+            var param = $scope.model.form.registration;
+            param.createSalesReport = $scope.model.hidden.createSalesReport;
+            ServerService.doPost('MailRegistration/sendMail', param)
+            .then(
+                function(okResult) {
+                    var error = okResult.data.failed;
+                    var success = okResult.data.success;
+                    var warning = okResult.data.warning;
+                    if(!StringUtils.isEmpty(success)){
+                        DialogsService.showNotify(Messages.getMessage('title.info'), success);
+                        $scope.model.form.registration.mailSendStatus = "1";
+                    } else if(!StringUtils.isEmpty(error)){
+                        DialogsService.showError(Messages.getMessage('system.error'), error);
+                        return;
+                    }else if(!StringUtils.isEmpty(warning)){
+                        DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                        return;
+                    }
+                },
+                function(errResult){}
+            );
+        });
+    };
+
+
+    /**
+     * メール登録
+     */
+    $scope.insert = function(formInvalid){
+        if (CKEDITOR.instances.editor1.mode != 'wysiwyg') {
+            CKEDITOR.instances.editor1.execCommand( 'source' );
+        }
+        $scope.model.hidden.isSubmited = true;
+        if (formInvalid) {
+            return;
+        }
+        if($scope.model.form.registration.lstMailDestination.length == 0){
+          DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00215'));
+          return;
+        }
+        if(StringUtils.isEmpty($scope.model.form.registration.mstMailUserCd)){
+            DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00212'));
+            return;
+        }
+        DialogsService.showConfirm(Messages.getMessage('title.confirm'),Messages.getMessage('S00003'))
+        .result.then(function(btn){
+            var param = $scope.model.form.registration;
+            param.mailSendStatus = "0";
+            param.mailSendType = !!+$scope.model.form.registration.mailSendType;
+            ServerService.doPost('MailRegistration/insert', param).then(
+                function(okResult) {
+                    var error =  okResult.data.failed;
+                    var warning =  okResult.data.warning;
+                    var success = okResult.data.success;
+                    if(!StringUtils.isEmpty(error)){
+                        DialogsService.showError(Messages.getMessage('system.error'), error);
+                        return;
+                    }else if(!StringUtils.isEmpty(warning)){
+                        DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                        return;
+                    }
+                    DialogsService.showNotify(Messages.getMessage('title.info'), success).result.then(function(btn){
+                        var mailListDetail = {
+                                mailCd :  okResult.data.mailCd,
+                                screenMode : "VIEW",
+                                isDisabled : true,
+                                redirectUrl : 'MailList'
+                        };
+                        $scope.model.hidden.screenMode = 'VIEW';
+                        $scope.model.hidden.isDisabled = true;
+                        sessionStorage.removeItem("mailCreateDetail");
+                        sessionStorage.setItem("mailListDetail", JSON.stringify(mailListDetail));
+                        $scope.getMailDetail(mailListDetail);
+                    });
+                },
+                function(errResult){});
+            },function(btn){}
+        );
+    };
+
+
+    /**
+     * 新規登録
+     */
+    $scope.newWin = function(){
+        sessionStorage.removeItem("mailCreateDetail");
+        sessionStorage.removeItem("mailListDetail");
+        RouteService.gotoUrl("MailRegistration");
+    };
+
+    /**
+     * 複写ボタンアクション
+     */
+    $scope.copy = function(){
+        var length = $scope.model.form.registration.lstMailDestination.length;
+        for(var i=0; i<length; i++){
+            $scope.model.form.registration.lstMailDestination[i].mailSendStatus = '0';
+            $scope.model.form.registration.lstMailDestination[i].openStatus = false;
+        }
+        $scope.model.form.registration.mailSendStatus = '0'
+        $scope.model.form.registration.mstMailUserCd = 'ALL';
+        $scope.model.hidden.screenMode = 'COPY';
+        $scope.model.hidden.isDisabled = false;
+        $scope.model.hidden.createSalesReport = false;
+        $scope.model.form.registration.mailSendType = false;
+    };
+
+
+    /**
+     * 編集ボタンのアクション
+     */
+    $scope.edit = function(){
+        var params = { mailCd : $scope.model.form.registration.mailCd};
+        ServerService.doPost('MailRegistration/checkData', params)
+        .then(function(okResult) {
+            var error =  okResult.data.failed;
+            var warning =  okResult.data.warning;
+            var success = okResult.data.success;
+            if (!StringUtils.isEmpty(error)){
+                DialogsService.showError(Messages.getMessage('system.error'), error);
+                return;
+            } else if (!StringUtils.isEmpty(warning)){
+                if(angular.equals(warning, Messages.getMessage('W00172'))){
+                    DialogsService.showWarning(Messages.getMessage('check.error'), warning)
+                    .result.then(function() {
+                        sessionStorage.removeItem("mailListDetail");
+                        RouteService.gotoUrl("MailList");
+                    });
+                    return;
+                 }else{
+                     DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                     return;
+                 }
+            }
+            $scope.model.form.registration = okResult.data.mailView;
+            angular.forEach($scope.model.form.listMailServer, function(item, i){
+                if(okResult.data.mailView.mstMailUserCd == item.userCd){
+                    $scope.model.form.registration.mstMailUserCd=okResult.data.mailView.mstMailUserCd;
+                }
+            })
+            $scope.model.hidden.screenMode = 'UPDATE';
+            $scope.model.hidden.isDisabled = false;
+        },
+        function(errResult){});
+    };
+
+    /**
+     * 更新
+     */
+    $scope.update = function(formInvalid) {
+        if (CKEDITOR.instances.editor1.mode != 'wysiwyg') {
+            CKEDITOR.instances.editor1.execCommand( 'source' );
+        }
+
+        $scope.model.hidden.isSubmited = true;
+        if (formInvalid) {
+            return;
+        }
+        if(StringUtils.isEmpty($scope.model.form.registration.mstMailUserCd)){
+            DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00212'));
+            return;
+        }
+        DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('S00004'))
+        .result.then(function(btn){
+            var param = $scope.model.form.registration;
+            param.mailSendType = !!+$scope.model.form.registration.mailSendType;
+            ServerService.doPost('MailRegistration/update', param)
+            .then(
+                function(okResult) {
+                    var error =  okResult.data.failed;
+                    var warning =  okResult.data.warning;
+                    var success = okResult.data.success;
+                    if(!StringUtils.isEmpty(error)){
+                        DialogsService.showError(Messages.getMessage('system.error'), error);
+                        return;
+                    }else if(!StringUtils.isEmpty(warning)){
+                        DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                        return;
+                    }
+                    DialogsService.showNotify(Messages.getMessage('title.info'), success).result.then(function(btn){
+                        $scope.model.hidden.screenMode = 'VIEW';
+                        $scope.model.hidden.isDisabled = true;
+                        $scope.getMailDetail($scope.model.form.registration);
+                    });
+                },
+                function(errResult){
+                }
+            );
+        });
+    };
+
+    /**
+     * メール削除
+     */
+    $scope.deleteMail = function(param){
+        var params = {mailCd : param.mailCd,
+                       version : param.version};
+        DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('S00005'))
+        .result.then(function(btn){
+            ServerService.doPost('MailRegistration/delete', params)
+            .then(function(okResult) {
+                var warning = okResult.data.warning;
+                var error = okResult.data.failed;
+                var success = okResult.data.success;
+                if(!StringUtils.isEmpty(warning)){
+                    DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                    return;
+                }else if (!StringUtils.isEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                }
+                DialogsService.showNotify(Messages.getMessage('title.info'), success).result.then(function(btn){
+                    sessionStorage.removeItem("mailListDetail");
+                    RouteService.gotoUrl("MailList");
+                });
+            },
+            function(errResult){});
+        },function(btn){});
+    };
+
+    /**
+     * 戻るボタン
+     */
+    $scope.backEdit = function(){
+        $scope.getMailDetail($scope.model.form.registration);
+        $scope.model.hidden.screenMode = 'VIEW';
+        $scope.model.hidden.isDisabled = true;
+    };
+
+    /**
+     * 一覧画面へ戻る
+     */
+    $scope.backList = function(){
+        sessionStorage.removeItem("mailCreateDetail");
+        sessionStorage.removeItem("mailListDetail");
+        RouteService.gotoUrl($scope.model.hidden.redirectUrl);
+    };
+
+    $scope.removeItem = function(index) {
+        $scope.model.form.registration.lstMailDestination.splice(index, 1);
+    };
+
+    $scope.removeAll = function() {
+        $scope.model.form.registration.lstMailDestination = [];
+    };
+
+    $scope.addText = function(value){
+        var hidden = $scope.model.hidden;
+        var text = "";
+        if(value == 1){
+            text = hidden.labelCustName;
+        }
+        if(value == 2){
+            text = hidden.labelOwnerName;
+        }
+        if(value == 3){
+            text = hidden.labelTrackingData;
+        }
+        if(value == 4){
+            text = hidden.labelTrackingMail;
+        }
+        var txtarea;
+        if($scope.model.hidden.isHtmlTab) {
+            txtarea = angular.element('#mailBodyTab .tab-pane.active textarea')[0];
+        } else {
+            txtarea = angular.element('#mailBodyTab .tab-pane.active textarea.cke_source')[0];
+        }
+        if (!txtarea) { return; }
+
+        var scrollPos = txtarea.scrollTop;
+        var strPos = 0;
+        var br = ((txtarea.selectionStart || txtarea.selectionStart == '0') ? "ff" : (document.selection ? "ie" : false ) );
+        if (br == "ie") {
+            txtarea.focus();
+            var range = document.selection.createRange();
+            range.moveStart ('character', -txtarea.value.length);
+            strPos = range.text.length;
+        } else if (br == "ff") {
+            strPos = txtarea.selectionStart;
+        }
+
+        var front = (txtarea.value).substring(0, strPos);
+        var back = (txtarea.value).substring(strPos, txtarea.value.length);
+        txtarea.value = front + text + back;
+        strPos = strPos + text.length;
+        if (br == "ie") {
+            txtarea.focus();
+            var ieRange = document.selection.createRange();
+            ieRange.moveStart ('character', -txtarea.value.length);
+            ieRange.moveStart ('character', strPos);
+            ieRange.moveEnd ('character', 0);
+            ieRange.select();
+        } else if (br == "ff") {
+            txtarea.selectionStart = strPos;
+            txtarea.selectionEnd = strPos;
+            txtarea.focus();
+        }
+        txtarea.scrollTop = scrollPos;
+        $scope.model.form.registration.mailBody = txtarea.value;
+    }
+
+
+    /**config for editor sessionLogin.locale*/
+    $scope.editorOptions = {
+            language: angular.fromJson(sessionStorage.getItem("session")).locale,
+            height: 800,
+            toolbar:[
+                        { name: 'document', items: [ 'Source', 'NewPage', 'DocProps', 'Maximize', 'ShowBlocks' ] },
+                        { name: 'clipboard', items: [ 'Cut', 'Copy', 'Paste', 'PasteText', '-', 'Undo', 'Redo' ] },
+                        { name: 'editing', items: [ 'Find', 'Replace', '-', 'SelectAll', '-', 'Scayt' ] },
+                        { name: 'insert', items: [ 'Image', 'Flash', 'Table', 'HorizontalRule', 'Smiley', 'SpecialChar', 'PageBreak', 'Iframe' ] },
+                        { name: 'forms', items: [ 'Form', 'Checkbox', 'Radio', 'TextField', 'Textarea', 'Select', 'Button', 'ImageButton', 'HiddenField' ] },
+                        { name: 'links', items: [ 'Link', 'Unlink', 'Anchor' ] },
+                        '/',
+                        { name: 'styles', items: [ 'Styles', 'Format', 'Font', 'FontSize', 'lineheight' ] },
+                        { name: 'colors', items: [ 'TextColor', 'BGColor' ] },
+                        { name: 'basicstyles', items: [ 'Bold', 'Italic', 'Underline', 'Strike', 'Subscript', 'Superscript' ] },
+                        { name: 'paragraph', items: [ 'NumberedList', 'BulletedList', '-', 'Outdent', 'Indent', 'Blockquote', '-', 'JustifyLeft', 'JustifyCenter', 'JustifyRight', 'JustifyBlock', '-', 'BidiLtr', 'BidiRtl' ] },
+                    ],
+            bodyId: 'body-editor',
+            bodyClass: 'article-editor',
+            width: 'auto',
+            extraPlugins: 'justify,tableresize,lineutils,tabletools,colordialog,font,tableselection,lineheight,docprops,tableselection',
+            removePlugins: 'print',
+            contentsCss: [getContextPath() + '/resources/assets/ckeditor/contents.css', getContextPath() + '/resources/assets/ckeditor/mystyles.css'],
+            toolbarCanCollapse : true,
+            fullPage : true,
+            allowedContent: true,
+            readOnly: true,
+            font_names: 'ＭＳ Ｐゴシック;ＭＳ Ｐ明朝;ＭＳ ゴシック;ＭＳ 明朝;Arial/Arial, Helvetica, sans-serif;Comic Sans MS/Comic Sans MS, cursive;Courier New/Courier New, Courier, monospace;Georgia/Georgia, serif;Lucida Sans Unicode/Lucida Sans Unicode, Lucida Grande, sans-serif;Tahoma/Tahoma, Geneva, sans-serif;Times New Roman/Times New Roman, Times, serif;Trebuchet MS/Trebuchet MS, Helvetica, sans-serif;Verdana/Verdana, Geneva, sans-serif',
+            enterMode: 2, //CK_EDITOR.ENTER_BR
+            image_previewText: ' ',
+    };
+
+    /**config for view and print */
+    $scope.viewPrintOptions = {
+            language: angular.fromJson(sessionStorage.getItem("session")).locale,
+            height: 800,
+            toolbar:[{items: ['Preview']}],
+            bodyClass: 'article-editor ' + $scope.model.form.pageSize,
+            width: 'auto',
+            extraPlugins: 'print,justify,lineutils,font',
+            // removePlugins: 'tableselection',
+            contentsCss: [getContextPath() + '/resources/assets/ckeditor/contents.css', getContextPath() + '/resources/assets/ckeditor/mystylesPrint.css'],
+            toolbarCanCollapse : true,
+            fullPage : true,
+            allowedContent: true,
+            readOnly: true,
+            font_names: 'ＭＳ Ｐゴシック;ＭＳ Ｐ明朝;ＭＳ ゴシック;ＭＳ 明朝;Arial/Arial, Helvetica, sans-serif;Comic Sans MS/Comic Sans MS, cursive;Courier New/Courier New, Courier, monospace;Georgia/Georgia, serif;Lucida Sans Unicode/Lucida Sans Unicode, Lucida Grande, sans-serif;Tahoma/Tahoma, Geneva, sans-serif;Times New Roman/Times New Roman, Times, serif;Trebuchet MS/Trebuchet MS, Helvetica, sans-serif;Verdana/Verdana, Geneva, sans-serif',
+    };
+
+    $scope.resetFile  = function(e) {
+        e.wrap('<form>').parent('form').trigger('reset');
+        e.unwrap();
+    };
+
+    $scope.removeFile = function(){
+        $scope.model.file.fileData = '';
+        $scope.model.file.fileName = '';
+        $scope.model.file.fileSize = '';
+        $scope.model.file.checkSize = false;
+        $scope.resetFile($('input[name="importHtml"]'));
+    };
+
+    $scope.changeTab = function(tab){
+        $scope.model.hidden.isHtmlTab = tab;
+    }
+
+    $scope.importHtml = function(){
+        if(!StringUtils.isEmpty($scope.model.file.fileType) && $scope.model.file.fileType !== 'txt' && $scope.model.file.fileType !== 'html'){
+            $scope.removeFile();
+            return;
+        }
+        if(!StringUtils.isEmpty($scope.model.file.fileData)){
+            var params = {
+                    fileData : $scope.model.file.fileData,
+                    fileName : $scope.model.file.fileName
+            };
+            ServerService.doPost('MailRegistration/readHtml', params).then(
+                function(okResult) {
+                    if(!StringUtils.isEmpty(okResult.data.warning)){
+                        DialogsService.showWarning(Messages.getMessage('check.error'), okResult.data.warning);
+                        return;
+                    }else {
+                        if($scope.model.hidden.isHtmlTab){
+                            $scope.model.form.registration.mailBodyText = okResult.data.htmlContent;
+                        }else{
+                            $scope.model.form.registration.mailBodyHtml = okResult.data.htmlContent;
+                        }
+                    }
+                    $scope.removeFile();
+                }
+            );
+        };
+    };
+
+    $scope.openMailPopover = function(){
+        if(!$scope.model.hidden.isHtmlTab) {
+//            setTimeout(function(){
+                if(!StringUtils.isEmpty(CKEDITOR.document.getById('dataList'))){
+                    CKEDITOR.document.getById('dataList').on( 'dragstart', function( evt ) {
+                        var target = evt.data.getTarget().getAscendant( 'div', true );
+                        CKEDITOR.plugins.clipboard.initDragDataTransfer( evt );
+                        var dataTransfer = evt.data.dataTransfer;
+                        var hidden = $scope.model.hidden;
+                        var text = "";
+                        if (target.getId() == 1){
+                            text = hidden.labelCustName;
+                        } else if (target.getId() == 2){
+                            text = hidden.labelOwnerName;
+                        } else if (target.getId() == 3){
+                            text = hidden.labelTrackingData;
+                        } else if (target.getId() == 4){
+                            text = hidden.labelTrackingMail;
+                        }
+                        dataTransfer.setData( 'text/html', text );
+                    } );
+                }
+//            }, 1000);
+        }
+    }
+
+    CKEDITOR.disableAutoInline = true;
+
+    // Implements a simple widget that represents contact details (see http://microformats.org/wiki/h-card).
+    CKEDITOR.plugins.add( 'hcard', {
+        requires: 'widget',
+        init: function( editor ) {
+            editor.widgets.add( 'hcard', {
+                allowedContent: 'span(!h-card); a[href](!u-email,!p-name); span(!p-tel)',
+                requiredContent: 'span(h-card)',
+                pathName: 'hcard',
+                upcast: function( el ) {
+                    return el.name == 'span' && el.hasClass( 'h-card' );
+                }
+            } );
+
+            editor.addFeature( editor.widgets.registered.hcard );
+            editor.on( 'paste', function( evt ) {
+                var data = evt.data.dataTransfer.getData( 'item' );
+                if ( !data ) {
+                    var dataDetail = evt.data.dataTransfer.getData( 'item-detail' );
+                    if ( !dataDetail ) {
+                        return;
+                    }else{
+                        evt.data.dataValue =
+                            '<span class="h-card" exex-src=' + dataDetail.dataSource + '>' +
+                                '<span class="p-param">' + dataDetail.param + '</span>' +
+                            '</span>';
+                    }
+                }else{
+                    evt.data.dataValue =
+                        '<span class="h-card" exex-src=' + data.dataSource + '>' +
+                            '<span class="p-result">' + data.param + '</span>' +
+                        '</span>';
+                }
+            } );
+        }
+    } );
+
+}]);

@@ -1,0 +1,157 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision:  $  $Date:  $
+ * @author : quang-tung
+ */
+'use strict';
+/**
+ * Table :
+ */
+exexSMSApp.factory('ReceiveReservationListModel', [ 'BaseModel', function(BaseModel) {
+    var model = BaseModel.getInstance();
+    model.form = {
+              search:{
+                  createUser: '',
+                  createDateFrom : '',
+                  createDateTo : '',
+                  lastUpdUser: '',
+                  lastUpdDateFrom : '',
+                  lastUpdDateTo : '',
+                  reservationStatus: ''
+              },
+              listRcvReservation:[]
+    };
+    model.listS010016 = [];
+    model.listUser = [];
+    return model;
+}]);
+
+exexSMSApp.controller('ReceiveReservationListCtrl',
+    ['$scope', '$filter', '$timeout', 'ReceiveReservationListModel', 'DialogsService', 'RouteService', 'ReceiveReservationService', 'Messages',
+     function($scope, $filter, $timeout, ReceiveReservationListModel,  DialogsService, RouteService, ReceiveReservationService, Messages){
+
+    $scope.model = ReceiveReservationListModel;
+
+    /**初期*/
+    $scope.init = function(){
+        $scope.model.form.search.createDateFrom = $filter('date')(DateUtils.getPreviousMonth(), "yyyy/MM/dd"),
+        $scope.model.form.search.createDateTo = $filter('date')(DateUtils.getCurrentDate(), "yyyy/MM/dd")
+        ReceiveReservationService.initData(null)
+        .then(
+            function(result) {
+                if(!ValidateUtil.isValidTextEmpty(result.data)){
+                    $scope.model.listUser = result.data.listUser;
+                    $scope.model.listS010016 = result.data.listS010016;
+                    $timeout(function() {
+                        $scope.search($scope.model.form.search);
+                    }, 100);
+                }
+            }
+        );
+    };
+
+    /**検索。*/
+    $scope.search = function(param) {
+        var param = {
+                createUser: param.createUser,
+                createDateFrom : !ValidateUtil.isValidTextEmpty(param.createDateFrom) ? new Date(param.createDateFrom) : "",
+                createDateTo : !ValidateUtil.isValidTextEmpty(param.createDateTo) ? new Date(param.createDateTo) : "",
+                lastUpdUser: param.lastUpdUser,
+                lastUpdDateFrom : !ValidateUtil.isValidTextEmpty(param.lastUpdDateFrom) ? new Date(param.lastUpdDateFrom) : "",
+                lastUpdDateTo : !ValidateUtil.isValidTextEmpty(param.lastUpdDateTo) ? new Date(param.lastUpdDateTo) : "",
+                reservationStatus: param.reservationStatus
+        };
+        ReceiveReservationService.search(param)
+        .then(
+            function(result) {
+                if(!ValidateUtil.isValidTextEmpty(result.data)){
+                    $scope.model.form.listRcvReservation = result.data.listRcvReservation;
+                    // Table Paging
+                    $scope.model.currentPage = 1; //current page
+                    $scope.model.entryLimit = 20; //max no of items to display in a page
+                    $scope.model.number = 20;
+                    var length = $scope.model.form.listRcvReservation.length;
+                    $scope.model.filteredItems = length; //Initially for no filter
+                    $scope.model.totalItems = length;
+                    if(length > 0){
+                        $scope.model.beginValFilter = 1;
+                    }else{
+                        $scope.model.beginValFilter = 0;
+                    }
+
+                    $scope.setPage = function(pageNo) {
+                        $scope.currentPage = pageNo;
+                    };
+
+                    $scope.model.filter = function() {
+                        $timeout(function() {
+                            $scope.model.filteredItems = length;
+                            if(length > 0){
+                                $scope.model.beginValFilter = 1;
+                            }else{
+                                $scope.model.beginValFilter = 0;
+                            }
+                        }, 10);
+                    };
+                    // End Table Paging
+
+                    // add colresizable to table
+                    setTimeout(function(){
+                        $scope.setColResizable();
+                    });
+                }
+            }
+        );
+    };
+
+    $scope.init();
+
+    /**
+     * goto reservation detail
+     */
+    $scope.goToItemDetails = function(param){
+        var params = {
+                reservationSno: param.reservationSno,
+                recodeNo :   param.recodeNo,
+                version : param.version};
+        ReceiveReservationService.checkData(params)
+            .then(function(result) {
+                if(!ValidateUtil.isValidTextEmpty(result.data)){
+                    var warning = result.data.warning;
+                    if(!ValidateUtil.isValidTextEmpty(warning)){
+                        DialogsService.showWarning(Messages.getMessage('check.error'), warning).result.then(function(btn){
+                            $scope.search();
+                        })
+                    }else{
+                        var rcvReservation = {
+                                reservationSno : param.reservationSno,
+                                recodeNo : param.recodeNo,
+                                version : param.version,
+                                redirectUrl : 'ReceiveReservationList',
+                                businessCd : param.businessCd,
+                                documentStatus : param.processDocumentStatus
+                        };
+                        sessionStorage.setItem("rcvReservation", JSON.stringify(rcvReservation));
+                        RouteService.gotoUrl('ReceiveReservationControl');
+                    }
+                }
+        });
+    };
+
+    $scope.createRcvReservation = function() {
+        sessionStorage.removeItem("rcvReservation");
+        RouteService.gotoUrl('ReceiveReservationControl');
+    };
+
+    // set colResizable
+    $scope.setColResizable = function(){
+        angular.element('#tableReceiveReservationList').colResizable({
+            liveDrag: true,
+            postbackSafe: true,
+            useLocalStorage: true
+        });
+    }
+}]);

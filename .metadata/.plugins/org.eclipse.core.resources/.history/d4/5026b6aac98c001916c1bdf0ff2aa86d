@@ -1,0 +1,639 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision: 1.0 $  $Date: 2014/06/06 $
+ * @author : Quang-Thien
+ */
+
+'use strict';
+
+exexSMSApp.factory('SalRsvListModel', [ 'BaseModel', function(BaseModel) {
+
+    var model = BaseModel.getInstance();
+
+    model.form = {
+        search : {
+            rcvDate :'',
+            rcvDateFrom : '',
+            rcvDateTo:'',
+            rcvSno : '',
+            sumPriceFrom : '',
+            sumPriceTo : '',
+            rcvName : '',
+            recodeNo:'',
+            addressInfoCustomer : '',
+            exportExcel:'',
+            projectSno : '',
+            controlCd: '',
+            tightenStatus: '',
+            isFinishSales : false,
+            delPlanDateFrom : '',
+            delPlanDateTo : '',
+            projectSnoList : [],
+            estimateSnoList : [],
+            preparerationShippingFlag : false,
+            preparerationShippingReverseFlag : false
+        },
+        salRsvList : [],
+        filtered : [],
+        listUserName : [],
+        listDocumentStatus : [],
+        listExport: [],
+        listSelectedSNo: [],
+        listReverse: [
+            {code: false,codeName: "昇順"},
+            {code: true,codeName: "降順"}
+        ],
+        listPredicate: [
+            {code: "rcvDate",codeName: "受注日"},
+            {code: "custName",codeName: "顧客名"},
+            {code: "rcvName",codeName: "受注件名"},
+            {code: "sumPrice",codeName: "受注金額"},
+            {code: "documentStatusName",codeName: "ステータス"},
+            {code: "rcvSno",codeName: "受注番号"}
+        ],
+        listS010005 : []
+    };
+
+    model.hidden = {
+        screenMode : '',
+        isDisabled : true,
+        enableButton: true,
+        listRsvTmp : [],
+        exportName : 'EXEX02',
+        listDataAjax : [],
+        listSelected : []
+    };
+
+    return model;
+} ]);
+
+exexSMSApp.controller('salRsvListCtrl',
+        ['$scope', '$filter', 'RouteService', 'DialogsService', 'SalRsvListModel', 'SalRsvControlService', 'ServerService', 'HeaderModel', 'Messages',
+         function($scope, $filter, RouteService, DialogsService, SalRsvListModel, SalRsvControlService,  ServerService, HeaderModel, Messages) {
+
+    $scope.model = SalRsvListModel;
+    $scope.modelHeader = HeaderModel;
+
+    $scope.init = function() {
+
+        ServerService.doPost('SalRsvList/getInit', {}).then(
+            function(okResult) {
+                var error =  okResult.data.failed;
+                if(!ValidateUtil.isValidTextEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                }
+                $scope.model.form.listUserName = okResult.data.listUser;
+                $scope.model.form.listDocumentStatus = okResult.data.listDocumentStatus;
+                $scope.model.form.listExport= okResult.data.listExport;
+                $scope.model.form.listInvoice = okResult.data.listInvoice;
+                $scope.model.form.listS010005 = okResult.data.listS010005;
+                var param = angular.fromJson(sessionStorage.getItem("projectSno"));
+                var sessionSearch = angular.fromJson(sessionStorage.getItem("salRsvListSession"));
+                if(!ValidateUtil.isValidTextEmpty(param)){
+                    $scope.model.form.search.rcvDateFrom = "";
+                    $scope.model.form.search.rcvDateTo = "";
+                    $scope.model.form.search.projectSno = param.projectSno;
+                    $scope.model.form.search.addressInfoCustomer = param.custName;
+                    sessionStorage.removeItem("projectSno");
+                } else if(!StringUtils.isEmpty(sessionSearch)){
+                    $scope.model.form.search = sessionSearch;
+                    $scope.model.currentPage = sessionSearch.currentPage;
+                } else {
+                    $scope.model.form.search.rcvDateFrom = $filter('date')(DateUtils.getLastYear(), "yyyy/MM/dd"),
+                    $scope.model.form.search.rcvDateTo = $filter('date')(DateUtils.getCurrentDate(), "yyyy/MM/dd");
+                }
+
+                $scope.search($scope.model.form.search,$scope.model.currentPage, sessionSearch);
+
+                // add colresizable to table
+                setTimeout(function(){
+                    $scope.setColResizable();
+                });
+            }
+        );
+    };
+    $scope.init();
+
+
+
+    $scope.convertDataAjax = function (index, param) {
+        var list = [];
+        var listTmp = [];
+        if (index == 0) {
+            listTmp = $("select[id='projectSnoListAjax']").select2('data')
+        } else if (index == 1) {
+            listTmp = $("select[id='estimateSnoListAjax']").select2('data')
+        }
+        if (!StringUtils.isEmpty(listTmp)) {
+            for (var i = 0; i < listTmp.length; i++) {
+                list.push({
+                    no: listTmp[i].id,
+                    name: listTmp[i].text
+                });
+            };
+        }
+        param.listDataAjax[index] = list;
+        $scope.model.hidden.listDataAjax[index] = list;
+    }
+
+
+    /**
+     * 受注テーブルを検索する
+     */
+    $scope.search = function(param, page, session){
+
+        $scope.model.selectedItems = [];
+        var params = {
+            rcvDateFrom : !StringUtils.isEmpty(param.rcvDateFrom) ? new Date(param.rcvDateFrom) : "",
+            rcvDateTo : !StringUtils.isEmpty(param.rcvDateTo) ? new Date(param.rcvDateTo) : "",
+            rcvSno : param.rcvSno,
+            sumPriceFrom : !StringUtils.isEmpty(param.sumPriceFrom) ? parseInt(param.sumPriceFrom) : '',
+            sumPriceTo : !StringUtils.isEmpty(param.sumPriceTo) ? parseInt(param.sumPriceTo) : '',
+            addressInfoCustomer : !StringUtils.isEmpty(param.addressInfoCustomer) ? param.addressInfoCustomer.toString() : "",
+            rcvName : param.rcvName,
+            controlCd : param.controlCd,
+            tightenStatus : param.tightenStatus,
+            isFinishSales : param.isFinishSales,
+            preparerationShippingFlag : param.preparerationShippingFlag,
+            preparerationShippingReverseFlag : param.preparerationShippingReverseFlag,
+            delPlanDateFrom : !StringUtils.isEmpty(param.delPlanDateFrom) ? new Date(param.delPlanDateFrom) : "",
+            delPlanDateTo : !StringUtils.isEmpty(param.delPlanDateTo) ? new Date(param.delPlanDateTo) : "",
+            projectSnoList : !StringUtils.isEmpty(param.projectSnoList) ? param.projectSnoList : "",
+            estimateSnoList :!StringUtils.isEmpty(param.estimateSnoList) ? param.estimateSnoList : ""
+        };
+
+        params.listDataAjax = [];
+        if (StringUtils.isEmpty(session)) {
+            if (!StringUtils.isEmpty($scope.model.form.search.projectSnoList ) && $scope.model.form.search.projectSnoList.length > 0) {
+                $scope.convertDataAjax(0, params);
+            }
+            if (!StringUtils.isEmpty($scope.model.form.search.estimateSnoList ) && $scope.model.form.search.estimateSnoList.length > 0) {
+                $scope.convertDataAjax(1, params);
+            }
+        } else {
+            if (!StringUtils.isEmpty(session.projectSnoList) && session.projectSnoList.length > 0) {
+                $scope.model.hidden.listDataAjax[0] = session.listDataAjax[0];
+                params.listDataAjax[0] = session.listDataAjax[0];
+            }
+            if (!StringUtils.isEmpty(session.estimateSnoList) && session.estimateSnoList.length > 0) {
+                $scope.model.hidden.listDataAjax[1] = session.listDataAjax[1];
+                params.listDataAjax[1] = session.listDataAjax[1];
+            }
+        }
+        sessionStorage.setItem('salRsvListSession', JSON.stringify(params));
+        delete params.listDataAjax;
+        ServerService.doPost('SalRsvList/search', params).then(
+            function(okResult) {
+                var error =  okResult.data.failed;
+                var warning =  okResult.data.warning;
+                if(!ValidateUtil.isValidTextEmpty(warning)){
+                    DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                    return;
+                }else if(!ValidateUtil.isValidTextEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                }else{
+                    // End Table Paging
+                    $scope.model.form.salRsvList = okResult.data.resultList;
+                    // Table Paging
+                    $scope.model.currentPage = !StringUtils.isEmpty(page) ? page : 1; //current page
+                    $scope.model.entryLimit = 20; //max no of items to display in a page
+                    $scope.model.number = 20;
+                    $scope.model.filteredItems = $scope.model.form.salRsvList.length;
+                    $scope.model.totalItems = $scope.model.form.salRsvList.length;
+                    $scope.model.form.filtered.length  = $scope.model.form.salRsvList.length;
+                    // add colresizable to table
+                    setTimeout(function(){
+                        $scope.setColResizable();
+                    });
+                }
+            }
+        );
+    };
+
+    /**
+     * Excel出カ
+     */
+    $scope.exportExcel=function(param){
+        var params = {
+            rcvDateFrom : !ValidateUtil.isValidTextEmpty(param.rcvDateFrom) ? new Date($filter('date')(param.rcvDateFrom, "yyyy/MM/dd")) : null,
+            rcvDateTo : !ValidateUtil.isValidTextEmpty(param.rcvDateTo) ? new Date($filter('date')(param.rcvDateTo, "yyyy/MM/dd")) : null,
+            rcvSno : param.rcvSno,
+            addressInfoOwner : !ValidateUtil.isValidTextEmpty(param.addressInfoOwner) ? param.addressInfoOwner : null,
+            sumPriceFrom : !ValidateUtil.isValidTextEmpty(param.sumPriceFrom) ? parseInt(param.sumPriceFrom) : null,
+            sumPriceTo : !ValidateUtil.isValidTextEmpty(param.sumPriceTo) ? parseInt(param.sumPriceTo) : null,
+            addressInfoCustomer : !ValidateUtil.isValidTextEmpty(param.addressInfoCustomer) ? param.addressInfoCustomer.toString() : null,
+            rcvName : param.rcvName,
+            exportExcel: param.exportExcel.toString(),
+            projectSno : param.projectSno,
+            controlCd: param.controlCd,
+            tightenStatus : param.tightenStatus,
+            isFinishSales : param.isFinishSales,
+            delPlanDateFrom : !ValidateUtil.isValidTextEmpty(param.delPlanDateFrom) ? new Date($filter('date')(param.delPlanDateFrom, "yyyy/MM/dd")) : null,
+            delPlanDateTo : !ValidateUtil.isValidTextEmpty(param.delPlanDateTo) ? new Date($filter('date')(param.delPlanDateTo, "yyyy/MM/dd")) : null,
+            projectSnoList : !StringUtils.isEmpty(param.projectSnoList) ? param.projectSnoList : "",
+            estimateSnoList : !StringUtils.isEmpty(param.estimateSnoList) ? param.estimateSnoList : "",
+            preparerationShippingFlag : param.preparerationShippingFlag,
+            preparerationShippingReverseFlag : param.preparerationShippingReverseFlag
+        };
+        var title = Messages.getMessage("common.excel.file.name.receive02");
+        if ('01' == params.exportExcel) {
+            title = Messages.getMessage("common.excel.file.name.receive01");
+        }
+        var fileName = title + '_' + DateUtils.getYYYYMMDD(new Date());
+        ServerService.doDownload('/SalRsvList/downloadRsvExcel', angular.toJson(params)
+                , 'application/vnd.ms-excel', fileName + '.xlsx');
+    };
+
+    /**
+     * ページを編集する
+     */
+    $scope.gotoEditReceive = function(row) {
+        var param = {
+                rcvSno : row.rcvSno,
+                recodeNo : row.recodeNo
+        };
+        ServerService.doPost('SalRsvList/isExistData', param).then(
+            function(okResult) {
+                var error =  okResult.data.failed;
+                var warning =  okResult.data.warning;
+                if(!ValidateUtil.isValidTextEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                }else if(!ValidateUtil.isValidTextEmpty(warning)){
+                    var dlg = DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                    dlg.result.then(function() {
+                        var paramSearch = $scope.model.form.search;
+                        $scope.search(paramSearch);
+                    });
+                    return;
+                }else{
+                    var passingParam = {
+                        custCd :  row.custCd,
+                        rcvSno :  row.rcvSno,
+                        recodeNo : row.recodeNo,
+                        documentStatus : row.documentStatus,
+                        screenMode : "VIEW",
+                        backMode : true,
+                        isDisabled : true,
+                        projectSno : row.projectSno,
+                        businessCd : row.businessCd,
+                        processNo : row.processNo,
+                        lineNo : row.lineNo,
+                        workNo : row.workNo,
+                        inputValue : row.inputValue,
+                        connectWorkNo : row.connectWorkNo,
+                        workflowFlag :  row.workflowFlag,
+                        redirectUrl : 'SalRsvList'
+                    };
+                    sessionStorage.removeItem("projectSno");
+                    sessionStorage.removeItem("processDetail");
+                    sessionStorage.removeItem("customerInfo");
+                    sessionStorage.removeItem("fromSalEXEX");
+                    sessionStorage.setItem("receiveItemInfo", JSON.stringify(passingParam));
+                    RouteService.gotoUrl('SalRsvControl');
+                }
+            }
+        );
+    };
+
+    /**
+     * 後藤の売上ページ
+     */
+    $scope.gotoUrlEXEX = function(url, screenMode, item) {
+        var param = {rcvSno: item.rcvSno, recodeNo : item.recodeNo};
+        ServerService.doPost('SalRsvList/isExistData', param).then(
+            function(okResult) {
+                var error =  okResult.data.failed;
+                var warning =  okResult.data.warning;
+                if(!ValidateUtil.isValidTextEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                }else if(!ValidateUtil.isValidTextEmpty(warning)){
+                    var dlg = DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                    dlg.result.then(function() {
+                        var paramSearch = $scope.model.form.search;
+                        $scope.search(paramSearch);
+                    });
+                    return;
+                }else{
+                    var toScreen = '';
+                    if(url === 'SalEstimateControl'){
+                        toScreen = 'EXEX01';
+                    }else if(url === 'SalRsvControl'){
+                        toScreen = 'EXEX02';
+                    }else if(url === 'SalDecideProcess'){
+                        toScreen = 'EXEX03';
+                    }else if(url === 'SalOrderControl'){
+                        toScreen = 'EXEX06';
+                    }else if(url === 'SalStockControl'){
+                        toScreen = 'EXEX07';
+                    }
+                    var params = {
+                        custCd : item.custCd,
+                        estimateSno : item.estimateSno,
+                        rcvSno : item.rcvSno,
+                        salesSno : item.salesSno,
+                        orderSno : item.orderSno,
+                        stockSno : item.stockSno,
+                        recodeNo : item.recodeNo,
+                        projectSno : item.projectSno,
+                        salDataName : item.rcvName,
+                        screenMode : screenMode,
+                        screenName : 'EXEX02',
+                        toScreen : toScreen,
+                        isDisabled : false,
+                        redirectUrl : 'SalRsvList'
+                    };
+                    sessionStorage.removeItem("salEstimate");
+                    sessionStorage.removeItem("receiveItemInfo");
+                    sessionStorage.removeItem('salDecideProcess');
+                    sessionStorage.removeItem("salSell");
+                    sessionStorage.removeItem("salStock");
+                    sessionStorage.removeItem('projectSno');
+                    sessionStorage.removeItem('customerInfo');
+                    sessionStorage.setItem('fromSalEXEX', JSON.stringify(params));
+                    RouteService.gotoUrl(url);
+                }
+            }
+        );
+    };
+
+    $scope.resetForm = function() {
+        $scope.model.form.search.rcvDateFrom = "";
+        $scope.model.form.search.rcvDateTo = "";
+        angular.element('#sumPriceFrom').val("");
+        angular.element('#sumPriceTo').val("");
+        ObjectUtil.resetEmpty($scope.model.form.search);
+    };
+
+    $scope.showPopover = function(index) {
+        var length = $scope.model.form.salRsvList.length;
+        for(var i = 0; i< length; i++){
+            if(i == index){
+                $scope.model.form.salRsvList[i].opened = true;
+            }else{
+                $scope.model.form.salRsvList[i].opened = false;
+            }
+        }
+    };
+
+    $scope.gotoUrl = function(url, row){
+        if(!ValidateUtil.isValidTextEmpty(row.businessCd)){
+            var prjBusiness = {
+                projectSno : row.projectSno,
+                businessCd : row.businessCd,
+                redirectUrl : 'SalRsvList'
+            };
+            sessionStorage.setItem("prjBusiness", JSON.stringify(prjBusiness));
+            RouteService.gotoUrl(url);
+        }else{
+            var param = {
+                custCd : row.custCd,
+                projectSno : row.projectSno
+            };
+            RouteService.gotoUrl(url);
+        }
+    };
+
+    $scope.download = function(row){
+        var params = {
+            rcvSno : row.rcvSno,
+            recodeNo : row.recodeNo
+        };
+        SalRsvControlService.checkDataForReport(params).then(
+            function(result) {
+                var error =  result.data.failed;
+                var warning =  result.data.warning;
+                if(!ValidateUtil.isValidTextEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                } else if(!ValidateUtil.isValidTextEmpty(warning)){
+                    if(angular.equals(warning,Messages.getMessage('W00172'))){
+                        DialogsService.showWarning(Messages.getMessage('check.error'), warning)
+                        .result.then(function() {
+                            sessionStorage.removeItem("receiveItemInfo");
+                            RouteService.gotoUrl('SalRsvList');
+                        });
+                        return;
+                    }
+                } else{
+                    var pdfName = Messages.getMessage('PDF.RECEIVE') + row.rcvSno+".pdf";
+                    ServerService.doDownload('/SalRsvControl/downloadSalRsv',  params, 'application/pdf', pdfName);
+                }
+            }
+        );
+    };
+
+    $scope.checkStatus = function(){
+        var listSno = [];
+        var listRecodeNo = [];
+        if($scope.model.hidden.listRsvTmp.length > 0){
+            for (var i = 0; i < $scope.model.hidden.listRsvTmp.length; i++) {
+                var item = $scope.model.hidden.listRsvTmp[i];
+                if(item.documentStatus != '03' ){
+                    DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00263'));
+                    return;
+                }else if(item.tightenStatus == '02'){
+                    DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00264'));
+                    return;
+                }else{
+                    listSno.push(item.rcvSno);
+                    listRecodeNo.push(item.recodeNo);
+                }
+            }
+            var param = {
+                listSno : listSno,
+                listRecodeNo : listRecodeNo,
+                screen : 'EXEX02'
+            }
+            var dlg = DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('W11010'));
+            dlg.result.then(function() {
+                ServerService.doPost('SalCommon/updateTightenStatus', param)
+                .then(
+                    function(result) {
+                        if(!ValidateUtil.isValidTextEmpty(result.data)){
+                            if(undefined !=  result.data.warning && null !=  result.data.warning){
+                                DialogsService.showWarning(Messages.getMessage('check.error'), result.data.warning);
+                                return;
+                            }else{
+                                var dlg = DialogsService.showNotify(Messages.getMessage('title.info'), result.data.success);
+                                dlg.result.then(function() {
+                                    $scope.search($scope.model.form.search);
+                                    $scope.model.hidden.listRsvTmp = [];
+                                });
+                                return;
+                            }
+                        }
+                    },function(result){}
+                );
+            });
+        }
+    }
+
+    /**event when checked or unchecked any row in table receive list*/
+    $scope.getValue = function (index, row){
+        if(row.isSelected){
+            $scope.model.hidden.listRsvTmp.push(row);
+            $scope.model.form.listSelectedSNo.push(row.rcvSno + '_' + row.recodeNo);
+        }else{
+            for (var i = 0; i < $scope.model.hidden.listRsvTmp.length; i++) {
+                var item = $scope.model.hidden.listRsvTmp[i];
+                if(item.rcvSno == row.rcvSno && item.recodeNo == row.recodeNo){
+                    $scope.model.hidden.listRsvTmp.splice(i,1);
+                }
+            }
+            $scope.model.form.listSelectedSNo.splice($scope.model.form.listSelectedSNo.indexOf(row.rcvSno + '_' + row.recodeNo),1);
+        }
+        if($scope.model.form.listSelectedSNo.length == $scope.model.form.filtered.length){
+            $scope.selectedAll = true;
+        }else{
+            $scope.selectedAll = false;
+        }
+
+        if($scope.model.form.listSelectedSNo.length == 0){
+            $scope.model.hidden.enableButton = true;
+        }else{
+            $scope.model.hidden.enableButton = false;
+        }
+    }
+
+    /**select all row of estimate list table when call this function*/
+    $scope.checkAll = function(selectedAll){
+        if(selectedAll){
+            $scope.selectedAll = true;
+            $scope.model.hidden.listRsvTmp = angular.copy($scope.model.form.filtered);
+            $scope.model.hidden.enableButton = false;
+        }else{
+            $scope.selectedAll = false;
+            $scope.model.hidden.listRsvTmp = [];
+            $scope.model.form.listSelectedSNo = [];
+            $scope.model.hidden.enableButton = true;
+        }
+        angular.forEach($scope.model.form.filtered, function (row) {
+            row.isSelected = $scope.selectedAll;
+            if($scope.selectedAll){
+                $scope.model.form.listSelectedSNo.push(row.rcvSno + '_' + row.recodeNo);
+            }
+        });
+    };
+
+    $scope.$on($scope.model.hidden.exportName + "#downloadReport", function(evt, param) {
+        $scope.download($scope.model.hidden.selectRow);
+    });
+
+    $scope.$on($scope.model.hidden.exportName + "#exportReport", function(evt, param) {
+        if(!StringUtils.isEmpty(param.tempNo)){
+            $scope.showCustomReport(param);
+        }else{
+            $scope.downloadExcel($scope.model.hidden.selectRow);
+        }
+    });
+
+    /**show ckeditor report*/
+    $scope.showCustomReport = function(param){
+        var params = {};
+        if(!StringUtils.isEmpty($scope.model.hidden.selectRow)){
+            var listSelectedSNo = [];
+            listSelectedSNo.push($scope.model.hidden.selectRow.rcvSno + '_' + $scope.model.hidden.selectRow.recodeNo);
+            params ={'invoiceType': '02', objSno: listSelectedSNo, 'tempNoCustomer': param.tempNo};
+        }else{
+            params ={'invoiceType': '02', objSno: $scope.model.form.listSelectedSNo, 'tempNoCustomer': param.tempNo};
+        }
+        var options ={size: 1100};
+        DialogsService.showDialog('InvoiceTemplate/getCustomReportPage', 'CustomReportCtrl', params, options);
+    }
+
+    // set colResizable
+    $scope.setColResizable = function(){
+        // remove JCLRgrips if having
+        $('.JCLRgrips').remove();
+
+        angular.element('#tableReceiveList').colResizable({
+            liveDrag: true,
+            postbackSafe: true,
+            useLocalStorage: true
+        });
+    }
+
+    $scope.$watch('model.currentPage', function(newPage, oldPage) {
+        if(!StringUtils.isEmpty(newPage)) {
+            var sessionSearch = SessionUtils.prepareSession(sessionStorage.getItem("salRsvListSession"));
+            sessionSearch.currentPage = newPage;
+            sessionStorage.setItem("salRsvListSession", JSON.stringify(sessionSearch));
+        }
+    })
+
+    $scope.checkList= function(){
+        $scope.model.hidden.listSelected = [];
+        if($scope.model.hidden.selectedAll){
+            angular.forEach($scope.model.form.salRsvList, function(item, i){
+                item.checked = true;
+                $scope.model.hidden.listSelected.push(i);
+            });
+            $scope.model.selectedItems = $scope.model.form.salRsvList.length;
+        }else{
+            angular.forEach($scope.model.form.salRsvList, function(item, i){
+                item.checked = $scope.model.hidden.selectedAll;
+            });
+        }
+        $scope.model.selectedItems = $scope.model.hidden.listSelected.length;
+    };
+
+    $scope.click = function(row, index, checkbox){
+        if (row.checked == true) {
+            if(!checkbox){
+                angular.forEach($scope.model.hidden.listSelected , function(item, i){
+                    if(item == index){
+                        $scope.model.hidden.listSelected.splice(i, 1);
+                    }
+                })
+                row.checked = false;
+            }else{
+                $scope.model.hidden.listSelected.push(index);
+            }
+        }else {
+            if(!checkbox){
+                $scope.model.hidden.listSelected.push(index);
+                row.checked = true;
+            }else {
+                angular.forEach($scope.model.hidden.listSelected , function(item, i){
+                    if(item == index){
+                        $scope.model.hidden.listSelected.splice(i, 1);
+                    }
+                })
+            }
+        }
+        $scope.model.selectedItems = $scope.model.hidden.listSelected.length;
+    };
+
+    $scope.updatePreparerationShippingFlag = function() {
+        var listRsvSno = [];
+        for (var i = 0; i < $scope.model.form.salRsvList.length; i++) {
+            var row = $scope.model.form.salRsvList[i];
+            if(row.checked) {
+                listRsvSno.push(row.rcvSno + '_' + row.recodeNo);
+            }
+        }
+        DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('S00069'))
+        .result.then(function() {
+            ServerService.doPost('SalRsvList/updatePreparerationShippingFlag', listRsvSno).then(
+                function(result) {
+                    if(!StringUtils.isEmpty(result.data.warning)){
+                        DialogsService.showWarning(Messages.getMessage('check.error'), result.data.warning);
+                        return;
+                    }else{
+                        DialogsService.showNotify(Messages.getMessage('title.info'), result.data.success)
+                        .result.then(function() {
+                            $scope.search($scope.model.form.search);
+                        });
+                    }
+                }
+            );
+        })
+    }
+}]);

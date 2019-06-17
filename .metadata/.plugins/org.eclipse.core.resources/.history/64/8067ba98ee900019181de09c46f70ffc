@@ -1,0 +1,62 @@
+<link href="<c:url value="/resources/css/layout/my-styles.css" />" rel="stylesheet" type="text/css">
+<link href="<c:url value="/resources/css/layout/blue.css" />" rel="stylesheet" type="text/css">
+<link href="<c:url value="/resources/css/layout/components-md.css" />" rel="stylesheet" type="text/css">
+<link href="<c:url value="/resources/css/layout/exexlayout.css" />" rel="stylesheet" type="text/css">
+<link href="<c:url value="/resources/css/layout/materialize-icon.css" />" rel="stylesheet" type="text/css">
+<link href="<c:url value="/resources/css/layout/plugins-md.css" />" rel="stylesheet" type="text/css">
+<link href="<c:url value="/resources/css/layout/vi.css" />" rel="stylesheet" type="text/css">
+<link href="<c:url value="/resources/css/layout/vendors.css" />" rel="stylesheet" type="text/css">
+<link href="<c:url value="/resources/css/layout/new-style.css" />" rel="stylesheet" type="text/css">
+<link href="<c:url value="/resources/css/layout/sms-bootstrap.css" />" rel="stylesheet" type="text/css">
+
+<script type="text/javascript" src="<c:url value="/resources/jsLib/jquery-3.4.0.min.js" />"></script>
+<script type="text/javascript" src="<c:url value="/resources/jsLib/ui-bootstrap-tpls-2.5.0.min.js" />"></script>
+<script type="text/javascript" src="<c:url value="/resources/jsLib/ui-bootstrap-tpls-2.5.0.min.js" />"></script>
+<script type="text/javascript" src="<c:url value="/resources/js/header.js" />"></script>
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<style>
+div.hidden
+{
+   display: none
+}
+</style>
+<body>
+<div ng-app="headerApp" ng-controller="headerCtrl" id="page" class="hidden">
+	<nav class="navbar navbar-inverse">
+	  <div class="container-fluid">
+	    <div class="navbar-header">
+	      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#myNavbar">
+	        <span class="icon-bar"></span>
+	        <span class="icon-bar"></span>
+	        <span class="icon-bar"></span>
+	      </button>
+	      <a class="navbar-brand" href="#">Net</a>
+	    </div>
+	    <div class="collapse navbar-collapse" id="myNavbar">
+	      <ul class="nav navbar-nav">
+	        <li class="active"><a href="trangChu">Home</a></li>
+	        <li class="dropdown"> <a href="#">Dịch Vụ</a>
+	        </li>
+	        <li ng-if="model.hidden.isAdmin"><a href="quanLyNhanVien">Quản Lý Nhân Viên</a></li>
+	        <li ng-if="model.hidden.isAdmin"><a href="#">Đặt Phòng</a></li>
+	      </ul>
+	      <ul class="nav navbar-nav navbar-right">
+	        <li ng-if="!model.hidden.isSign"><a href="#"><span class="glyphicon glyphicon-user"></span>Đăng Ký</a></li>
+          <li ng-if="model.hidden.isSign"><a href="#"><span class="glyphicon glyphicon-user"></span>{{model.form.header.loginId}}</a></li>
+	        <li ng-if="!model.hidden.isSign"><a href="login"><span class="glyphicon glyphicon-log-in"></span>Đăng Nhập</a></li>
+	        <li ng-if="model.hidden.isSign"><a href="login"><span class="glyphicon glyphicon-log-in"></span> Đăng Xuất</a></li>
+	      </ul>
+	    </div>
+	  </div>
+	</nav>
+</div>
+   <script type="text/javascript">
+     $(document).ready(function() {
+         $("div#page").removeClass("hidden");
+     });
+   </script>
+

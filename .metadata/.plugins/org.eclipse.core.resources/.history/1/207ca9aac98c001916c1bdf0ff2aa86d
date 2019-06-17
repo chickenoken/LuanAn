@@ -1,0 +1,88 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision: $ $Date: $
+ */
+
+'use strict';
+
+exexSMSApp.factory('PasswordModel', function(BaseModel) {
+
+  // モデルのベースをBaseModelとする。
+    var model = BaseModel.getInstance();
+
+    // サーバーと連携する画面項目の定義R
+    model.form = {
+        pwdchange : {
+          password : "",
+          passwordConfirm : "",
+          custAccountCd: ""
+        }
+    };
+
+    model.hidden = {
+            isSubmited : false
+    }
+
+    return model;
+});
+
+exexSMSApp.controller('passwordCtrl',
+    ['$scope', '$filter', '$window', '$timeout', 'DialogsService', 'PasswordModel', 'Messages', 'ServerService',
+     function($scope, $filter, $window, $timeout, DialogsService, PasswordModel, Messages, ServerService) {
+
+    $scope.model = PasswordModel;
+
+    $scope.init = function() {
+      var loginSubAccount = angular.fromJson(sessionStorage.getItem("loginSubAccount"));
+      if(!ValidateUtil.isValidTextEmpty(loginSubAccount)){
+          $scope.model.form.custAccountCd = loginSubAccount.custAccountCd;
+      }
+
+      var get
+      $scope.changePassword = function(param, formInvalid){
+          $scope.model.hidden.isSubmited = true;
+          if (formInvalid) {
+              return;
+          }
+        var params = {
+            password : !ValidateUtil.isValidTextEmpty(param.password) ? param.password : "",
+            passwordConfirm : !ValidateUtil.isValidTextEmpty(param.passwordConfirm) ? param.passwordConfirm : "",
+            custAccountCd : !ValidateUtil.isValidTextEmpty($scope.model.form.custAccountCd) ? $scope.model.form.custAccountCd : "",
+        };
+        var dlg = DialogsService.showConfirm(Messages.getMessage('title.confirm'),Messages.getMessage('S00004'));
+        dlg.result.then(function(btn){
+            ServerService
+                .doPost('PwdChange/doChangePassword', params)
+                .then(
+                        function(okResult) {
+                            if(!ValidateUtil.isValidTextEmpty(okResult.data.success)){
+                                var dlg = DialogsService.showNotify(Messages.getMessage('title.info'),okResult.data.success);
+                                dlg.result.then(function(btn){
+                                    if(!ValidateUtil.isValidTextEmpty($scope.model.form.custAccountCd)){
+                                        $window.location = "ProjectInformation";
+                                    }else{
+                                        $window.location = "PtlTodoList";
+                                    }
+                                });
+                            } else {
+                              if(!ValidateUtil.isValidTextEmpty(okResult.data.failed)){
+                                DialogsService.showError(Messages.getMessage('system.error'),
+                                      okResult.data.failed);
+                              }else{
+                                DialogsService.showWarning(Messages.getMessage('check.error'),
+                                      okResult.data.warning);
+                              }
+                            }
+                        },
+                        function(errResult){
+                        });
+        });
+      };
+    };
+
+    $scope.init();
+
+}]);

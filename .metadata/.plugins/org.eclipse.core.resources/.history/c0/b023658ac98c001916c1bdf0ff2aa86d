@@ -1,0 +1,224 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision: $ $Date: $
+ * @author huy-du
+ */
+
+'use strict';
+
+exexSMSApp.factory('TotalSalesAnalyticsModel', ['BaseModel', '$rootScope', function(BaseModel, $rootScope) {
+
+    var model = BaseModel.getInstance();
+    model.form = {
+            listHeader :[],
+            listTotalSales: []
+    }
+    model.hidden = {
+        viewChart : false,
+        tickRotate : 0,
+        tableWidth: 1504,
+        heightHeader: 32,
+        innerHeight: 172
+    }
+    return model;
+} ]);
+
+exexSMSApp.controller('TotalSalesAnalyticsCtrl', ['$rootScope', '$scope', '$filter', '$window', '$timeout', 'dialogs','ServerService','TotalSalesAnalyticsModel', 'Messages', 'HeaderModel', 'ServerService',
+            function($rootScope, $scope, $filter, $window, $timeout, dialogs, serverService,TotalSalesAnalyticsModel, Messages, HeaderModel, ServerService) {
+    $scope.model = TotalSalesAnalyticsModel;
+    $scope.modelHeader = HeaderModel;
+    $scope.datacolumns = [];
+    $scope.listData = [];
+    $scope.status = '';
+    $scope.model.axisLabel = '千円';
+    $scope.titlePanel = '　全体(月毎: 2015/01 　～　 2015/12)';
+    $scope.model.hidden.viewChart = false;
+
+    $scope.calTabelWidth = function(){
+        $timeout(function() {
+            var width = $window.outerWidth;
+            var widthOuter = parseInt(angular.element('.outer').width());
+            var widthLabelCol = parseInt(angular.element('.label-col-head').width());
+            var widthTotalColHead  = parseInt(angular.element('.total-col-head').width());
+            var subWidth = widthLabelCol + widthTotalColHead + 88;
+            if($scope.status == '2' || $scope.status == '3'){
+                subWidth = widthLabelCol + widthTotalColHead + 85;
+            }
+            width = widthOuter - subWidth;
+            $scope.model.hidden.tableWidth = width + 67;
+        },300);
+    };
+
+    /**
+     * 集計
+     */
+    $scope.$on('aggregate', function(evt, param){
+
+        delete param.data.ankenBetsuLength;
+        serverService.doPost('TotalSalesAnalytics/aggregate', param.data).then(
+        /* success function */
+        function(result) {
+            if(!ValidateUtil.isValidTextEmpty(result)){
+                if(undefined !=  result.data.warning && null !=  result.data.warning){
+                    dialogs.error(Messages.getMessage('check.error'), result.data.warning, {size : 'sm',});
+                  return;
+                }else{
+                    $scope.status = param.status.toString();
+                    $scope.model.hidden.tickRotate = 0;
+                    if($scope.status == "1"){
+                        $scope.model.hidden.heightHeader = 32;
+                        $scope.model.form.listHeader = result.data.listHeader;
+                        $scope.model.form.listTotalSales = angular.fromJson(result.data.listResult);
+                    }else if($scope.status == "2"){
+                        $scope.model.form.listHeader = result.data.listHeader;
+                        $scope.model.form.listTotalSales = angular.fromJson(result.data.listResult);
+                    }else if($scope.status == "3"){
+                        $scope.model.form.listHeader = result.data.listHeader;
+                        $scope.model.form.listTotalSales = angular.fromJson(result.data.listResult);
+                    }else {
+                        $scope.model.hidden.tickRotate = 40;
+                        $scope.model.form.listHeader = result.data.listHeader;
+                        $scope.model.form.listTotalSales = angular.fromJson(result.data.listResult);
+                    }
+                    if(!ValidateUtil.isValidTextEmpty( $scope.model.form.listTotalSales ) &&  $scope.model.form.listHeader.length > 0){
+                        $scope.model.hidden.viewChart = true;
+                        $scope.showChart();
+                    }else{
+                        $scope.model.hidden.viewChart = false;
+                    }
+                    if(!$scope.modelHeader.login.permission.san0200Access){
+                        $scope.model.form.listTotalSales.splice(2);
+                    }
+                }
+            }
+            $scope.calTabelWidth();
+
+        },
+        /* error function */
+        function(result) {
+        });
+    });
+
+    /**
+     * Excelを出す。
+     */
+    $scope.$on('exportExcel', function(evt, param){
+        $scope.model.hidden.ankenBetsuLength = param.data.ankenBetsuLength;
+        delete param.data.ankenBetsuLength;
+        var fileName = '全体売上_' + DateUtils.getYYYYMMDD(new Date());
+        ServerService.doDownload('/TotalSalesAnalytics/exportExcel', param.data
+                , 'application/vnd.ms-excel', fileName + '.xlsx');
+    });
+
+    $scope.showChart = function(){
+        $scope.model.hidden.viewChart = true;
+        $scope.loadChartData();
+        $scope.modifyTickChart();
+        $scope.calTabelWidth();
+    };
+
+    $scope.logResize = function () {
+        $scope.modifyTickChart();
+        $scope.calTabelWidth();
+    }
+
+    /**
+     * div resize
+     */
+    $scope.$on('divChangeSize', function() {
+        $scope.calTabelWidth();
+    });
+
+    $scope.loadChartData = function(){
+        $scope.listData = [];
+        $scope.model.line1 = $scope.model.form.listTotalSales[1].listValue;
+        $scope.model.line2 = $scope.model.form.listTotalSales[2].listValue;
+        $scope.model.line3 = $scope.model.form.listTotalSales[4].listValue;
+        var listHeader = angular.copy($scope.model.form.listHeader);
+        var listDate = listHeader;
+        var line1 = $scope.model.line1;
+        var line2 = $scope.model.line2;
+        var line3 = $scope.model.line3;
+        var item,l1,l2,l3;
+        var length = listDate.length;
+        for (var y = 0; y < length; y++) {
+            l1 = !StringUtils.isEmpty(line1[y]) ? line1[y]/1000 : 0;
+            item={'x':listDate[y],'line1':l1};
+            if($scope.modelHeader.login.permission.san0200Access){
+                l2 = !StringUtils.isEmpty(line2[y]) ? line2[y]/1000 : 0;
+                l3 = line3[y];
+                item.line2 = l2;
+                item.line3 = l3;
+            }
+            $scope.listData.push(item);
+        };
+
+        $scope.datacolumns=[{"id" : "line1", "type" : "bar",  "name" : ""+Messages.getMessage('common.chart.label.041')+"", "color" : "#2196F3" }];
+
+        if($scope.modelHeader.login.permission.san0200Access){
+            $scope.datacolumns.push({"id" : "line2","type" : "bar","name" : ""+Messages.getMessage('common.chart.label.042')+"", "color" : "#E53935"});
+            $scope.datacolumns.push({"id" : "line3","type" : "line","name" : ""+Messages.getMessage('common.chart.label.043')+"", "color" : "#25C158"});
+        }
+
+        $scope.datax = {"id" : "x"};
+    };
+
+    /**
+     *
+     */
+    $scope.modifyTickChart = function(){
+        if($scope.status == "1"){
+            $timeout(function() {
+                var svg  = document.querySelector('svg');
+                if(svg != undefined && svg != null){
+                    var tspans = svg.querySelectorAll('tspan');
+                    var ts = Array.prototype.slice.call(tspans);
+                    for(var i = 0; i<ts.length; i++){
+                      var length = ts[i].textContent.length;
+                      var cont = ts[i].textContent.split('/');
+                      if(cont.length<2) continue;
+                      ts[i].textContent = parseInt(cont[1]).toString() + '月';
+                    }
+                };
+            }, 500);
+        }else if($scope.status == "3"){
+            $timeout(function() {
+                var svg  = document.querySelector('svg');
+                if(svg != undefined && svg != null){
+                    var tspans = svg.querySelectorAll('tspan');
+                    var ts = Array.prototype.slice.call(tspans);
+                    for(var i = 0; i<ts.length; i++){
+                      var cont = ts[i].textContent.split(' ');
+                      if(cont.length<2) continue;
+                      var clone_2 = ts[i].cloneNode(1);
+                      clone_2.textContent = cont[2];
+                      clone_2.setAttribute('dy', '0.91em');
+                      var clone_1 = ts[i].cloneNode(1);
+                      clone_1.textContent = cont[1];
+                      clone_1.setAttribute('dy', '0.81em');
+                      ts[i].textContent = cont[0];
+                      ts[i].parentNode.insertBefore(clone_2, ts[i].nextSibling);
+                      ts[i].parentNode.insertBefore(clone_1, ts[i].nextSibling);
+                    }
+                };
+            }, 500);
+        }else if($scope.status == '4'){
+            $scope.model.hidden.tickRotate = 40;
+            $timeout(function() {
+                var svg  = document.querySelector('svg');
+                if(svg != undefined && svg != null){
+                    var tspans = svg.querySelectorAll('tspan');
+                    var ts = Array.prototype.slice.call(tspans);
+                    for(var i = 0; i<ts.length; i++){
+                      var cont = ts[i].textContent.split('/');
+                      if(cont.length<2) continue;
+                      ts[i].textContent = parseInt(cont[1]).toString()  + '/' + parseInt(cont[2]).toString();
+                    }
+                };
+            }, 600);
+        }
+    };
+}]);

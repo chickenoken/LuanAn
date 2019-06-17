@@ -1,0 +1,61 @@
+
+var app = angular.module("myApp", []);
+
+app.factory('loginModel',[ function(){
+    var model = [];
+
+    model.form = {
+       login : {
+           taiKhoan : '',
+           matKhau : ''
+       }
+    }
+
+    model.hidden = {
+        isShow : false
+    }
+
+    return model;
+}]);
+
+app.controller("myCtrl",  ['$scope', '$http', '$filter','$rootScope','loginModel',
+    function($scope, $http, $filter, $rootScope,loginModel){
+
+    $scope.model = loginModel;
+
+    $scope.dangNhap = function(){
+        var params = {
+            taiKhoan : $scope.model.form.login.taiKhoan,
+            matKhau : $scope.model.form.login.matKhau
+        };
+        $http({
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'},
+            method: 'POST',
+            url: 'login/dangNhap',
+            param : angular.copy(params)}).then(function (okResult){
+                if(StringUtils.isEmpty(okResult.data.isNv)){
+                    sessionStorage.setItem("session", JSON.stringify(okResult.data.isNv));
+                    window.location.href = window.location.origin + '/net/index';
+                }else{
+                    $scope.model.hidden.isShow = true;
+                }
+             },function (error){
+             }
+         );
+        $scope.$broadcast('app-finish-loading')
+     }
+
+    $scope.troVe = function(){
+        window.location.href = window.location.origin + '/net/trangChu';
+    }
+
+    $scope.init = function(){
+        $(document).ready(function() {
+            $("div#pagee").removeClass("hidden");
+        });
+    }
+
+    $scope.init();
+}]);

@@ -1,0 +1,156 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision:  $  $Date:  $
+ */
+exexSMSApp.factory('MstInstallationLocationModel', ['BaseModel', function(BaseModel){
+
+    var model = BaseModel.getInstance();
+
+    model.form = {
+            search : {
+                warehouseName :'' ,
+                warehouseType : '',
+                custName : '',
+                controlCd : '',
+                telephoneNo : '',
+                address : ''
+            },
+            paginationInfo : {
+                page: 0,
+                pageSize: 20,
+                totalPage: 0,
+                totalRecord: 0,
+                from: 0,
+                to: 0
+            }
+        };
+        model.listInstallation = [];
+        model.listExport = [];
+        return model;
+}]);
+
+exexSMSApp.controller('MstInstallationLocationCtrl',
+        ['$scope', '$timeout', 'DialogsService', 'MstInstallationLocationModel', 'MstInstallationLocationService', 'Messages', 'ServerService',
+         function($scope, $timeout, DialogsService, MstInstallationLocationModel, MstInstallationLocationService, Messages, ServerService){
+
+    $scope.model = MstInstallationLocationModel;
+    $scope.init = function(){
+        $scope.getInit();
+    };
+
+    $scope.$on("MstInstallationLocation#getInstallationLocationList", function(evt, param) {
+        $scope.doSearch($scope.model.form.search, 1);
+    });
+
+    /**
+     * getInit
+     */
+    $scope.getInit = function(){
+        var param = {};
+        MstInstallationLocationService.init(param).then(function(result) {
+            var error = result.data.failed;
+            if(!StringUtils.isEmpty(error)){
+                DialogsService.showError(Messages.getMessage('system.error'), error);
+                return;
+            }
+            $scope.model.listExport = result.data.listL010025;
+            $scope.doSearch($scope.model.form.search, 1);
+        });
+    };
+
+    /**
+     * open dialog
+     */
+    $scope.openDialog = function(value) {
+        var options = {size: 'warehouse-control'};
+        var param = {};
+        switch (value) {
+            case 'insert':
+                DialogsService.showDialog('MstInstallationLocationControl', 'mstInstallationLocationControlCtrl', param,options).result.then(function(param) {
+                });
+                break;
+            default:
+                var params = {warehouseNo : value.warehouseNo};
+                MstInstallationLocationService.checkData(params).then(function(result) {
+                    var warning = result.data.warning;
+                    var error = result.data.failed;
+                    var success = result.data.success;
+                    if(!StringUtils.isEmpty(warning)){
+                        DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                        return;
+                    }else if(!StringUtils.isEmpty(error)){
+                        DialogsService.showError(Messages.getMessage('system.error'), error);
+                        return;
+                    }else{
+                         param.warehouse = {warehouseNo : value.warehouseNo};
+                         DialogsService.showDialog('MstInstallationLocationControl', 'mstInstallationLocationControlCtrl', param,options).result.then(function(param) {
+                         });
+                    }
+                });
+            break;
+        };
+    };
+
+    $scope.doSearch = function(param, page) {
+        var params = {
+            warehouseName : !StringUtils.isEmpty(param.warehouseName) ? param.warehouseName : "",
+            warehouseType : !StringUtils.isEmpty(param.warehouseType) ? param.warehouseType : "",
+            custName : !StringUtils.isEmpty(param.custName) ? param.custName : "",
+            controlCd : !StringUtils.isEmpty(param.controlCd) ? param.controlCd : "",
+            telephoneNo : !StringUtils.isEmpty(param.telephoneNo) ? param.telephoneNo : "",
+            address : !StringUtils.isEmpty(param.address) ? param.address : "",
+            page : page,
+            pageSize : $scope.model.form.paginationInfo.pageSize
+        };
+        MstInstallationLocationService.search(params).then(function(result) {
+            var warning = result.data.warning;
+            var error = result.data.failed;
+            var success = result.data.success;
+            if(!StringUtils.isEmpty(warning)){
+                DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                return;
+            }else if(!StringUtils.isEmpty(error)){
+                DialogsService.showError(Messages.getMessage('system.error'), error);
+                return;
+            }else{
+                $scope.model.listInstallation = result.data.resultList;
+                $scope.model.form.paginationInfo = result.data.paginationInfo;
+             }
+
+            // add colresizable to table
+            setTimeout(function(){
+                $scope.setColResizable();
+            });
+         });
+    };
+
+    $scope.exportExcel=function(param){
+        if(param.exportExcel == '1'){
+            var params = {
+                warehouseName : !StringUtils.isEmpty(param.warehouseName) ? param.warehouseName : "",
+                warehouseType : !StringUtils.isEmpty(param.warehouseType) ? param.warehouseType : "",
+                custName : !StringUtils.isEmpty(param.custName) ? param.custName : "",
+                controlCd : !StringUtils.isEmpty(param.controlCd) ? param.controlCd : "",
+                telephoneNo : !StringUtils.isEmpty(param.telephoneNo) ? param.telephoneNo : "",
+                address : !StringUtils.isEmpty(param.address) ? param.address : ""
+            };
+            var fileName = Messages.getMessage('common.excel.file.name.deliveryplace') + '_' + DateUtils.getYYYYMMDD(new Date());
+            ServerService.doDownload('/MstInstallationLocation/downloadExcel', angular.toJson(params), 'application/vnd.ms-excel', fileName + '.xlsx');
+        }
+    };
+
+    // set colResizable
+    $scope.setColResizable = function(){
+        // remove JCLRgrips if having
+        $('.JCLRgrips').remove();
+
+        angular.element('#tableMstInstallationLocation').colResizable({
+            liveDrag: true,
+            postbackSafe: true,
+            useLocalStorage: true
+        });
+    }
+}]);

@@ -1,0 +1,161 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision: 1.0 $  $Date:  $
+ * @author quang-tung
+ */
+
+exexSMSApp.factory('BargainListModel', [ 'BaseModel', function(BaseModel) {
+
+    var model = BaseModel.getInstance();
+
+    model.form = {
+        search :{
+            searchFromDate : '',
+            searchToDate : '',
+            searchBargainType : '',
+            searchDocumentStatus : '',
+            searchCustName : '',
+            searchCustRank : '',
+            searchStockAddress : '',
+            searchCate01 : '',
+            searchCate02 : '',
+            searchCate03 : '',
+            searchBargainName : '',
+            searchItemName : '',
+            searchPriority : ''
+        },
+        listMstStockaddress : [],
+        listS020011 : [],
+        listS010005 : [],
+        listC040001 : [],
+        listCate01 : [],
+        listCate02 : [],
+        listCate03 : [],
+        paginationInfo : {
+            page: 0,
+            pageSize: 20,
+            totalPage: 0,
+            totalRecord: 0,
+            from: 0,
+            to: 0
+        }
+    };
+    return model;
+} ]);
+
+exexSMSApp.controller('bargainListCtrl',
+        ['$scope', '$timeout', 'BargainListModel', 'ServerService', 'DialogsService', 'RouteService', 'Messages',
+         function($scope, $timeout, BargainListModel, ServerService, DialogsService, RouteService, Messages){
+
+    $scope.model = BargainListModel;
+
+    /**初期*/
+    $scope.init = function(){
+        ServerService
+        .doPost('BargainList/getInit', null).then(
+            function(okResult) {
+                $scope.model.form.listMstStockaddress = okResult.data.listMstStockaddress;
+                $scope.model.form.listS020011 = okResult.data.listS020011;
+                $scope.model.form.listS010005 = okResult.data.listS010005;
+                $scope.model.form.listC040001 = okResult.data.listC040001;
+                $scope.model.form.listCate01 = okResult.data.listCate01;
+                $scope.model.form.listCate02 = okResult.data.listCate02;
+                $scope.model.form.listCate03 = okResult.data.listCate03;
+                $timeout(function() {
+                    $scope.search($scope.model.form.search);
+                }, 100);
+            }
+        );
+    };
+
+    $scope.search = function(param){
+        $scope.doSearch(1, param);
+    }
+
+    /**検索。*/
+    $scope.doSearch = function(page, param) {
+        var params = {
+            searchFromDate :  !StringUtils.isEmpty(param.searchFromDate) ? new Date(param.searchFromDate) : "",
+            searchToDate :  !StringUtils.isEmpty(param.searchToDate) ? new Date(param.searchToDate) : "",
+            searchBargainType : param.searchBargainType,
+            searchDocumentStatus : param.searchDocumentStatus,
+            searchCustName : param.searchCustName,
+            searchCustRank : param.searchCustRank,
+            searchStockAddress : param.searchStockAddress,
+            searchCate01 : param.searchCate01,
+            searchCate02 : param.searchCate02,
+            searchCate03 : param.searchCate03,
+            searchBargainName : param.searchBargainName,
+            searchItemName : param.searchItemName,
+            searchPriority : param.searchPriority,
+            page : page,
+            pageSize : $scope.model.form.paginationInfo.pageSize
+        };
+        ServerService.doPost('BargainList/search', params).then(
+            function(okResult) {
+                var warning =  okResult.data.warning;
+                if(!StringUtils.isEmpty(warning)){
+                    DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                }else if(!StringUtils.isEmpty(okResult.data)){
+                    $scope.model.form.listBargain = okResult.data.listBargain;
+                    $scope.model.form.paginationInfo = okResult.data.paginationInfo;
+                    // add colresizable to table
+                    setTimeout(function(){
+                        $scope.setColResizable();
+                    });
+                }
+            }
+        );
+    };
+
+    $scope.init();
+
+    /***/
+    $scope.goToItemDetails = function(param){
+        var params = {bargainNo : param.bargainNo};
+        ServerService.doPost('BargainList/isExistData', params).then(
+            function(okResult) {
+                var warning = okResult.data.warning;
+                if(!StringUtils.isEmpty(warning)){
+                    DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                    return;
+                }else{
+                    sessionStorage.setItem("bargain", JSON.stringify(params));
+                    RouteService.gotoUrl('BargainControl');
+                }
+            }
+        );
+    };
+
+    $scope.createBargain = function() {
+        sessionStorage.removeItem('bargain');
+        RouteService.gotoUrl('BargainControl');
+    };
+
+    $scope.updatePriority = function(param){
+        param.priority = !StringUtils.isEmpty(param.priority) ? parseInt(param.priority) : null;
+        var params = {
+            bargainNo : param.bargainNo,
+            priority : !StringUtils.isEmpty(param.priority) ? parseInt(param.priority) : null};
+        ServerService.doPost('BargainList/updatePriority', params).then(
+            function(okResult) {
+            }
+        );
+    }
+
+    // set colResizable
+    $scope.setColResizable = function(){
+        // remove JCLRgrips if having
+        $('.JCLRgrips').remove();
+
+        angular.element('#tableBargainList').colResizable({
+            liveDrag: true,
+            postbackSafe: true,
+            useLocalStorage: true
+        });
+    }
+
+}]);

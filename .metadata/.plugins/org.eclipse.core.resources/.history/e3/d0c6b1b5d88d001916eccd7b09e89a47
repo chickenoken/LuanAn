@@ -1,0 +1,56 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<!DOCTYPE html>
+<html>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.7.8/angular.min.js"></script>
+<script type="text/javascript" src="<c:url value="/resources/js/login.js" />"></script>
+<style>
+div.hidden
+{
+   display: none
+}
+</style>
+   <head>
+      <title>Login-Net</title>
+      <%@include file="/WEB-INF/views/Header.jsp"%>
+  </head>
+   <body>
+   <div style="height : 445px; width : 90%">
+     <div id="page" class="hidden">
+	     <div  id="login" ng-app="myApp" ng-controller="myCtrl">
+	       <div class="row" style="padding-top : 160px;">
+	         <div class="col-md-offset-4 col-md-6" ng-if="model.hidden.isShow">
+             <div class="alert alert-danger text-center">
+               <strong>Lỗi !</strong> Sai tên đăng nhập hoặc mật khẩu
+             </div>
+           </div>
+	         <div clas="form-group col-xs-5 col-md-7 col-lg-9 vcenter" >
+	           <div class="col-md-offset-5 col-md-7">
+	             <div class="col-md-2"><label>Tài Khoản</label></div>
+	             <div class="col-md-10"><input type="text" ng-model="model.form.login.taiKhoan" placeholder="Tên Đăng Nhập" ></div>
+	           </div>
+	           <div class="col-md-offset-5 col-md-7 p-t-10">
+	             <div class="col-md-2"><label>Mật Khẩu</label></div>
+	             <div class="col-md-10"><input type="password" ng-model="model.form.login.matKhau" placeholder="Mật Khẩu" ></div>
+	           </div>
+	         </div>
+	         <div class="form-group col-md-offset-6 col-md-6 p-t-10 p-l-30">
+	           <div class="col-md-2">
+	             <button class="btn btn-primary" ng-click="dangNhap()">Đăng Nhập</button>
+	           </div>
+	           <div class="col-md-3 p-l-30">
+	             <button class="btn btn-warning" ng-click="troVe()">Trở Về</button>
+	           </div>
+	         </div>
+	       </div>
+	     </div>
+     </div>
+     </div>
+      <%@include file="/WEB-INF/views/Footer.jsp"%>
+   </body>
+   <script type="text/javascript">
+	   $(document).ready(function() {
+	       $("div#page").removeClass("hidden");
+	   });
+   </script>
+</html>

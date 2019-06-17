@@ -1,0 +1,117 @@
+'use strict';
+
+exexSMSApp.factory('MstMailModel', [ 'BaseModel', function(BaseModel) {
+
+    var model = BaseModel.getInstance();
+    model.form = {
+            mstMail : {
+              sendmailName : '',
+                sendmailHost : '',
+                sendmailPort : '',
+                sendmailAccount : '',
+                sendmailAddress : '',
+                sendmailPassword : '',
+                sendmailPasswordConfirm : '',
+                userCd: ''
+            },
+        };
+    model.hidden = {
+            isSubmited: false,
+    }
+    return model;
+} ]);
+
+exexSMSApp.controller('mstMailCtrl',
+        ['$scope', '$window', 'MstMailModel', '$timeout', 'DialogsService', 'Messages', 'ServerService',
+         function($scope, $window, MstMailModel, $timeout, DialogsService, Messages, ServerService){
+
+    $scope.model = MstMailModel;
+
+    $scope.getMstMail = function(){
+        var sessionLogin = angular.fromJson(sessionStorage.getItem("session"));
+        var param = {
+                userCd : !ValidateUtil.isValidTextEmpty(sessionLogin.userCd) ? sessionLogin.userCd : ""
+        };
+        ServerService
+            .doPost('MstMailSetting/getMstMail', param)
+            .then(
+                    function(okResult) {
+                        var error = okResult.data.failed;
+                        var warning = okResult.data.warning;
+                        if(!ValidateUtil.isValidTextEmpty(error)){
+                             DialogsService.showError(Messages.getMessage('system.error'),error);
+                             return;
+                        } else if(!ValidateUtil.isValidTextEmpty(warning)){
+                            DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                            return;
+                        } else {
+                            if(!ValidateUtil.isValidTextEmpty(okResult.data.listMstMail)){
+                                $scope.model.form.mstMail = okResult.data.listMstMail;
+                            }
+                        }
+                    },
+                    function(errResult){
+                    });
+    };
+    $scope.getMstMail();
+
+    $scope.update = function(param, formInvalid) {
+        $scope.model.hidden.isSubmited = true;
+        if (formInvalid) {
+            return;
+        }
+        param.sendmailPort = !ValidateUtil.isValidTextEmpty(param.sendmailPort) ? param.sendmailPort : "";
+        var params = param;
+        var dlg = DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('S00004'));
+        dlg.result.then(function(btn){
+            ServerService
+                .doPost('MstMailSetting/checkConnectServer', params)
+                .then(
+                        function(okResult) {
+                            var success = okResult.data.success;
+                            var error = okResult.data.failed;
+                            var warning = okResult.data.warning;
+                            if (!ValidateUtil.isValidTextEmpty(success)) {
+                                $scope.updateMail(formInvalid);
+                            }else if(!ValidateUtil.isValidTextEmpty(warning)){
+                                DialogsService.showWarning(Messages.getMessage('check.error'),warning);
+                                return;
+                            }else if(!ValidateUtil.isValidTextEmpty(error)){
+                                DialogsService.showError(Messages.getMessage('system.error'),error);
+                                return;
+                            }
+                        },
+                        function(errResult){
+                        });
+       },function(btn){ });
+    };
+
+    $scope.updateMail = function(formInvalid) {
+        $scope.model.hidden.isSubmited = true;
+        if (formInvalid) {
+            return;
+        }
+        var sessionLogin = angular.fromJson(sessionStorage.getItem("session"));
+        $scope.model.form.mstMail.userCd = !ValidateUtil.isValidTextEmpty(sessionLogin.userCd) ? sessionLogin.userCd : "";
+        var params = $scope.model.form.mstMail;
+        ServerService
+            .doPost('MstMailSetting/updateMail', params)
+            .then(
+                    function(okResult) {
+                        var success = okResult.data.success;
+                        var error = okResult.data.failed;
+                        var warning = okResult.data.warning;
+                        if (!ValidateUtil.isValidTextEmpty(success)) {
+                            DialogsService.showNotify(Messages.getMessage('title.info') ,success);
+                        }else if(!ValidateUtil.isValidTextEmpty(warning)){
+                            DialogsService.showWarning(Messages.getMessage('check.error'));
+                            return;
+                        }else if(!ValidateUtil.isValidTextEmpty(error)){
+                            DialogsService.showError(Messages.getMessage('system.error'));
+                            return;
+                        }
+                    },
+                    function(errResult){
+                    });
+    };
+}]);

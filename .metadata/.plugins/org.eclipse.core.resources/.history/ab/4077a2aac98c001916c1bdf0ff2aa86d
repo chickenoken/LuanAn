@@ -1,0 +1,648 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision:  $  $Date:  $
+ * @author : quang-tung
+ */
+'use strict';
+exexSMSApp.factory('MstSearchConditionModel', [ 'BaseModel', function(BaseModel) {
+    var model = BaseModel.getInstance();
+    model.form = {
+        searchNo: '',
+        searchConditionName: '',
+        listSearchCondition : [],
+        listSearchConditionDetail: [],
+        listSearchConditionSort: [],
+        listMstGroupType : [],
+        listMstUser : [],
+        isDefaultSearch : false,
+        releaseScope : '1',
+        releaseGroupCd : []
+    };
+    model.hidden = {
+        saveType : '',
+        custType : '',
+        isSubmited: false
+    }
+    return model;
+}]);
+
+exexSMSApp.controller('mstSearchConditionCtrl',
+        ['$rootScope', '$scope','MstSearchConditionModel', 'BusinessCustomerListModel', 'IndividualCustomerListModel', 'SfaProjectListModel', 'CrmSiteListModel', 'CrmDeptListModel', 'DialogsService', '$uibModalInstance', 'ServerService', 'Messages', 'data', '$cookies', '$filter',
+         function($rootScope, $scope, MstSearchConditionModel, BusinessCustomerListModel, IndividualCustomerListModel, SfaProjectListModel, CrmSiteListModel, CrmDeptListModel, DialogsService, $uibModalInstance, ServerService, Messages, data, $cookies, $filter){
+
+    $scope.model = MstSearchConditionModel;
+
+    $scope.init = function(){
+        $scope.model.form.listSearchCondition = [];
+        $scope.model.form.listSearchConditionDetail = [];
+        $scope.model.form.listSearchConditionSort = [];
+
+        // 先画面確認
+        if (!StringUtils.isEmpty(data.fromScreen)) {
+            $scope.model.hidden.fromScreen = data.fromScreen;
+            switch($scope.model.hidden.fromScreen) {
+            case 'CustomerList' :
+                $scope.model.hidden.searchType = '0';
+                $scope.model.hidden.custType = $cookies.get('custType') == 'false' ? false : true;
+
+                if(!$scope.model.hidden.custType){
+                    $scope.modelParent = BusinessCustomerListModel;
+                }else {
+                    $scope.modelParent = IndividualCustomerListModel;
+                }
+                break;
+            case 'SfaProjectList' :
+                $scope.model.hidden.searchType = '1';
+                $scope.modelParent = SfaProjectListModel;
+                break;
+            case 'SfaSubProjectList' :
+                $scope.model.hidden.searchType = '2';
+                $scope.modelParent = SfaProjectListModel;
+                break;
+            case 'CrmSiteList' :
+                $scope.model.hidden.searchType = '3';
+                $scope.modelParent = CrmSiteListModel;
+                break;
+            case 'CrmDeptList' :
+                $scope.model.hidden.searchType = '4';
+                $scope.modelParent = CrmDeptListModel;
+                break;
+            }
+        }
+
+        $scope.getInit($scope.model.hidden.custType);
+    };
+
+    $scope.getInit = function(custType){
+        var param = {
+            custType : custType,
+            searchType : $scope.model.hidden.searchType
+        }
+        ServerService.doPost('MstSearchCondition/getInit', param).then(
+            function(okResult) {
+                $scope.model.form.listS020008 = okResult.data.listS020008;
+                $scope.model.form.listS020021 = okResult.data.listS020021;
+                $scope.model.form.listControlLabel = okResult.data.listControlLabel;
+                $scope.model.form.listMstGroupType = $scope.modelParent.form.listMstGroup;
+                $scope.model.form.listMstUser = okResult.data.listMstUser;
+                // create list control label SORT
+                $scope.model.form.listControlLabelSort = [];
+                for (var i = 0;i < $scope.model.form.listControlLabel.length;i++) {
+                    if($scope.model.hidden.searchType == '0'){  // custList
+                        // create list sort condition for customer list
+                        if ($scope.model.form.listControlLabel[i].searchTableName == 'TBL_CUSTOMER_DETAIL_CONTROL'
+                            || $scope.model.form.listControlLabel[i].searchTableName == 'MST_CUSTOMER') {
+                            $scope.model.form.listControlLabelSort.push(angular.copy($scope.model.form.listControlLabel[i]));
+                        }
+                    }else if($scope.model.hidden.searchType == '1'){  // projectList
+                        // create list sort condition for project list
+                        if ($scope.model.form.listControlLabel[i].searchTableName == 'TBL_PROJECT_DETAIL_CONTROL'
+                            || $scope.model.form.listControlLabel[i].searchTableName == 'TBL_PROJECT') {
+                            $scope.model.form.listControlLabelSort.push(angular.copy($scope.model.form.listControlLabel[i]));
+                        }
+                    }else if($scope.model.hidden.searchType == '2'){  // subProjectList
+                        // create list sort condition for sub project list
+                        if ($scope.model.form.listControlLabel[i].searchTableName == 'TBL_SUB_PROJECT_DETAIL_CONTROL'
+                            || $scope.model.form.listControlLabel[i].searchTableName == 'TBL_PROJECT') {
+                            $scope.model.form.listControlLabelSort.push(angular.copy($scope.model.form.listControlLabel[i]));
+                        }
+                    }else if($scope.model.hidden.searchType == '3'){  // siteList
+                        // create list sort condition for Site list
+                        if ($scope.model.form.listControlLabel[i].searchTableName == 'TBL_SITE_DETAIL_CONTROL'
+                            || $scope.model.form.listControlLabel[i].searchTableName == 'MST_SITE') {
+                            $scope.model.form.listControlLabelSort.push(angular.copy($scope.model.form.listControlLabel[i]));
+                        }
+                    }else if($scope.model.hidden.searchType == '4'){  // deptList
+                        // create list sort condition for Dept list
+                        if ($scope.model.form.listControlLabel[i].searchTableName == 'TBL_DEPART_DETAIL_CONTROL'
+                            || $scope.model.form.listControlLabel[i].searchTableName == 'MST_DEPART') {
+                            $scope.model.form.listControlLabelSort.push(angular.copy($scope.model.form.listControlLabel[i]));
+                        }
+                    }
+
+                }
+                if ($scope.model.hidden.fromScreen == 'SfaProjectList' || $scope.model.hidden.fromScreen == 'SfaSubProjectList') {
+                    $scope.model.form.listMstBusiness = okResult.data.listMstBusiness;
+                    $scope.model.form.listCurrentProcessName = okResult.data.listCurrentProcessName;
+                }
+                $scope.getListSearchCondition(data.searchNo);
+            }
+        );
+    };
+
+    $scope.getListSearchCondition = function(searchNo){
+        var param = {
+            custType : $scope.model.hidden.custType,
+            searchType : $scope.model.hidden.searchType
+        }
+        ServerService.doPost('MstSearchCondition/getListSearchCondition', param).then(
+            function(okResult) {
+                $scope.model.form.listSearchCondition = okResult.data.listSearchCondition;
+                var newAdd = true;
+                for (var i = 0; i < $scope.model.form.listSearchCondition.length; i++) {
+                    var item = $scope.model.form.listSearchCondition[i];
+                    if(searchNo == item.searchNo){
+                        $scope.model.hidden.saveType = item.saveType;
+                        $scope.modelParent.hidden.searchNo = item.searchNo;
+                        $scope.onSelectSearchConditon(item, i);
+                    }
+                    if(item.saveType == '0'){
+                        newAdd = false;
+                    }
+                }
+                if(newAdd){
+                    $scope.addNewSearchCondition(false);
+                }
+             }
+        );
+    };
+
+    $scope.addNewSearchCondition = function(isCreate){
+        var conditionName = '';
+        var session = angular.fromJson(sessionStorage.getItem('session'));
+        if(isCreate){
+            conditionName = locale == "ja" ? "新規" : "NEW";
+        }else{
+            conditionName = locale == "ja" ? "キーワード" : "keyword";
+        }
+        var item = {
+            searchNo : "",
+            searchType : $scope.model.hidden.searchType,
+            searchConditionName : conditionName,
+            conditionCombineType : "AND",
+            saveType : isCreate ? "1" : "0",
+            isDefaultSearch : false,
+            releaseGroupCd : isCreate && !StringUtils.isEmpty(session.groupCd) ? session.groupCd : ''
+        }
+
+        $scope.model.form.listSearchCondition.push(item);
+
+        if(isCreate){
+            $scope.onSelectSearchConditon(item, $scope.model.form.listSearchCondition.length - 1);
+        }
+    };
+
+    $scope.init();
+
+    $scope.onSelectSearchConditon = function(row, index){
+        if(row.checked) {
+            $scope.model.hidden.onSelecting = false;
+        } else {
+            $scope.model.hidden.isSubmited = false;
+            $scope.model.hidden.onSelecting = true;
+            $scope.model.form.listSearchConditionDetail = [];
+            $scope.model.form.listSearchConditionSort = [];
+
+            var length = $scope.model.form.listSearchCondition.length;
+            for(var i = 0; i < length; i++){
+                if(i == index){
+                    $scope.model.form.listSearchCondition[i].checked = true;
+                }else{
+                    $scope.model.form.listSearchCondition[i].checked = false;
+                }
+            };
+
+            $scope.model.form.isDefaultSearch = row.isDefaultSearch;
+            $scope.model.form.searchNo = row.searchNo;
+            $scope.model.form.searchConditionName = row.searchConditionName;
+            if(!StringUtils.isEmpty(row.releaseGroupCd)) {
+                $scope.model.form.releaseGroupCd = row.releaseGroupCd.split(',');
+            }
+
+            $scope.model.form.releaseScope = row.releaseScope;
+            $scope.model.hidden.saveType = row.saveType;
+
+
+            $scope.modelParent.hidden.conditionCombineType = row.conditionCombineType;
+
+            $scope.getSearchConditionDetail($scope.model.form.searchNo);
+
+            setTimeout(function(){
+                $scope.$apply(function(){
+                    $scope.model.hidden.onSelecting = false;
+                })
+            }, 100);
+        }
+    };
+
+    $scope.changeControlLabelName = function(detailKey, index, table){
+        $scope.model.hidden.isSubmited = false;
+        for (var i = 0; i < $scope.model.form.listControlLabel.length; i++) {
+            var item = $scope.model.form.listControlLabel[i];
+            if(item.detailKey == detailKey){
+                switch (table) {
+                    case 'DETAIL':
+                        $scope.model.form.listSearchConditionDetail[index].controlType = item.controlType;
+                        $scope.model.form.listSearchConditionDetail[index].detailFreeItemFlag = item.detailFreeItemFlag;
+                        $scope.model.form.listSearchConditionDetail[index].detailLineNo = item.lineNo;
+                        $scope.model.form.listSearchConditionDetail[index].searchValue = "";
+                        $scope.model.form.listSearchConditionDetail[index].comparisonType = '01';
+                        if(!StringUtils.isEmpty(item.listDataSource)){
+                            ServerService.doPost('MstSearchCondition/getListDataSource', item.listDataSource).then(
+                                function(okResult) {
+                                    $scope.model.form.listSearchConditionDetail[index].listData = okResult.data.listDataSource;
+                                 },
+                                 function(errResult){}
+                             );
+                        };
+                        $scope.setSearchSortTableName(detailKey, index, item.searchTableName, table);
+                    break;
+                    case 'SORT':
+                        $scope.model.form.listSearchConditionSort[index].controlType = item.controlType;
+                        $scope.model.form.listSearchConditionSort[index].sortDetailFreeItemFlag = item.detailFreeItemFlag;
+                        $scope.model.form.listSearchConditionSort[index].sortDetailLineNo = item.lineNo;
+                        $scope.model.form.listSearchConditionSort[index].sortOrder = "ASC";
+                        $scope.setSearchSortTableName(detailKey, index, item.searchTableName, table);
+                    break;
+                };
+            }
+        }
+        switch (table) {
+            case 'DETAIL':
+                $scope.addNewDetailCondition(index);
+                break;
+            case 'SORT':
+                $scope.addNewDetailSort(index);
+                break;
+        }
+    };
+
+    $scope.setSearchSortTableName = function(detailKey, index, searchSortTableName, table){
+        if (table == 'DETAIL'){
+            $scope.model.form.listSearchConditionDetail[index].searchTableName = searchSortTableName;
+        } else if (table == 'SORT') {
+            $scope.model.form.listSearchConditionSort[index].sortTableName = searchSortTableName;
+        }
+    }
+
+    $scope.getSearchConditionDetail = function(){
+        if(!StringUtils.isEmpty($scope.model.form.searchNo)){
+            var params = {
+                searchNo : $scope.model.form.searchNo,
+                custType : $scope.model.hidden.custType,
+                searchType : $scope.model.hidden.searchType
+            }
+            ServerService.doPost('MstSearchCondition/getSearchConditionDetail', params).then(
+                function(okResult) {
+                    $scope.model.form.listSearchConditionSort = okResult.data.listSort;
+                    $scope.model.form.listSearchConditionDetail = okResult.data.listDetail;
+                    $scope.addNewDetailCondition($scope.model.form.listSearchConditionDetail.length-1);
+                    $scope.addNewDetailSort($scope.model.form.listSearchConditionSort.length-1);
+                 }
+             );
+        }else {
+            $scope.model.form.listSearchConditionDetail = [];
+            $scope.model.form.listSearchConditionSort = [];
+            $scope.addNewDetailCondition($scope.model.form.listSearchConditionDetail.length-1);
+            $scope.addNewDetailSort($scope.model.form.listSearchConditionSort.length-1);
+        };
+    }
+
+    $scope.onChangeComparisonType = function(type, index){
+        if(type == '09' || type == '10'){
+            $scope.model.form.listSearchConditionDetail[index].searchValue = null;
+        }
+    }
+
+    $scope.convertParam = function (model, saveType){
+        var param = angular.copy(model);
+        if(saveType != '0'){
+            param.listSearchConditionSort.pop();
+            param.listSearchConditionDetail.pop();
+        }
+        var params = {
+            searchNo : $scope.model.form.searchNo,
+            searchType : $scope.model.hidden.searchType,
+            searchConditionName : (saveType == '1') ? param.searchConditionName : (locale == "ja" ? "キーワード" : "keyword"),
+            searchCustType : $scope.model.hidden.custType,
+            conditionCombineType : $scope.modelParent.hidden.conditionCombineType,
+            saveType : saveType,
+            releaseScope : saveType == '0' ? '1' : param.releaseScope,
+            listSearchConditionSort : param.listSearchConditionSort.length > 0 ? JSON.stringify(param.listSearchConditionSort) : "",
+            isDefaultSearch : $scope.model.form.isDefaultSearch,
+            releaseGroupCd : $scope.model.form.releaseGroupCd.toString()
+        };
+        if(param.listSearchConditionSort.length > 0){
+            for (var i = param.listSearchConditionSort.length - 1; i >= 0; i--) {
+                if (!param.listSearchConditionSort[i].controlType) {
+                    param.listSearchConditionSort.splice(i, 1);
+                }
+            }
+            params.listSearchConditionSort  = JSON.stringify(param.listSearchConditionSort);
+        }else {
+            params.listSearchConditionSort = "";
+        }
+        if(param.listSearchConditionDetail.length > 0){
+            angular.forEach(param.listSearchConditionDetail, function(item, i){
+                delete item.detailKey;
+                delete item.listData;
+                delete item.listMstGroupType;
+                delete item.listMstUser;
+                if(item.controlType == '01'){
+                    item.searchValue = !StringUtils.isEmpty(item.searchValue) ? $filter('date')(item.searchValue, "yyyy/MM/dd") : null;
+                }else if(item.controlType == '04' || item.controlType == '08' || item.controlType == '10'){
+                    item.searchValue = (!StringUtils.isEmpty(item.searchValue) && item.searchValue.length > 0) ?  item.searchValue.toString() : '';
+                };
+            });
+            params.listSearchConditionDetail  = JSON.stringify(param.listSearchConditionDetail);
+        }else {
+            params.listSearchConditionDetail = "";
+        }
+        return params;
+    }
+
+    $scope.insertData = function(formInvalid) {
+        var options = {size : '450'};
+        DialogsService.showDialog('SearchConditionPopup', 'searchConditionPopupCtrl', null, options).result.then(function(param) {
+            if(param){
+                $scope.insert("1", false);
+            };
+        });
+    };
+
+    $scope.insert = function (saveType, isSearch){
+        //DialogsService.showConfirm(Messages.getMessage('title.confirm'),Messages.getMessage('S00003'))
+        //.result.then(function(btn){
+            var params = $scope.convertParam($scope.model.form, saveType);
+            ServerService.doPost('MstSearchCondition/insert', params).then(
+                function(result) {
+                    var warning = result.data.warning;
+                    var error = result.data.failed;
+                    if(!StringUtils.isEmpty(warning)){
+                        DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                    }else if(!StringUtils.isEmpty(error)){
+                        DialogsService.showError(Messages.getMessage('system.error'), error);
+                    }else{
+                        $scope.getListSearchCondition(result.data.searchNo);
+                        $scope.model.form.searchNo = result.data.searchNo;
+                        //button OK POPUP 2
+                        if(isSearch){
+                            $scope.prepareParamAndClose(result.data.searchNo);
+                        }else {
+                            DialogsService.showNotify(Messages.getMessage('title.info'),Messages.getMessage('S00006'));
+                        }
+                    };
+                }
+            );
+        //});
+    };
+
+    $scope.update = function(saveType, isSearch, formInvalid) {
+        var options = {size : '450'};
+        if($scope.model.hidden.saveType == '0'){
+            if(!StringUtils.isEmpty($scope.model.form.searchNo)) {
+                $scope.updateData(saveType, isSearch);
+            } else {
+                $scope.insert(saveType, isSearch);
+            }
+        }else{
+            DialogsService.showDialog('SearchConditionPopup', 'searchConditionPopupCtrl', null, options)
+            .result.then(function(param) {
+                if(param){
+                    $scope.updateData(saveType, isSearch);
+                };
+            });
+        }
+    }
+
+    $scope.updateData = function(saveType, isSearch, formInvalid){
+        var params = $scope.convertParam($scope.model.form, saveType);
+        ServerService.doPost('MstSearchCondition/update', params).then(
+            function(result) {
+                var warning = result.data.warning;
+                var error = result.data.failed;
+                if(!StringUtils.isEmpty(warning)){
+                    DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                }else if(!StringUtils.isEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                }else{
+                    $scope.model.hidden.screenMode = (saveType == '0') ? "INSERT" : "UPDATE";
+                    $scope.getListSearchCondition(result.data.searchNo);
+                    $scope.model.form.searchNo = result.data.searchNo;
+                    if($scope.model.form.searchNo == $scope.modelParent.hidden.searchNo) {
+                        $scope.modelParent.hidden.searchConditionName = $scope.model.form.searchConditionName;
+                    }
+                    if(isSearch){
+                        $scope.prepareParamAndClose(result.data.searchNo);
+                    }else {
+                        DialogsService.showNotify(Messages.getMessage('title.info'),Messages.getMessage('S00007'));
+                    }
+                };
+            }
+        );
+    };
+
+    $scope.deleteData = function (){
+        DialogsService.showConfirm(Messages.getMessage('title.confirm'),Messages.getMessage('S00005'))
+        .result.then(function(btn){
+            var params = {
+                searchNo : $scope.model.form.searchNo,
+                custType : $scope.model.hidden.custType,
+                searchType : $scope.model.hidden.searchType
+            };
+            ServerService.doPost('MstSearchCondition/delete', params).then(
+                function(result) {
+                    var warning = result.data.warning;
+                    var error = result.data.failed;
+                    var success = result.data.success;
+                    if(!StringUtils.isEmpty(warning)){
+                        DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                    }else if(!StringUtils.isEmpty(error)){
+                        DialogsService.showError(Messages.getMessage('system.error'), error);
+                    }else{
+                        DialogsService.showNotify(Messages.getMessage('title.info'), success)
+                        .result.then(function(btn){
+                            $scope.model.hidden.saveType = "";
+                            $scope.model.form.listSearchConditionDetail = [];
+                            $scope.model.form.listSearchConditionSort = [];
+                            $scope.getListSearchCondition();
+                        });
+                    };
+                }
+            );
+        });
+    };
+
+    $scope.addNewDetailCondition = function(index){
+        var length =  $scope.model.form.listSearchConditionDetail.length;
+        if($scope.model.hidden.saveType == '1'){
+            if(length == (index + 1)){
+                var item = {
+                    detailFreeItemFlag: '',
+                    searchValue: '',
+                    comparisonType: '01'
+                };
+                $scope.model.form.listSearchConditionDetail.push(item);
+            }
+        }else{
+            if(length == 0){
+                var item = {
+                    searchValue : ''
+                };
+                $scope.model.form.listSearchConditionDetail.push(item);
+            }
+        }
+    };
+
+    $scope.addNewDetailSort = function(index){
+        var length =  $scope.model.form.listSearchConditionSort.length;
+        if(length == (index + 1)){
+            var item = {
+                    sortDetailFreeItemFlag: '',
+                    sortOrder: 'ASC'
+            };
+            $scope.model.form.listSearchConditionSort.push(item);
+        };
+    };
+
+    $scope.removeItem = function(index, table) {
+        switch (table) {
+            case 'DETAIL':
+                $scope.model.form.listSearchConditionDetail.splice(index, 1);
+                break;
+            case 'SORT':
+                $scope.model.form.listSearchConditionSort.splice(index, 1);
+                break;
+        }
+    };
+
+    $scope.doSearch = function (formInvalid){
+        $scope.model.hidden.isSubmited = true;
+        if(formInvalid || $scope.checkEmptyInput($scope.model.form.listSearchConditionDetail)){
+            DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00384'));
+            return;
+        }
+        $scope.prepareParamAndClose($scope.model.form.searchNo);
+    };
+
+    $scope.close = function() {
+        $uibModalInstance.close();
+    };
+
+    /**
+     * Prepare param before close popup.
+     */
+    $scope.prepareParamAndClose = function(searchNo) {
+        $scope.createCustomerDetailSearch(searchNo);
+        if (!StringUtils.isEmpty($scope.model.hidden.fromScreen)) {
+            switch($scope.model.hidden.fromScreen) {
+                case 'CustomerList' :
+                    $rootScope.$broadcast("CrmList#searchCustomer");
+                    break;
+                case 'SfaProjectList' :
+                    $rootScope.$broadcast("SfaProjectList#searchProject");
+                    break;
+                case 'SfaSubProjectList' :
+                    $rootScope.$broadcast("SfaSubProjectList#searchProject");
+                    break;
+                case 'CrmSiteList' :
+                    $rootScope.$broadcast("CrmSiteList#searchSite");
+                    break;
+                case 'CrmDeptList' :
+                    $rootScope.$broadcast("CrmDeptList#searchDept");
+                    break;
+            }
+        }
+        $scope.close();
+    }
+
+    /**
+     * Create session listSearchConditionDetail, listSearchConditionSort
+     * 顧客一覧 : businessCustomerDetailSearch, individualCustomerDetailSearch
+     * 案件一覧 : projectDetailSearch
+     */
+    $scope.createCustomerDetailSearch = function (searchNo) {
+        var listSearchConditionDetail = [];
+        var listSearchConditionSort = [];
+        var session = {};
+        if($scope.model.hidden.saveType == '1'){
+            if (!StringUtils.isEmpty($scope.model.form.listSearchConditionDetail) && $scope.model.form.listSearchConditionDetail.length > 0) {
+                for (var i = 0; i < $scope.model.form.listSearchConditionDetail.length - 1; i++) {
+                    var entity = {
+                        searchNo : searchNo,
+                        lineNo : i+1,
+                        detailFreeItemFlag : $scope.model.form.listSearchConditionDetail[i].detailFreeItemFlag,
+                        detailLineNo : $scope.model.form.listSearchConditionDetail[i].detailLineNo,
+                        searchValue : $scope.model.form.listSearchConditionDetail[i].searchValue,
+                        searchTableName : $scope.model.form.listSearchConditionDetail[i].searchTableName,
+                        comparisonType : $scope.model.form.listSearchConditionDetail[i].comparisonType,
+                        controlType : $scope.model.form.listSearchConditionDetail[i].controlType
+                    };
+                    listSearchConditionDetail.push(entity);
+                }
+                session.listSearchConditionDetail = listSearchConditionDetail;
+            }
+            if (!StringUtils.isEmpty($scope.model.form.listSearchConditionSort) && $scope.model.form.listSearchConditionSort.length > 0) {
+                for (var i = 0; i < $scope.model.form.listSearchConditionSort.length - 1; i++) {
+                    var entity = {
+                        searchNo : searchNo,
+                        lineNo : i+1,
+                        sortDetailFreeItemFlag : $scope.model.form.listSearchConditionSort[i].sortDetailFreeItemFlag,
+                        sortDetailLineNo : $scope.model.form.listSearchConditionSort[i].sortDetailLineNo,
+                        sortTableName : $scope.model.form.listSearchConditionSort[i].sortTableName,
+                        sortOrder : $scope.model.form.listSearchConditionSort[i].sortOrder
+                    };
+                    listSearchConditionSort.push(entity);
+                }
+                session.listSearchConditionSort = listSearchConditionSort;
+            }
+        }else{
+            session.keyword = $scope.model.form.listSearchConditionDetail[0].searchValue;
+        }
+        session.searchNo = searchNo;
+        session.searchConditionName = $scope.model.form.searchConditionName;
+        if (!StringUtils.isEmpty($scope.model.hidden.fromScreen)) {
+            switch($scope.model.hidden.fromScreen) {
+                case 'CustomerList' :
+                    if(!$scope.model.hidden.custType){
+                        sessionStorage.setItem("businessCustomerDetailSearch", JSON.stringify(session));
+                    }else {
+                        sessionStorage.setItem("individualCustomerDetailSearch", JSON.stringify(session));
+                    }
+                    break;
+                case 'SfaProjectList' :
+                    sessionStorage.setItem("projectDetailSearch", JSON.stringify(session));
+                    break;
+                case 'SfaSubProjectList' :
+                    sessionStorage.setItem("projectSubDetailSearch", JSON.stringify(session));
+                    break;
+                case 'CrmSiteList' :
+                    sessionStorage.setItem("crmSiteDetailSearch", JSON.stringify(session));
+                    break;
+                case 'CrmDeptList' :
+                    sessionStorage.setItem("crmDeptDetailSearch", JSON.stringify(session));
+                    break;
+            }
+        }
+    };
+
+    $scope.checkEmptyInput = function (listSearchDetail){
+        if($scope.model.hidden.saveType == 1){
+            for(var i = 0; i < listSearchDetail.length - 1; i++){
+                var detail = listSearchDetail[i];
+                if(StringUtils.isEmpty(detail.searchValue) || StringUtils.isEmpty(detail.detailKey) || StringUtils.isEmpty(detail.comparisonType)){
+                    return true;
+                }
+            }
+        }
+        return false;
+    };
+}]);
+
+exexSMSApp.controller('searchConditionPopupCtrl',
+        ['$scope','MstSearchConditionModel', '$uibModalInstance', 'Messages',
+         function($scope, MstSearchConditionModel, $uibModalInstance, Messages){
+
+    $scope.model = MstSearchConditionModel;
+
+    $scope.insert = function(){
+        $uibModalInstance.close(true);
+    };
+
+    $scope.close = function() {
+        $uibModalInstance.close(false);
+    };
+}]);

@@ -1,0 +1,193 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision: 1.0 $  $Date: 2014/07/01 $
+ * @author quang-thien
+ */
+
+'use strict';
+
+exexSMSApp.factory('MstUserModel', [ 'BaseModel', function(BaseModel) {
+
+    var model = BaseModel.getInstance();
+
+    model.form = {
+        user : {
+            userName : '',
+            accountLockCode : ''
+        },
+        userData :[],
+        list : [],
+        M030001 : [],
+        filtered : [],
+        accountLock : [''],
+    };
+
+
+    model.hidden = {
+        ptId : null,
+        viewActive: '',
+        userCd : '',
+        registUserCount : 0
+    };
+
+    return model;
+} ]);
+
+exexSMSApp.controller('MstUserCtrl',
+        ['$rootScope', '$scope', '$timeout', 'DialogsService', 'MstUserModel', 'Messages', 'ServerService',
+         function($rootScope, $scope, $timeout, DialogsService, MstUserModel, Messages, ServerService){
+
+    $scope.model = MstUserModel;
+
+    $scope.getInit = function(){
+        ServerService
+            .doPost('MstUser/getInit', {})
+            .then(
+                function(okResult) {
+                    $scope.model.form.M030001 = okResult.data.listM030001;
+                    $scope.model.hidden.registUserCount = okResult.data.registUserCount;
+                    $scope.searchUserList();
+                },
+                function(errResult){
+                });
+    };
+
+    $scope.init = function(){
+        $scope.getInit();
+    };
+    $scope.init();
+
+    $scope.$on("MstUser#editUser", function(evt, param) {
+        $scope.searchUserList();
+    });
+
+    $scope.searchUserList = function() {
+        var params ={
+            userName : !ValidateUtil.isValidTextEmpty($scope.model.form.user.userName) ? $scope.model.form.user.userName : "",
+            accountLockCode : !ValidateUtil.isValidTextEmpty($scope.model.form.user.accountLockCode) ? $scope.model.form.user.accountLockCode.toString() : ""
+        };
+        ServerService
+        .doPost('MstUser/searchUser', params)
+        .then(
+            function(okResult) {
+                var error = okResult.data.failed;
+                var warning = okResult.data.warning;
+                if (!ValidateUtil.isValidTextEmpty(error)) {
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    $scope.model.form.list = [];
+                    return;
+                }else if(!ValidateUtil.isValidTextEmpty(warning)){
+                    DialogsService.showWarning(Messages.getMessage('check.error'),warning);
+                    $scope.model.form.list = [];
+                    return;
+                }else{
+                    $scope.model.form.list = okResult.data.listUser;
+                    var length = $scope.model.form.list.length;
+
+                    // Table Paging
+                    $scope.model.currentPage = 1; //current page
+                    $scope.model.entryLimit = 20; //max no of items to display in a page
+                    $scope.model.number = 20;
+                    $scope.model.filteredItems = length; //Initially for no filter
+                    $scope.model.totalItems = length;
+                    if(length > 0){
+                        $scope.model.beginValFilter = 1;
+                    }else{
+                        $scope.model.beginValFilter = 0;
+                    }
+
+                    $scope.setPage = function(pageNo) {
+                        $scope.currentPage = pageNo;
+                    };
+
+                    $scope.model.filter = function() {
+                        $timeout(function() {
+                            $scope.model.filteredItems = $scope.model.form.filtered.length;
+                            if($scope.model.form.filtered.length > 0){
+                                $scope.model.beginValFilter = 1;
+                            }else{
+                                $scope.model.beginValFilter = 0;
+                            }
+                        }, 10);
+                    };
+                    // End Table Paging
+                }
+
+                // add colresizable to table
+                setTimeout(function(){
+                    $scope.setColResizable();
+                });
+            },
+            function(errResult){
+        });
+    };
+
+    /**
+     * open new or edit user popup
+     */
+    $scope.openDialog = function(result) {
+        var options = {size: '660'};
+        if(CompanyUtil.getCustomFlag(4) == '1'){
+            options = {size: 'user-control'}
+        }
+        var param = {
+                user:[],
+                M030001:[]
+        };
+        switch (result) {
+            case 'addUser':
+                param.user = [];
+                var dlg = DialogsService.showDialog('MstUserControl', 'mstUserControlCtrl', param,options);
+                    dlg.result.then(function(param) {
+                });
+                break;
+            default:
+                //set Param from data on form
+                var param = {'userCd':result.userCd};
+
+                ServerService
+                .doPost('MstUser/checkData', param)
+                .then(
+                    function(okResult) {
+                        var warning = okResult.data.warning;
+                        var error = okResult.data.failed;
+                        if(!ValidateUtil.isValidTextEmpty(warning)){
+                            DialogsService.showWarning(Messages.getMessage('check.error'),warning);
+                            $scope.searchUserList();
+                            return;
+                         }else if(!ValidateUtil.isValidTextEmpty(error)){
+                             DialogsService.showError(Messages.getMessage('system.error'),error);
+                             return;
+                         }else{
+                             param.user = okResult.data.resultEntity;
+                             param.M030001 = $scope.model.form.M030001;
+                             var dlg = DialogsService.showDialog('MstUserControl', 'mstUserControlCtrl', param, options);
+                                 dlg.result.then(function(param) {
+                             });
+                        }
+                    },
+                    function(errResult){
+                    });
+                break;
+        };
+    };// end launch
+
+    $scope.editUser = function(param){
+        $rootScope.$broadcast("MstUser#editUser",{});
+    };
+
+    // set colResizable
+    $scope.setColResizable = function(){
+        // remove JCLRgrips if having
+        $('.JCLRgrips').remove();
+
+        angular.element('#tableMstUser').colResizable({
+            liveDrag: true,
+            postbackSafe: true,
+            useLocalStorage: true
+        });
+    }
+}]);

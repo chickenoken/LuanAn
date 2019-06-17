@@ -1,0 +1,111 @@
+(function($) {
+  $.fn.select2tree = function(options) {
+    var defaults = {
+      language: locale,
+      theme: "default",
+      closeOnSelect: false,
+      sort:false
+    };
+    var opts = $.extend(defaults, options);
+    opts.templateResult = function(data, container) {
+      if (data.element) {
+        //insert span element and add 'parent' property
+        var $wrapper = $("<span></span><span><i class='fa fa-users'></i>&nbsp;" + data.text + "</span>");
+        var $element = $(data.element);
+        $(container).attr("val", $element.val());
+        if ($element.attr("parent")) {
+          $(container).attr("parent", $element.attr("parent"));
+        }
+        return $wrapper;
+      } else {
+        return data.text;
+      }
+    };
+
+    $(this).select2(opts).on("select2:open", open);
+  };
+
+  //get the level of li
+  function getLevel(id, level) {
+    // var level = 0;
+    while ($(".select2-results__options li[parent][val='" + id + "']").length > 0) {
+      id = $(".select2-results__options li[val='" + id + "']").attr("parent");
+        if(id === "#"){
+            return level;
+        }
+      level++;
+    }
+    if(id){
+        if(id === "#"){
+            return level;
+        }else{
+            level = getLevel("string:"+id, level);
+        }
+    }
+    return level;
+  }
+
+  function open() {
+    setTimeout(function() {
+      $(".select2-results__options li").each(function() {
+        var $this = $(this);
+        //loop li add some classes and properties
+        if ($this.attr("parent") !== "#") {
+          $(this).siblings("li[val='string:" + $this.attr("parent") + "']").find("span:eq(0)").addClass("glyphicon glyphicon-triangle-right switch").css({
+            "margin-left": "-17px",
+            "cursor": "default",
+            "width":"17px"
+          });
+          $(this).siblings("li[val='string:" + $this.attr("parent") + "']").find("span:eq(1)").css("font-weight", "bold");
+        }else{
+            if(!$(this).siblings("li[parent='#']").find("span:eq(0)").hasClass('switch')){
+                $(this).siblings("li[parent='#']").find("span:eq(0)").css("margin-left", "4px");
+            }
+        }
+
+        //add gap for children
+        if (!$this.attr("style")) {
+          var level = 0;
+          var paddingLeft = getLevel($this.attr("val"), level) * 20;
+          if(!$("li[val='string:" + $this.attr("parent") + "']").hasClass('switch')){
+              paddingLeft += 20;
+          }
+          $("li[parent='" + $this.attr("parent") + "']").css("padding-left", paddingLeft + "px");
+          //$(this).siblings("li[val=" + $this.attr("parent") + "]").find("li").css("padding-left", paddingLeft + "px");
+        }
+      });
+
+      $(".select2-results__options li").each(function() {
+          var id = $(this).attr("val");
+          if(id){
+              id= id.replace("string:", "");
+          }
+          $(".select2-results__options li[parent='" + id + "']").slideUp(0);
+      });
+
+//      //override mousedown for collapse/expand
+      $(".switch").mousedown(function(e) {
+          var open = $(this).hasClass("glyphicon-triangle-right");
+          var id = $(this).parent().attr("val");
+          if(id){
+              id= id.replace("string:", "");
+          }
+          $(".select2-results__options li[parent='" + id + "']").each(function() {
+          if (open) {
+              $(".select2-results__options li[val='string:" + id + "'] span[class]:eq(0)").removeClass("glyphicon-triangle-right").addClass("glyphicon-triangle-bottom");
+              $(".select2-results__options li[parent='" + id + "']").slideUp(300);
+            } else {
+              $(".select2-results__options li[val='string:" + id + "'] span[class]:eq(0)").addClass("glyphicon-triangle-right").removeClass("glyphicon-triangle-bottom");
+              $(".select2-results__options li[parent='" + id + "']").slideDown(300);
+            }
+          });
+          event.stopPropagation();
+      });
+
+      //override mouseup to nothing
+      $(".switch").mouseup(function() {
+        return false;
+      });
+    }, 0);
+  }
+})(jQuery);

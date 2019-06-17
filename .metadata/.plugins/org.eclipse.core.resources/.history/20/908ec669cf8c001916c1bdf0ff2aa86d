@@ -1,0 +1,11 @@
+<%@ tag pageEncoding="utf-8"%>
+
+<%@ attribute name="controller" required="true"%>
+<%@ attribute name="init" required="false"%>
+
+<body ng-controller='${controller}' ng-init='${init}' click-event-listener
+  class="page-header-fixed exex-right-sidebar-over-content page-footer-fixed exex-sidebar-closed" ng-cloak>
+
+  <jsp:doBody />
+
+</body>

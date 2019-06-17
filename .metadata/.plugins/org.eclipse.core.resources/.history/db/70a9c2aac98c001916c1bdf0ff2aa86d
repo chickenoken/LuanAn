@@ -1,0 +1,276 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision:  $  $Date:  $
+ */
+
+'use strict';
+exexSMSApp.factory('ProjectProcessDetailModel',
+        [ 'BaseModel', '$rootScope',
+          function(BaseModel, $rootScope) {
+
+    var model = BaseModel.getInstance();
+
+    model.form = {
+        processDetail :{
+            businessCd :  '',
+            projectSno : '',
+            processNo : ''
+        },
+        listEXEXBusiness : [],
+        listUser : [],
+        listGroupTree : [],
+    };
+
+    model.hidden = {
+            redirectUrl : ''
+    };
+
+    return model;
+}]);
+
+exexSMSApp.service('ProjectProcessDetailService', ['$q', 'ServerService',function ($q, ServerService) {
+    var self = this;
+
+    self.initData = function(param) {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('ProjectProcessDetail/initData', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+}]);
+
+exexSMSApp.controller('ProjectProcessDetailDialogCtrl',
+        ['$scope', '$uibModalInstance','ProjectProcessDetailModel', 'HeaderModel', 'ProjectProcessDetailService','ServerService', 'DialogsService','RouteService' , 'data', '$filter',
+         function($scope, $uibModalInstance, ProjectProcessDetailModel, HeaderModel, ProjectProcessDetailService, ServerService, DialogsService, RouteService, data, $filter) {
+
+    $scope.model = ProjectProcessDetailModel;
+
+    $scope.modelHeader = HeaderModel;
+
+    $scope.initData = function(){
+        var param = {
+            businessCd : $scope.model.form.processDetail.businessCd,
+            projectSno : $scope.model.form.processDetail.projectSno,
+            processNo : $scope.model.form.processDetail.processNo,
+            processGroupNo : $scope.model.form.processDetail.processGroupNo
+        }
+        ProjectProcessDetailService.initData(param)
+            .then(function(result) {
+                    $scope.model.form.listEXEXBusiness = result.data.listEXEXBusiness;
+                    $scope.model.form.listUser = result.data.listUser;
+                    $scope.model.form.listGroupTree = result.data.listGroupTree;
+                    $scope.model.form.business = result.data.business;
+
+                    var lengthItems = result.data.listProcess.length;
+                    var listProcess = [];
+                    for(var indexs = 0; indexs < lengthItems; indexs++) {
+
+                        var items = result.data.listProcess[indexs];
+                        var detail = items.listSubProcess[0].listDetailProcess;
+                        var lengthItem = detail.length;
+
+                        var listDetailProcess = [];
+
+                        for(var index = 0; index < lengthItem; index++) {
+                            var item = detail[index];
+                            // check box
+                            if('04'== item.controlType && !StringUtils.isEmpty(item.listDataSource) && item.listSgtDataSource.length > 0 && typeof(item.inputValue) == 'string'){
+                                var inputValue = [];
+                                angular.forEach(item.listSgtDataSource, function(data, k){
+                                    if(!StringUtils.isEmpty(item.inputValue) && item.inputValue.indexOf(data.code) > -1){
+                                        inputValue[k] = '1'
+                                    }else{
+                                        inputValue[k] = '0';
+                                    }
+                                });
+                                if(inputValue.length > 0){
+                                    item.inputValue = inputValue;
+                                }
+                            }
+                            // address
+                            if('09'== item.controlType){
+                                if(!StringUtils.isEmpty(item.inputValue)){
+                                    var postNo = StringUtils.isJson(item.inputValue) ? angular.fromJson(item.inputValue) : "";
+                                    item.postNo1 = postNo.postNo1;
+                                    item.postNo2 = postNo.postNo2;
+                                    item.address1 = postNo.address1;
+                                    item.address2 = postNo.address2;
+                                }
+                            }
+                            // radio
+                            if('10'== item.controlType && !StringUtils.isEmpty(item.listSgtDataSource)){
+                                if(!StringUtils.isEmpty(item.inputValue)){
+                                    angular.forEach(item.listSgtDataSource, function(val, index){
+                                        if(val.code == item.inputValue){
+                                            val.codeValue = item.inputValue;
+                                        }
+                                    });
+                                }
+                            }
+                            // multiple select box
+                            if((item.controlType == '11' || item.controlType == 'MST_GROUP_LIST' || item.controlType == 'MST_USER_LIST')
+                                    && !StringUtils.isEmpty(item.inputValue)  && typeof(item.inputValue) == 'string'){
+                                item.inputValue = item.inputValue.split(',');
+                            }
+                            listDetailProcess.push(item);
+                        }
+                        items.listSubProcess[0].listDetailProcess = listDetailProcess
+
+                        listProcess.push(items);
+                    }
+                    $scope.model.form.listProcess = listProcess;
+
+                }
+            );
+    };
+
+    $scope.init = function(){
+        $scope.model.form.processDetail.businessCd = data.businessCd;
+        $scope.model.form.processDetail.projectSno = data.projectSno;
+        $scope.model.form.processDetail.processNo = data.processNo;
+        $scope.model.form.processDetail.processGroupNo = data.processGroupNo;
+        $scope.model.hidden.redirectUrl = data.ptlScreen;
+        $scope.initData();
+    };
+
+    $scope.init();
+
+    $scope.close = function() {
+        $uibModalInstance.dismiss('close');
+    };
+
+    $scope.gotoUrl = function(){
+        var prjBusiness = {
+                'projectSno' : $scope.model.form.processDetail.projectSno,
+                'businessCd' : $scope.model.form.processDetail.businessCd,
+                'screenMode' : 'VIEW',
+                'redirectUrl' : $scope.model.hidden.redirectUrl
+        };
+        sessionStorage.setItem("prjBusiness", JSON.stringify(prjBusiness));
+        RouteService.gotoUrl('SfaProjectProcessManagement');
+    };
+
+    $scope.downloadFile = function(param){
+        if(!StringUtils.isEmpty(param.inputValue)){
+            var params = {businessCd: param.businessCd,
+                          projectSno: $scope.model.form.processDetail.projectSno,
+                          processNo: param.processNo,
+                          lineNo: param.lineNo,
+                          recodeNo: param.recodeNo};
+            Utils.postToUrl("/ProjectInformationControl/downloadFile", params);
+        }
+    };
+
+    $scope.gotoEXEX = function (controlType, row){
+        sessionStorage.removeItem("customerInfo");
+        sessionStorage.removeItem("projectSno");
+        sessionStorage.removeItem("processDetail");
+        sessionStorage.removeItem("fromSalEXEX");
+        switch (controlType) {
+            case 'EXEX01':
+                sessionStorage.removeItem("salEstimate");
+                var params = {
+                        estimateSno :  row.workNo,
+                        recodeNo : row.recodeNo,
+                        screenMode : 'VIEW',
+                        backMode : true,
+                        ptlMode : true,
+                        isDisabled : true,
+                        ptlScreen : 'SalEstimateList'
+                };
+                sessionStorage.setItem("salEstimate", JSON.stringify(params));
+                window.open("SalEstimateControl","_blank");
+                break;
+            case 'EXEX02':
+                sessionStorage.removeItem("receiveItemInfo");
+                var params = {
+                        rcvSno :  row.workNo,
+                        recodeNo : row.recodeNo,
+                        screenMode : "VIEW",
+                        backMode : true,
+                        isDisabled : true,
+                        ptlMode : true,
+                        ptlScreen : 'SalRsvList'
+                };
+                sessionStorage.setItem("receiveItemInfo", JSON.stringify(params));
+                window.open("SalRsvControl","_blank");
+                break;
+            case 'EXEX03':
+                sessionStorage.removeItem("salDecideProcess");
+                var params = {
+                         salesSno : row.workNo,
+                         recodeNo : row.recodeNo,
+                         screenMode : "VIEW",
+                         backMode : true,
+                         isDisabled : true,
+                         ptlMode : true,
+                         ptlScreen : 'SalDemandList'
+                 };
+                sessionStorage.setItem("salDecideProcess", JSON.stringify(params));
+                window.open("SalDecideProcess","_blank");
+                break;
+            case 'EXEX06':
+                sessionStorage.removeItem("salSell");
+                var params = {
+                         orderSno : row.workNo,
+                         recodeNo : row.recodeNo,
+                         screenMode : "VIEW",
+                         backMode : true,
+                         isDisabled : true,
+                         ptlMode : true,
+                         ptlScreen : 'SalOrderList'
+                 };
+                sessionStorage.setItem("salSell", JSON.stringify(params));
+                window.open("SalOrderControl","_blank");
+                break;
+            case 'EXEX07':
+                sessionStorage.removeItem("salStock");
+                var params = {
+                         stockSno : row.workNo,
+                         recodeNo : row.recodeNo,
+                         screenMode : "VIEW",
+                         backMode : true,
+                         isDisabled : true,
+                         ptlMode : true,
+                         ptlScreen : 'SalStockList'
+                 };
+                sessionStorage.setItem("salStock", JSON.stringify(params));
+                window.open("SalStockControl","_blank");
+            break;
+        }
+    };
+
+    $scope.exportDialog = function(item){
+        if(item.exportFileCd == '1'){
+            var options = {size: '400'};
+            var param = {
+               exportFileName : item.exportFileName,
+               custCd : item.custCd,
+               exportFileCd : item.exportFileCd
+            }
+            DialogsService.showDialog('SfaProjectProcessExportDialog', 'sfaProjectProcessExportDialogCtrl', param, options);
+        }else if(item.exportFileCd == '2'){
+            var fileName = item.exportFileName;
+            var params = {
+                karteProjectSno : data.projectSno,
+                custCd : item.custCd,
+                contractProjectSno : data.parentProjectSno,
+                exportFileCd : item.exportFileCd
+            };
+            ServerService.doDownload('/SfaProjectProcessExportDialog/exportExcelDialog', params, "application/vnd.ms-excel", fileName + '_' + $filter('date')(new Date(), "yyyyMMdd") + '.xlsx');
+        }
+    }
+}]);

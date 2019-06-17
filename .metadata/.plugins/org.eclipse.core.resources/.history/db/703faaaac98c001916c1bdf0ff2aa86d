@@ -1,0 +1,171 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision:  $  $Date:  $
+ */
+
+'use strict';
+
+exexSMSApp.factory('MstRoleListModel', [ 'BaseModel', function(BaseModel) {
+    var model = BaseModel.getInstance();
+
+    model.form = {
+        mstRoleSearch : {
+            roleName : ''
+        },
+        mstRoleList : []
+    };
+
+    model.hidden = {
+    };
+
+    return model;
+
+}]);
+
+exexSMSApp.controller('mstRoleListCtrl',
+        ['$scope', '$timeout', 'MstRoleListModel', 'DialogsService','RouteService', 'Messages','ServerService',
+         function($scope, $timeout, MstRoleListModel, DialogsService, RouteService, Messages,ServerService){
+
+    $scope.model = MstRoleListModel;
+
+    $scope.init = function(model){
+        // Table Paging
+        $scope.model.currentPage = 1; //current page
+        $scope.model.entryLimit = 20; //max no of items to display in a page
+        $scope.model.number = 20;
+        $scope.model.filteredItems = $scope.model.form.mstRoleList.length; //Initially for no filter
+        $scope.model.totalItems = $scope.model.form.mstRoleList.length;
+        if($scope.model.form.mstRoleList.length > 0){
+            $scope.model.beginValFilter = 1;
+        }else{
+            $scope.model.beginValFilter = 0;
+        }
+
+        $scope.setPage = function(pageNo) {
+            $scope.model.currentPage = pageNo;
+        };
+
+        $scope.model.filter = function() {
+            $timeout(function() {
+                $scope.model.filteredItems = $scope.model.form.filtered.length;
+                if($scope.model.form.filtered.length > 0){
+                    $scope.model.beginValFilter = 1;
+                }else{
+                    $scope.model.beginValFilter = 0;
+                }
+            }, 10);
+        };
+        // End Table Paging
+
+        setTimeout(function() {
+            var params = {
+                    roleName : $scope.model.form.mstRoleSearch.roleName
+            };
+            $scope.search(params);
+        }, 10);
+
+        $scope.$on("MstRoleControl#editRoleList", function(evt, param) {
+            var params = {
+                    roleName : ''
+            };
+            $scope.search(params);
+        });
+    };
+    $scope.init();
+
+    $scope.search = function(params){
+        ServerService.doPost('MstRoleList/search', params)
+        .then(
+        /* success function */
+        function(result) {
+            var error =  result.data.failed;
+            var warning =  result.data.warning;
+            if(!ValidateUtil.isValidTextEmpty(error)){
+                DialogsService.showError(Messages.getMessage('system.error'), error);
+                return;
+            }else if(!ValidateUtil.isValidTextEmpty(warning)){
+                DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                return;
+            }
+            if(result.data.resultList.resultList.length > 0){
+                $scope.model.beginValFilter = 1;
+            }else{
+                $scope.model.beginValFilter = 0;
+            }
+            $scope.model.form.mstRoleList = result.data.resultList.resultList;
+            $scope.model.filteredItems = $scope.model.form.mstRoleList.length;
+            $scope.model.totalItems = $scope.model.form.mstRoleList.length;
+
+            // add colresizable to table
+            setTimeout(function(){
+                $scope.setColResizable();
+            });
+        },
+        /* error function */
+        function(error) {});
+    };
+
+    /**
+     * open dialog
+     */
+    $scope.openDialog = function(value) {
+        var options = {
+                size: '1050',
+            };
+        var param = [];
+        switch (value) {
+            case 'addRole':
+                sessionStorage.removeItem('mstRole');
+                RouteService.gotoUrl('MstRoleControl');
+                break;
+            default:
+                //set Param from data on form
+                var param = {
+                        'roleCd' : value.roleCd,
+                        'companyCd' : value.companyCd
+                    };
+            ServerService.doPost('MstRoleList/checkData', param)
+            .then(
+            /* success function */
+            function(result) {
+                var warning = result.data.warning;
+                var error = result.data.failed;
+                if(!ValidateUtil.isValidTextEmpty(warning)){
+                    DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                    $scope.search();
+                    return;
+                }else if(!ValidateUtil.isValidTextEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                }else{
+                    var param = {
+                            roleCd : value.roleCd,
+                            roleName: value.roleName,
+                            remark : value.remark
+                    };
+                    sessionStorage.setItem("mstRole", JSON.stringify(param));
+                    RouteService.gotoUrl('MstRoleControl');
+                }
+            },
+            /* error function */
+            function(error) {});
+            break;
+        };
+    };// end launch
+
+    // set colResizable
+    $scope.setColResizable = function(){
+        // remove JCLRgrips if having
+        $('.JCLRgrips').remove();
+
+        angular.element('#tableMstRoleList').colResizable({
+            liveDrag: true,
+            postbackSafe: true,
+            useLocalStorage: true
+        });
+    }
+
+}]);

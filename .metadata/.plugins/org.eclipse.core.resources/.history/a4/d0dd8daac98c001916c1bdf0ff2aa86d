@@ -1,0 +1,117 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision:  $  $Date:  $
+ */
+'use strict';
+
+exexSMSApp.factory('TblChangeControlModel', [ 'BaseModel', '$rootScope', function(BaseModel, $rootScope) {
+
+    var model = BaseModel.getInstance();
+
+    model.form = {
+            changeControl : {
+                changeDate : '',
+                changeDateFull : '',
+                changeMsg : '',
+                changeUser : '',
+                companyCd : '',
+                custCd : '',
+                userName : '',
+                version : ''
+            }
+        };
+
+    model.setup = function(model) {};
+    model.hidden = {
+            isSubmited: false,
+        };
+
+    return model;
+} ]);
+
+
+exexSMSApp
+        .controller('tblChangeControlCtrl',['$rootScope', '$scope' , '$window','dialogs', '$uibModalInstance', 'TblChangeControlModel', 'data', 'Messages','ServerService',
+                                            function($rootScope, $scope ,$window,dialogs, $uibModalInstance, TblChangeControlModel,data, Messages,serverService) {
+
+    $scope.model = TblChangeControlModel;
+
+    if(data != undefined && data != null){
+        var changeMsgOld = angular.copy(data.changeMsg);
+        $scope.model.form.changeControl = angular.copy(data);
+    }
+
+    $scope.init = function(){
+        $scope.getInit();
+    };
+
+    $scope.close = function() {
+        $uibModalInstance.dismiss('close');
+    };
+
+    $scope.updateChange = function(param, formInvalid){
+        $scope.model.hidden.isSubmited = true;
+        if (formInvalid) {
+            return;
+        }
+        var dlg = dialogs.confirm(Messages.getMessage('title.confirm'),Messages.getMessage('S00003'));
+        dlg.result.then(function(btn){
+            serverService.doPost('TblChangeControl/updateChange', param)
+            .then(
+            /* success function */
+            function(result) {
+                var warning = result.data.warning;
+                var error = result.data.failed;
+                var success = result.data.success;
+                if(!ValidateUtil.isValidTextEmpty(warning)){
+                    dialogs.warn(Messages.getMessage('check.error'),warning);
+                }else if(!ValidateUtil.isValidTextEmpty(error)){
+                    dialogs.error(Messages.getMessage('system.error'),error);
+                }else{
+                    dialogs.notify(Messages.getMessage('title.info'),success);
+                    $uibModalInstance.dismiss('close');
+                    var params = {
+                            custCd: param.custCd
+                    };
+                    $rootScope.$broadcast("CrmRefer#changeMsg",params);
+                }
+            },
+            /* error function */
+            function(error) {});
+        },function(btn){
+        });
+    };
+
+    $scope.deleteChange = function(param){
+        param.changeMsg = changeMsgOld;
+        var dlg = dialogs.confirm(Messages.getMessage('title.confirm'),
+                Messages.getMessage('S00005'));
+        dlg.result.then(function(btn){
+            serverService.doPost('TblChangeControl/deleteChange', param)
+            .then(
+            /* success function */
+            function(result) {
+                var warning = result.data.warning;
+                var error = result.data.failed;
+                var success = result.data.success;
+                if(!ValidateUtil.isValidTextEmpty(warning)){
+                    dialogs.warn(Messages.getMessage('check.error'),warning);
+                }else if(!ValidateUtil.isValidTextEmpty(error)){
+                    dialogs.error(Messages.getMessage('system.error'),error);
+                }else{
+                    dialogs.notify(Messages.getMessage('title.info'),success);
+                    $uibModalInstance.dismiss('close');
+                    var params = {
+                            custCd: param.custCd
+                    };
+                    $rootScope.$broadcast("CrmRefer#changeMsg",params);
+                }
+            },
+            /* error function */
+            function(error) {});
+        },function(btn){});
+    };
+}]);

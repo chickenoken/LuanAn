@@ -1,0 +1,318 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision:  $  $Date:  $
+ * @author : Minh-Dao
+ */
+'use strict';
+/**
+ * Table :
+ */
+exexSMSApp.factory('MstOutputItemControlModel', [ 'BaseModel', function(BaseModel) {
+    var model = BaseModel.getInstance();
+    model.form = {
+        outputItem: {
+            outputNo: '',
+            outputType:'',
+            outputName:'',
+            version:'',
+            custType: false,
+        },
+        listL010017: [],
+        outputItemList:[],
+        selectItemList:[]
+    };
+    model.hidden = {
+        viewMode: '',
+        isSubmited: false,
+        freeLabel: {}
+    };
+
+    return model;
+
+}]);
+exexSMSApp.controller('mstOutputItemControlCtrl',
+        ['$rootScope', '$scope', '$uibModalInstance', 'MstOutputItemControlModel', 'data', 'DialogsService', 'Messages', 'ServerService',
+         function($rootScope, $scope, $uibModalInstance, MstOutputItemControlModel, data, DialogsService, Messages, ServerService){
+
+    $scope.model=MstOutputItemControlModel;
+
+    $scope.init = function(model){
+        $scope.model.hidden.isSubmited = false;
+        $scope.getInit();
+    };
+
+    $scope.getInit = function(){
+        ServerService
+        .doPost('MstOutputItemControl/getInit', {})
+        .then(
+            function(okResult) {
+                var error = okResult.data.failed;
+                if(!ValidateUtil.isValidTextEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                     return;
+                }
+
+                // get free label from session
+                $scope.model.hidden.freeLabel = angular.fromJson(sessionStorage.getItem("freeLabel"));
+                $scope.model.form.listL010017 = okResult.data.listL010017;
+                // setting label name for listL010017 by freeLabel on session
+                angular.forEach($scope.model.form.listL010017, function (item, i) {
+                    // site
+                    if(item.code == '05'){
+                        item.codeName = $scope.model.hidden.freeLabel.siteTitleFreeLabel + Messages.getMessage('common.button.list.back') ;
+                    }
+                    // dept
+                    if(item.code == '06'){
+                        item.codeName = $scope.model.hidden.freeLabel.deptTitleFreeLabel + Messages.getMessage('common.button.list.back') ;
+                    }
+                    // sub project
+                    if(item.code == '07'){
+                        item.codeName = $scope.model.hidden.freeLabel.subProjectTitleFreeLabel + Messages.getMessage('common.button.list.back') ;
+                    }
+                })
+
+                if(!StringUtils.isEmpty(data.outputNo)){
+                    $scope.model.form.outputItem.outputNo = data.outputNo;
+                    $scope.model.form.outputItem.outputType = data.outputType;
+                    $scope.model.form.outputItem.custType = data.custType;
+                    $scope.model.hidden.viewMode = "UPDATE";
+                    $scope.inquiry(data.outputNo);
+                }else{
+                    $scope.model.hidden.viewMode = "INSERT";
+                    $scope.model.form.outputItem = {
+                        outputNo: '',
+                        outputType:'01',
+                        outputName:'',
+                        custType: false,
+                    };
+                    $scope.changeType();
+                }
+            },
+            function(errResult){
+            });
+
+    };
+
+    $scope.inquiry = function(outputNo){
+        var param = {
+                'outputNo': $scope.model.form.outputItem.outputNo,
+                'outputType': $scope.model.form.outputItem.outputType,
+                'custType': $scope.model.form.outputItem.custType
+            };
+
+        ServerService
+        .doPost('MstOutputItemControl/inquiry', param)
+        .then(
+            function(okResult) {
+                var error = okResult.data.failed;
+                if(!ValidateUtil.isValidTextEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                }
+                $scope.model.form.outputItem = angular.copy(okResult.data.outputItem);
+                $scope.model.form.outputItem.custType = angular.copy(okResult.data.outputItem.custType);
+                $scope.model.form.outputItemList = okResult.data.outputItemList;
+                $scope.model.form.selectItemList = okResult.data.selectItemList;
+            },
+            function(errResult){
+            });
+    };
+
+    /**
+     * close popup
+     */
+    $scope.close = function() {
+        $scope.resetForm();
+        $uibModalInstance.dismiss('close');
+    };
+
+    /**
+     * 登録。
+     */
+    $scope.insert = function(formInvalid) {
+        $scope.model.hidden.isSubmited = true;
+        if (formInvalid) {
+            return;
+        }
+        var param = $scope.model.form.outputItem;
+        var params = {
+            outputName:param.outputName,
+            custType:!StringUtils.isEmpty(param.custType) ? param.custType : null,
+            outputType:param.outputType,
+            outputItemList: $scope.model.form.outputItemList
+        };
+        DialogsService.showConfirm(Messages.getMessage('title.confirm'),Messages.getMessage('S00003'))
+        .result.then(function(btn){
+            ServerService
+            .doPost('MstOutputItemControl/insert', params)
+            .then(
+                function(okResult) {
+                    var success = okResult.data.success;
+                    var warning = okResult.data.warning;
+                    var error = okResult.data.failed;
+                    if (!ValidateUtil.isValidTextEmpty(success)) {
+                        DialogsService.showNotify(Messages.getMessage('title.info'), success).result.then(
+                            function(param) {
+                                $scope.getOutputItemList();
+                                $uibModalInstance.dismiss('close');
+                        });
+                    }else {
+                        if(!ValidateUtil.isValidTextEmpty(warning)){
+                            DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                        }else{
+                            DialogsService.showError(Messages.getMessage('system.error'), error);
+                        }
+                    }
+                },
+                function(errResult){
+                });
+        },function(btn){});
+    };
+
+    /**
+     * 更新。
+     */
+    $scope.update = function(formInvalid) {
+        $scope.model.hidden.isSubmited = true;
+        if (formInvalid) {
+            return;
+        }
+        var param = $scope.model.form.outputItem;
+        var params = {
+            outputNo:param.outputNo,
+            outputName:param.outputName,
+            custType:!StringUtils.isEmpty(param.custType) ? param.custType : null,
+            outputType:param.outputType,
+            version: param.version,
+            outputItemList: $scope.model.form.outputItemList
+        };
+        DialogsService.showConfirm(Messages.getMessage('title.confirm'),Messages.getMessage('S00004'))
+        .result.then(function(btn){
+            ServerService
+            .doPost('MstOutputItemControl/update', params)
+            .then(
+                function(okResult) {
+                    var success = okResult.data.success;
+                    var warning = okResult.data.warning;
+                    var error = okResult.data.failed;
+                    if (!ValidateUtil.isValidTextEmpty(success)) {
+                        DialogsService.showNotify(Messages.getMessage('title.info'), success).result.then(
+                                function(param) {
+                                    $scope.getOutputItemList();
+                                    $uibModalInstance.dismiss('close');
+                        });
+                    } else {
+                        if(!ValidateUtil.isValidTextEmpty(warning)){
+                            DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                        }else{
+                            DialogsService.showError(Messages.getMessage('system.error'), error);
+                        }
+                    }
+                },
+                function(errResult){
+                });
+        },function(btn){});
+    };
+
+
+   /**
+    * 削除。
+    */
+   $scope.deleteOutput = function(param) {
+       var param = $scope.model.form.outputItem;
+       var params = {
+               outputNo:param.outputNo,
+       };
+       DialogsService.showConfirm(Messages.getMessage('title.confirm'),Messages.getMessage('S00005'))
+       .result.then(function(btn){
+           ServerService
+           .doPost('MstOutputItemControl/delete', params)
+           .then(
+               function(okResult) {
+                   var success = okResult.data.success;
+                   var warning = okResult.data.warning;
+                   var error = okResult.data.failed;
+                   if (!ValidateUtil.isValidTextEmpty(success)) {
+                       DialogsService.showNotify(Messages.getMessage('title.info'), success).result.then(
+                           function(param) {
+                               $scope.getOutputItemList();
+                               $uibModalInstance.dismiss('close');
+                       });
+                   } else {
+                       if(!ValidateUtil.isValidTextEmpty(warning)){
+                           DialogsService.showWarning(Messages.getMessage('check.error'), warning, {size: '320'});
+                       }else{
+                           DialogsService.showError(Messages.getMessage('system.error'), error);
+                       }
+                   }
+               },
+               function(errResult){
+               });
+       },function(btn){});
+   };
+
+   $scope.init();
+
+   $scope.getOutputItemList = function(){
+       var params = {
+       };
+       $rootScope.$broadcast("MstOutputItem#editOutputItem",params);
+    };
+
+
+    $scope.close = function() {
+        $uibModalInstance.dismiss('close');
+    };
+
+    $scope.changeType = function(){
+        if($scope.model.form.outputItem.outputType == "01"){    // customer
+            if(StringUtils.isEmpty($scope.model.form.outputItem.custType)){
+                $scope.model.form.outputItem.custType = false;
+            }
+        } else if ($scope.model.form.outputItem.outputType == "04"){    // stockAddress
+            $scope.model.form.outputItem.custType = false;
+        } else {
+            $scope.model.form.outputItem.custType = "";
+        }
+        var param = {
+                'outputType': $scope.model.form.outputItem.outputType,
+                'custType': $scope.model.form.outputItem.custType ? true : false
+            };
+
+        ServerService
+        .doPost('MstOutputItemControl/changeType', param)
+        .then(
+            function(okResult) {
+                var error = okResult.data.failed;
+                if(!ValidateUtil.isValidTextEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                }
+                $scope.model.form.selectItemList = okResult.data.selectItemList;
+                $scope.model.form.outputItemList = [];
+            },
+            function(errResult){
+            });
+    }
+
+    $scope.sortableConfig = {
+        group: 'requestUser',
+    };
+
+    $scope.addAll = function(){
+        angular.forEach($scope.model.form.selectItemList, function(item,index){
+            $scope.model.form.outputItemList.push(item);
+        });
+        $scope.model.form.selectItemList = [];
+    }
+
+    $scope.removeAll = function(){
+        angular.forEach($scope.model.form.outputItemList, function(item,index){
+            $scope.model.form.selectItemList.push(item);
+        });
+        $scope.model.form.outputItemList = [];
+    }
+}]);

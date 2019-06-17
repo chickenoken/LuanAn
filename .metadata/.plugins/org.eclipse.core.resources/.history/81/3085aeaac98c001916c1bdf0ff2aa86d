@@ -1,0 +1,66 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision:  $  $Date:  $
+ */
+'use strict';
+exexSMSApp.factory('SalDecideProcessExportDialogModel', [ 'BaseModel', function(BaseModel) {
+
+    var model = BaseModel.getInstance();
+
+    model.form = {
+            dialog : {
+                exportLanguage : '1',
+                exportDeliveryNote : true,
+                exportDeliveryNoteRefrain : false,
+                exportReceipt : false,
+                exportAcceptanceCertificate : false,
+                exportACertificateReceipt : false,
+                exportTestRunConfirm : false,
+                exportInvoice : false,
+                showDetailShipmentPlanDate : false,
+                showAmountMoney : false
+            }
+      };
+
+    return model;
+}]);
+
+exexSMSApp.controller('salDecideProcessExportDialogCtrl',
+                ['$scope', '$uibModalInstance', 'SalDecideProcessExportDialogModel', 'DialogsService', 'Messages', 'ServerService', '$cookies', '$filter', 'data',
+         function($scope, $uibModalInstance, SalDecideProcessExportDialogModel, DialogsService, Messages, ServerService, $cookies, $filter, data){
+
+    $scope.model = SalDecideProcessExportDialogModel;
+
+    $scope.close = function() {
+        $uibModalInstance.dismiss('close');
+    };
+
+    $scope.init = function(){
+        var cookies = angular.fromJson($cookies.get("SalDecideProcessExportDialog"));
+        if(!StringUtils.isEmpty(cookies)) {
+            $scope.model.form.dialog = cookies;
+        }
+    }
+
+    $scope.init();
+
+    $scope.download = function(param){
+        var cookies = angular.toJson(param);
+        $cookies.put("SalDecideProcessExportDialog", cookies);
+        var fileName = '';
+        if($scope.model.form.dialog.exportLanguage == '2') {
+            fileName = '01_売上伝票_英語'
+        }else {
+            fileName = '02_売上伝票';
+        }
+        param.salesSno = data.salesSno;
+        param.recodeNo = data.recodeNo;
+        ServerService.doDownload('/SalDecideProcessExportDialog/exportExcelDialog', param, "application/vnd.ms-excel", fileName + '_' + $filter('date')(new Date(), "yyyyMMdd") + '.xlsx');
+        $uibModalInstance.close();
+    }
+
+}]);
+

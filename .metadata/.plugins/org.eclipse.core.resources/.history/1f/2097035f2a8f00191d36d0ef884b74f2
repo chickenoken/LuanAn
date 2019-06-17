@@ -1,0 +1,15 @@
+package org.planning.net.entity;
+
+/** */
+@javax.annotation.Generated(value = { "Doma", "2.3.1" }, date = "2019-06-15T11:59:00.802+0700")
+public final class _LogPhong extends org.seasar.doma.jdbc.entity.AbstractEntityType<org.planning.net.entity.LogPhong> {
+
+    static {
+        org.seasar.doma.internal.Artifact.validateVersion("2.3.1");
+    }
+
+    private static final _LogPhong __singleton = new _LogPhong();
+
+    private final org.seasar.doma.jdbc.entity.NamingType __namingType = null;
+
+    /** the maKhachHang */

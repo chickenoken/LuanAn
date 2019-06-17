@@ -1,0 +1,21 @@
+package org.planning.net.logic;
+
+import java.util.List;
+
+import org.planning.net.dao.LoginDao;
+import org.planning.net.dto.LoginDto;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+@Component
+public class LoginLogicImpl implements LoginLogic{
+
+    private LoginDao loginDao;
+
+    @Override
+    public List<LoginDto> getList() throws Exception {
+
+        return loginDao.selectListNv();
+    }
+
+}

@@ -1,0 +1,178 @@
+.bootstrap-switch-container .checker {
+    display: none !important;
+}
+
+.bootstrap-switch {
+    margin-left: 5px;
+}
+
+.exex-form label:after {
+    content: "";
+}
+span.btn.default {
+    height: 34px;
+    background: #DDDDDD;
+}
+
+.portlet.light {
+    margin-bottom: 65px !important;
+}
+
+textarea {
+    resize: none;
+}
+
+.label-title-wrap {
+    background-color: #3598DC;
+    color: #FFF;
+    border-bottom: 1px solid #FFF;
+    padding: 22px 5px 22px 0px !important;
+    text-align: right;
+}
+
+.table>thead>tr>th {
+    border-bottom: none;
+}
+
+.table>tbody>tr>td {
+    border-top: none;
+}
+
+#height-button-control{
+	padding-right: 20px;
+}
+
+#drag-component{
+	margin-left: -19px !important;
+}
+
+#drag-component .panel-heading{
+	background-color: #398FD3 !important;
+	border-top-left-radius: 0px !important;
+    border-top-right-radius: 0px !important;
+}
+
+#drag-component h2{
+	text-align: left;
+	background-color: #26a69a;
+	color: #fff;
+	padding: 0px 0px 5px 5px;
+}
+
+#drag-component table thead tr th{
+	background-color: #3598DC;
+	color: #FFF;
+	padding: 5px;
+	border: 1px solid #DDD;
+}
+
+#drag-component table tbody tr td{
+	padding: 5px;
+	border: 1px solid #DDD;
+	max-width: 80px;
+}
+
+#sales-report-form .form-control:hover {
+    transition-duration: .5s;
+    border-color: #DDD;
+    box-shadow: 0px 0px 0px 0px rgba(204, 204, 204, 0.8);
+}
+
+#sales-report-form input[disabled="disabled"], #sales-report-form textarea[disabled="disabled"]{
+	border-radius: 0px;
+    border: solid 1px #DDD;
+    background-color: #fff;
+    width: 100%;
+    cursor: default;
+}
+
+#sales-report-form input[disabled="disabled"]:hover{
+    box-shadow: 0px 0px 0px 0px rgba(204, 204, 204, 0.8);
+}
+
+#sales-report-form input[readonly], #sales-report-form .readonly{
+	pointer-events: none;
+	color: #DDD;
+	border-color: #DDD;
+}
+
+#drag-component .md-check{
+	width: 50% !important;
+}
+
+@media (max-width: 1024px){
+    .portlet.light {
+        margin-bottom: 40px !important;
+    }
+    div#height-button-control {
+        position: absolute;
+        margin-bottom: 0px;
+        margin-right: 0px;
+    }
+}
+
+.list {
+	list-style: none outside none;
+	margin: 10px 0 30px;
+}
+
+.apps-container {
+  width: 100%;
+}
+
+.apps-container-right{
+  border: 1px solid #DDD;
+  margin-top: -10px;
+  max-width: 436px;
+}
+
+.app {
+	padding: 5px;
+	margin: 5px 0;
+	border: 1px solid #7b9ce8;
+	border-radius: 0px;
+	font-size: 1.1em;
+	font-weight: bold;
+	text-align: center;
+	cursor: move;
+}
+
+#drag-component .fileinput {
+    margin-bottom: 0px;
+    margin-top: 0px;
+}
+
+#drag-component .hidden{
+	display: none;
+}
+
+#drag-component .calendar-component{
+	margin-top: 0px;
+	margin-bottom: 0px;
+}
+
+#drag-component .daterange-component{
+	margin-top: 0px !important;
+	margin-bottom: 0px;
+}
+
+.table-component{
+	margin-bottom: 0px !important;
+}
+
+.clear {
+  clear: both;
+}
+
+.ui-sortable-placeholder{
+	background-color: #eff0f3;
+    width: 437px;
+    position: absolute;
+    right: 88px;
+    border: 1px dotted #7b9ce8;
+    z-index: 99999;
+}
+.checkbox-top {
+  top : -8px !important;
+}
+

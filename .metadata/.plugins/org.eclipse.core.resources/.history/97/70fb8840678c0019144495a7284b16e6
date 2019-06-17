@@ -1,0 +1,5 @@
+package org.planning.net.service;
+
+public class LoginService {
+
+}

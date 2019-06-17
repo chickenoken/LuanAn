@@ -1,0 +1,117 @@
+'use strict';
+exexSMSApp.factory('InvoiceTemplateListModel', [ 'BaseModel', '$rootScope', function(BaseModel, $rootScope) {
+    var model = BaseModel.getInstance();
+
+    model.form = {
+            search : {
+                tempName : '',
+                invoiceType : '',
+                createUser : '',
+            },
+            paginationInfo : {
+                page: 0,
+                pageSize: 20,
+                totalPage: 0,
+                totalRecord: 0,
+                from: 0,
+                to: 0
+            }
+    }
+    model.hidden = {};
+    model.listInvoiceTemplate = [];
+    return model;
+
+}]);
+
+exexSMSApp.controller('InvoiceTemplateListCtrl',
+        ['$scope','InvoiceTemplateListModel', 'DialogsService','RouteService', 'InvoiceTemplateService', 'Messages',
+         function($scope, InvoiceTemplateListModel,  DialogsService, RouteService, invoiceTemplateService, Messages){
+
+    $scope.model = InvoiceTemplateListModel;
+
+    /**初期*/
+    $scope.init = function(){
+        invoiceTemplateService.init({}).then(
+                function(okResult) {
+                    var error = okResult.data.failed;
+                    if(!ValidateUtil.isValidTextEmpty(error)){
+                        DialogsService.showError(Messages.getMessage('system.error'), error);
+                        return;
+                     }
+                    $scope.model.form.listUser = okResult.data.listUser;
+                    $scope.model.form.listL020001 = okResult.data.listL020001;
+                    $scope.search();
+                },
+                function(errResult){}
+            );
+    };
+
+    $scope.search = function(){
+        $scope.doSearch(1);
+    }
+    /**
+     * 売上一覧を選択する
+     */
+    $scope.doSearch = function(page){
+        var param = angular.copy($scope.model.form.search);
+        param.page = page;
+        param.pageSize = $scope.model.form.paginationInfo.pageSize;
+        invoiceTemplateService.search(param).then(
+            function(result) {
+                $scope.model.listInvoiceTemplate = result.data.listResult;
+                $scope.model.form.paginationInfo = result.data.paginationInfo;
+
+                // add colresizable to table
+                setTimeout(function(){
+                    $scope.setColResizable();
+                });
+            }
+        );
+    };
+
+    $scope.init();
+
+    /**リダイレクト詳細*/
+    $scope.redirectDetail = function(item){
+
+        if(StringUtils.isEmpty(item.custType)){
+            item.custType = null;
+        }
+        var param = {'tempNo': item.tempNo,
+                     'invoiceType': item.invoiceType,
+                     'custType': item.custType,
+                     'pageSize': item.pageSize};
+        invoiceTemplateService.checkData(param).then(function(result) {
+            if(!StringUtils.isEmpty(result.data.failed)){
+                DialogsService.showError(Messages.getMessage('system.error'), result.data.failed);
+                $scope.init();
+                return;
+            }else if(!StringUtils.isEmpty(result.data.warning)){
+                DialogsService.showWarning(Messages.getMessage('check.error'), result.data.warning);
+                $scope.init();
+                return;
+            }else{
+                sessionStorage.setItem("invoiceTemplateSession", JSON.stringify(param));
+                RouteService.gotoUrl("InvoiceTemplate");
+            }
+        });
+    }
+
+    $scope.createInvoiceTemplate = function(){
+        sessionStorage.removeItem("invoiceTemplateSession");
+        RouteService.gotoUrl("InvoiceTemplate");
+    }
+
+    // set colResizable
+    $scope.setColResizable = function(){
+        // remove JCLRgrips if having
+        $('.JCLRgrips').remove();
+
+        angular.element('#tableInvoiceTemplateList').colResizable({
+            liveDrag: true,
+            postbackSafe: true,
+            useLocalStorage: true
+        });
+    }
+
+}]);

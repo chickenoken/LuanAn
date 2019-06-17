@@ -1,0 +1,114 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision:  $  $Date:  $
+ * @author chi-cuong
+ */
+exexSMSApp.factory('MstForeignCurrencyModel', ['BaseModel', function(BaseModel){
+
+    var model = BaseModel.getInstance();
+
+    model.form = {
+        search : {
+            searchUseDateFrom : '',
+            searchUseDateTo : '',
+            searchCurrencyCdList : []
+        },
+        listCurrency : [],
+        filtered : [],
+        listSearch : []
+    };
+
+    return model;
+}]);
+
+exexSMSApp.controller('MstForeignCurrencyCtrl',
+         ['$scope', 'DialogsService', 'MstForeignCurrencyModel', 'ServerService','DialogsService','Messages',
+         function( $scope, DialogsService, MstForeignCurrencyModel, ServerService, DialogsService, Messages){
+
+   $scope.model = MstForeignCurrencyModel;
+
+   $scope.init = function(){
+       ServerService.doPost('MstForeignCurrency/init', {}).then(
+           function(okResult){
+               var error =  okResult.data.failed;
+               var warning =  okResult.data.warning;
+               if(!ValidateUtil.isValidTextEmpty(error)){
+                   DialogsService.showError(Messages.getMessage('system.error'), error);
+                   return;
+               }else if(!ValidateUtil.isValidTextEmpty(warning)){
+                   DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                   return;
+               }
+               $scope.model.form.listCurrency = okResult.data.listCurrency;
+               $scope.search();
+           }
+       );
+   };
+
+   $scope.search = function(){
+       var param = $scope.model.form.search;
+       ServerService.doPost('MstForeignCurrency/search', param).then(
+           function(okResult){
+               var error =  okResult.data.failed;
+               var warning =  okResult.data.warning;
+               if(!ValidateUtil.isValidTextEmpty(error)){
+                   DialogsService.showError(Messages.getMessage('system.error'), error);
+                   return;
+               }else if(!ValidateUtil.isValidTextEmpty(warning)){
+                   DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                   return;
+               }
+               $scope.model.form.listSearch = okResult.data.listSearch;
+               var length = $scope.model.form.listSearch.length;
+               // Table Paging
+               $scope.model.currentPage = 1; //current page
+               $scope.model.entryLimit = 20; //max no of items to display in a page
+               $scope.model.number = 20;
+               $scope.model.filteredItems = length; //Initially for no filter
+               $scope.model.totalItems = length;
+               // End Table Paging
+           }
+       );
+   };
+
+   $scope.init();
+
+   $scope.deleteItem = function(row){
+       var params = {
+           currencyCd : !StringUtils.isEmpty(row.currencyCd) ? row.currencyCd : null,
+           useDate : !StringUtils.isEmpty(row.useDate) ? new Date(row.useDate) :null,
+       };
+       DialogsService.showConfirm(Messages.getMessage('title.confirm'),Messages.getMessage('S00005')).result.then(function(btn){
+       ServerService
+       .doPost('MstForeignCurrency/delete', params).then(
+           function(okResult){
+               var error =  okResult.data.failed;
+               var warning =  okResult.data.warning;
+               var success =  okResult.data.success;
+               if(!ValidateUtil.isValidTextEmpty(error)){
+                   DialogsService.showError(Messages.getMessage('system.error'), error);
+                   return;
+               }else if(!ValidateUtil.isValidTextEmpty(warning)){
+                   DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                   return;
+               } else {
+                   DialogsService.showNotify(Messages.getMessage('title.info'), success).result.then(function(btn){
+                       $scope.search();
+                   });
+               };
+           });
+       });
+   };
+
+   $scope.openDialog = function(){
+       var options = {size: '860'};
+       DialogsService.showDialog('MstForeignCurrencyControl', 'mstForeignCurrencyControlCtrl', null, options)
+       .result.then(function() {
+           $scope.search();
+       });
+   };
+
+}]);

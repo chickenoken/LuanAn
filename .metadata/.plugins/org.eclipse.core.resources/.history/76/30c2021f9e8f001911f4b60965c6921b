@@ -1,0 +1,7 @@
+# DataSource
+
+jdbc.sqlServer.driver            =com.microsoft.sqlserver.jdbc.SQLServerDriver
+jdbc.sqlServer.url               =jdbc:sqlserver://localhost:1433
+jdbc.sqlServer.databaseName      =NetDatabase
+jdbc.sqlServer.user              =ccc
+jdbc.sqlServer.password          =1

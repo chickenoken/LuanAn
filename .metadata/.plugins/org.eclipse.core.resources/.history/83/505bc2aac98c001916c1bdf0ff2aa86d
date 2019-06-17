@@ -1,0 +1,183 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision:  $  $Date:  $
+ */
+
+'use strict';
+exexSMSApp.factory('ProjectInformationControlModel',[ 'BaseModel', function(BaseModel) {
+
+    var model = BaseModel.getInstance();
+
+    model.form = {
+            detailProcess : {
+                processName:''
+            },
+            oldFileBinary : '',
+        };
+    model.listDetailProcess = [],
+    model.hidden = {
+            isShowDiscription : true,
+            isCollapsed : false,
+            isDisabled : true,
+            documentStatus: ''
+    };
+    return model;
+}]);
+
+exexSMSApp.controller('ProjectInformationControlCtrl',
+        ['$scope', 'ServerService', 'ProjectInformationControlModel', '$uibModalInstance' ,'DialogsService', 'data', 'RouteService', 'Messages',
+         function($scope, ServerService, ProjectInformationControlModel, $uibModalInstance, DialogsService, data, RouteService, Messages) {
+
+    $scope.model = ProjectInformationControlModel;
+
+    $scope.done = function(){
+        $uibModalInstance.close();
+    };
+
+    $scope.no = function(){
+        $uibModalInstance.dismiss('no');
+    };
+
+    $scope.init = function(){
+        $scope.getInit();
+    };
+
+    $scope.getInit = function(){
+        var param = {businessCd: data.businessCd,
+                     projectSno: data.projectSno,
+                     processNo: data.processNo,
+                     recodeNo: data.recodeNo};
+        ServerService
+        .doPost('ProjectInformationControl/getDetailProcess', param)
+        .then(
+                function(okResult) {
+                    var error = okResult.data.failed;
+                    if(!ValidateUtil.isValidTextEmpty(error)){
+                        DialogsService.showError(Messages.getMessage('system.error'), error);
+                        return;
+                    }
+                    if(!ValidateUtil.isValidTextEmpty(okResult.data.detailProcess[0].recodeNo)){
+                        $scope.model.hidden.documentStatus = okResult.data.detailProcess[0].documentStatus;
+                        $scope.model.listDetailProcess = okResult.data.detailProcess;
+                        $scope.model.listDetailProcess[0].listBillProcess = okResult.data.listProcess.listBillProcess;
+                        $scope.model.listDetailProcess[0].listPaymentProcess = okResult.data.listProcess.listPaymentProcess;
+                        $scope.model.listDetailProcess[0].listSpendProcess = okResult.data.listProcess.listSpendProcess;
+                        angular.forEach(okResult.data.detailProcess, function(item, i){
+                           if(item.controlType == "04"){
+                               $scope.model.form.oldFileBinary = angular.copy(item.binaryFile);
+                           }
+                        });
+
+                        $scope.model.form.detailProcess.processName = data.processName;
+                        return;
+                    }else{
+                        $uibModalInstance.close();
+                        DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00148'));
+                        return;
+                    }
+                },
+                function(errResult){
+                });
+
+    };
+    $scope.init();
+
+    $scope.update = function(){
+        var param = {businessCd: data.businessCd,
+                     projectSno: data.projectSno,
+                     processNo: data.processNo,
+                     listDetailProcess: $scope.model.listDetailProcess};
+        ServerService.doPost('ProjectInformationControl/update', param)
+        .then(
+        /* success function */
+        function(result) {
+            var error = result.data.failed;
+            var warning = result.data.warning;
+            var success = result.data.success;
+            if (!ValidateUtil.isValidTextEmpty(success)) {
+                DialogsService.showNotify(Messages.getMessage('title.info'), success);
+                $uibModalInstance.close();
+                return;
+            }else if(!ValidateUtil.isValidTextEmpty(warning)){
+                DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                return;
+            }else if (!ValidateUtil.isValidTextEmpty(error)){
+                DialogsService.showError(Messages.getMessage('system.error'), error);
+                return;
+            };
+        },
+        /* error function */
+        function(error) {});
+    };
+
+    $scope.downloadFile = function(param){
+        if(!ValidateUtil.isValidTextEmpty(param.inputValue)){
+            var params = {businessCd: param.businessCd,
+                          projectSno: param.projectSno,
+                          processNo: param.processNo,
+                          lineNo: param.lineNo,
+                          recodeNo: param.recodeNo};
+            Utils.postToUrl("/ProjectInformationControl/downloadFile", params);
+        }
+    };
+
+    $scope.gotoEXEXE = function(controlType, detailData, workNo){
+        if(ValidateUtil.isValidTextEmpty(workNo)){
+            return;
+        }
+        var processDetail = {
+                screenMode : 'VIEW',
+                pJPI : true,
+                isDisabled: true,
+                projectSno : detailData.projectSno,
+                documentStatus : detailData.documentStatus
+        };
+        if(!ValidateUtil.isValidTextEmpty(controlType) && controlType === 'EXEX01'){
+            processDetail.estimateSno = detailData.workNo;
+            processDetail.recodeNo = detailData.workRecodeNo;
+        }else if(!ValidateUtil.isValidTextEmpty(controlType) && controlType === 'EXEX02'){
+            processDetail.rcvSno = detailData.workNo;
+            processDetail.recodeNo = detailData.workRecodeNo;
+        }else if(!ValidateUtil.isValidTextEmpty(controlType) && controlType === 'EXEX03'){
+            processDetail.salesSno = detailData.workNo;
+            processDetail.recodeNo = detailData.workRecodeNo;
+//        }else if(!ValidateUtil.isValidTextEmpty(controlType) && controlType === 'EXEX04'){
+//            processDetail.billSno = detailData.workNo;
+        }else if(!ValidateUtil.isValidTextEmpty(controlType) && controlType === 'EXEX06'){
+            processDetail.orderSno = detailData.workNo;
+            processDetail.recodeNo = detailData.workRecodeNo;
+        }else if(!ValidateUtil.isValidTextEmpty(controlType) && controlType === 'EXEX07'){
+            processDetail.stockSno = detailData.workNo;
+            processDetail.recodeNo = detailData.workRecodeNo;
+        }
+        sessionStorage.setItem("processDetail", JSON.stringify(processDetail));
+
+        if(controlType === 'EXEX01'){
+            RouteService.gotoUrl('SalEstimateControl');
+        }else if(controlType === 'EXEX02'){
+            RouteService.gotoUrl('SalRsvControl');
+        }else if(controlType === 'EXEX03'){
+            RouteService.gotoUrl('SalDecideProcess');
+//        }else if(controlType === 'EXEX04'){
+//            RouteService.gotoUrl('SalDecideProcess');
+        }else if(controlType === 'EXEX06'){
+            RouteService.gotoUrl('SalOrderControl');
+        }else if(controlType === 'EXEX07'){
+            RouteService.gotoUrl('SalStockControl');
+        }
+    };
+
+    $scope.resetFile  = function(e) {
+        e.wrap('<form>').parent('form').trigger('reset');
+        e.unwrap();
+    };
+
+    $scope.removeFile = function(param){
+        param.binaryFile = '';
+        param.inputValue = '';
+        $scope.resetFile($('input[name="inputValueFile"]'));
+    };
+}]);

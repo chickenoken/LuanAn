@@ -1,0 +1,61 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision:  $  $Date:  $
+ * @author : quang-tung
+ */
+'use strict';
+/**
+ * Table :
+ */
+exexSMSApp.service('ReceiveReservationService', ['$q', 'ServerService',function ($q, serverService) {
+    var _self = this;
+
+    /**初期*/
+    _self.initData = function(param) {
+        var deferred = $q.defer();
+        serverService
+            .doPost('ReceiveReservationList/getInit', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    /**検索。*/
+    _self.search = function(param) {
+        var deferred = $q.defer();
+        serverService
+            .doPost('ReceiveReservationList/search', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+        return deferred.promise;
+    };
+
+    /**データをチェック。*/
+    _self.checkData = function(param) {
+        var deferred = $q.defer();
+        serverService
+            .doPost('ReceiveReservationList/checkData', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+        return deferred.promise;
+    };
+}]);

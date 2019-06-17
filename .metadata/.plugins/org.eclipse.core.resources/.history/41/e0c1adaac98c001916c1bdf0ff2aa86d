@@ -1,0 +1,32 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ * SalCommonService
+ *
+ * @author Quang-Thien
+ *
+ * @version $Revision:  $  $Date:  $
+ */
+'use strict';
+
+exexSMSApp.service('SalCommonService', ['$q', 'ServerService',function ($q, ServerService) {
+    var _self = this;
+
+    _self.loadSalCommonData = function(param) {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('SalCommon/loadSalCommonData', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+}]);

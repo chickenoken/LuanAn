@@ -1,0 +1,17 @@
+#mstOutputItemControl .apps-container {
+    margin: 5px 10px 0 0;
+    border: 0px solid #CCC;
+}
+
+#mstOutputItemControl .app:first-child {
+    margin-top: 0;
+}
+
+#mstOutputItemControl .apps-container {
+    padding: 0 5px !important;
+    height: 303px !important;
+}
+
+.w-outputItem{
+	width: 731px;
+}

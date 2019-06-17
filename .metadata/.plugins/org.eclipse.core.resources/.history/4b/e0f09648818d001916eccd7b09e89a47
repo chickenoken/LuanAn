@@ -1,0 +1,102 @@
+/*
+ *
+ *
+ *
+ *
+ * */
+function toHankaku(ob){
+  henkan = ob.value;
+  fName = ob.name;
+
+
+  hankaku  = "ｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉﾊﾋﾌﾍﾎﾏﾐﾑﾒﾓﾔﾕﾖﾗﾘﾙﾚﾛﾜｦﾝｧｨｩｪｫｬｭｮｯ0123456789､｡ｰ-ｰ-ｰ-｢｣  ﾞ_.,()[]{}=+*:;@#$%&!'";
+  hankaku1 = "ｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾊﾋﾌﾍﾎ";
+  hankaku2 = "ﾊﾋﾌﾍﾎ";
+  hankaku3 ="ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  hankaku4 ="abcdefghijklmnopqrstuvwxyz";
+  hankaku5 = "ｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉﾊﾋﾌﾍﾎﾏﾐﾑﾒﾓﾔﾕﾖﾗﾘﾙﾚﾛﾜｦﾝｧｨｩｪｫｬｭｮｯ0123456789､｡ｰ-ｰ-ｰ-｢｣  ﾞ_.,()[]{}=+*:;@#$%&!'";
+
+  zenkaku = "アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲンァィゥェォャュョッ０１２３４５６７８９、。ーｰ-―‐－「」　 ゛＿．，（）[]｛｝＝＋＊：；＠＃＄％＆！’";
+  zenkaku1= "ガギグゲゴザジズゼゾダヂヅデドバビブベボ";
+  zenkaku2= "パピプペポ";
+  hiragana = "あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわをんぁぃぅぇぉゃゅょっ０１２３４５６７８９、。ーｰ-―‐－「」　 ゛＿．，（）[]｛｝＝＋＊：；＠＃＄％＆！’";
+  hiragana1= "がぎぐげござじずぜぞだぢづでどばびぶべぼ";
+  hiragana2= "ぱぴぷぺぽ";
+  zenkaku3 ="ＡＢＣＤＥＦＧＨＩＪＫＬＭＮＯＰＱＲＳＴＵＶＷＸＹＺ";
+  zenkaku4 ="ａｂｃｄｅｆｇｈｉｊｋｌｍｎｏｐｑｒｓｔｕｖｗｘｙｚ";
+
+  str1 = "";
+  sonota="";
+
+  for( var i=0 ; i<henkan.length ; i++ )
+  {
+    c1 = henkan.charAt(i);
+    l1 = hankaku.indexOf(c1,0);
+    n1 = zenkaku.indexOf(c1,0);
+    m1 = hiragana.indexOf(c1,0);
+    o1 = zenkaku1.indexOf(c1,0);
+    p1 = hiragana1.indexOf(c1,0);
+    q1 = zenkaku2.indexOf(c1,0);
+    r1 = hiragana2.indexOf(c1,0);
+    s1 = hankaku5.indexOf(c1,0);
+
+    t1 = zenkaku3.indexOf(c1,0);
+    u1 = zenkaku4.indexOf(c1,0);
+
+    if (l1 >= 0)
+    {
+      str1 += c1;
+    }
+    else if (n1 >= 0)
+    {
+      c1 = hankaku.charAt(n1);
+      str1 += c1;
+    }
+    else if ( m1 >= 0)
+    {
+      c1=hankaku.charAt(m1);
+      str1 += c1;
+    }
+    else if ( s1 >= 0)
+    {
+      c1=hankaku.charAt(s1);
+      str1 += c1;
+    }
+    else if ( o1 >= 0)
+    {
+      c1=hankaku1.charAt(o1);
+      str1 += c1+"ﾞ";
+    }
+    else if ( p1 >= 0)
+    {
+      c1=hankaku1.charAt(p1);
+      str1 += c1+"ﾞ";
+    }
+    else if ( q1 >= 0)
+    {
+      c1=hankaku2.charAt(q1);
+      str1 += c1+"ﾟ";
+    }
+    else if ( r1 >= 0)
+    {
+      c1=hankaku2.charAt(r1);
+      str1 += c1+"ﾟ";
+    }
+    else if ( t1 >= 0)
+    {
+      c1=hankaku3.charAt(t1);
+      str1 += c1;
+    }
+    else if ( u1 >= 0)
+    {
+      c1=hankaku4.charAt(u1);
+      str1 += c1;
+    }
+    else
+    {
+      sonota=1;
+      str1 += c1;
+    }
+  }
+  ob.value = str1;//.replace(/[0-9]/g, '');
+}

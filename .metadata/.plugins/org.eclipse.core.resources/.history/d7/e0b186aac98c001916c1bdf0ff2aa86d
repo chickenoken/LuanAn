@@ -1,0 +1,165 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision: 12186 $  $Date: 2016-07-29 09:52:29 +0700 (Fri, 29 Jul 2016) $
+ * @author tan-duc
+ */
+
+'use strict';
+
+exexSMSApp.factory('SearchCustStockModel', [ 'BaseModel', function(BaseModel) {
+
+    var model = BaseModel.getInstance();
+
+    model.form = {
+            search : {
+                custStockCd : '',
+                custStockName : '',
+                controlCd : '',
+                salesUserCd: '',
+                clientType: '',
+                registStatus: '0'
+            },
+           listMstUser: [],
+           listAllCustStock: [],
+           listCustStock: [],
+           listS020015: [],
+           listReverse: [{code: false,codeName: "昇順"},
+                         {code: true,codeName: "降順"}],
+           listPredicate: [{code: "custStockName",codeName: "顧客名"},
+                           {code: "custStockCd",codeName: "顧客コード"},
+                           {code: "createDate",codeName: "登録日"}],
+           //TODO common pagination info
+           paginationInfo : {
+               page: 0,
+               pageSize: 10,
+               totalPage: 0,
+               totalRecord: 0,
+               from: 0,
+               to: 0
+           }
+      };
+
+    model.hidden = {};
+
+    return model;
+} ]);
+
+exexSMSApp.controller('searchCustStockCtrl',
+        ['$scope', '$uibModalInstance', 'SearchCustStockModel', 'DialogsService', 'ServerService', 'Messages',
+         function($scope, $uibModalInstance, SearchCustStockModel, DialogsService, ServerService, Messages){
+
+    $scope.model = SearchCustStockModel;
+    $scope.getInit = function(){
+
+        $scope.model.form.search.custStockCd = '';
+        $scope.model.form.search.controlCd = '';
+        $scope.model.form.search.salesUserCd = '';
+        ServerService
+            .doPost('/SearchCustStock/getInit', null)
+            .then(
+                function(okResult) {
+                    if(!StringUtils.isEmpty(okResult.failed)){
+                        DialogsService.showError(Messages.getMessage('system.error'), error);
+                        return;
+                    }
+                    $scope.model.form.listMstUser = okResult.data.listMstUser;
+                    $scope.model.form.listS020012 = okResult.data.listS020012;
+                    $scope.model.form.listS020015 = okResult.data.listS020015;
+                },
+                function(errResult){});
+    };
+    $scope.search = function(param){
+        $scope.doSearch(1,param);
+    };
+
+    $scope.doSearch = function(page,param){
+        var params = {
+             custStockCd : !StringUtils.isEmpty(param.custStockCd) ? param.custStockCd.toString() : "",
+             custStockName : !StringUtils.isEmpty(param.custStockName) ? param.custStockName.toString() : "",
+             controlCd : !StringUtils.isEmpty(param.controlCd) ? param.controlCd.toString() : "",
+             salesUserCd : !StringUtils.isEmpty(param.salesUserCd) ? param.salesUserCd.toString() : "",
+             clientType : !StringUtils.isEmpty(param.clientType) ? param.clientType.toString() : "",
+             registStatus : !StringUtils.isEmpty(param.registStatus) ? param.registStatus.toString() : "",
+             page : page,
+             pageSize : $scope.model.form.paginationInfo.pageSize
+         };
+        ServerService
+        .doPost('/SearchCustStock/search', params)
+        .then(function(result) {
+             var error = result.data.failed;
+             var warning = result.data.warning;
+             if(!StringUtils.isEmpty(error)){
+                 DialogsService.showError(Messages.getMessage('system.error'), error);
+                 return;
+             }
+             else if(!StringUtils.isEmpty(warning)){
+                 DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                 return;
+             }else{
+                 $scope.model.form.paginationInfo = result.data.paginationInfo;
+                 $scope.model.form.listCustStock = result.data.listCustStock;
+                 $scope.model.filteredItems = $scope.model.form.listAllCustStock.length;
+                 $scope.model.totalItems = $scope.model.form.listAllCustStock.length;
+             }
+         });
+    };
+
+    $scope.init = function(){
+        var searchCustStock = angular.fromJson(sessionStorage.getItem("searchCustStock"));
+        if(!StringUtils.isEmpty(searchCustStock)){
+            $scope.model.form.search.clientType = searchCustStock.clientType;
+            $scope.model.form.search.custStockName = searchCustStock.custStockName;
+            sessionStorage.removeItem("searchCustStock");
+        }
+        setTimeout(function() {
+            $scope.getInit();
+        }, 10);
+        var params = {
+                custStockCd : '',
+                custStockName : $scope.model.form.search.custStockName,
+                controlCd: '',
+                salesUserCd: '',
+                clientType: $scope.model.form.search.clientType,
+                registStatus : $scope.model.form.search.registStatus,
+                page : 1,
+                pageSize :$scope.model.form.paginationInfo.pageSize
+        };
+        $scope.search(params);
+    };
+    $scope.init();
+
+    /**
+     * close popup
+     */
+    $scope.close = function() {
+        $uibModalInstance.dismiss('close');
+    };
+
+    $scope.getCustomer = function(row) {
+      sessionStorage.setItem('searchCustStock',JSON.stringify(row));
+      $uibModalInstance.dismiss('close');
+    };
+
+    $scope.gotoCustInfo = function(row) {
+        var params = {
+                custCd: row.custCd,
+                custName: row.custName,
+                custType: row.custType
+        };
+        var projectCustItemInfo = angular.fromJson(sessionStorage.getItem("projectCustItemInfo"));
+        sessionStorage.removeItem("projectCustItemInfo");
+        if(!StringUtils.isEmpty(projectCustItemInfo)){
+            projectCustItemInfo.custCd = params.custCd;
+            projectCustItemInfo.custName = params.custName;
+            projectCustItemInfo.custType = params.custType;
+        } else {
+            projectCustItemInfo = params;
+        }
+        sessionStorage.setItem("projectCustItemInfo", JSON.stringify(projectCustItemInfo));
+        window.open("CrmControl","_blank");
+    };
+}]);
+

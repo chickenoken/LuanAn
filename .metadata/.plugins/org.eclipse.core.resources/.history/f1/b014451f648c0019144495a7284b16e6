@@ -1,0 +1,5 @@
+package org.planning.service;
+
+public class LoginServiceImpl {
+
+}

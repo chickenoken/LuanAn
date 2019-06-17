@@ -1,0 +1,28 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:mvc="http://www.springframework.org/schema/mvc"
+    xmlns:context="http://www.springframework.org/schema/context"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="
+        http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/mvc
+        http://www.springframework.org/schema/mvc/spring-mvc.xsd
+        http://www.springframework.org/schema/context
+        http://www.springframework.org/schema/context/spring-context.xsd">
+
+
+		<bean id="dialect" class="org.seasar.doma.jdbc.dialect.H2Dialect" />
+		<bean id="dataSource" class="org.seasar.doma.jdbc.tx.LocalTransactionDataSource" />
+		<bean id="sqlFileRepository" class="org.seasar.doma.jdbc.GreedyCacheSqlFileRepository" />
+
+   <bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+  <property name="dataSource" ref="dataSource"></property>
+</bean>
+
+<!-- Instance of transaction template -->
+<bean id="transactionTemplate" class="org.springframework.transaction.support.TransactionTemplate">
+  <property name="transactionManager" ref="transactionManager"></property>
+</bean>
+
+
+</beans>

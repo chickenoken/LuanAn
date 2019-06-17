@@ -1,0 +1,57 @@
+package org.planning.net.controller;
+
+import java.nio.file.AccessDeniedException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.planning.net.dto.LoginDto;
+import org.planning.net.service.LoginService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+@Controller
+public class LoginController {
+
+    private static final String VIEW_NAME = "Login";
+
+    private static final String LIST_TEST = "listTest";
+
+    @Autowired
+    private LoginService loginService;
+
+    @RequestMapping(
+            value = { "/" },
+            method = RequestMethod.GET)
+    public String welcomePage(Model model) throws Exception {
+        List<LoginDto> list = loginService.getList();
+        model.addAttribute("nv", list);
+        return "index";
+    }
+
+    @RequestMapping(
+            value = { "/login" },
+            method = RequestMethod.GET)
+    public String getPage(Model model) throws AccessDeniedException {
+        return VIEW_NAME;
+    }
+
+    @RequestMapping(
+            value = "/login/dangNhap",
+            method = RequestMethod.POST)
+    @ResponseBody
+    public Object dangNhap() throws Exception {
+        Map<String, Object> initModel = new HashMap<String, Object>();
+        try {
+            List<LoginDto> list = loginService.getList();
+            initModel.put(LIST_TEST, list);
+            return initModel;
+        }catch(Exception ex) {
+            return initModel;
+        }
+    }
+}

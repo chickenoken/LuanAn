@@ -1,0 +1,523 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision: 1.0 $ $Date: 2014/05/30 $
+ * @author : Quang-Thien
+ */
+
+var exexSMSApp = angular.module('exexSMSApp', [
+    'ngSanitize',
+    'ngAnimate',
+    'ngMessages',
+    'ngCookies',
+    'ui.router',
+    'ngStorage',
+    'pascalprecht.translate',
+    'ui.bootstrap',
+    'dialogs.main',
+    'ui.calendar',
+    'gridshore.c3js.chart',
+    'ui.sortable',
+    'ng-sortable',
+    'chart.js',
+    'ngFileSaver',
+    'ui.bootstrap.datetimepicker',
+    'ngJsTree',
+    'infinite-scroll',
+    'ckeditor'
+]);
+
+'use strict';
+
+exexSMSApp.factory('BaseModel', function($rootScope) {
+
+    var model = function() {
+
+    };
+
+    model.prototype.submitStatus = false;
+
+    model.getInstance = function() {
+        return new model();
+    };
+
+    /*
+     * submit中かを取得する
+     */
+    model.prototype.isSubmitStatus = function() {
+        return this.submitStatus;
+    };
+
+    /*
+     * モデルをsubmitする <pre> 第1引数：サービスのURL 第2引数：サービスに渡すパラメータ or
+     * サービスに渡すパラメータが不要の場合、コールバック関数 第3引数：コールバック関数 or サービスに渡すパラメータが不要の場合、指定不要
+     * </pre>
+     */
+    model.prototype.submitModel = function() {
+
+        var that = this;
+
+        var params = {
+            action : arguments[0]
+        };
+
+        var callback;
+
+        that.submitStatus = true;
+
+        switch (arguments.length) {
+        case 2:
+            callback = arguments[1];
+            params.params = {};
+            break;
+        case 3:
+            callback = arguments[2];
+            params.params = arguments[1];
+            break;
+        }
+        ;
+
+        params.callback = function(data) {
+            that.submitStatus = false;
+            callback(data);
+        };
+        $rootScope.$broadcast('doPost', params);
+    };
+
+    return model;
+});
+
+exexSMSApp.controller('CommonCtrl',
+        ['$scope', '$rootScope', '$http', '$window', '$filter', '$translate', 'dialogs','BaseModel', 'HeaderModel',
+         function($scope, $rootScope, $http, $window, $filter, $translate, dialogs, BaseModel, HeaderModel) {
+
+
+    $scope.modelHeader = HeaderModel;
+    $("input[data-inputmask]").inputmask();
+    $rootScope.setLoading = function(loading) {
+        $scope.isLoading = loading;
+    };
+
+    $scope.currentYear = new Date().getFullYear();
+
+    // POSTリクエストのイベントを監視する。
+    $scope.$on('doPost', function(event, data) {
+
+        // Submit中かを制御するプロパティが無ければパラメーターに追加する。
+        if (!data.params) {
+            data.params = {
+                isSubmitted : false
+            };
+        } else if (!data.params.hasOwnProperty('isSubmitted')) {
+            data.params.isSubmitted = false;
+        }
+        $scope.doPost(data.action, data.params, data.callback);
+    });
+
+    /*
+     * JSON形式でPOSTリクエストを発行する。
+     */
+    $scope.doPost = function(action, params, callbackFn) {
+
+        $rootScope.setLoading(true);
+
+        // aタグのhref属性に#が設定されていた場合、除去する。
+        var location =
+                /#$/.test($window.location) ? $window.location.toString().slice(0, -1) : $window.location
+                        .toString();
+
+        // URLの末尾がスラッシュの場合、除去する。
+        if (/\/$/.test(location)) {
+            location = location.slice(0, -1);
+        }
+
+        // ベースのURLを取得(http://{hostname}/{context-root}/)
+        location = location.slice(0, location.lastIndexOf("/") + 1);
+
+        // $httpサービスに渡すパラメータ編集
+        var httpParams = {
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name=_csrf]').attr("content")
+                },
+                method : 'POST',
+                url : location + action,
+                data : angular.copy(params)
+        };
+
+        if (params.isSubmitted) {
+            // Submit中の場合、処理を終了する。
+            return;
+        } else {
+            // ここでパラメーターのisSubmittedプロパティをtrueに変更すると、
+            // 今後、同一画面から当関数をcallされた場合は画面から渡されたModelにisSubmittedプロパティが保持される。
+            params.isSubmitted = true;
+        }
+
+        // HTTPリクエストするパラメータからisSubmittedプロパティを削除する(HTTPステータスコード400(Bad Request)対策)
+        delete httpParams.data.isSubmitted;
+
+        // 次に実行する$httpサービスのコールバック関数内で参照したいため、パラメーターをスコープオブジェクトで保持する。
+        $scope.rawParams = params;
+
+        var actionStartDate = new Date();
+        httpParams.actionStartDate = actionStartDate;
+
+        if (appConfig.DEBUG) {
+            console.log('[ACTION   START] ' + $filter('date')(actionStartDate, 'yyyy-MM-dd HH:mm:ss.sss') + ': ' + httpParams.url);
+        }
+
+        // $httpサービスでPOSTリクエストを発行する。
+        $http(httpParams).success(function(data, status, headers, config) {
+
+            // パラメーターをスコープオブジェクトから削除する。
+            delete $scope.rawParams.isSubmitted;
+
+            if (appConfig.DEBUG) {
+                var actionEndDate = new Date();
+                console.log('[ACTION   END  ] ' + $filter('date')(actionEndDate, 'yyyy-MM-dd HH:mm:ss.sss') + ': ' + config.url + ' [' + (actionEndDate - config.actionStartDate) + 'ms]');
+            }
+
+            var callbackStartDate = new Date();
+            if (appConfig.DEBUG) {
+                console.log('[CALLBACK START] ' + $filter('date')(callbackStartDate, 'yyyy-MM-dd HH:mm:ss.sss') + ': ' + config.url);
+            }
+
+            // コールバック実行
+            callbackFn(data);
+
+            if (appConfig.DEBUG) {
+                var callbackEndDate = new Date();
+                console.log('[CALLBACK END  ] ' + $filter('date')(callbackEndDate, 'yyyy-MM-dd HH:mm:ss.sss') + ': ' + config.url + ' [' + (callbackEndDate - callbackStartDate) + 'ms]');
+            }
+            console.log(data);
+
+//            if ($http.pendingRequests.length < 1) {
+                $rootScope.setLoading(false);
+//            }
+        }).error(function(data) {
+
+            // パラメーターをスコープオブジェクトから削除する。
+            delete $scope.rawParams.isSubmitted;
+
+            // HTTPステータスコードが4xx、5xxの場合、エラー画面に遷移する。
+            //$window.location = getContextPath() + '/error';
+            $rootScope.setLoading(false);
+            //$rootScope.showBlockAlert(data);
+        });
+
+        // 画面が操作されたら「ユーザーが操作したイベント」を発火する。 このイベントは共通ヘッダーによって検知される。
+        $rootScope.$broadcast('UserOperated');
+    };
+
+    /**
+     * 数値をカンマ区切りで表示する
+     *
+     * @param value
+     * @returns
+     */
+    $scope.formatNumber = function(value) {
+        if (value == null) {
+            return null;
+        }
+        return value.toString().replace(/([\d]+?)(?=(?:\d{3})+$)/g,
+                function(t) {
+                    return t + ',';
+                });
+    };
+
+    /**
+     * カンマ付数値からカンマを除外する
+     *
+     * @param value
+     * @returns
+     */
+    $scope.unformattedNumber = function(value) {
+        if (value == null) {
+            return null;
+        }
+        var text = value.toString().replaceAll(',', '');
+        debugger;
+        return Number(text);
+    };
+
+    /**
+     * 価格を計算する
+     *
+     * @param unitPrice
+     *            単価
+     * @param amount
+     *            数量
+     * @param discount
+     *            割引
+     * @returns {Number} 価格
+     */
+    $scope.rowCalc = function(unitPrice, amount, discount) {
+        var sum = unitPrice * amount * (1 - discount / 100);
+        // 四捨五入
+        sum = Math.round(sum);
+        return sum;
+    };
+
+    /**
+     * 価格を計算する
+     *
+     * @param itemPrice
+     *            単価
+     * @param itemSum
+     *            数量
+     * @returns {Number} 価格
+     */
+    $scope.calcPrice = function(itemPrice , itemSum) {
+        var sum = itemPrice * itemSum;
+        // 四捨五入
+        sum = Math.round(sum);
+        return sum;
+    };
+
+    /**
+     * Validate Date Input
+     */
+    $rootScope.dateYYYYMMDDValidator = function(value){
+        var customDate, isValid;
+        if(!ValidateUtil.isValidTextEmpty(value)){
+            customDate = new Date(value);
+            isValid = !isNaN(customDate);
+            if(isValid){
+                return true;
+            } else{
+                return false;
+            }
+        }else{
+            return true;
+        }
+    };
+
+    /**
+     * rounding number
+     */
+    $rootScope.rounding = function(value, rounding){
+        if(!StringUtils.isEmpty(rounding)){
+            if(rounding == 1){
+                //ep: 5.2→5
+                value = Math.round(value);
+            } else if(rounding == 0){
+                //ep: 5.2→5
+                if(value < 0){
+                    value = Math.abs(value);
+                    value = Math.floor(value);
+                    value = value * (-1);
+                } else {
+                    value = Math.floor(value);
+                }
+            } else if(rounding == 2){
+                //ep: 5.2→6
+                value = Math.ceil(value);
+            }
+        }
+        return value;
+    };
+
+    /**
+     * 各行税率計算
+     */
+    $rootScope.calcItemTax = function(itemPrice , itemSum, taxRate, taxType, rounding){
+        var tax = 0;
+
+        if(!ValidateUtil.isValidTextEmpty(taxType)){
+            if(taxType == 0){
+                //内税
+                var x = $rootScope.rounding(Math.round10(parseFloat(itemPrice) * parseFloat(itemSum),-10), rounding ) * parseFloat(taxRate);
+                var y = parseFloat(taxRate) + parseFloat(100);
+                if(!isNaN(x) && !isNaN(y)){
+                    tax =  x/y;
+                }
+            }else if(taxType == 1){
+                //以税
+                var x = $rootScope.rounding(Math.round10(parseFloat(itemPrice) * parseFloat(itemSum),-10), rounding );
+                var y = parseFloat(taxRate) / parseFloat(100);
+                if(!isNaN(x) && !isNaN(y)){
+                    tax = x * y;
+                }
+            }else{
+                //非課税
+                tax = 0;
+            }
+        }
+        tax = $rootScope.rounding(tax, rounding);
+
+        return tax;
+    };
+
+    /**
+     * 粗利益
+     */
+    $rootScope.calcItemGrossMargin = function(itemCost, itemPrice, itemSum, rounding){
+        var grossMargin = 0;
+        if(ValidateUtil.isValidTextEmpty(itemCost)){
+            itemCost = 0;
+        }
+
+        grossMargin = parseFloat(itemPrice) * parseFloat(itemSum) - parseFloat(itemCost) * parseFloat(itemSum);
+        if(!ValidateUtil.isValidTextEmpty(rounding)){
+            if(rounding == 1){
+                //ep: 5.2→5
+                grossMargin = Math.round(grossMargin);
+            } else if(rounding == 0){
+                //ep: 5.2→5
+                if(grossMargin < 0){
+                    grossMargin = Math.abs(grossMargin);
+                    grossMargin = Math.floor(grossMargin);
+                    grossMargin = grossMargin * (-1);
+                } else {
+                    grossMargin = Math.floor(grossMargin);
+                }
+            } else if(rounding == 2){
+                //ep: 5.2→6
+                grossMargin = Math.ceil(grossMargin);
+            }
+        }
+        return grossMargin;
+    };
+
+    /**
+     * 粗利益率
+     */
+    $rootScope.calcItemGrossMarginRate = function(itemCost, itemPrice, itemSum, rounding){
+        var grossMargin = 0,
+            freeTaxPrice = 0,
+            grossMarginRate = 0;
+        if(ValidateUtil.isValidTextEmpty(itemCost)){
+            itemCost = 0;
+        }
+        grossMargin = parseFloat(itemPrice) * parseFloat(itemSum) - parseFloat(itemCost) * parseFloat(itemSum);
+        freeTaxPrice = parseFloat(itemPrice) * parseFloat(itemSum);
+        if(freeTaxPrice == 0){
+            return grossMarginRate;
+        }else{
+            grossMarginRate = Math.round10((parseFloat(grossMargin) / parseFloat(freeTaxPrice)) * 100,-2);
+        }
+
+        return grossMarginRate;
+    };
+
+    /** ボタングループ* */
+    $scope.goToUrlCrm = function(value, hidden) {
+        switch (value) {
+        case 'sfaProjectList':
+            $window.location = "SfaProjectList";
+            var params = angular.fromJson(sessionStorage.getItem("projectCustItemInfo"));
+            sessionStorage.removeItem("projectCustItemInfo");
+            params.custCd = hidden.custCd;
+            params.custName = hidden.custName;
+            params.curPage = hidden.page;
+            params.paginationPage = hidden.paginationPage;
+            sessionStorage.setItem("projectCustItemInfo", JSON.stringify(params));
+            break;
+        case 'crmOwnerList':
+            $window.location = "CrmOwnerList";
+            var params = angular.fromJson(sessionStorage.getItem("projectCustItemInfo"));
+            sessionStorage.removeItem("projectCustItemInfo");
+            params.custCd = hidden.custCd;
+            params.custName = hidden.custName;
+            params.curPage = hidden.page;
+            params.paginationPage = hidden.paginationPage;
+            sessionStorage.setItem("projectCustItemInfo", JSON.stringify(params));
+            break;
+        case 'crmRefer':
+            $window.location = "CrmRefer";
+            var params = angular.fromJson(sessionStorage.getItem("projectCustItemInfo"));
+            sessionStorage.removeItem("projectCustItemInfo");
+            params.custCd = hidden.custCd;
+            params.custName = hidden.custName;
+            params.curPage = hidden.page;
+            params.paginationPage = hidden.paginationPage;
+            sessionStorage.setItem("projectCustItemInfo", JSON.stringify(params));
+            break;
+        case 'saleReportList':
+            $window.location = "SalesReportList";
+            var params = angular.fromJson(sessionStorage.getItem("projectCustItemInfo"));
+            sessionStorage.removeItem("projectCustItemInfo");
+            params.custCd = hidden.custCd;
+            params.custName = hidden.custName;
+            params.curPage = hidden.page;
+            params.paginationPage = hidden.paginationPage;
+            sessionStorage.setItem("projectCustItemInfo", JSON.stringify(params));
+            break;
+        case 'individualCustomerDetail':
+            $window.location = "IndividualCustomerDetail";
+            var params = angular.fromJson(sessionStorage.getItem("projectCustItemInfo"));
+            sessionStorage.removeItem("projectCustItemInfo");
+            params.custCd = hidden.custCd;
+            params.custName = hidden.custName;
+            params.curPage = hidden.page;
+            params.paginationPage = hidden.paginationPage;
+            sessionStorage.setItem("projectCustItemInfo", JSON.stringify(params));
+            break;
+        case 'crmActionList':
+            sessionStorage.removeItem("custName");
+            $window.location = "CrmActionList";
+            var params = angular.fromJson(sessionStorage.getItem("projectCustItemInfo"));
+            sessionStorage.removeItem("projectCustItemInfo");
+            params.projectName = '';
+            params.custCd = hidden.custCd;
+            params.custName = hidden.custName;
+            params.curPage = hidden.page;
+            params.paginationPage = hidden.paginationPage;
+            sessionStorage.setItem("projectCustItemInfo", JSON.stringify(params));
+            break;
+        }
+    };
+
+}]);
+
+//Closure
+(function() {
+  /**
+   * Decimal adjustment of a number.
+   *
+   * @param {String}  type  The type of adjustment.
+   * @param {Number}  value The number.
+   * @param {Integer} exp   The exponent (the 10 logarithm of the adjustment base).
+   * @returns {Number} The adjusted value.
+   */
+  function decimalAdjust(type, value, exp) {
+    // If the exp is undefined or zero...
+    if (typeof exp === 'undefined' || +exp === 0) {
+      return Math[type](value);
+    }
+    value = +value;
+    exp = +exp;
+    // If the value is not a number or the exp is not an integer...
+    if (isNaN(value) || !(typeof exp === 'number' && exp % 1 === 0)) {
+      return NaN;
+    }
+    // Shift
+    value = value.toString().split('e');
+    value = Math[type](+(value[0] + 'e' + (value[1] ? (+value[1] - exp) : -exp)));
+    // Shift back
+    value = value.toString().split('e');
+    return +(value[0] + 'e' + (value[1] ? (+value[1] + exp) : exp));
+  }
+
+  // Decimal round
+  if (!Math.round10) {
+    Math.round10 = function(value, exp) {
+      return decimalAdjust('round', value, exp);
+    };
+  }
+  // Decimal floor
+  if (!Math.floor10) {
+    Math.floor10 = function(value, exp) {
+      return decimalAdjust('floor', value, exp);
+    };
+  }
+  // Decimal ceil
+  if (!Math.ceil10) {
+    Math.ceil10 = function(value, exp) {
+      return decimalAdjust('ceil', value, exp);
+    };
+  }
+})();
+

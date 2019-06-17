@@ -1,0 +1,43 @@
+package org.planning.net.controller;
+
+import java.nio.file.AccessDeniedException;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+@Controller
+public class QuanLyNhanVienController {
+
+    private static final String VIEW_NAME = "quanLyNhanVien";
+
+    @RequestMapping(
+            value = { "/quanLyNhanVien" },
+            method = RequestMethod.GET)
+    public String getPage(Model model) throws AccessDeniedException {
+        return VIEW_NAME;
+    }
+
+    @RequestMapping(
+            value = "/login/dangNhap",
+            method = RequestMethod.POST)
+    @ResponseBody
+    public void getLogFile(HttpSession session,HttpServletResponse response) throws Exception {
+        try {
+            String filePathToBeServed = //complete file name with path;
+            File fileToDownload = new File(filePathToBeServed);
+            InputStream inputStream = new FileInputStream(fileToDownload);
+            response.setContentType("application/force-download");
+            response.setHeader("Content-Disposition", "attachment; filename="+fileName+".txt");
+            IOUtils.copy(inputStream, response.getOutputStream());
+            response.flushBuffer();
+            inputStream.close();
+        } catch (Exception e){
+            LOGGER.debug("Request could not be completed at this moment. Please try again.");
+            e.printStackTrace();
+        }
+
+    }
+}

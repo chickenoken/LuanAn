@@ -1,0 +1,36 @@
+package org.planning.net.dao;
+
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.List;
+
+import javax.sql.DataSource;
+
+import org.planning.net.dto.LoginDto;
+import org.planning.net.mapping.LoginMapping;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.RowMapper;
+import org.springframework.jdbc.core.support.JdbcDaoSupport;
+import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
+
+@Repository
+@Transactional
+public class LoginDao extends JdbcDaoSupport {
+
+	@Autowired
+    public LoginDao(DataSource dataSource) {
+        this.setDataSource(dataSource);
+    }
+
+    public List<LoginDto> selectListNv() {
+        String sql = LoginMapping.BASE_SQL;
+
+        Object[] params = new Object[] {};
+        LoginMapping mapper = new LoginMapping();
+
+        List<LoginDto> list = this.getJdbcTemplate().query(sql, params, mapper);
+        return list;
+    }
+
+}

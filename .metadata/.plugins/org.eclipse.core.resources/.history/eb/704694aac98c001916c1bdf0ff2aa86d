@@ -1,0 +1,80 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ * SalEstimateControlService
+ *
+ * @author quang-tung
+ *
+ * @version $Revision:  $  $Date:  $
+ */
+'use strict';
+
+exexSMSApp.service('StockSituationListService', ['$q', 'ServerService',function ($q, ServerService) {
+    var _self = this;
+
+    _self.initData = function(param) {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('StockSituationList/getInit', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    _self.search = function(param) {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('StockSituationList/search', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    _self.searchDetail = function(param) {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('StockSituationList/searchDetail', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    _self.createOrder = function(param) {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('StockSituationList/createOrder', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+}]);

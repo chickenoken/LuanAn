@@ -1,0 +1,330 @@
+
+exexSMSApp.factory('CkeditorModel', [ 'BaseModel', '$rootScope', function(BaseModel, $rootScope) {
+    var model = BaseModel.getInstance();
+    model= {
+            form:{
+                estimateSno: ''
+            },
+            estimateDetail: {},
+            listEstimate: [],
+            listDetailEstimate: [],
+            listData: [],
+            listDetailData: [],
+            listDatasource: [],
+            tableData: [],
+            content: '',
+            contentPrint: '',
+            hidden: {}
+    };
+    return model;
+
+}]);
+
+exexSMSApp.controller('CkeditorCtrl',
+        ['$rootScope', '$scope','$filter','$compile', '$timeout','$parse', 'CkeditorModel', 'DialogsService', 'ServerService', 'RouteService', 'CkeditorService', 'Messages',
+         function($rootScope, $scope, $filter, $compile, $timeout, $parse, ckeditorModel,  DialogsService, ServerService, RouteService, ckeditorService, Messages){
+
+        $scope.model = ckeditorModel;
+        $scope.model.hidden.isDisabled = false;
+        $scope.editorOptions = {
+                language: 'en',
+                height: 800,
+                bodyClass: 'document-editor',
+                width: 'auto',
+                extraPlugins: 'hcard,justify,tableresize,lineutils,ckeditortablecellsselection',
+                removePlugins: 'print,tableselection',
+                contentsCss: getContextPath() + '/resources/css/vendors.css',
+                toolbarCanCollapse : true,
+                allowedContent: true
+        };
+
+        $scope.viewPrintOptions = {
+                language: 'en',
+                height: 800,
+                toolbar:[{items: ['Preview','Print']}],
+                bodyClass: 'document-editor',
+                width: 'auto',
+                extraPlugins: 'print,hcard,justify,tableresize,lineutils',
+                removePlugins: '',
+                contentsCss: getContextPath() + '/resources/css/vendors.css',
+                toolbarCanCollapse : true,
+                allowedContent: true
+        };
+
+        /**初期*/
+        $scope.init = function(){
+            ckeditorService.initData({}).then(
+                function(result) {
+                    $scope.model.listEstimate = result.data.listEstimate;
+                    createListDataField();
+                    $scope.model.content = createContent();
+                }
+            );
+        };
+
+        $scope.init();
+
+        /**変更見積*/
+        $scope.onChangeEstimate = function(estimateSno){
+            var param = {estimateSno: estimateSno};
+            ckeditorService.onChangeEstimate(param).then(
+                function(result) {
+                    var estimateObj = result.data.estimate;
+                    $scope.obj = angular.copy(estimateObj);
+                    var tmpContent = angular.copy($scope.model.content);
+                    $scope.model.listDetailEstimate = result.data.estimateDetail;
+                    $compile($('#content').html(tmpContent))($scope);
+
+                    $timeout(function(){
+                        $compile($scope.model.contentPrint = $('#content').html());
+                        console.log($('#content').html());
+                    }, 1000);
+                }
+            );
+        }
+
+        CKEDITOR.on( 'instanceReady', function(ev) {
+            CKEDITOR.document.getById( 'dataList' ).on( 'dragstart', function( evt ) {
+                var target = evt.data.getTarget().getAscendant( 'div', true );
+                CKEDITOR.plugins.clipboard.initDragDataTransfer( evt );
+                var dataTransfer = evt.data.dataTransfer;
+                dataTransfer.setData( 'item', $scope.model.listData[ target.data( 'item' ) ] );
+                dataTransfer.setData( 'text/html', target.getText() );
+            } );
+
+            CKEDITOR.document.getById( 'dataDetailList' ).on( 'dragstart', function( evt ) {
+                var target = evt.data.getTarget().getAscendant( 'div', true );
+                CKEDITOR.plugins.clipboard.initDragDataTransfer( evt );
+                var dataTransfer = evt.data.dataTransfer;
+                dataTransfer.setData( 'item-detail', $scope.model.listDetailData[ target.data( 'item-detail' ) ] );
+                dataTransfer.setData( 'text/html', target.getText() );
+            } );
+        } );
+
+
+
+        // Implements a simple widget that represents contact details (see http://microformats.org/wiki/h-card).
+        CKEDITOR.plugins.add( 'hcard', {
+            requires: 'widget',
+            init: function( editor ) {
+                editor.widgets.add( 'hcard', {
+                    allowedContent: 'span(!h-card); a[href](!u-email,!p-name); span(!p-tel)',
+                    requiredContent: 'span(h-card)',
+                    pathName: 'hcard',
+                    upcast: function( el ) {
+                        return el.name == 'span' && el.hasClass( 'h-card' );
+                    }
+                } );
+
+                var lastFocused = null;
+
+                editor.widgets.on( 'instanceCreated', function( evt ) {
+                    var widget = evt.data;
+
+                    // You can check at this point whether you want to observe this kind of widget
+                    // e.g. check widget.name.
+
+                    widget.on( 'blur', function() {
+                        // Fired when widget is deselected.
+                        return;
+                    } );
+                } );
+
+
+
+                editor.on( 'selectionChange', function() {
+                    if ( lastFocused && lastFocused !== editor.widgets.focused ) {
+                        // The lastFocused widget just lost focus.
+                    }
+
+                    lastFocused = editor.widgets.focused;
+
+                    if ( editor.widgets.focused ) {
+                        lastFocused = editor.widgets.focused;
+                    }
+                } );
+
+                editor.addContentsCss(getContextPath() + '/resources/css/ckeditor/sms-ckeditor.css');
+                editor.addFeature( editor.widgets.registered.hcard );
+                editor.on( 'paste', function( evt ) {
+                    var contact = evt.data.dataTransfer.getData( 'item' );
+                    if ( !contact ) {
+                        var contactDetail = evt.data.dataTransfer.getData( 'item-detail' );
+                        if ( !contactDetail ) {
+                            return;
+                        }else{
+                            evt.data.dataValue =
+                                '<span class="h-card">' +
+                                    '<span class="p-param">' + contactDetail.value + '</span>' +
+                                '</span>';
+                        }
+                    }else{
+                        evt.data.dataValue =
+                            '<span class="h-card">' +
+                                '<span class="p-result">' + contact.value + '</span>' +
+                            '</span>';
+                    }
+                } );
+            }
+        } );
+
+        /**create content*/
+        function createContent(){
+            var str =
+                '<div class="row ck-data-title">' +
+                    '<div class="col-md-12 text-center detail" style="border:1px dotted #DDD;">' +
+                        '<span style="font-size:48px;"><u><strong>御 見 積 書</strong></u></span>' +
+                    '</div>' +
+                '</div>' +
+                '<div class="row ck-data-detail">' +
+                    '<div class="col-md-6 row-detail"><u><span class="h-card cke_widget_element"><em>{{obj.custName}}</em></span><strong> 御中</u></strong></div>' +
+                    '<div class="col-md-6 row-detail" style="text-align: right;"><u><strong>見積番号 &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;</strong><span class="h-card cke_widget_element"><em>{{obj.estimateSno}}</em></span></u></div>' +
+                    '<div class="col-md-6 row-detail"><strong>下記の通り御見積申し上げます。</strong></div>' +
+                    '<div class="col-md-6 row-detail text-right"><u><strong>見積日 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</strong><span class="h-card cke_widget_element"><em>{{obj.estimateDate | date : "yyyy/MM/dd"}}</em></span></u></div>' +
+                    '<div class="col-md-6 row-detail text-right">&nbsp;</div>' +
+                    '<div class="col-md-6 row-detail text-right"><u><strong>有効期限 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</strong><span class="h-card cke_widget_element"><em>{{obj.dueDateSub}}</em></span></u></div>' +
+                    '<div class="col-md-6 row-detail text-right">&nbsp;</div>' +
+                    '<div class="col-md-6 row-detail text-right">&nbsp;</div>' +
+                    '<div class="col-md-6 row-detail text-right">&nbsp;</div>' +
+                    '<div class="col-md-6 row-detail text-right">&nbsp;</div>' +
+                    '<div class="col-md-6 row-detail text-right">&nbsp;</div>' +
+                    '<div class="col-md-6 row-detail text-right">&nbsp;</div>' +
+                    '<div class="col-md-6 row-detail"><strong>件 &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;名 : </strong><span class="h-card cke_widget_element"><em>{{obj.estimateName}}</em></span></div>' +
+                    '<div class="col-md-6 row-detail">&nbsp;</div>' +
+                    '<div class="col-md-6 row-detail"><strong>納 &nbsp; 入 &nbsp; 場 &nbsp; 所 : </strong><span class="h-card cke_widget_element"><em>{{obj.delPlace}}</em></span></div>' +
+                    '<div class="col-md-6 row-detail" style="text-align: right;">&nbsp;</div>' +
+                    '<div class="col-md-6 row-detail"><strong>合 &nbsp; &nbsp; &nbsp; &nbsp;計 &nbsp; &nbsp;&nbsp;額 :￥ </strong><span class="h-card cke_widget_element"><em>{{obj.sumPrice | exexCurrency}}</em></span></div>' +
+                    '<div class="col-md-6 row-detail" style="text-align: right;">&nbsp;</div>' +
+
+                '</div>' +
+                '<div class="row ck-data-list-detail">' +
+                '<table border="1" cellpadding="1" cellspacing="1" style="width:100%" class="table" id="estimateTable">' +
+                '<tbody>' +
+                '<tr>' +
+                    '<td class="text-center">' +
+                    '<p><strong>品番 / 品名1 / 品名2</strong></p>' +
+                    '</td>' +
+                    '<td class="text-right"><strong>数量</strong></td>' +
+                    '<td class="text-right" style="width:70px"><strong>単位</strong></td>' +
+                    '<td class="text-right" style="width:120px"><strong>単価</strong></td>' +
+                    '<td>' +
+                    '<p class="text-right"><strong>金額</strong></p>' +
+                    '</td>' +
+                '</tr>';
+
+            str += '<tr ng-repeat="row in model.listDetailEstimate track by $index">' +
+                '<td><span class="h-card cke_widget_element"><em>{{row.itemCd}} / {{row.itemName}} / {{row.itemName2}}</em></span></td>' +
+                '<td class="text-right"><span class="h-card cke_widget_element"><em>{{row.itemSum | exexCurrency}}</em></span></td>' +
+                '<td><span class="h-card cke_widget_element"><em>{{row.itemUnitName}}</em></span></td>' +
+                '<td class="text-right"><span class="h-card cke_widget_element"><em>{{row.itemPrice | exexCurrency}}</em></span></td>' +
+                '<td class="text-right"><span class="h-card cke_widget_element"><em>{{row.price | exexCurrency}}</em></span></td>' +
+             '</tr>';
+
+            str += '<tr>' +
+                    '<td class="td-sum"></td>' +
+                    '<td class="td-sum"></td>' +
+                    '<td class="td-sum"></td>' +
+                    '<td class="text-center td-sum"><strong> 小　　　計</strong> </td>' +
+                    '<td class="text-right td-sum"><strong><span class="h-card cke_widget_element"><em>{{obj.freeTaxSumPrice | exexCurrency}}</em></span></strong></td>' +
+                 '</tr>';
+
+            str += '<tr>' +
+                '<td class="td-sum"></td>' +
+                '<td class="td-sum"></td>' +
+                '<td class="td-sum"></td>' +
+                '<td class="text-center td-sum"><strong> 消　費　税 </strong></td>' +
+                '<td class="text-right td-sum"><strong><span class="h-card cke_widget_element" price><em>{{obj.sumTax}}</em></span></strong></td>' +
+             '</tr>';
+
+            str += '<tr>' +
+                '<td class="td-sum"></td>' +
+                '<td class="td-sum"></td>' +
+                '<td class="td-sum"></td>' +
+                '<td class="text-center td-sum"><strong> 合　計　額 </strong> </td>' +
+                '<td class="text-right td-sum"><strong><span class="h-card"><em>{{obj.sumPrice | exexCurrency}}</em></span></strong></td>' +
+             '</tr>';
+
+            str += '</tbody> </table> </div>';
+
+            return str
+        };
+
+        /**create list data filed*/
+        function createListDataField(){
+            /**using for load all field and data of object*/
+//            var estimateDetailObj = $scope.model.listDetailEstimate[0];
+//            angular.forEach(estimateDetailObj, function(value, key){
+//                if(!StringUtils.isEmpty(key) && !StringUtils.isEmpty(value)){
+//                    var obj = {
+//                            name: key,
+//                            value: value
+//                    }
+//                    $scope.model.listDetailData.push(obj);
+//                }
+//             });
+            $scope.model.listData.push({name: '顧客', value: '{{obj.custCd}}'});
+            $scope.model.listData.push({name: '管理コード', value: '{{obj.controlCd}}'});
+            $scope.model.listData.push({name: '見積番号', value: '{{obj.estimateSno}}'});
+            $scope.model.listData.push({name: '宛名', value: '{{obj.addressInfoCustomer}}'});
+            $scope.model.listData.push({name: '部署', value: '{{obj.addressInfoDepart}}'});
+            $scope.model.listData.push({name: 'ご担当者', value: '{{obj.addressInfoOwner}}'});
+            $scope.model.listData.push({name: 'prefix', value: '{{obj.prefixName}}'});
+            $scope.model.listData.push({name: '見積日', value: '{{obj.estimateDate}}'});
+            $scope.model.listData.push({name: '有効期限', value: '{{obj.dueDateSub}}'});
+            $scope.model.listData.push({name: '件名', value: '{{obj.estimateName}}'});
+            $scope.model.listData.push({name: '特記事項', value: '{{obj.remark}}'});
+            $scope.model.listData.push({name: '納入場所', value: '{{obj.delPlace}}'});
+            $scope.model.listData.push({name: '自社担当部署', value: '{{obj.salesGroupCd}}'});
+            $scope.model.listData.push({name: '自社担当者', value: '{{obj.salesUserCd}}'});
+            $scope.model.listData.push({name: '見積提出日', value: '{{obj.estimateSubmitDate}}'});
+            $scope.model.listData.push({name: '提出方法', value: '{{obj.estimateSubmitProcess}}'});
+
+            /**init for detail*/
+            $scope.model.listDetailData.push({name: '品番 ', value: '{{row.itemCd}}'});
+            $scope.model.listDetailData.push({name: '品名1', value: '{{row.itemName}}'});
+            $scope.model.listDetailData.push({name: '品名2', value: '{{row.itemName2}}'});
+            $scope.model.listDetailData.push({name: '数量', value: '{{row.itemSum}}'});
+            $scope.model.listDetailData.push({name: '単位', value: '{{row.itemUnitName}}'});
+            $scope.model.listDetailData.push({name: '単価', value: '{{row.itemPrice}}'});
+            $scope.model.listDetailData.push({name: '金額', value: '{{row.price}}'});
+        };
+
+        /**print tab click*/
+        $scope.print = function(){
+
+        }
+
+}]);
+
+exexSMSApp.service('CkeditorService', ['$q', 'ServerService',function ($q, ServerService) {
+     var _self = this;
+    _self.initData = function(param) {
+        var deferred = $q.defer();
+        ServerService
+            .doPost('Ckeditor/getInit', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    /**変更見積*/
+    _self.onChangeEstimate = function(param) {
+        var deferred = $q.defer();
+        ServerService
+            .doPost('SalEstimateControl/inquiry', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+        return deferred.promise;
+    };
+}]);

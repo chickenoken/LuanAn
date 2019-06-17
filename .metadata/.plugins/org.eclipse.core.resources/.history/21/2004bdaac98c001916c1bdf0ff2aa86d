@@ -1,0 +1,744 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision: 1.0 $  $Date: 2017/11/08 $
+ * @author Quang-Thien
+ */
+
+'use strict';
+
+exexSMSApp.factory('SfaPPMDialogModel', [ 'BaseModel', '$rootScope',
+    function(BaseModel, $rootScope) {
+
+    var model = BaseModel.getInstance();
+
+    model.form = {
+        listProcess : [],
+        listSubProcess : [],
+        business: {
+            businessCd : '',
+            businessName : '',
+            status : '',
+            version : ''
+        },
+        modal : {
+            businessCd : '',
+            processGroupNo : '',
+            processNo : '',
+            processName : '',
+            workflowFlag : true,
+            referenceAuthority : '',
+            accountCd : '',
+            processGroupRead : '',
+            processUserRead : '',
+            processGroupCd : '',
+            groupName : '',
+            processUserCd : '',
+            userName : '',
+            alertDay : '',
+            iconNo : '',
+            iconBinaryData : '',
+            processExplain : '',
+            exportFileCd : '',
+
+//            controlLabelName : '',
+//            controlType : '',
+//            requireFlag : '0',
+
+            listDetailProcess : []
+        },
+        modalGroup : {
+            processGroupNo : '',
+            processGroupName : '',
+            groupGroupCd : '',
+            groupUserCd : '',
+            iconNo : '',
+            iconBinaryData : ''
+        },
+        listP010004 : [],
+        listS010013 : [],
+        listS010014 : [],
+        listP010003 : [],
+        listP010006 : [],
+        listMstGroup : [],
+        listMstCode : [],
+        listUser : [],
+        listIcon : [],
+        listPS00001 : []
+    };
+
+    model.hidden = {
+        indexPushListProcess : 0,
+        isDisabled : true,
+        isSubmitted : false,
+        isSubProcess : true,
+        indexUpdate : 0,
+        indexParent : 0,
+        positionNo : 0,
+        listIndexAddGroup : [],
+        listKeyAddGroup : [],
+        isGroupUpdate : false,
+        isGroupIcon : false,
+        indexGroupUpdate : 0,
+        screenMode : 'INSERT',
+        status : '03',
+        modalProcess : {
+            isControlType : false,
+            isSubmitted : false,
+            isEXEX040508 : false,
+            isDisabledGroup : false,
+            groupWorkflowFlag : false
+        }
+    };
+
+    return model;
+}]);
+
+//Project Process Management Dialog Controller
+exexSMSApp.controller('SfaPPMDialogCtrl',
+        ['$rootScope', '$scope', '$uibModalInstance', 'SfaPPMDialogModel', 'DialogsService', 'SfaPPMDialogService', 'ServerService','Messages', 'SfaProjectProcessManagementModel',
+    function($rootScope, $scope, $uibModalInstance, SfaPPMDialogModel, DialogsService, SfaPPMDialogService, ServerService, Messages, SfaProjectProcessManagementModel) {
+
+    $scope.model = SfaPPMDialogModel;
+    $scope.sfaPPMModel = SfaProjectProcessManagementModel;
+
+    $scope.init = function(){
+        if(!StringUtils.isEmpty($scope.model.form.modal.processGroupCd)){
+            $scope.getUserByGroup();
+            $scope.selectControlType();
+        }else{
+            $scope.getInit();
+        }
+    };
+
+    $scope.getInit = function(){
+        SfaPPMDialogService
+            .initData({})
+            .then(
+                function(result) {
+                    $scope.model.form.listUser = result.data.listUser;
+                    $scope.model.form.listP010003 = result.data.listP010003;
+                    $scope.model.form.listP010004 = result.data.listP010004;
+                    $scope.model.form.listP010006 = result.data.listP010006;
+                    $scope.model.form.listS010013 = result.data.listS010013;
+                    $scope.model.form.listS010014 = result.data.listS010014;
+                    $scope.model.form.listMstCode = result.data.listMstCode;
+                    $scope.model.form.listMstGroup = result.data.listMstGroup;
+                    $scope.model.form.listPS00001 = result.data.listPS00001;
+                }
+            );
+    };
+
+    $scope.getUserByGroup = function(){
+        var param = {
+                groupCd : $scope.model.form.modal.processGroupCd
+        };
+        SfaPPMDialogService
+            .getSgtUserByGroupCd(param)
+            .then(
+                function(result) {
+                    $scope.model.form.listUser = result.data.listUser;
+                    $scope.model.form.listP010003 = result.data.listP010003;
+                    $scope.model.form.listP010004 = result.data.listP010004;
+                    $scope.model.form.listP010006 = result.data.listP010006;
+                    $scope.model.form.listS010013 = result.data.listS010013;
+                    $scope.model.form.listS010014 = result.data.listS010014;
+                    $scope.model.form.listMstCode = result.data.listMstCode;
+                    $scope.model.form.listMstGroup = result.data.listMstGroup;
+                    $scope.model.form.listPS00001 = result.data.listPS00001;
+                }
+            );
+    };
+
+    $scope.addIcon = function(){
+        var options = {
+                size: '860'
+            };
+        $scope.model.hidden.isGroupIcon = false;
+        DialogsService.showDialog('MstIconManagement', 'SfaPPMIconDialogCtrl', {},options).result.then(function(param) { });
+    };
+
+    $scope.remveIcon = function(){
+        $scope.model.form.modal.iconNo = '';
+        $scope.model.form.modal.iconBinaryData = '';
+    };
+
+    $scope.addDetailProcess = function(){
+        var lastIndex = $scope.model.form.modal.listDetailProcess.length;
+        $scope.model.form.modal.listDetailProcess[lastIndex - 1].isSubmitted = true;
+        if(!StringUtils.isEmpty($scope.model.form.modal.listDetailProcess[lastIndex - 1].controlLabelName) &&
+            !StringUtils.isEmpty($scope.model.form.modal.listDetailProcess[lastIndex - 1].controlType) &&
+            !StringUtils.isEmpty($scope.model.form.modal.listDetailProcess[lastIndex - 1].editPermission)){
+            var itemTmp = {
+                    'orderId': '',
+                    'inputData': '',
+                    'isSubmitted' : false,
+                    'projectSno' : '',
+                    'businessCd' : '',
+                    'processNo' : '',
+                    'lineNo' : '',
+                    'recodeNo' : '',
+                    'workNo' : '',
+                    'controlLabelName': '',
+                    'controlType': '',
+                    'listDataSource': '',
+                    'inputValue' : '',
+                    'requireFlag': '1',
+                    'binaryFile' : '',
+                    'connectWorkNo' : '',
+                    'editPermission':'1'
+            };
+            $scope.model.form.modal.listDetailProcess.push(itemTmp);
+            $('.tableList').animate({scrollTop:$('#tableList').height()}, 'slow');
+        }
+    };
+
+    $scope.removeItem = function(index, row){
+        if(!StringUtils.isEmpty(row.controlType) && (
+                (row.controlType === '05' && !StringUtils.isEmpty(row.inputValue)) ||
+                (row.controlType.indexOf('EXEX') > -1 && !StringUtils.isEmpty(row.workNo))
+                )){
+            DialogsService.showWarning(Messages.getMessage('check.error'),
+                    Messages.getMessage('W00265'));
+        }else {
+            if($scope.model.form.modal.listDetailProcess.length > 1){
+                $scope.model.form.modal.listDetailProcess.splice(index, 1);
+            }
+            $scope.selectControlType();
+        }
+    };
+
+    // TODO
+    //isEXEX040508
+    $scope.selectControlType = function(index, controlType){
+
+        $scope.model.form.listProcess = $scope.sfaPPMModel.form.listProcess;
+
+        var count = 0;
+        var countEXEX04 = 0;
+        var countEXEX05 = 0;
+        var countEXEX08 = 0;
+        var messageContent = '';
+        var lengthListDetail = $scope.model.form.modal.listDetailProcess.length;
+        angular.forEach($scope.model.form.modal.listDetailProcess, function(pItem, pKey){
+            if(!ValidateUtil.isValidTextEmpty(pItem.controlType) && pItem.controlType.indexOf('EXEX') > -1){
+                if(typeof index !== 'undefined' && index === pKey){
+                    $scope.model.form.modal.listDetailProcess[index].editPermission = '1';
+                }
+                if(typeof index !== 'undefined' &&
+                        ( pItem.controlType.indexOf('EXEX04') > -1 || pItem.controlType.indexOf('EXEX05') > -1 || pItem.controlType.indexOf('EXEX08') > -1)){
+                    // work flow off when control type is EXEX04, EXEX05, EXEX08
+                    $scope.model.form.modal.workflowFlag = false;
+                    pItem.requireFlag = '';
+                    $scope.model.hidden.modalProcess.isEXEX040508 = true;
+                }else{
+                    $scope.model.hidden.modalProcess.isEXEX040508 = false;
+                }
+                if(typeof index !== 'undefined' && lengthListDetail > 1 &&
+                        (pItem.controlType.indexOf('EXEX04') > -1 || pItem.controlType.indexOf('EXEX05') > -1 || pItem.controlType.indexOf('EXEX08') > -1)){
+                    $scope.model.hidden.modalProcess.isControlType = true;
+                    messageContent = 'W00236';
+                }
+
+                // check if more than one of EXEX04.05.08
+                if(typeof index !== 'undefined' &&
+                        ( pItem.controlType.indexOf('EXEX04') > -1)){
+                    countEXEX04++;
+                }
+                if(typeof index !== 'undefined' &&
+                        ( pItem.controlType.indexOf('EXEX05') > -1)){
+                    countEXEX05++;
+                }
+                if(typeof index !== 'undefined' &&
+                        ( pItem.controlType.indexOf('EXEX08') > -1)){
+                    countEXEX08++;
+                }
+                var listProcess = angular.copy($scope.model.form.listProcess);
+                listProcess.splice($scope.model.hidden.indexParent,1);
+                if(pKey === 0){
+                    angular.forEach(listProcess, function(item, key){
+                        if(typeof index !== 'undefined'){
+                            angular.forEach(item.listSubProcess[0].listDetailProcess, function(subItem, key){
+                                if(subItem.controlType.indexOf('EXEX04') > -1){
+                                    countEXEX04++;
+                                }
+                                if(subItem.controlType.indexOf('EXEX05') > -1){
+                                    countEXEX05++;
+                                }
+                                if(subItem.controlType.indexOf('EXEX08') > -1){
+                                    countEXEX08++;
+                                }
+                            });
+                        }
+                    });
+                }
+                if(countEXEX04 > 1 || countEXEX05 > 1 || countEXEX08 > 1){
+                    $scope.model.hidden.modalProcess.isControlType = true;
+                    messageContent = 'W00237';
+                }
+
+                //if process has group, can't change to EXEX04.05.08
+                if( typeof index !== 'undefined' &&
+                        !$scope.model.hidden.isDisabled && $scope.model.hidden.isSubProcess &&
+                        !ValidateUtil.isValidTextEmpty($scope.model.form.listProcess[$scope.model.hidden.indexParent].group) &&
+                        $scope.model.form.listProcess[$scope.model.hidden.indexParent].group &&
+                        !ValidateUtil.isValidTextEmpty($scope.model.form.listProcess[$scope.model.hidden.indexParent].processGroupName) &&
+                        (pItem.controlType.indexOf('EXEX04') > -1 || pItem.controlType.indexOf('EXEX05') > -1 || pItem.controlType.indexOf('EXEX08') > -1)){
+                    $scope.model.hidden.modalProcess.isControlType = true;
+                    messageContent = 'W00238';
+                }
+
+            }else{
+                $scope.model.hidden.modalProcess.isEXEX040508 = false;
+            }
+        });
+        if(!ValidateUtil.isValidTextEmpty(messageContent)){
+            DialogsService.showWarning(Messages.getMessage('check.error'),Messages.getMessage(messageContent));
+        }else{
+            $scope.model.hidden.modalProcess.isControlType = false;
+        }
+    };
+
+    /**
+     * add or update process
+     * @param isInvalid
+     */
+    $scope.addNew = function(isInvalid){
+        $scope.model.hidden.modalProcess.isSubmitted = true;
+        if(isInvalid) {
+            return;
+        }
+
+        var param = angular.extend({}, $scope.model.form.modal);
+
+        delete param.listS010013;
+        delete param.listP010003;
+
+        var listDetailProcessTmp = [];
+        angular.forEach(param.listDetailProcess, function(value, key){
+
+            var controlTypeName = '';
+            var listP010003Length = $scope.model.form.listP010003.length;
+            for(var i = 0; i < listP010003Length; i++){
+                if( value.controlType != '01' && value.controlType != '02'
+                    && value.controlType != '03' && value.controlType != '04'
+                        && value.controlType != '05' && value.controlType != '06'
+                            && value.controlType != '07' && value.controlType != '08'
+                                && value.controlType != '09' && value.controlType != '10'
+                                    && value.controlType != '11' && value.controlType != '1'
+                    && value.controlType == $scope.model.form.listP010003[i].code){
+                    controlTypeName = $scope.model.form.listP010003[i].codeName;
+                    break;
+                }
+            }
+
+            //TODO when 設定 check EXEX04.05.08 check to TRUE
+            if(!StringUtils.isEmpty(value.controlType) && value.controlType.indexOf('EXEX04') > -1){
+                //$scope.model.hidden.modalProcess.isUniqueEXEX04 = true;
+                $scope.model.hidden.modalProcess.isDisabledGroup = true;
+                param.workflowFlag = false;
+            }else if(!StringUtils.isEmpty(value.controlType) && value.controlType.indexOf('EXEX05') > -1){
+                //$scope.model.hidden.modalProcess.isUniqueEXEX05 = true;
+                $scope.model.hidden.modalProcess.isDisabledGroup = true;
+                param.workflowFlag = false;
+            }else if(!StringUtils.isEmpty(value.controlType) && value.controlType.indexOf('EXEX08') > -1){
+                //$scope.model.hidden.modalProcess.isUniqueEXEX08 = true;
+                $scope.model.hidden.modalProcess.isDisabledGroup = true;
+                param.workflowFlag = false;
+            }else{
+                $scope.model.hidden.modalProcess.isDisabledGroup = false;
+            }
+
+            if(!StringUtils.isEmpty(value.controlLabelName)
+                && !StringUtils.isEmpty(value.controlType)){
+                // if requireFlag is null, set requireFlag = '0' (not require)
+                var requireFlag = StringUtils.isEmpty(value.requireFlag) ? '0' : value.requireFlag;
+                // if editPermission is null, set editPermission = '1' (社内)
+                var editPermission = ValidateUtil.isValidTextEmpty(value.editPermission) ? '1' : value.editPermission;
+
+                var itemTmp = {
+                    businessCd : value.businessCd,
+                    processNo : value.processNo,
+                    lineNo : value.lineNo,
+                    positionNo : key+1,
+                    recodeNo : value.recodeNo,
+                    workNo : value.workNo,
+                    controlLabelName : value.controlLabelName,
+                    controlType : value.controlType,
+                    listDataSource : value.listDataSource,
+                    controlTypeName : controlTypeName,
+                    inputValue : value.inputValue,
+                    requireFlag : requireFlag,
+                    binaryFile : value.binaryFile,
+                    isFileChange : value.isFileChange,
+                    connectWorkNo : value.connectWorkNo,
+                    editPermission : editPermission,
+                    readOnly : value.readOnly
+                }
+                listDetailProcessTmp.push(itemTmp);
+            }
+        });
+
+        if(listDetailProcessTmp.length === 0){
+            DialogsService.showWarning(Messages.getMessage('check.error'),
+                    Messages.getMessage('W00046'));
+            return;
+        }
+
+        param.listDetailProcess = [];
+        param.listDetailProcess = listDetailProcessTmp;
+
+        var groupName = '';
+        var listMstGroupLength = $scope.model.form.listMstGroup.length;
+        for(var i = 0; i < listMstGroupLength; i++){
+            if( param.processGroupCd == $scope.model.form.listMstGroup[i].groupCd){
+                groupName = $scope.model.form.listMstGroup[i].groupName;
+                break;
+            }
+        }
+        var userName = '';
+        var listUserLength = $scope.model.form.listUser.length;
+        for(var i = 0; i < listUserLength; i++){
+            if( param.processUserCd == $scope.model.form.listUser[i].userCd){
+                userName = $scope.model.form.listUser[i].userName;
+                break;
+            }
+        }
+        param.groupName = groupName;
+        param.userName = userName;
+
+        if(!StringUtils.isEmpty(param.referenceAuthority)){
+            angular.forEach(param.referenceAuthority, function(value, key){
+                if(value === '1'){
+                    param.processGroupRead = '01';
+                }else if (value === '2'){
+                    param.processUserRead = '01';
+                }else if(value === '3'){
+                    param.accountCd = '01';
+                }
+            });
+            param.referenceAuthority = param.referenceAuthority.toString();
+        }else{
+            param.referenceAuthority = '';
+            param.processGroupRead = '00';
+            param.processUserRead = '00';
+            param.accountCd = '00';
+        }
+
+        if($scope.model.hidden.screenMode === 'INSERT'){
+            DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('S00003')).result.then(function(btn){
+                // add new process
+                if($scope.model.hidden.isDisabled && $scope.model.hidden.isSubProcess){
+                    $scope.model.form.listSubProcess.push(param);
+                    var listSubProcess = {
+                        id: 1,
+                        group : false,
+                        isDisabledGroup : $scope.model.hidden.modalProcess.isDisabledGroup,
+                        processGroupName : '',
+                        listSubProcess : $scope.model.form.listSubProcess
+                    }
+                    $scope.model.form.listProcess.splice($scope.model.hidden.indexPushListProcess + 1, 0, listSubProcess);
+                    $scope.model.form.listSubProcess = [];
+                    listSubProcess = {};
+                }
+                // add sub process
+                if(!$scope.model.hidden.isDisabled && !$scope.model.hidden.isSubProcess){
+                    param.subProcess = true;
+                    $scope.model.form.listProcess.splice($scope.model.hidden.indexUpdate + 1, 0, param);
+                }
+                // update
+                if(!$scope.model.hidden.isDisabled && $scope.model.hidden.isSubProcess){
+                    $scope.model.form.listProcess[$scope.model.hidden.indexParent].listSubProcess[$scope.model.hidden.indexUpdate] = param;
+                    $scope.model.form.listProcess[$scope.model.hidden.indexParent].isDisabledGroup = $scope.model.hidden.modalProcess.isDisabledGroup;
+                }
+                $scope.model.hidden.modalProcess.isSubmitted = false;
+                $scope.model.hidden.modalProcess.isDisabledGroup = false;
+
+                $scope.doUpdate(param);
+            });
+        }else{
+            DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('S00004')).result.then(function(btn){
+                // add new process
+                if($scope.model.hidden.isDisabled && $scope.model.hidden.isSubProcess){
+                    $scope.model.form.listSubProcess.push(param);
+                    var listSubProcess = {
+                        id: 1,
+                        group : false,
+                        isDisabledGroup : $scope.model.hidden.modalProcess.isDisabledGroup,
+                        processGroupName : '',
+                        listSubProcess : $scope.model.form.listSubProcess
+                    }
+                    $scope.model.form.listProcess.splice($scope.model.hidden.indexPushListProcess + 1, 0, listSubProcess);
+                    $scope.model.form.listSubProcess = [];
+                    listSubProcess = {};
+                }
+                // add sub process
+                if(!$scope.model.hidden.isDisabled && !$scope.model.hidden.isSubProcess){
+                    param.subProcess = true;
+                    $scope.sfaPPMModel.form.listProcess.splice($scope.model.hidden.indexUpdate + 1, 0, param);
+                }
+                // update
+                if(!$scope.model.hidden.isDisabled && $scope.model.hidden.isSubProcess){
+                    $scope.sfaPPMModel.form.listProcess[$scope.model.hidden.indexParent].listSubProcess[$scope.model.hidden.indexUpdate] = param;
+                    $scope.sfaPPMModel.form.listProcess[$scope.model.hidden.indexParent].isDisabledGroup = $scope.model.hidden.modalProcess.isDisabledGroup;
+                }
+                $scope.model.hidden.modalProcess.isSubmitted = false;
+                $scope.model.hidden.modalProcess.isDisabledGroup = false;
+
+                $scope.doUpdate(param);
+            },function(btn){ });
+        }
+    };
+
+    $scope.close = function() {
+        $uibModalInstance.dismiss('close');
+    };
+
+    $scope.convertParam = function(param){
+        if(!StringUtils.isEmpty(param.deadlineDate)){
+            param.deadlineDate = new Date(param.deadlineDate);
+        }
+        if(!StringUtils.isEmpty(param.processCompleteDate)){
+            param.processCompleteDate = new Date(param.processCompleteDate);
+        }
+        if(!StringUtils.isEmpty(param.processBackDate)){
+            param.processBackDate = new Date(param.processBackDate);
+        }
+        param.actionMode = $scope.model.hidden.screenMode;
+        param.projectSno = $scope.sfaPPMModel.form.business.projectSno;
+        param.businessCd = $scope.sfaPPMModel.form.business.businessCd;
+        if($scope.model.hidden.screenMode === 'INSERT'){
+            param.positionNo = $scope.model.hidden.positionNo;
+        }
+
+        return param;
+    };
+
+
+    $scope.doUpdate = function(param){
+        param = $scope.convertParam(param);
+        ServerService
+            .doPost('SfaProjectProcessManagement/updateProcess', param)
+            .then(
+                function(okResult) {
+                    var msgObj = okResult.data.msgResult;
+                    if(msgObj.rtnCd === 0){
+                        DialogsService.showNotify(Messages.getMessage('title.info'), msgObj.messages)
+                        .result.then(function(btn){
+                            $uibModalInstance.dismiss('close');
+                            $rootScope.$broadcast("PJMProcess#loadUpdate",{});
+                        });
+                    }else {
+                        DialogsService.showWarning(Messages.getMessage('check.error'), msgObj.messages);
+                    }
+                },
+                function(errResult){
+                });
+    };
+
+}]);
+
+//Project Icon Management Dialog Controller
+exexSMSApp.controller('SfaPPMIconDialogCtrl',
+        ['$rootScope', '$scope', '$uibModalInstance', 'SfaPPMDialogModel', 'SfaPPMIconService', 'Messages',
+         function($rootScope, $scope, $uibModalInstance, SfaPPMDialogModel, SfaPPMIconService, Messages) {
+
+    $scope.model = SfaPPMDialogModel;
+
+    $scope.init = function(){
+        $scope.getInit();
+    };
+
+    $scope.getInit = function(){
+        SfaPPMIconService.initData({})
+            .then(
+                function(result) {
+                    $scope.model.form.listIcon = result.data.listIcon;
+                }
+            );
+    };
+
+    $scope.selectIcon = function(item){
+        if($scope.model.hidden.isGroupIcon){
+            $scope.model.form.modalGroup.iconNo = item.iconNo;
+            $scope.model.form.modalGroup.iconBinaryData = item.iconBinaryData;
+        }else{
+            $scope.model.form.modal.iconNo = item.iconNo;
+            $scope.model.form.modal.iconBinaryData = item.iconBinaryData;
+        }
+        $uibModalInstance.dismiss('close');
+    };
+
+    $scope.close = function() {
+        $uibModalInstance.dismiss('close');
+    };
+}]);
+
+//SfaPPMGroupDialogCtrl
+exexSMSApp.controller('SfaPPMGroupDialogCtrl',
+        ['$rootScope', '$scope', '$uibModalInstance', 'SfaPPMDialogModel', 'SfaProjectProcessManagementModel', 'DialogsService', 'ServerService', 'SfaPPMDialogService', 'Messages', 'data',
+         function($rootScope, $scope, $uibModalInstance, SfaPPMDialogModel, SfaProjectProcessManagementModel, DialogsService, ServerService, SfaPPMDialogService, Messages, data) {
+
+    $scope.model = SfaPPMDialogModel;
+    $scope.sfaPPMModel = SfaProjectProcessManagementModel;
+
+    $scope.model.form.modalGroup.processGroupNo = data.processGroupNo;
+    $scope.model.form.modalGroup.processGroupName = data.processGroupName;
+    $scope.model.form.modalGroup.groupGroupCd = data.groupGroupCd;
+    $scope.model.form.modalGroup.groupUserCd = data.groupUserCd;
+    $scope.model.form.modalGroup.iconNo = data.iconNo;
+    $scope.model.form.modalGroup.iconBinaryData = data.iconBinaryData;
+    $scope.model.form.modalGroup.workflowFlag = data.workflowFlag;
+    $scope.model.hidden.isGroupUpdate = data.isGroupUpdate;
+    $scope.model.hidden.indexGroupUpdate = data.indexGroupUpdate;
+    $scope.model.hidden.screenMode = data.screenMode;
+
+    $scope.addGroupName = function(){
+        if($scope.model.hidden.screenMode === 'INSERT'){
+            DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('S00003')).result.then(function(btn){
+                var param = $scope.convertParam($scope.model.form.modalGroup);
+                $scope.doInsertGroup(param);
+            });
+        }else{
+            DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('S00004')).result.then(function(btn){
+                var param = $scope.convertParam($scope.model.form.modalGroup);
+                $scope.doInsertGroup(param);
+            });
+        }
+    };
+
+    $scope.convertParam = function(param){
+        param.actionMode = $scope.model.hidden.screenMode;
+        param.projectSno = $scope.sfaPPMModel.form.business.projectSno;
+        param.businessCd = $scope.sfaPPMModel.form.business.businessCd;
+        param.listSubProcess = $scope.model.hidden.listKeyAddGroup;
+        return param;
+    }
+
+    $scope.doInsertGroup = function(param){
+        ServerService.doPost('SfaProjectProcessManagement/updateGroupProcess', param).then(
+            function(okResult) {
+                var msgObj = okResult.data.msgResult;
+                if(msgObj.rtnCd === 0){
+                    DialogsService.showNotify(Messages.getMessage('title.info'), msgObj.messages).result.then(function(btn){
+                        $uibModalInstance.close();
+                        $rootScope.$broadcast("PJMProcess#loadUpdate",{});
+                    });
+                }else {
+                    DialogsService.showWarning(Messages.getMessage('check.error'), msgObj.messages);
+                }
+            }
+        );
+    };
+
+//    $scope.doAddGroupName = function(){
+//        var groupGroupName = '';
+//        if(!ValidateUtil.isValidTextEmpty($scope.model.form.modalGroup.groupGroupCd)){
+//            var listMstGroupLength = $scope.model.form.listMstGroup.length;
+//            for(var i = 0; i < listMstGroupLength; i++){
+//                if( $scope.model.form.modalGroup.groupGroupCd === $scope.model.form.listMstGroup[i].groupCd){
+//                    groupGroupName = $scope.model.form.listMstGroup[i].groupName;
+//                    break;
+//                }
+//            }
+//        }
+//        var groupUserName = '';
+//        if(!ValidateUtil.isValidTextEmpty($scope.model.form.modalGroup.groupUserCd)){
+//            var listUserLength = $scope.model.form.listUser.length;
+//            for(var i = 0; i < listUserLength; i++){
+//                if( $scope.model.form.modalGroup.groupUserCd === $scope.model.form.listUser[i].userCd){
+//                    groupUserName = $scope.model.form.listUser[i].userName;
+//                    break;
+//                }
+//            }
+//        }
+//
+//        if(!$scope.model.hidden.isGroupUpdate){
+//            var indexGroupCanAdd = $scope.model.hidden.listIndexAddGroup.sort()[0];
+//            var count = 0;
+//            if($scope.model.hidden.listIndexAddGroup.length > 0){
+//                angular.forEach($scope.sfaPPMModel.form.listProcess, function(value, key){
+//                    if(value.group && ValidateUtil.isValidTextEmpty(value.processGroupName)){
+//                        if(count != 0 ){
+//                            $scope.sfaPPMModel.form.listProcess[indexGroupCanAdd].listSubProcess.push(value.listSubProcess[0]);
+//                        }
+//                        count++;
+//                    }
+//                });
+//                $scope.model.hidden.listIndexAddGroup.splice(0, 1);
+//                $scope.model.hidden.listIndexAddGroup.reverse();
+//                angular.forEach($scope.model.hidden.listIndexAddGroup, function(value, key){
+//                    $scope.sfaPPMModel.form.listProcess.splice(value, 1);
+//                });
+//            }
+//            $scope.sfaPPMModel.form.listProcess[indexGroupCanAdd].processGroupName = $scope.model.form.modalGroup.processGroupName;
+//            $scope.sfaPPMModel.form.listProcess[indexGroupCanAdd].groupGroupCd = $scope.model.form.modalGroup.groupGroupCd;
+//            $scope.sfaPPMModel.form.listProcess[indexGroupCanAdd].groupGroupName = groupGroupName;
+//            $scope.sfaPPMModel.form.listProcess[indexGroupCanAdd].groupUserCd = $scope.model.form.modalGroup.groupUserCd;
+//            $scope.sfaPPMModel.form.listProcess[indexGroupCanAdd].groupUserName = groupUserName;
+//            $scope.sfaPPMModel.form.listProcess[indexGroupCanAdd].iconNo = $scope.model.form.modalGroup.iconNo;
+//            $scope.sfaPPMModel.form.listProcess[indexGroupCanAdd].iconBinaryData = $scope.model.form.modalGroup.iconBinaryData;
+//            $scope.model.hidden.listIndexAddGroup = [];
+//        }else{
+//            $scope.sfaPPMModel.form.listProcess[$scope.model.hidden.indexGroupUpdate].processGroupName = $scope.model.form.modalGroup.processGroupName;
+//            $scope.sfaPPMModel.form.listProcess[$scope.model.hidden.indexGroupUpdate].groupGroupCd = $scope.model.form.modalGroup.groupGroupCd;
+//            $scope.sfaPPMModel.form.listProcess[$scope.model.hidden.indexGroupUpdate].groupGroupName = groupGroupName;
+//            $scope.sfaPPMModel.form.listProcess[$scope.model.hidden.indexGroupUpdate].groupUserCd = $scope.model.form.modalGroup.groupUserCd;
+//            $scope.sfaPPMModel.form.listProcess[$scope.model.hidden.indexGroupUpdate].groupUserName = groupUserName;
+//            $scope.sfaPPMModel.form.listProcess[$scope.model.hidden.indexGroupUpdate].iconNo = $scope.model.form.modalGroup.iconNo;
+//            $scope.sfaPPMModel.form.listProcess[$scope.model.hidden.indexGroupUpdate].iconBinaryData = $scope.model.form.modalGroup.iconBinaryData;
+//        }
+//    };
+
+    $scope.addIcon = function(){
+        var options = {
+            size: '860'
+        };
+        $scope.model.hidden.isGroupIcon = true;
+        DialogsService.showDialog('MstIconManagement', 'SfaPPMIconDialogCtrl', {},options).result.then(function(param) { });
+    };
+
+    $scope.remveIcon = function(){
+        $scope.model.form.modalGroup.iconNo = '';
+        $scope.model.form.modalGroup.iconBinaryData = '';
+    };
+
+    $scope.close = function() {
+        $uibModalInstance.dismiss('close');
+    };
+
+
+    $scope.init = function(){
+        if(!ValidateUtil.isValidTextEmpty($scope.model.form.modalGroup.groupGroupCd)){
+            $scope.getUserByGroup();
+        }else{
+            $scope.getInit();
+        }
+    };
+
+    $scope.getInit = function(){
+        SfaPPMDialogService.initDataPGroup({}).then(
+            function(result) {
+                $scope.model.form.listMstGroup = result.data.listMstGroup;
+                $scope.model.form.listUser = result.data.listUser;
+            }
+        );
+    };
+
+    $scope.getUserByGroup = function(){
+        var param = {
+                groupCd : $scope.model.form.modalGroup.groupGroupCd
+        };
+        SfaPPMDialogService.selectUserByGroupCdPGroup(param).then(
+            function(result) {
+                $scope.model.form.listMstGroup = result.data.listMstGroup;
+                $scope.model.form.listUser = result.data.listUser;
+            }
+        );
+    };
+
+    $scope.init();
+
+}]);

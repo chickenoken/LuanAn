@@ -1,0 +1,178 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ * @author quang-thien
+ *
+ * @version $Revision: $ $Date: $
+ */
+
+'use strict';
+
+exexSMSApp.factory('PtlRequestModel', [ 'BaseModel', function(BaseModel) {
+        var model = BaseModel.getInstance();
+        model.form = {
+            info : {
+                companyCd : '',
+                groupCd : '',
+                approvedUserCd : ''
+            },
+            listUserRequest : [],
+            listMstGroup : [],
+            buttonActive : false,
+            mode : ''
+        };
+        return model;
+}]);
+
+exexSMSApp.controller('scheduleUserRequestCtrl',
+        ['$scope', '$http', '$window', '$uibModalInstance', 'DialogsService', 'PtlRequestModel', 'data', 'Messages', 'ServerService',
+         function($scope, $http, $window,$uibModalInstance, DialogsService, PtlRequestModel, data, Messages, ServerService) {
+
+    $scope.model = PtlRequestModel;
+    /**
+     * init model
+     */
+    $scope.init = function(model){
+
+        $scope.getInit();
+
+        var loginSession = angular.fromJson(sessionStorage.getItem("session"));
+        if(null != loginSession){
+            $scope.model.form.info.groupCd = loginSession.groupCd;
+            $scope.selectUserByGroup(loginSession.groupCd);
+        }
+    };
+
+    $scope.sortableConfig = { group: 'todo', animation: 150 };
+
+    $scope.close = function() {
+        $scope.model.form.listUserRequest = [];
+        $uibModalInstance.dismiss('close');
+    };
+
+    /**
+     * 初期表示
+     */
+    $scope.getInit = function() {
+        $scope.model.form.listUserRequest = data.targetUser;
+        $scope.model.form.listUser = [];
+        $scope.model.form.buttonActive = false;
+        var param = '';
+        ServerService
+            .doPost('ScheduleUserRequest/getInit', param)
+            .then(
+                    function(okResult) {
+                        var error = okResult.data.failed;
+                        if(!ValidateUtil.isValidTextEmpty(error)){
+                            DialogsService.showError(Messages.getMessage('system.error'),
+                                                 error);
+                            return;
+                        }
+                        $scope.model.form.listMstGroup = okResult.data.listMstGroup;
+                        $scope.model.form.info.companyCd = okResult.data.companyCd;
+                    },
+                    function(errResult){
+                    });
+    };
+
+    /**
+     * 初期表示
+     */
+    $scope.selectUserByGroup = function(groupCd) {
+        if(!ValidateUtil.isValidTextEmpty(groupCd)){
+            groupCd = $scope.model.form.info.groupCd;
+        }else{
+            groupCd = '';
+        }
+        var scheduleUserCd = '';
+        if($scope.model.form.listUserRequest.length != undefined
+                && $scope.model.form.listUserRequest.length != 0){
+            scheduleUserCd = JSON.stringify($scope.model.form.listUserRequest);
+        }
+        var param = {
+                'groupCd' : groupCd,
+                'scheduleUserCd' : scheduleUserCd
+        };
+        ServerService
+            .doPost('ScheduleUserRequest/selectUserByGroup', param)
+            .then(
+                    function(okResult) {
+                        var error = okResult.data.failed;
+                        if(!ValidateUtil.isValidTextEmpty(error)){
+                            DialogsService.showError(Messages.getMessage('system.error'),
+                                                  error);
+                            return;
+                        }
+                        $scope.model.form.listUser = okResult.data.listUser;
+                    },
+                    function(errResult){
+                    });
+    };
+
+
+    /**
+     *
+     */
+    $scope.addUser = function() {
+        var lstTmp = $scope.model.form.listUserRequest;
+        $scope.model.form.listUserRequest = [];
+        $uibModalInstance.close(lstTmp);
+    };
+
+    $scope.addAllUser = function(){
+        angular.forEach($scope.model.form.listUser, function(item,index){
+            var itemPust = $scope.model.form.listUser[index];
+            $scope.model.form.listUserRequest.push(itemPust);
+        });
+        $scope.model.form.listUser = [];
+        if($scope.model.form.listUserRequest.length != 0){
+            $scope.model.form.buttonActive = true;
+        }else{
+            $scope.model.form.buttonActive = false;
+        }
+    };
+
+    $scope.sortingLog = [];
+
+    function createOptions(listName) {
+        var _listName = listName;
+        var options = {
+            placeholder : "app",
+            connectWith : ".apps-container",
+            activate : function() {
+            },
+            beforeStop : function() {
+            },
+            change : function() {
+            },
+            create : function() {
+            },
+            deactivate : function() {
+            },
+            out : function() {
+            },
+            over : function() {
+            },
+            receive : function() {
+            },
+            remove : function() {
+            },
+            sort : function() {
+            },
+            start : function() {
+            },
+            stop : function(e, ui) {
+            },
+            update :function(e, ui)  {
+                if($scope.model.form.listUserRequest.length != 0){
+                    $scope.model.form.buttonActive = true;
+                }else{
+                    $scope.model.form.buttonActive = false;
+                }
+            }
+        };
+        return options;
+    }
+    $scope.sortableOptionsList = [ createOptions('A'), createOptions('B') ];
+}]);

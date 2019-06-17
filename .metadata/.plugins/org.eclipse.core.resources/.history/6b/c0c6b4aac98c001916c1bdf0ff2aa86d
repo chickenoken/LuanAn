@@ -1,0 +1,39 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ * SalRsvControlService
+ *
+ * @author Quang-Thien
+ *
+ * @version $Revision:  $  $Date:  $
+ */
+'use strict';
+
+exexSMSApp.service('SalRptListService', ['$q', 'ServerService',function ($q, serverService) {
+    var _self = this;
+    _self.isExistData = function(param) {
+        var deferred = $q.defer();
+
+        serverService
+            .doPost('SalRptList/isExistData', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    _self.doDownload = function(params) {
+        if (params.billType == '1') {
+            serverService.doDownload('/SalRptList/downloadSalRptList',  params, 'application/pdf', "BILL04_PDF.pdf");
+        } else {
+            serverService.doDownload('/SalRptList/downloadSalRptList',  params, 'application/pdf', "BILL05_PDF.pdf");
+        }
+    };
+
+}]);

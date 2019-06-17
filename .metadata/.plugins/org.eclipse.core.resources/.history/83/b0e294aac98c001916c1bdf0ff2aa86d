@@ -1,0 +1,275 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision: 1.0 $  $Date:  $
+ * @author quang-tung
+ */
+
+exexSMSApp.factory('StockTransferListModel', [ 'BaseModel', function(BaseModel) {
+
+    var model = BaseModel.getInstance();
+
+    model.form = {
+        search :{
+            transferDateFrom : '',
+            transferDateTo : '',
+            transferSno : '',
+            controlCd : '',
+            transferName : '',
+            transferUserCd : '',
+            documentStatusList : [],
+            transferItemName : '',
+            sourceWarehouseList : [],
+            destWarehouseList : []
+        },
+        paginationInfo : {
+            page: 0,
+            pageSize: 20,
+            totalPage: 0,
+            totalRecord: 0,
+            from: 0,
+            to: 0
+        },
+        listSelectedSNo: []
+    };
+    model.listDocumentStatus = [];
+    model.hidden = {
+        exportName : 'STOCK_TRANSFER',
+        enableButton: true,
+        listDataAjax : []
+    }
+    return model;
+} ]);
+
+exexSMSApp.controller('stockTransferListCtrl',
+        ['$scope', '$filter', 'StockTransferListModel', 'DialogsService', 'ServerService', 'RouteService', 'StockTransferService', 'Messages', 'HeaderModel',
+         function($scope, $filter, StockTransferListModel,  DialogsService, ServerService, RouteService, StockTransferService, Messages, HeaderModel){
+
+    $scope.model = StockTransferListModel;
+    $scope.modelHeader = HeaderModel;
+
+    /**初期*/
+    $scope.init = function(){
+        StockTransferService.initData(null).then(
+            function(result) {
+                if(!ValidateUtil.isValidTextEmpty(result.data)){
+                    $scope.model.listDocumentStatus = result.data.listDocumentStatus;
+                    $scope.model.form.listExport = result.data.listExport;
+                    $scope.model.form.listInvoice = result.data.listInvoice;
+                   //Session search
+                    var sessionSearch = angular.fromJson(sessionStorage.getItem("stockTransferListSession"));
+                    if(!StringUtils.isEmpty(sessionSearch)) {
+                        $scope.model.form.search = angular.copy(sessionSearch);
+                        $scope.doSearch(sessionSearch.page, sessionSearch);
+                    } else {
+                        $scope.model.form.search.transferDateFrom = $filter('date')(DateUtils.getPreviousMonth(), "yyyy/MM/dd");
+                        $scope.model.form.search.transferDateTo = $filter('date')(DateUtils.getCurrentDate(), "yyyy/MM/dd");
+                        $scope.doSearch(1, $scope.model.form.search);
+                    }
+                }
+            }
+        );
+    };
+
+    /**検索。*/
+    $scope.doSearch = function(page, session) {
+        var params = {
+            transferDateFrom :  !StringUtils.isEmpty($scope.model.form.search.transferDateFrom) ? new Date($scope.model.form.search.transferDateFrom) : "",
+            transferDateTo :  !StringUtils.isEmpty($scope.model.form.search.transferDateTo) ? new Date($scope.model.form.search.transferDateTo) : "",
+            transferSno : $scope.model.form.search.transferSno,
+            controlCd : $scope.model.form.search.controlCd,
+            transferName : $scope.model.form.search.transferName,
+            transferUserCd : $scope.model.form.search.transferUserCd,
+            documentStatusList : $scope.model.form.search.documentStatusList,
+            transferItemName : $scope.model.form.search.transferItemName,
+            sourceWarehouseList : $scope.model.form.search.sourceWarehouseList,
+            destWarehouseList : $scope.model.form.search.destWarehouseList,
+            page : page,
+            pageSize : $scope.model.form.paginationInfo.pageSize
+        };
+        params.listDataAjax = [];
+        params.transferUserName = $scope.model.form.search.transferUserName;
+        if(StringUtils.isEmpty(session)){
+            if(!StringUtils.isEmpty($scope.model.form.search.sourceWarehouseList) && $scope.model.form.search.sourceWarehouseList.length > 0){
+                $scope.convertDataAjax(0, params);
+            }
+            if(!StringUtils.isEmpty($scope.model.form.search.destWarehouseList) && $scope.model.form.search.destWarehouseList.length > 0){
+                $scope.convertDataAjax(1, params);
+            }
+        }else {
+            if(!StringUtils.isEmpty(session.sourceWarehouseList) && session.sourceWarehouseList.length > 0){
+                $scope.model.hidden.listDataAjax[0] = session.listDataAjax[0];
+                params.listDataAjax[0]  = session.listDataAjax[0];
+            }
+            if(!StringUtils.isEmpty(session.destWarehouseList) && session.destWarehouseList.length > 0){
+                $scope.model.hidden.listDataAjax[1] = session.listDataAjax[1];
+                params.listDataAjax[1]  = session.listDataAjax[1];
+            }
+        }
+        sessionStorage.removeItem("stockTransferListSession");
+        sessionStorage.setItem("stockTransferListSession", JSON.stringify(params));
+        delete params.listDataAjax;
+        delete params.transferUserName;
+        StockTransferService.search(params).then(
+            function(okResult) {
+                if(!ValidateUtil.isValidTextEmpty(okResult.data)){
+                    $scope.model.form.listStockTransfer = okResult.data.resultList;
+                    $scope.model.form.paginationInfo = okResult.data.paginationInfo;
+                    // add colresizable to table
+                    setTimeout(function(){
+                        $scope.setColResizable();
+                    });
+                }
+            }
+        );
+    };
+
+    $scope.init();
+
+    /***/
+    $scope.goToItemDetails = function(param){
+        var params = {
+            transferSno : param.transferSno,
+            recodeNo : param.recodeNo
+        };
+        sessionStorage.setItem("stockTransfer", JSON.stringify(params));
+        RouteService.gotoUrl('StockTransferControl');
+    };
+
+    $scope.createStockTransfer = function() {
+        sessionStorage.removeItem('stockTransfer');
+        RouteService.gotoUrl('StockTransferControl');
+    };
+
+    /** START: USE FOR EXPORT REPORT */
+    $scope.$on($scope.model.hidden.exportName + "#exportReport", function(evt, param) {
+        if(!StringUtils.isEmpty(param.tempNo)){
+            $scope.showCustomReport(param);
+        } else{
+            $scope.exportOutput(param);
+        }
+    });
+    /** END: USE FOR EXPORT REPORT */
+
+    /** Excel export (check type to export) */
+    $scope.exportOutput = function(item){
+        if (item.codeType == 'CUSREP0015' && item.code == '01') {
+            $scope.exportTrialItem();
+        } else if (item.codeType == 'CUSREP0016' && item.code == '01') {
+            $scope.downloadKenankenDenpyoExcel();
+        } else if (item.codeType == 'L010020' && item.code == '01') {
+            $scope.exportExcel();
+        }
+    };
+
+    /**show ckeditor report*/
+    $scope.showCustomReport = function(param){
+        var params = {};
+        if(!StringUtils.isEmpty($scope.model.hidden.selectRow)){
+            var listSelectedSNo = [];
+            listSelectedSNo.push($scope.model.hidden.selectRow.transferSno + '_' + $scope.model.hidden.selectRow.recodeNo);
+            params ={'invoiceType': '08', objSno: listSelectedSNo, 'tempNoCustomer': param.tempNo};
+        }else{
+            params ={'invoiceType': '08', objSno: $scope.model.form.listSelectedSNo, 'tempNoCustomer': param.tempNo};
+        }
+        var options ={size: 1100};
+        DialogsService.showDialog('InvoiceTemplate/getCustomReportPage', 'CustomReportCtrl', params, options);
+    }
+
+    $scope.exportExcel = function(){
+        var params = {
+            transferSno : $scope.model.hidden.selectRow.transferSno,
+            recodeNo : $scope.model.hidden.selectRow.recodeNo
+        };
+        var fileName = Messages.getMessage('common.excel.file.name.stocktransfer') + '_' + DateUtils.getYYYYMMDD(new Date());
+        ServerService.doDownload('/StockTransferControl/downloadStockTransferExcel', angular.toJson(params), 'application/vnd.ms-excel', fileName + '.xlsx');
+    };
+
+    $scope.exportTrialItem = function(){
+        var params = {
+            transferSno : $scope.model.hidden.selectRow.transferSno,
+            recodeNo : $scope.model.hidden.selectRow.recodeNo
+        };
+        var fileName = Messages.getMessage('common.excel.file.name.stocktransfer') + '_' + DateUtils.getYYYYMMDD(new Date());
+        ServerService.doDownload('/StockTransferControl/exportTrialItem', angular.toJson(params), 'application/vnd.ms-excel', fileName + '.xlsx');
+    };
+
+    /** Donwload 伝票 excel file for kenanken company*/
+    $scope.downloadKenankenDenpyoExcel = function(){
+        var fileName = '伝票.xlsx';
+        var params = {
+            transferSno : $scope.model.hidden.selectRow.transferSno,
+            recodeNo : $scope.model.hidden.selectRow.recodeNo
+        };
+        ServerService.doDownload('/StockTransferControl/downloadKenankenDenpyoExcel',  params, 'application/vnd.ms-excel', fileName);
+    }
+
+    /**select all row of estimate list table when call this function*/
+    $scope.checkAll = function(selectedAll){
+        if(selectedAll){
+            $scope.selectedAll = true;
+            $scope.model.hidden.enableButton = false;
+        }else{
+            $scope.selectedAll = false;
+            $scope.model.form.listSelectedSNo = [];
+            $scope.model.hidden.enableButton = true;
+        }
+        angular.forEach($scope.model.form.filtered, function (row) {
+            row.isSelected = $scope.selectedAll;
+            if($scope.selectedAll){
+                $scope.model.form.listSelectedSNo.push(row.transferSno + '_' + row.recodeNo);
+            }
+        });
+    };
+
+    /**event when checked or unchecked any row in table estimate list*/
+    $scope.getValue=function(index, param, selected){
+        if(selected==true){
+            $scope.model.form.listSelectedSNo.push(param.transferSno + '_' + param.recodeNo);
+        } else {
+            $scope.model.form.listSelectedSNo.splice($scope.model.form.listSelectedSNo.indexOf(param.transferSno + '_' + param.recodeNo),1);
+        }
+        if($scope.model.form.listSelectedSNo.length == $scope.model.form.filtered.length){
+            $scope.selectedAll = true;
+        }else{
+            $scope.selectedAll = false;
+        }
+
+        if($scope.model.form.listSelectedSNo.length == 0){
+            $scope.model.hidden.enableButton = true;
+        }else{
+            $scope.model.hidden.enableButton = false;
+        }
+    };
+
+    // set colResizable
+    $scope.setColResizable = function(){
+        // remove JCLRgrips if having
+        $('.JCLRgrips').remove();
+
+        angular.element('#tableStockTransferList').colResizable({
+            liveDrag: true,
+            postbackSafe: true,
+            useLocalStorage: true
+        });
+    };
+
+    $scope.convertDataAjax = function(index, param) {
+        var list = [];
+        var listTmp = [];
+        if(index == 0){ listTmp = $("select[id='sourceWarehouseList']").select2('data') }
+        else if(index == 1){ listTmp = $("select[id='destWarehouseList']").select2('data') }
+        if(!StringUtils.isEmpty(listTmp)){
+            for (var i = 0; i < listTmp.length; i++) {
+                list.push({
+                    no : listTmp[i].id,
+                    name : listTmp[i].text
+                });
+            };
+        }
+        param.listDataAjax[index] = list;
+        $scope.model.hidden.listDataAjax[index] = list;
+    }
+}]);

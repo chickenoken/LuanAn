@@ -1,0 +1,466 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision: $ $Date: $
+ * @author quang-tung
+ *
+ */
+
+'use strict';
+
+exexSMSApp.factory('CustomerUpdateDialogModel', ['BaseModel', function(BaseModel) {
+
+    var model = BaseModel.getInstance();
+
+    model.form = {
+        listCustomerInfo: []
+    };
+
+    model.hidden = {
+        checkUnique : [],
+        listDataAjax : [],
+        listGroupSelect : [],
+        oldData : [],
+        version : '',
+        custType : ''
+    };
+
+    return model;
+} ]);
+
+exexSMSApp.controller('CustomerUpdateDialogCtrl',
+        ['$scope', '$uibModalInstance','DialogsService', 'CustomerUpdateDialogModel', 'Messages', 'ServerService', 'data',
+         function($scope, $uibModalInstance, DialogsService, CustomerUpdateDialogModel, Messages, ServerService, data) {
+
+    $scope.model = CustomerUpdateDialogModel;
+
+    $scope.close = function() {
+        $uibModalInstance.dismiss();
+    };
+
+    $scope.init = function () {
+        $scope.model.hidden.listDataAjax = [];
+        $scope.model.hidden.custType = data.custType;
+        $scope.model.form.listMstUser = data.listMstUser;
+        $scope.model.form.listMstGroupType = data.listMstGroupType;
+        $scope.getDataCustomer(data.custCd);
+    }
+
+    $scope.getDataCustomer = function(custCd){
+        ServerService.doPost('CustomerUpdateDialog/selectCustomerInfoToReference', custCd).then(
+            function(okResult) {
+                if(!StringUtils.isEmpty(okResult.data.failed)){
+                    return DialogsService.showError(Messages.getMessage('system.error'), okResult.data.failed);
+                }
+                if(okResult.data.listCustomerInfo.length > 0){
+                    $scope.model.form.listCustomerInfo = okResult.data.listCustomerInfo;
+                    $scope.model.hidden.version = $scope.model.form.listCustomerInfo[0].version
+                    angular.forEach($scope.model.form.listCustomerInfo, function(item, i){
+                        $scope.convertCommonData(item);
+                    })
+                    setTimeout(function(){
+                        $scope.model.hidden.oldData = angular.copy($scope.model.form.listCustomerInfo);
+                    }, 1000)
+                }
+            }
+        )
+    };
+    $scope.init();
+
+    // CONVERT DATA
+    $scope.convertCommonData = function(item){
+        // CHECKBOX
+        if(item.controlType == '04' && !StringUtils.isEmpty(item.listDataSource) && item.listSgtDataSource.length > 0 && typeof(item.inputValue) == 'string'){
+            var inputValue = [];
+            angular.forEach(item.listSgtDataSource, function(data, k){
+                if(!StringUtils.isEmpty(item.inputValue) && item.inputValue.indexOf(data.code) > -1){
+                    inputValue[k] = '1'
+                }else{
+                    inputValue[k] = '0';
+                }
+            });
+            if(inputValue.length > 0){
+                item.inputValue = inputValue;
+            }
+        }
+        // COMPONENT ADDRESS
+        if(item.controlType == '09'){
+            if(!StringUtils.isEmpty(item.inputValue)){
+                var postNo = StringUtils.isJson(item.inputValue) ? angular.fromJson(item.inputValue) : "";
+                item.postNo1 = postNo.postNo1;
+                item.postNo2 = postNo.postNo2;
+                item.address1 = postNo.address1;
+                item.address2 = postNo.address2;
+            }
+        }
+        // RADIO BUTTON
+        if(item.controlType == '10' && !StringUtils.isEmpty(item.listSgtDataSource)){
+            if(!StringUtils.isEmpty(item.inputValue)){
+                angular.forEach(item.listSgtDataSource, function(val, index){
+                    if(val.code == item.inputValue){
+                        val.codeValue = item.inputValue;
+                    }
+                });
+            }
+        }
+        // SELECT MULTIPLE
+        if(item.controlType == '11' && !StringUtils.isEmpty(item.inputValue)  && typeof(item.inputValue) == 'string'){
+            item.inputValue = item.inputValue.split(',');
+        }
+
+        // CONVERT DATA FOR BUSINESS CUSTOMER
+        if(!data.custType){
+            // SPECIAL COMPONENT(C050001)
+            if(item.controlType == 'SITE_ADDRESS'){
+                if(!StringUtils.isEmpty(item.inputValue)){
+                    var postNo = StringUtils.isJson(item.inputValue) ? angular.fromJson(item.inputValue) : "";
+                    item.postNo1 = postNo.postNo1;
+                    item.postNo2 = postNo.postNo2;
+                    item.address1 = postNo.address1;
+                    item.address2 = postNo.address2;
+                }
+            }
+            // 事業内容
+            if(!item.detailFreeItemFlag && 11 == item.lineNo){
+                if(!StringUtils.isEmpty(item.inputValue) && typeof(item.inputValue) == 'string'){
+                    item.inputValue = item.inputValue.split(',');
+                }
+            }
+            // 自社担当部署 && 自社担当者
+            if(!item.detailFreeItemFlag && (15 == item.lineNo || 16 == item.lineNo)){
+                if(!StringUtils.isEmpty(item.inputValue) && typeof(item.inputValue) == 'string'){
+                    item.inputValue = item.inputValue.split(',');
+                }
+            }
+            // 請求先
+            if(!item.detailFreeItemFlag && 19 == item.lineNo){
+                if(!StringUtils.isEmpty(item.inputValue)){
+                    $scope.billaddressChange(item, null, false);
+                }
+            }
+        }
+        //CONVERT DATA FOR INDIVIDUAL CUSTOMER
+        else {
+            // 自社担当部署 && 自社担当者
+            if (!item.detailFreeItemFlag && (16 == item.lineNo || 17 == item.lineNo)) {
+                if (!StringUtils.isEmpty(item.inputValue) && typeof (item.inputValue) == 'string') {
+                    item.inputValue = item.inputValue.split(',');
+                }
+            }
+            // メール受信
+            if (!item.detailFreeItemFlag && 18 == item.lineNo) {
+                if (!StringUtils.isEmpty(item.inputValue) && 'true' == item.inputValue) {
+                    item.inputValue = true;
+                }
+            }
+            // 請求先
+            if (!item.detailFreeItemFlag && 21 == item.lineNo) {
+                if (!StringUtils.isEmpty(item.inputValue)) {
+                    $scope.billaddressChange(item, null, false);
+                }
+            }
+        }
+    }
+
+    // CONVERT DATA BILLADDRESS
+    $scope.billaddressChange = function(row, billAddress, newBill){
+        $scope.model.hidden.listDataAjax = [];
+        if(newBill){
+            var listTmp = $("select[name='billaddressAjax']").select2('data');
+            for (var i = 0; i < listTmp.length; i++) {
+                $scope.model.hidden.listDataAjax.push({
+                    no : listTmp[i].id,
+                    name : listTmp[i].text
+                });
+            };
+            $scope.model.hidden.listDataAjax.push({
+                no : billAddress.billaddressNo,
+                name : billAddress.billaddressName
+            });
+        }else {
+            var listTmp = [];
+            var listDataAjax = angular.copy($scope.model.hidden.listDataAjax);
+            if(listDataAjax.length > 0){
+                for (var j = 0; j < listDataAjax.length; j++) {
+                    listTmp.push(listDataAjax[j].no);
+                }
+            }
+            listTmp = listTmp.toString();
+            var listNo = angular.copy(row.inputValue).split(',');
+            var listName = angular.copy(row.billaddressName).split(',');
+            for (var i = 0; i < listNo.length; i++) {
+                if(listTmp.indexOf(listNo[i]) == -1){
+                    listDataAjax.push({
+                        no : listNo[i],
+                        name : listName[i]
+                    });
+                };
+            };
+            $scope.model.hidden.listDataAjax = listDataAjax;
+        }
+    };
+
+    // CONVERT DATA BEFORE UPDATE
+    $scope.convertDataBeforeUpdate = function(dataCustomer){
+        angular.forEach(dataCustomer, function(item, i){
+            // CHECKBOX
+            if('04'== item.controlType && item.listSgtDataSource.length > 0){
+                if(!StringUtils.isEmpty(item.listDataSource)){
+                    var inputValue = "";
+                    angular.forEach(item.listSgtDataSource, function(data, k){
+                        if(!StringUtils.isEmpty(item.inputValue) && item.inputValue[k] == "1"){
+                            inputValue += data.code+",";
+                        }
+                    });
+                    if(!StringUtils.isEmpty(inputValue)){
+                        var trim = inputValue.replace(/(^,)|(,$)/g, "");
+                        item.inputValue = trim;
+                    }else{
+                        item.inputValue = null;
+                    }
+                }
+            }
+            // COMPONENT ADDRESS || SPECIAL COMPONENT(C050001)
+            if('09'== item.controlType || 'SITE_ADDRESS'== item.controlType){
+                if(StringUtils.isEmpty(item.postNo1) && StringUtils.isEmpty(item.postNo2)
+                        && StringUtils.isEmpty(item.address1) && StringUtils.isEmpty(item.address2)) {
+                    item.inputValue = '';
+                } else {
+                    var postNo = {
+                        postNo1: item.postNo1,
+                        postNo2: item.postNo2,
+                        address1: item.address1,
+                        address2: item.address2
+                    }
+                    item.inputValue = JSON.stringify(postNo);
+                }
+            }
+
+            if(!data.custType){
+                // 11:事業内容 || 15:自社担当部署 || 16:自社担当者 || 19:請求先
+                if(11 == item.lineNo ||  15 == item.lineNo || 16 == item.lineNo  || 19 == item.lineNo){
+                    if(!StringUtils.isEmpty( item.inputValue)) {
+                        item.inputValue = item.inputValue.toString();
+                    }
+                }
+            } else {
+                // 16:自社担当部署 || 17:自社担当者 || 21:請求先
+                if (16 == item.lineNo || 17 == item.lineNo || 21 == item.lineNo) {
+                    if (null != item.inputValue) {
+                        item.inputValue = item.inputValue.toString();
+                    }
+                    if (null != item.inputValue && item.inputValue.length == 0) {
+                        item.inputValue = item.inputValue.toString();
+                    }
+                }
+            }
+
+            if('11'== item.controlType && !StringUtils.isEmpty(item.inputValue)){
+                item.inputValue = item.inputValue.toString();
+            }
+            // DELETE PARAMS
+            if('05'== item.controlType){
+                delete item.isFileChange;
+                delete item.checkSize;
+                delete item.fileSize;
+            }
+            delete item.listSgtDataSource;
+            delete item.checkUnique;
+            delete item.readOnly;
+        });
+    };
+
+    $scope.update = function (formInvalid) {
+        $scope.model.hidden.isSubmited = true;
+        if(formInvalid){
+            return;
+        }
+        for (var key in $scope.model.hidden.checkUnique) {
+            if ($scope.model.hidden.checkUnique[key]) {
+                return;
+            }
+        }
+        var newData = $scope.getChanges($scope.model.hidden.oldData, angular.copy($scope.model.form.listCustomerInfo));
+        $scope.convertDataBeforeUpdate(newData);
+        if(newData.length > 0){
+            var params = {
+                dataCustomer : JSON.stringify(newData),
+                custCd : data.custCd,
+                custType : data.custType,
+                version : $scope.model.hidden.version
+            };
+            DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('S00004'))
+            .result.then(function(btn){
+                ServerService.doPost('CustomerUpdateDialog/update', params).then(
+                    function(okResult) {
+                        if(!StringUtils.isEmpty(okResult.data.success)){
+                            DialogsService.showNotify(Messages.getMessage('title.info'), okResult.data.success).result
+                            .then(function(btn){
+                                $uibModalInstance.close(true);
+                            });
+                        } else if(!StringUtils.isEmpty(okResult.data.warning)){
+                            DialogsService.showWarning(Messages.getMessage('check.error'), okResult.data.warning).result
+                            .then(function(btn){
+                                if(okResult.data.warning == Messages.getMessage('W00172')){
+                                    $uibModalInstance.close(false);
+                                } else if (okResult.data.warning == Messages.getMessage('W00307')){
+                                    $uibModalInstance.dismiss();
+                                }
+                            });
+                        } else {
+                            DialogsService.showError(Messages.getMessage('system.error'), okResult.data.failed);
+                            return;
+                        }
+                    }
+                );
+            });
+        } else {
+            $uibModalInstance.dismiss();
+        }
+    };
+
+    $scope.getChanges = function(oldArray, newArray) {
+        if (JSON.stringify(oldArray) === JSON.stringify(newArray)) {
+          return false;
+        }
+
+        var i, item, j, length;
+        var changes = [];
+        for (i = j = 0; j < newArray.length; i = ++j) {
+          item = newArray[i];
+          if (JSON.stringify(item) !== JSON.stringify(oldArray[i])) {
+            changes.push(item);
+          }
+        }
+        return changes;
+    };
+
+
+    //CHECK UNIQUE
+    $scope.checkUnique = function(detail){
+        if(detail.checkUnique){
+            if(!StringUtils.isEmpty(detail.inputValue)){
+                var params = {
+                        detailFreeItemFlag: detail.detailFreeItemFlag,
+                        lineNo : detail.lineNo,
+                        inputValue: detail.inputValue,
+                        custCd: detail.custCd
+                    };
+                ServerService.doPost('CrmControl/checkUnique', params).then(
+                    function(okResult) {
+                        var error =  okResult.data.failed;
+                        var warning =  okResult.data.warning;
+                        if(!ValidateUtil.isValidTextEmpty(warning)){
+                            return DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                        }else if(!ValidateUtil.isValidTextEmpty(error)){
+                            return DialogsService.showError(Messages.getMessage('system.error'), error);
+                        }else{
+                            if(!okResult.data.isUnique){
+                                $scope.model.hidden.checkUnique[detail.detailKey] = true;
+                            }else{
+                                $scope.model.hidden.checkUnique[detail.detailKey] = false;
+                            }
+                        }
+                    }
+                );
+            }else{
+                $scope.model.hidden.checkUnique[detail.detailKey] = false;
+            }
+        }
+    }
+
+    // Tự động convert giá trị trong input thành 1 byte hoặc 2 byte như dưới đây
+    // AUTO_CONVERT_INPUT_TYPE = '02': chuyển giá trị input thành 1 byte
+    // AUTO_CONVERT_INPUT_TYPE = '03': chuyển giá trị input thành 2 byte
+    $scope.convertCharByInputType = function (detail) {
+        if (!StringUtils.isEmpty(detail.autoConvertInputType)) {
+            if (detail.controlType == '09') { //TUNG: controlType == '09' (Component Address)
+                switch (detail.autoConvertInputType) {
+                    case '02':
+                        if (!StringUtils.isEmpty(detail.address1)) {
+                            detail.address1 = StringUtils.convertDoubleToSingleChar(detail.address1);
+                        }
+                        if (!StringUtils.isEmpty(detail.address2)) {
+                            detail.address2 = StringUtils.convertDoubleToSingleChar(detail.address2);
+                        }
+                        break;
+                    case '03':
+                        if (!StringUtils.isEmpty(detail.address1)) {
+                            detail.address1 = StringUtils.convertSingleToDoubleChar(detail.address1);
+                        }
+                        if (!StringUtils.isEmpty(detail.address2)) {
+                            detail.address2 = StringUtils.convertSingleToDoubleChar(detail.address2);
+                        }
+                        break;
+                }
+            } else {
+                switch (detail.autoConvertInputType) {
+                    case '02':
+                        detail.inputValue = StringUtils.convertDoubleToSingleChar(detail.inputValue);
+                        break;
+                    case '03':
+                        detail.inputValue = StringUtils.convertSingleToDoubleChar(detail.inputValue);
+                        break;
+                }
+            }
+        }
+    }
+
+    // 住所検索
+    $scope.checkPostNumber = function(param, row){
+        var postNo = param;
+        if(StringUtils.isEmpty(postNo)) {
+            DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00207'));
+            return true;
+        }
+        if(ValidateUtil.isValidPostNo(postNo)) {
+            DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00018'));
+            return true;
+        }
+        var params = {'postNo':postNo};
+        ServerService.doPost('CrmControl/checkPostNumber', params).then(
+            function(okResult) {
+                if(!StringUtils.isEmpty(okResult.data.warning)){
+                    return DialogsService.showWarning(Messages.getMessage('check.error'), okResult.data.warning);
+                }else if(!StringUtils.isEmpty(okResult.data.failed)){
+                    return DialogsService.showError(Messages.getMessage('system.error'), okResult.data.failed);
+                }else{
+                    row.address1 = okResult.data.address;
+                }
+        });
+    };
+
+    $scope.downloadFile = function(param){
+        if(!StringUtils.isEmpty(param.inputValue) && !param.isFileChange){
+            var params = {
+                custCd: data.custCd,
+                detailFreeItemFlag: param.detailFreeItemFlag,
+                lineNo : param.lineNo
+            };
+            if(data.custType){
+                Utils.postToUrl("/IndividualCustomer/downloadFile", params);
+            } else {
+                Utils.postToUrl("/BusinessCustomer/downloadFile", params);
+            }
+        }
+    };
+
+    $scope.resetFile  = function(e) {
+        e.wrap('<form>').parent('form').trigger('reset');
+        e.unwrap();
+    };
+
+    $scope.removeFile = function(row,parentIndex,index){
+        if($scope.model.hidden.isDisabled){
+            return;
+        }
+        row.binaryFile = '';
+        row.inputValue = '';
+        row.fileSize = '';
+        row.checkSize = false;
+        $scope.resetFile($('input[name="inputValueFile"]'));
+    };
+
+}]);

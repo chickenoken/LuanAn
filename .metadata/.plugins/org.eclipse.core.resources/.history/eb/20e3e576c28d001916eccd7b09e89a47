@@ -1,0 +1,64 @@
+@CHARSET "UTF-8";
+.app {
+	padding: 5px 10px;
+	margin: 5px 0;
+	border: 1px solid #5CB85C;
+	border-radius: 5px;
+	background-color: #5CB85C;
+	font-size: 1.1em;
+	font-weight: bold;
+	cursor: default;
+	color: white;
+}
+
+.ptlRequest-div{
+	width: 330px;
+}
+
+.ptlRequest-div > .form-group{
+	margin-left: 0px;
+	margin-right: 0px;
+}
+
+textarea{
+	resize:none;
+	border: 1px solid #CCC;
+	transition: border-color 0.15s ease-in-out 0s, box-shadow 0.15s ease-in-out 0s;
+	border-radius: 4px;
+}
+
+.margin-t-150{
+  margin-top: 150px;
+}
+
+#ptlRequestCtrl #detailTab .nav-tabs>li>a {
+  border-radius: 4px 4px 0 0;
+}
+
+#ptlRequestCtrl #detailTab .tab-content {
+  border: 1px solid #3598dc;
+  border-top: none;
+  border-bottom: none;
+  padding: 10px;
+}
+
+#ptlRequestCtrl #detailTab .nav-tabs {
+  border-bottom: 1px solid #3598dc;
+  margin-bottom: 0px;
+}
+
+#ptlRequestCtrl #detailTab .nav-tabs>li:not(.active )>a {
+  font-weight: bold;
+}
+
+#ptlRequestCtrl #detailTab .nav-tabs>li>a {
+  border-bottom-color: #3598dc;
+  margin-right: 0;
+}
+
+#ptlRequestCtrl #detailTab .nav-tabs>li.active>a {
+  font-weight: bolder;
+  border: 1px solid #3598dc;
+  border-bottom-color: transparent;
+  color: #005094;
+}

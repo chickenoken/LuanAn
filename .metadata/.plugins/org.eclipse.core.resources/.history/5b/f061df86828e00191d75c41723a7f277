@@ -1,0 +1,46 @@
+package org.planning.net.dao.impl;
+
+/** */
+@javax.annotation.Generated(value = { "Doma", "1.36.0-SNAPSHOT" }, date = "2019-06-14T15:58:00.832+0700")
+public class testDomaimpl extends org.seasar.doma.internal.jdbc.dao.AbstractDao implements org.planning.net.dao.testDoma {
+
+    static {
+        org.seasar.doma.internal.Artifact.validateVersion("1.36.0-SNAPSHOT");
+    }
+
+    /**
+     * @param config the config
+     */
+    @javax.inject.Inject()
+    public testDomaimpl(@javax.inject.Named("config") org.seasar.doma.jdbc.Config config) {
+        super(config);
+    }
+
+    @Override
+    public org.planning.net.entity.NhanVien a(java.lang.String a) {
+        entering("org.planning.net.dao.impl.testDomaimpl", "a", a);
+        try {
+            org.seasar.doma.internal.jdbc.query.SqlFileSelectQuery __query = new org.seasar.doma.internal.jdbc.query.SqlFileSelectQuery();
+            __query.setConfig(config);
+            __query.setSqlFilePath("META-INF/org/planning/net/dao/testDoma/a.sql");
+            __query.addParameter("a", java.lang.String.class, a);
+            __query.setCallerClassName("org.planning.net.dao.impl.testDomaimpl");
+            __query.setCallerMethodName("a");
+            __query.setResultEnsured(false);
+            __query.setResultMappingEnsured(false);
+            __query.setQueryTimeout(-1);
+            __query.setMaxRows(-1);
+            __query.setFetchSize(-1);
+            __query.prepare();
+            org.seasar.doma.internal.jdbc.command.SelectCommand<org.planning.net.entity.NhanVien> __command = new org.seasar.doma.internal.jdbc.command.SelectCommand<org.planning.net.entity.NhanVien>(__query, new org.seasar.doma.internal.jdbc.command.EntitySingleResultHandler<org.planning.net.entity.NhanVien>(org.planning.net.entity._NhanVien.getSingletonInternal()));
+            org.planning.net.entity.NhanVien __result = __command.execute();
+            __query.complete();
+            exiting("org.planning.net.dao.impl.testDomaimpl", "a", __result);
+            return __result;
+        } catch (java.lang.RuntimeException __e) {
+            throwing("org.planning.net.dao.impl.testDomaimpl", "a", __e);
+            throw __e;
+        }
+    }
+
+}

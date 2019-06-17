@@ -1,0 +1,423 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision: 1.0 $  $Date: $
+ * @author : quang-tung
+ */
+'use strict';
+exexSMSApp.factory('MstInstallationLocationControlModel', [ 'BaseModel', function(BaseModel) {
+    var model = BaseModel.getInstance();
+    model.form = {
+        installation :{
+            warehouseName : '',
+            warehouseNameKana : '',
+            warehouseType : '',
+            custCd : '',
+            custName : '',
+            warehouseOwner : '',
+            postNo : '',
+            warehousePrefix : '',
+            address1 : '',
+            address2 : '',
+            telephoneNo : '',
+            faxNo : '',
+            remark : '',
+            version : '',
+            controlCd : '',
+            relationWarehouseNo : '',
+            warehouseDept : ''
+        }
+    };
+    model.listM070001 = [];
+    model.listS010006 = [];
+    model.hidden = {
+        telephoneNo1 : '',
+        telephoneNo2 : '',
+        telephoneNo3 : '',
+        faxNo1 : '',
+        faxNo2 : '',
+        faxNo3 : '',
+        isSubmited : false,
+        isDisabled : true
+    };
+    return model;
+} ]);
+
+exexSMSApp.controller('mstInstallationLocationControlCtrl',
+        ['$rootScope', '$scope', '$uibModalInstance', 'DialogsService', 'MstInstallationLocationControlModel', 'data', 'MstInstallationLocationService', 'Messages',
+         function($rootScope, $scope, $uibModalInstance, DialogsService, MstInstallationLocationControlModel, data , MstInstallationLocationService, Messages) {
+
+    $scope.model = MstInstallationLocationControlModel;
+
+    $scope.init = function(){
+        $scope.getInit();
+    };
+
+    $scope.getInit = function() {
+        var param = {};
+        MstInstallationLocationService.initData(param).then(function(result) {
+            var error = result.data.failed;
+            if(!StringUtils.isEmpty(error)){
+                DialogsService.showError(Messages.getMessage('system.error'), error);
+                return;
+            }else{
+                $scope.model.listM070001 =  result.data.listM070001;
+                $scope.model.listS010006 =  result.data.listS010006;
+                $scope.model.listWarehouse = result.data.listWarehouse;
+                if(!StringUtils.isEmpty(data.warehouse)){
+                    $scope.inquiry(data.warehouse.warehouseNo);
+                }else{
+                    $scope.resetForm();
+                    $scope.model.hidden.isSubmited = false;
+                }
+            }
+        });
+    };
+
+    $scope.resetForm = function() {
+        $scope.model.form.installation.relationWarehouseNo = '';
+        $scope.model.form.installation.warehouseType = '1';
+        $scope.model.form.installation.warehousePrefix = '2';
+        $scope.model.form.installation.warehouseName = '';
+        $scope.model.form.installation.warehouseNameKana = '';
+        $scope.model.form.installation.custCd = '';
+        $scope.model.form.installation.custName = '';
+        $scope.model.form.installation.controlCd = '';
+        $scope.model.form.installation.warehouseOwner = '';
+        $scope.model.form.installation.postNo = '';
+        $scope.model.form.installation.address1 = '';
+        $scope.model.form.installation.address2 = '';
+        $scope.model.form.installation.telephoneNo = '';
+        $scope.model.form.installation.faxNo = '';
+        $scope.model.form.installation.remark = '';
+        $scope.model.form.installation.version = '';
+        $scope.model.form.installation.warehouseDept = '';
+        $scope.model.hidden.warehouseNo = '';
+        $scope.model.hidden.telephoneNo1 = '';
+        $scope.model.hidden.telephoneNo2 = '';
+        $scope.model.hidden.telephoneNo3 = '';
+        $scope.model.hidden.faxNo1 ='';
+        $scope.model.hidden.faxNo2 ='';
+        $scope.model.hidden.faxNo3 ='';
+    }
+
+    $scope.inquiry = function(warehouseNo){
+        var param = {warehouseNo : warehouseNo};
+        MstInstallationLocationService.getInstallation(param).then(function(result) {
+            var warning = result.data.warning;
+            var error = result.data.failed;
+            var success = result.data.success;
+            if(!StringUtils.isEmpty(warning)){
+                DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                return;
+            }else if(!StringUtils.isEmpty(error)){
+                DialogsService.showError(Messages.getMessage('system.error'), error);
+                return;
+            }else{
+                if(!StringUtils.isEmpty(result.data.detail)){
+                    $scope.model.form.installation = angular.copy(result.data.detail);
+                    $scope.model.hidden.warehouseNo = result.data.detail.warehouseNo;
+                    if(!StringUtils.isEmpty($scope.model.form.installation.telephoneNo)) {
+                        var tempTelephone = $scope.model.form.installation.telephoneNo.split("-");
+                        $scope.model.hidden.telephoneNo1 = tempTelephone[0];
+                        $scope.model.hidden.telephoneNo2 = tempTelephone[1];
+                        $scope.model.hidden.telephoneNo3 = tempTelephone[2];
+                    } else{
+                        $scope.model.hidden.telephoneNo1 = "";
+                        $scope.model.hidden.telephoneNo2 = "";
+                        $scope.model.hidden.telephoneNo3 = "";
+                    }
+                    if(!StringUtils.isEmpty($scope.model.form.installation.faxNo)) {
+                        var tempFax = $scope.model.form.installation.faxNo.split("-");
+                        $scope.model.hidden.faxNo1 = tempFax[0];
+                        $scope.model.hidden.faxNo2 = tempFax[1];
+                        $scope.model.hidden.faxNo3 = tempFax[2];
+                    } else{
+                        $scope.model.hidden.faxNo1 = "";
+                        $scope.model.hidden.faxNo2 = "";
+                        $scope.model.hidden.faxNo3 = "";
+                    }
+                }
+            }
+        });
+    };
+
+    $scope.close = function() {
+        $scope.resetForm();
+        $scope.model.hidden.isSubmited = false;
+        $uibModalInstance.dismiss('close');
+    };
+
+    $scope.insertInstallation = function(param, formInvalid) {
+        $scope.model.hidden.isSubmited = true;
+        if (formInvalid) {
+            return;
+        }
+        var params = {
+            warehouseNo: param.warehouseNo,
+            warehouseName : param.warehouseName,
+            warehouseNameKana: param.warehouseNameKana,
+            warehouseType: param.warehouseType,
+            controlCd: param.controlCd,
+            custCd: param.custCd,
+            warehouseOwner: param.warehouseOwner,
+            postNo : param.postNo,
+            warehousePrefix: param.warehousePrefix,
+            address1 : param.address1,
+            address2 : param.address2,
+            telephoneNo : $scope.model.hidden.telephoneNo1 + "-" + $scope.model.hidden.telephoneNo2 + "-" + $scope.model.hidden.telephoneNo3,
+            faxNo: $scope.model.hidden.faxNo1 + "-" + $scope.model.hidden.faxNo2 + "-" + $scope.model.hidden.faxNo3,
+            relationWarehouseNo: param.relationWarehouseNo,
+            remark :param.remark,
+            warehouseDept :param.warehouseDept
+        };
+        if($scope.checkTelephone($scope.model.hidden)){
+            return;
+        }
+        if($scope.checkFax($scope.model.hidden)){
+            return;
+        }
+        if(StringUtils.isEmpty($scope.model.hidden.telephoneNo1)
+        && StringUtils.isEmpty($scope.model.hidden.telephoneNo2)
+        && StringUtils.isEmpty($scope.model.hidden.telephoneNo3)){
+            params.telephoneNo = '';
+        }
+        if(StringUtils.isEmpty($scope.model.hidden.faxNo1)
+        && StringUtils.isEmpty($scope.model.hidden.faxNo2)
+        && StringUtils.isEmpty($scope.model.hidden.faxNo3)){
+            params.faxNo = '';
+        }
+        DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('S00003')).result.then(function(btn){
+            MstInstallationLocationService.insertData(params).then(
+                function(result) {
+                    var warning = result.data.warning;
+                    var error = result.data.failed;
+                    var success = result.data.success;
+                    if(!StringUtils.isEmpty(warning)){
+                        DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                        return;
+                    }else if(!StringUtils.isEmpty(error)){
+                        DialogsService.showError(Messages.getMessage('system.error'), error);
+                        return;
+                    }else{
+                        DialogsService.showNotify(Messages.getMessage('title.info'), success).result.then(function(btn){
+                            $scope.getInstallationList();
+                            $scope.close();
+                            $scope.model.hidden.warehouseNo = result.data.warehouseNo;
+                        });
+                    }
+                }
+            );
+        });
+    };
+
+    $scope.updateInstallation = function(param,formInvalid) {
+        $scope.model.hidden.isSubmited = true;
+        if (formInvalid) {
+            return;
+        }
+        var params = {
+            warehouseNo: param.warehouseNo,
+            warehouseName : param.warehouseName,
+            warehouseNameKana: param.warehouseNameKana,
+            warehouseType: param.warehouseType,
+            controlCd: param.controlCd,
+            custCd: param.custCd,
+            warehouseOwner: param.warehouseOwner,
+            postNo : param.postNo,
+            warehousePrefix: param.warehousePrefix,
+            address1 : param.address1,
+            address2 : param.address2,
+            telephoneNo : $scope.model.hidden.telephoneNo1 + "-" + $scope.model.hidden.telephoneNo2 + "-" + $scope.model.hidden.telephoneNo3,
+            faxNo: $scope.model.hidden.faxNo1 + "-" + $scope.model.hidden.faxNo2 + "-" + $scope.model.hidden.faxNo3,
+            relationWarehouseNo: param.relationWarehouseNo,
+            remark :param.remark,
+            version : param.version,
+            warehouseDept : param.warehouseDept
+        };
+        if($scope.checkTelephone($scope.model.hidden)){
+            return;
+        }
+        if($scope.checkFax($scope.model.hidden)){
+            return;
+        }
+        if(StringUtils.isEmpty($scope.model.hidden.telephoneNo1)
+        && StringUtils.isEmpty($scope.model.hidden.telephoneNo2)
+        && StringUtils.isEmpty($scope.model.hidden.telephoneNo3)){
+            params.telephoneNo = '';
+        }
+        if(StringUtils.isEmpty($scope.model.hidden.faxNo1)
+        && StringUtils.isEmpty($scope.model.hidden.faxNo2)
+        && StringUtils.isEmpty($scope.model.hidden.faxNo3)){
+            params.faxNo = '';
+        }
+        DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('S00004')).result.then(function(btn){
+            MstInstallationLocationService.updateData(params).then(
+                function(result) {
+                    var warning = result.data.warning;
+                    var error = result.data.failed;
+                    var success = result.data.success;
+                    if(!StringUtils.isEmpty(warning)){
+                        DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                        return;
+                    }else if(!StringUtils.isEmpty(error)){
+                        DialogsService.showError(Messages.getMessage('system.error'), error);
+                        return;
+                    }else{
+                        DialogsService.showNotify(Messages.getMessage('title.info'), success).result.then(function(btn){
+                            $scope.getInstallationList();
+                            $scope.close();
+                            $scope.model.hidden.warehouseNo = result.data.warehouseNo;
+                        });
+                    }
+                });
+            }
+        );
+    };
+
+    $scope.deleteInstallation = function(param) {
+        var params = {
+            warehouseNo : param.warehouseNo
+        };
+
+        DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('S00005')).result.then(function(btn){
+            MstInstallationLocationService.deleteData(params).then(
+                function(result) {
+                    var warning = result.data.warning;
+                    var error = result.data.failed;
+                    var success = result.data.success;
+                    if(!StringUtils.isEmpty(warning)){
+                        DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                        return;
+                    }else if(!StringUtils.isEmpty(error)){
+                        DialogsService.showError(Messages.getMessage('system.error'), error);
+                        return;
+                    }else{
+                        DialogsService.showNotify(Messages.getMessage('title.info'), success).result.then(function(btn){
+                            $scope.getInstallationList();
+                            $scope.close();
+                        });
+                    }
+                });
+            });
+        };
+
+    /**
+     * 住所検索
+     */
+    $scope.checkPostNumber = function(postNo){
+        if(StringUtils.isEmpty(postNo)){
+            DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00207'));
+            return true;
+        }
+        if(ValidateUtil.isValidPostNo(postNo)){
+            DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00018'));
+            return true;
+        }
+        var params = {'postNo':postNo};
+        MstInstallationLocationService.checkPostNumber(params).then(
+            function(result) {
+            var warning = result.data.warning;
+            var error = result.data.failed;
+            if(!StringUtils.isEmpty(warning)){
+                DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                return;
+            }else if(!StringUtils.isEmpty(error)){
+                DialogsService.showError(Messages.getMessage('system.error'), error);
+                return;
+            }else{
+                $scope.model.form.installation.address1 = result.data.address;
+            }
+        });
+    };
+
+    $scope.$watch('model.hidden.telephoneNo1', function(newVal, oldVal) {
+        if (!StringUtils.isEmpty(newVal)) {
+            if ($scope.model.hidden.telephoneNo1.length == 5) {
+                $('input[name=telephoneNo2]').focus();
+            }
+        }
+    });
+    $scope.$watch('model.hidden.telephoneNo2', function(newVal, oldVal) {
+        if (!StringUtils.isEmpty(newVal)) {
+            if ($scope.model.hidden.telephoneNo2.length == 4) {
+                $('input[name=telephoneNo3]').focus();
+            }
+        }
+    });
+
+    $scope.$watch('model.hidden.faxNo1', function(newVal, oldVal) {
+        if (!StringUtils.isEmpty(newVal)) {
+            if ($scope.model.hidden.faxNo1.length == 5) {
+                $('input[name=faxNo2]').focus();
+            }
+        }
+    });
+
+    $scope.$watch('model.hidden.faxNo2', function(newVal, oldVal) {
+        if (!StringUtils.isEmpty(newVal)) {
+            if ($scope.model.hidden.faxNo2.length == 4) {
+                $('input[name=faxNo3]').focus();
+            }
+        }
+    });
+
+    $scope.checkTelephone = function (param) {
+        if(!StringUtils.isEmpty(param.telephoneNo1) || !StringUtils.isEmpty(param.telephoneNo2) || !StringUtils.isEmpty(param.telephoneNo3)){
+            if(StringUtils.isEmpty(param.telephoneNo1) || StringUtils.isEmpty(param.telephoneNo2) || StringUtils.isEmpty(param.telephoneNo3)){
+                DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00130'));
+                return true;
+            }
+        }
+    };
+
+    $scope.checkFax = function (param) {
+        if(!StringUtils.isEmpty(param.faxNo1) || !StringUtils.isEmpty(param.faxNo2) || !StringUtils.isEmpty(param.faxNo3)){
+            if(StringUtils.isEmpty(param.faxNo1) || StringUtils.isEmpty(param.faxNo2) || StringUtils.isEmpty(param.faxNo3)){
+                DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00131'));
+                return true;
+            }
+        }
+    };
+
+    $scope.getInstallationList = function(){
+        var params = {
+            warehouseName :'' ,
+            warehouseType : '',
+            custName : '',
+            controlCd : '',
+            telephoneNo : '',
+            address : ''
+        };
+        $rootScope.$broadcast("MstInstallationLocation#getInstallationLocationList",params);
+     };
+
+     $scope.onChangeInstallationType = function(type){
+         if(type == '2'){
+             $scope.model.form.installation.custCd = '';
+             $scope.model.form.installation.custName = '';
+             $scope.model.form.installation.warehouseOwner = '';
+         }
+     }
+
+     $scope.openDialog = function(data, result) {
+         var options = {
+                 size: 'auto',
+             };
+         switch (result) {
+             case 'searchCustomer':
+                 DialogsService.showDialog('SearchCustomer', 'searchCustomerCtrl', 'data', options)
+                 .result.then(function(param) {}, function(){
+                     var searchCustomer = angular.fromJson(sessionStorage.getItem("searchCustomer"));
+                     sessionStorage.removeItem("searchCustomer");
+                     if(!StringUtils.isEmpty(searchCustomer)){
+                         $scope.model.form.installation.custCd = searchCustomer.custCd;
+                         $scope.model.form.installation.custName = searchCustomer.custName;
+                     }
+                 });
+                 break;
+         };
+     };
+}]);

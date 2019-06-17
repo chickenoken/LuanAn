@@ -1,0 +1,50 @@
+a:-webkit-any-link {
+  text-decoration: blink !important;
+}
+
+th a:-webkit-any-link {
+  color: white;
+}
+
+th a[href] {
+  color: white;
+}
+
+th a i {
+  float: right;
+}
+.even {
+  background: #f9f9f9 !important;
+}
+
+.odd {
+  background: #FFFFFF !important;
+}
+
+.evens {
+  background: rgba(239, 233, 233, 0.02) !important;
+}
+
+.odds {
+  background: #d5e4ef !important;
+}
+
+.panel-group {
+  margin-bottom: 0px;
+}
+
+.panel-group div div.panel-heading {
+  padding: 0px 0px;
+}
+
+.panel-group .panel-heading+.panel-collapse>.panel-body {
+  padding: 0;
+  border-top: 0px solid;
+  border-bottom: 1px solid #DDDDDD;
+  border-left: 1px solid #DDDDDD;
+  border-right: 1px solid #DDDDDD;
+}
+
+.panel-group .panel+.panel {
+  margin-top: -1px;
+}

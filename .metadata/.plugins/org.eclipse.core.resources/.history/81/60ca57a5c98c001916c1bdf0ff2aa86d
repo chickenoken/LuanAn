@@ -1,0 +1,266 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision:  $  $Date:  $
+ * @author : quang-tung
+ */
+'use strict';
+
+exexSMSApp.factory('SalesSupportAnalysisModel', [ 'BaseModel', function(BaseModel) {
+
+    var model = BaseModel.getInstance();
+    model.form = {
+            search : {
+                target :'0',
+                salesGroupCd:'',
+                salesUserCd:'',
+                yearMonthStart: '',
+                yearMonthEnd: '',
+                selectNotNull: true
+            },
+            listTarget : [{code: '0', codeName: '全体'},
+                          {code: '1', codeName: '部署別'},
+                          {code: '2', codeName: '営業者別'}],
+            listData: [],
+            listSalesGroup : [],
+            listSalesUser : [],
+            datacolumns : [],
+            listResult: []
+    };
+    model.hidden = {
+            showChart: false,
+            index : ""
+    };
+    return model;
+}]);
+
+exexSMSApp.controller('SalesSupportAnalysisCtrl',
+        ['$scope', '$compile', '$timeout', '$filter', 'SalesSupportAnalysisModel', 'DialogsService', 'SalesSupportAnalysisService',
+         function($scope, $compile, $timeout, $filter, SalesSupportAnalysisModel,  DialogsService, SalesSupportAnalysisService){
+
+        $scope.model = SalesSupportAnalysisModel;
+
+        $scope.getInit = function(){
+            $scope.model.form.search.yearMonthStart = $filter('date')(DateUtils.getLastYear(), "yyyy/MM");
+            $scope.model.form.search.yearMonthEnd = $filter('date')(DateUtils.getCurrentDate(), "yyyy/MM") ;
+            var param = {};
+            SalesSupportAnalysisService.initData(param).then(
+                function(result) {
+                    var error =  result.data.failed;
+                    if(!ValidateUtil.isValidTextEmpty(error)){
+                        DialogsService.showError(Messages.getMessage('system.error'), error);
+                        return;
+                    }
+                    $scope.model.form.listA050001 = result.data.listA050001;
+                    $scope.model.form.listSalesGroup = result.data.listSalesGroup;
+                    $scope.model.form.listSalesUser = result.data.listSalesUser;
+                }
+            );
+        };
+
+        $scope.init = function(){
+            $scope.getInit();
+        };
+        $scope.init();
+        $scope.search = function(){
+            var param = {
+                    salesUserCd: !ValidateUtil.isValidTextEmpty($scope.model.form.search.salesUserCd) ? $scope.model.form.search.salesUserCd : [],
+                    salesGroupCd: !ValidateUtil.isValidTextEmpty($scope.model.form.search.salesGroupCd) ? $scope.model.form.search.salesGroupCd : [],
+                    target: !ValidateUtil.isValidTextEmpty($scope.model.form.search.target) ? $scope.model.form.search.target : "",
+                    yearMonthStart : !ValidateUtil.isValidTextEmpty($scope.model.form.search.yearMonthStart) ? $scope.model.form.search.yearMonthStart : "",
+                    yearMonthEnd : !ValidateUtil.isValidTextEmpty($scope.model.form.search.yearMonthEnd) ? $scope.model.form.search.yearMonthEnd : "",
+                    selectNotNull : $scope.model.form.search.selectNotNull ? "1" : "0"
+            };
+            SalesSupportAnalysisService.search(param).then(
+                function(result) {
+                    var error =  result.data.failed;
+                    if(!ValidateUtil.isValidTextEmpty(error)){
+                        DialogsService.showError(Messages.getMessage('system.error'), error);
+                        return;
+                    }
+                    $scope.model.hidden.showChart = true;
+                    $scope.model.form.listLabel = [];
+                    $scope.model.form.column = [];
+                    $scope.model.form.datacolumns = [];
+                    $scope.model.form.listDataTmp = [];
+                    $scope.model.form.listData = [];
+                    $scope.model.form.listResultTmp = [];
+                    $scope.model.form.listResult = result.data.listResult;
+                    $scope.model.form.listNameTmp = [];
+                    $scope.model.form.listName = result.data.listName;
+                    $scope.model.form.listCd = result.data.listCd;
+                    $scope.setDataChart();
+                    $scope.setDataColumn();
+                    $timeout(function() {
+                        var c3axis = angular.element('.c3-axis-x').children('.tick').children('text').attr('ng-click', 'showPopupChart($event, model.form.listData)');
+                        $compile(c3axis)($scope);
+                    },500);
+                }
+            );
+        };
+
+        //Push data in chart
+        $scope.setDataChart = function(){
+            angular.forEach($scope.model.form.listA050001, function(item, i){
+                var column = [];
+                $scope.model.form.listLabel.push(item.codeName);
+                angular.forEach(item, function(items, i){
+                    column[i] = items;
+                });
+                $scope.model.form.column.push(column);
+            });
+
+            angular.forEach($scope.model.form.listResult, function(item, i){
+                angular.forEach(item, function(items, x){
+                    if(!ValidateUtil.isValidTextEmpty(items.activityCode)){
+                        for(var k = 0; k < $scope.model.form.column.length; k++){
+                            if ($scope.model.form.column[k].code == items.activityCode){
+                                $scope.model.form.column[parseInt(k)][i] = items.activityCount;
+                                break;
+                                //$scope.model.form.column[parseInt(items.activityCode)][i] = items.activityCount;
+                            }
+                        }
+                    }
+                });
+            });
+
+            for (var y = 0; y < $scope.model.form.listResult.length; y++) {
+                var c = [];
+                var axis = !angular.isUndefined($scope.model.form.listName[y]) ? $scope.model.form.listName[y] : "全体";
+                angular.forEach($scope.model.form.column, function(items, x){
+                    c[x] = !angular.isUndefined($scope.model.form.column[x][y]) ? $scope.model.form.column[x][y] : "0";
+                });
+                var item = "{\"x\":"+"\""+axis+"\",";
+                for(var k = 1; k <= c.length; k++){
+                    item += "\"column"+(k)+"\""+":\"" + c[k-1];
+                    if(k == c.length){
+                        item += "\"}";
+                    }else{
+                        item += "\",";
+                    }
+                }
+                $scope.model.form.listDataTmp.push(JSON.parse(item));
+            };
+
+            for(var i = 0; i < $scope.model.form.listDataTmp.length; i++){
+                var list = [];
+                var listCd = [];
+                var listResultTmp = [];
+                var listNameTmp = [];
+                if(!angular.isUndefined($scope.model.form.listDataTmp[i])){
+                    list.push($scope.model.form.listDataTmp[i]);
+                    listCd.push($scope.model.form.listCd[i]);
+                }
+                if(!angular.isUndefined($scope.model.form.listDataTmp[i+1])){
+                    list.push($scope.model.form.listDataTmp[i+1]);
+                    listCd.push($scope.model.form.listCd[i+1]);
+                }
+                if(!angular.isUndefined($scope.model.form.listDataTmp[i+2])){
+                    list.push($scope.model.form.listDataTmp[i+2]);
+                    listCd.push($scope.model.form.listCd[i+2]);
+                }
+                if(!angular.isUndefined($scope.model.form.listDataTmp[i+3])){
+                    list.push($scope.model.form.listDataTmp[i+3]);
+                    listCd.push($scope.model.form.listCd[i+3]);
+                }
+                if(!angular.isUndefined($scope.model.form.listDataTmp[i+4])){
+                    list.push($scope.model.form.listDataTmp[i+4]);
+                    listCd.push($scope.model.form.listCd[i+4]);
+                }
+                if(!angular.isUndefined($scope.model.form.listDataTmp[i+5])){
+                    list.push($scope.model.form.listDataTmp[i+5]);
+                    listCd.push($scope.model.form.listCd[i+5]);
+                }
+                if(!angular.isUndefined($scope.model.form.listResult[i])){
+                    listResultTmp.push($scope.model.form.listResult[i]);
+                    listNameTmp.push($scope.model.form.listName[i]);
+                }
+                if(!angular.isUndefined($scope.model.form.listResult[i+1])){
+                    listResultTmp.push($scope.model.form.listResult[i+1]);
+                    listNameTmp.push($scope.model.form.listName[i+1]);
+                }
+                if(!angular.isUndefined($scope.model.form.listResult[i+2])){
+                    listResultTmp.push($scope.model.form.listResult[i+2]);
+                    listNameTmp.push($scope.model.form.listName[i+2]);
+                }
+                if(!angular.isUndefined($scope.model.form.listResult[i+3])){
+                    listResultTmp.push($scope.model.form.listResult[i+3]);
+                    listNameTmp.push($scope.model.form.listName[i+3]);
+                }
+                if(!angular.isUndefined($scope.model.form.listResult[i+4])){
+                    listResultTmp.push($scope.model.form.listResult[i+4]);
+                    listNameTmp.push($scope.model.form.listName[i+4]);
+                }
+                if(!angular.isUndefined($scope.model.form.listResult[i+5])){
+                    listResultTmp.push($scope.model.form.listResult[i+5]);
+                    listNameTmp.push($scope.model.form.listName[i+5]);
+                }
+                var listTmp = {
+                        data : list,
+                        listCd : listCd,
+                        listResult : listResultTmp,
+                        listName : listNameTmp
+                }
+                $scope.model.form.listData.push(listTmp);
+                i = i+5;
+            };
+        };
+
+        //Push color, axis in chart
+        $scope.setDataColumn = function(){
+            var dataColumnStr = "[";
+            for(var k = 1; k <= $scope.model.form.listLabel.length; k++){
+                dataColumnStr += "{\"id\":\"column"+(k)+"\",";
+                dataColumnStr += "\"type\":\"bar\",\"name\":\" "+ $scope.model.form.listLabel[k-1]+"\",";
+                dataColumnStr += "\"color\":\" "+ ChartUtil.getChartColor(k);
+                if(k == $scope.model.form.listLabel.length){
+                    dataColumnStr += "\"}";
+                }else{
+                    dataColumnStr += "\"},";
+                }
+            }
+            dataColumnStr += ']';
+            $scope.model.form.datacolumns = JSON.parse(dataColumnStr);
+            $scope.datax = {"id" : "x"};
+        };
+
+        $scope.showPopupChart = function(event, value) {
+            $scope.model.form.search.axis = event.target.textContent;
+            $scope.model.hidden.index = event.target.ownerSVGElement.parentNode.parentNode.parentNode.children[0].textContent;
+            var data = value;
+            var options = {size: '900'};
+            DialogsService.showDialog('ChartDialog','chartRadarCtrl', data, options);
+        };
+
+        $scope.onChangeGroup = function (){
+            if($scope.model.form.search.target == "1"){
+                return;
+            }
+            $scope.model.hidden.showChart = false;
+            var param = {
+                    salesGroupCd: !ValidateUtil.isValidTextEmpty($scope.model.form.search.salesGroupCd) ? $scope.model.form.search.salesGroupCd : []
+            };
+            SalesSupportAnalysisService.onChangeGroup(param).then(
+                function(result) {
+                    var error =  result.data.failed;
+                    if(!ValidateUtil.isValidTextEmpty(error)){
+                        DialogsService.showError(Messages.getMessage('system.error'), error);
+                        return;
+                    }
+                    $scope.model.form.listSalesUser = result.data.listSalesUser;
+                }
+            );
+        };
+
+        $scope.onChangeTarget = function(){
+            $scope.model.form.datacolumns = [];
+            $scope.model.form.listData = [];
+            $scope.model.form.listLabel = [];
+        };
+
+        $scope.onChangeSelectNotNull = function() {
+            $scope.model.hidden.showChart = false;
+        }
+}]);

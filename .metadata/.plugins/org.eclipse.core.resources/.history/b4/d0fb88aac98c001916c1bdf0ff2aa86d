@@ -1,0 +1,295 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision: 1.0 $  $Date: 2014/06/06 $
+ * @author : Minh-thuan
+ */
+
+'use strict';
+
+exexSMSApp.factory('CollationCandidateCustListModel', [ 'BaseModel', function(BaseModel) {
+
+    var model = BaseModel.getInstance();
+
+    model.form = {
+        search : {
+            createDate:'',
+            createUser:[],
+            registStatus : [],
+            releaseScope : [],
+            clientType : [],
+            searchOrderKey : [],
+            searchOrderSort: ''
+        },
+        paginationInfo : {
+            page: 0,
+            pageSize: 20,
+            totalPage: 0,
+            totalRecord: 0,
+            from: 0,
+            to: 0
+        },
+        listS020012 : [],
+        listS020013: [],
+        listS020015 : [],
+        listUser: [],
+        resultList: [],
+    };
+
+    model.hidden = {
+        listParamSearch : [{id: 1, model: 'createDate', name: angular.element('#createDateLabel').text()},
+                           {id: 2, model: 'createUser', name: angular.element('#createUserLabel').text()},
+                           {id: 3, model: 'registStatus', name: angular.element('#registStatusLabel').text()},
+                           {id: 4, model: 'releaseScope', name: angular.element('#releaseScopeLabel').text()},
+                           {id: 5, model: 'clientType', name: angular.element('#clientTypeLabel').text()},
+                          ],
+
+        searchOrderKey : [
+                          {id: 1, model: 'custNameLabel', name: angular.element('#custNameLabel').text()},
+                         ],
+
+        searchOrderSort : [{id: 1, model: 'desc', name: angular.element('#descLabel').text()},
+                           {id: 2, model: 'asc', name: angular.element('#ascLabel').text()}],
+        listSearch:[],
+        listTmp: [],
+        lastIndex : null,
+        lastActionName : null,
+        lastActionName : null,
+        detailStatus : null,
+        detailStatusCode: null,
+        listDataAjax: [],
+    };
+
+    return model;
+} ]);
+
+exexSMSApp.controller('collationCandidateCustListCtrl',
+        ['$scope', '$filter', 'RouteService', 'ServerService', 'CollationCandidateCustListModel', 'Messages', 'DialogsService',
+         function($scope, $filter, RouteService, ServerService, CollationCandidateCustListModel, Messages, DialogsService) {
+
+    $scope.model = CollationCandidateCustListModel;
+
+    $scope.$on("CollationCandidateCustList#search", function(evt, param) {
+        $scope.search();
+    });
+
+    $scope.newListParamSearch = function(){
+        $scope.model.hidden.listTmp = angular.copy($scope.model.hidden.listParamSearch);
+        for (var i = 0; i < $scope.model.hidden.listSearch.length; i++) {
+            var item = $scope.model.hidden.listSearch[i];
+            var removeIndex = $scope.model.hidden.listTmp.map(function(items) { return items.model; }).indexOf(item.model);
+            if (item.model == 'createDate' || item.model == 'createUser' || item.model == 'registStatus' ||
+                item.model == 'releaseScope' || item.model == 'clientType') {
+                $scope.model.hidden.listTmp.splice(removeIndex, 1);
+            }
+        }
+    };
+
+    $scope.prepareListParamSearch = function (){
+        var listParamSearch = $scope.model.hidden.listParamSearch;
+        var sessionSearch = angular.fromJson(sessionStorage.getItem("collationCandidateCustList"));
+        var sessionLogin = angular.fromJson(sessionStorage.getItem("session"));
+        for (var i = 0; i < $scope.model.hidden.listSearch.length; i++) {
+            var item = $scope.model.hidden.listSearch[i];
+            item.listDetailParam = angular.copy($scope.model.hidden.listTmp);
+            if (item.model == 'createDate') {
+                item.listDetailParam.push(listParamSearch[0]);
+                if(StringUtils.isEmpty(sessionSearch) || (!StringUtils.isEmpty(sessionSearch)
+                        && sessionSearch.createDateFrom === undefined && sessionSearch.createDateTo === undefined )){
+                    $scope.model.form.search.createDateFrom = DateUtils.getLastYear();
+                    $scope.model.form.search.createDateTo = DateUtils.getCurrentDate();
+                }
+            } else if (item.model == 'createUser') {
+                item.listDetailParam.push(listParamSearch[1]);
+            } else if (item.model == 'registStatus') {
+                item.listDetailParam.push(listParamSearch[2]);
+            } else if (item.model == 'releaseScope') {
+                item.listDetailParam.push(listParamSearch[3]);
+            } else if (item.model == 'clientType') {
+                item.listDetailParam.push(listParamSearch[4]);
+            }
+        }
+    };
+
+    $scope.prepareSessionSearch = function(session){
+        var listSearch = [];
+        for(var key in session){
+            var item = {};
+            if (key == 'createDateFrom') {
+                $scope.model.form.search.createDateFrom = session[key]; item.model = 'createDate';
+            } else if (key == 'createDateTo') {
+                $scope.model.form.search.createDateTo = session[key];
+            } else if (key == 'createUser') {
+                $scope.model.form.search.createUser = session[key]; item.model = key;
+            } else if (key == 'registStatus') {
+                $scope.model.form.search.registStatus = session[key]; item.model = key;
+            } else if (key == 'releaseScope') {
+                $scope.model.form.search.releaseScope = session[key]; item.model = key;
+            } else if (key == 'clientType') {
+                $scope.model.form.search.clientType = session[key]; item.model = key;
+            }
+            if (!StringUtils.isEmpty(item.model)){
+                listSearch.push(item);
+            }
+        };
+        $scope.model.hidden.listSearch = listSearch;
+        $scope.newListParamSearch();
+        $scope.prepareListParamSearch();
+    };
+
+    $scope.convertParamsSearch = function(param, page){
+        var params = {
+            searchOrderKey : param.searchOrderKey,
+            searchOrderSort : param.searchOrderSort,
+            page : page,
+            pageSize : $scope.model.form.paginationInfo.pageSize
+        };
+
+        for (var i = 0; i < $scope.model.hidden.listSearch.length; i++) {
+            var item = $scope.model.hidden.listSearch[i];
+            if (item.model == 'createDate') {
+                params.createDateFrom = !StringUtils.isEmpty(param.createDateFrom) ? $filter('date')(param.createDateFrom, "yyyy/MM/dd") : null;
+                params.createDateTo = !StringUtils.isEmpty(param.createDateTo) ? $filter('date')(param.createDateTo, "yyyy/MM/dd") : null;
+            } else if (item.model == 'createUser') {
+                params.createUser = !StringUtils.isEmpty(param.createUser) ? param.createUser : [];
+            } else if (item.model == 'registStatus') {
+                params.registStatus = !StringUtils.isEmpty(param.registStatus) ? param.registStatus : [];
+            } else if (item.model == 'releaseScope') {
+                params.releaseScope = !StringUtils.isEmpty(param.releaseScope) ? param.releaseScope : [];
+            } else if (item.model == 'clientType') {
+                params.clientType = !StringUtils.isEmpty(param.clientType) ? param.clientType : [];
+            }
+        };
+        return params;
+    };
+
+    $scope.changeListParamSearch = function (){
+        $scope.newListParamSearch();
+        $scope.prepareListParamSearch();
+    };
+
+    $scope.newRowParamSearch = function(){
+        $scope.newListParamSearch();
+        var tmp = ""
+        var param = {
+                model : $scope.model.hidden.listTmp[0].model,
+                listDetailParam : $scope.model.hidden.listTmp
+        };
+        $scope.model.hidden.listSearch.push(param);
+        for (var i = 0; i < param.listDetailParam.length; i++) {
+            var tmp = $scope.model.hidden.listTmp[i];
+            if(param.model == tmp.model){
+                param.listDetailParam.splice(i, 1);
+            }
+        };
+        $scope.prepareListParamSearch();
+    };
+
+    $scope.removeItem = function(index) {
+        $scope.model.hidden.listSearch.splice(index, 1);
+        $scope.newListParamSearch();
+        $scope.prepareListParamSearch();
+    };
+
+    $scope.init = function() {
+        $scope.openedTodoDetail = [];
+        $scope.getInit();
+    };
+
+    /**
+     * 初期表示
+     */
+    $scope.getInit = function(){
+        ServerService.doPost('CollationCandidateCustList/getInit', {}).then(
+            function(okResult) {
+                var error = okResult.data.failed;
+                if(!StringUtils.isEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                }
+                $scope.model.form.listUser = okResult.data.listUser;
+                $scope.model.form.listS020012 = okResult.data.listS020012;
+                $scope.model.form.listS020013 = okResult.data.listS020013;
+                $scope.model.form.listS020015 = okResult.data.listS020015;
+
+                var collationCandidateCustList = angular.fromJson(sessionStorage.getItem("collationCandidateCustList"));
+                if(!StringUtils.isEmpty(collationCandidateCustList)){
+                    $scope.model.form.search = angular.copy(collationCandidateCustList);
+                    $scope.prepareSessionSearch($scope.model.form.search);
+                    $scope.doSearch(collationCandidateCustList.page, true, collationCandidateCustList);
+                }else{
+                    $scope.model.form.search.searchOrderKey = [1];
+                    //Create default search condition when come from menu
+                    $scope.createDefaultSearchCondition();
+                    $scope.search();
+                }
+            },
+            function(errResult){}
+        );
+    };
+
+    $scope.createDefaultSearchCondition = function() {
+        var defaultCondition = {
+            // createDateFrom: DateUtils.getLastYear(),
+            // createDateTo: DateUtils.getCurrentDate(),
+            registStatus: ['0'],
+            releaseScope: ['0'],
+            clientType: ['0']
+        };
+        $scope.prepareSessionSearch(defaultCondition);
+    }
+
+    $scope.init();
+
+    $scope.search = function(isSearch){
+        $scope.doSearch(1, isSearch);
+    }
+    /**
+     * 名寄せ顧客候補一覧を検索する
+     */
+    $scope.doSearch = function(page, isSearch, session){
+        var params = $scope.convertParamsSearch($scope.model.form.search, page);
+        sessionStorage.setItem("collationCandidateCustList", JSON.stringify(params));
+        ServerService.doPost('CollationCandidateCustList/search', params).then(
+            function(okResult) {
+                var error = okResult.data.failed;
+                if(!StringUtils.isEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                }
+                $scope.model.form.customerList = okResult.data.resultList;
+                $scope.model.form.paginationInfo = okResult.data.paginationInfo;
+
+                // add colresizable to table
+                // set ColResizable for column of table
+                setTimeout(function(){
+                    $scope.setColResizable();
+                });
+            },
+            function(errResult){}
+        );
+    };
+
+    $scope.openDialog = function(row){
+        var options = {
+            size: 'auto',
+        };
+        var data = {
+            custCdList: row.custCdList.split(',')
+        }
+        DialogsService.showDialog('CollationCandidateCustControl','collationCandidateCustControlCtrl', data ,options);
+    };
+
+    $scope.setColResizable = function(){
+        // remove JCLRgrips if having
+        $('.JCLRgrips').remove();
+
+        angular.element('#tblCollationCandidateCustList').colResizable({
+            liveDrag: true,
+            postbackSafe: true,
+            useLocalStorage: true
+        });
+    }
+}]);

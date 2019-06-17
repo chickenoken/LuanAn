@@ -1,0 +1,1120 @@
+/*--------------------------------------------------
+    [TRANSITION]
+----------------------------------------------------*/
+/* Cubic Bezier Transition */
+/*--------------------------------------------------
+    [RGBA Opacity]
+----------------------------------------------------*/
+/***********
+Page Header
+***********/
+/* Header search bar, toggler button & top menu */
+/* line 10, src/scss/layout/themes/_base.scss */
+.page-header.navbar {
+  background-color: #3598dc;
+  /* Top notification menu/bar */
+  /* Header seaech box */
+  /* Toggler button for sidebar expand/collapse and responsive sidebar menu */
+}
+/* line 15, src/scss/layout/themes/_base.scss */
+.page-header.navbar .top-menu .navbar-nav {
+  /* Extended Dropdowns */
+  /* Notification */
+  /* Inbox */
+  /* Tasks */
+  /* User */
+  /* Language */
+  /* Dark version */
+}
+/* line 18, src/scss/layout/themes/_base.scss */
+.page-header.navbar .top-menu .navbar-nav > li.dropdown .dropdown-toggle > i {
+  color: #FFF;
+}
+/* line 22, src/scss/layout/themes/_base.scss */
+.page-header.navbar .top-menu .navbar-nav > li.dropdown .dropdown-toggle .badge.badge-default {
+  background-color: #1caf9a;
+  color: #ffffff;
+}
+/* line 27, src/scss/layout/themes/_base.scss */
+.page-header.navbar .top-menu .navbar-nav > li.dropdown .dropdown-toggle:hover {
+  background-color: #60aee4;
+}
+/* line 30, src/scss/layout/themes/_base.scss */
+.page-header.navbar .top-menu .navbar-nav > li.dropdown .dropdown-toggle:hover > i {
+  color: white;
+}
+/* line 37, src/scss/layout/themes/_base.scss */
+.page-header.navbar .top-menu .navbar-nav > li.dropdown.open .dropdown-toggle {
+  background-color: #60aee4;
+}
+/* line 40, src/scss/layout/themes/_base.scss */
+.page-header.navbar .top-menu .navbar-nav > li.dropdown.open .dropdown-toggle > i {
+  color: white;
+}
+/* line 50, src/scss/layout/themes/_base.scss */
+.page-header.navbar .top-menu .navbar-nav > li.dropdown-extended .dropdown-menu {
+  border-color: #e7eaf0;
+}
+/* line 53, src/scss/layout/themes/_base.scss */
+.page-header.navbar .top-menu .navbar-nav > li.dropdown-extended .dropdown-menu:after {
+  border-bottom-color: #eaedf2;
+}
+/* line 57, src/scss/layout/themes/_base.scss */
+.page-header.navbar .top-menu .navbar-nav > li.dropdown-extended .dropdown-menu > li.external {
+  background: #eaedf2;
+}
+/* line 60, src/scss/layout/themes/_base.scss */
+.page-header.navbar .top-menu .navbar-nav > li.dropdown-extended .dropdown-menu > li.external > h3 {
+  color: #62878f;
+}
+/* line 64, src/scss/layout/themes/_base.scss */
+.page-header.navbar .top-menu .navbar-nav > li.dropdown-extended .dropdown-menu > li.external > a {
+  color: #428bca;
+}
+/* line 67, src/scss/layout/themes/_base.scss */
+.page-header.navbar .top-menu .navbar-nav > li.dropdown-extended .dropdown-menu > li.external > a:hover {
+  color: #2a6496;
+  text-decoration: none;
+}
+/* line 76, src/scss/layout/themes/_base.scss */
+.page-header.navbar .top-menu .navbar-nav > li.dropdown-extended .dropdown-menu .dropdown-menu-list > li > a {
+  border-bottom: 1px solid #EFF2F6 !important;
+  color: #888888;
+}
+/* line 80, src/scss/layout/themes/_base.scss */
+.page-header.navbar .top-menu .navbar-nav > li.dropdown-extended .dropdown-menu .dropdown-menu-list > li > a:hover {
+  background: #f8f9fa;
+}
+/* line 95, src/scss/layout/themes/_base.scss */
+.page-header.navbar .top-menu .navbar-nav > li.dropdown-notification .dropdown-menu .dropdown-menu-list > li > a .time {
+  background: #f1f1f1;
+}
+/* line 100, src/scss/layout/themes/_base.scss */
+.page-header.navbar .top-menu .navbar-nav > li.dropdown-notification .dropdown-menu .dropdown-menu-list > li > a:hover .time {
+  background: #e4e4e4;
+}
+/* line 113, src/scss/layout/themes/_base.scss */
+.page-header.navbar .top-menu .navbar-nav > li.dropdown-inbox > .dropdown-toggle > .circle {
+  background-color: #1caf9a;
+  color: #ffffff;
+}
+/* line 118, src/scss/layout/themes/_base.scss */
+.page-header.navbar .top-menu .navbar-nav > li.dropdown-inbox > .dropdown-toggle > .corner {
+  border-color: transparent transparent transparent #1caf9a;
+}
+/* line 126, src/scss/layout/themes/_base.scss */
+.page-header.navbar .top-menu .navbar-nav > li.dropdown-inbox .dropdown-menu .dropdown-menu-list .subject .from {
+  color: #5b9bd1;
+}
+/* line 139, src/scss/layout/themes/_base.scss */
+.page-header.navbar .top-menu .navbar-nav > li.dropdown-tasks .dropdown-menu .dropdown-menu-list .progress {
+  background-color: #dfe2e9;
+}
+/* line 150, src/scss/layout/themes/_base.scss */
+.page-header.navbar .top-menu .navbar-nav > li.dropdown-user > .dropdown-toggle > .username {
+  color: #f9fcfe;
+}
+/* line 154, src/scss/layout/themes/_base.scss */
+.page-header.navbar .top-menu .navbar-nav > li.dropdown-user > .dropdown-toggle > i {
+  color: #f9fcfe;
+}
+/* line 159, src/scss/layout/themes/_base.scss */
+.page-header.navbar .top-menu .navbar-nav > li.dropdown-user > .dropdown-menu {
+  width: 230px;
+}
+/* line 168, src/scss/layout/themes/_base.scss */
+.page-header.navbar .top-menu .navbar-nav > li.dropdown-language > .dropdown-toggle > .langname {
+  color: #f9fcfe;
+}
+/* line 176, src/scss/layout/themes/_base.scss */
+.page-header.navbar .top-menu .navbar-nav > li.dropdown-dark .dropdown-menu {
+  background: #60aee4;
+  border: 0;
+}
+/* line 180, src/scss/layout/themes/_base.scss */
+.page-header.navbar .top-menu .navbar-nav > li.dropdown-dark .dropdown-menu:after {
+  border-bottom-color: #60aee4;
+}
+/* line 184, src/scss/layout/themes/_base.scss */
+.page-header.navbar .top-menu .navbar-nav > li.dropdown-dark .dropdown-menu > li.external {
+  background: #3e9cde;
+}
+/* line 187, src/scss/layout/themes/_base.scss */
+.page-header.navbar .top-menu .navbar-nav > li.dropdown-dark .dropdown-menu > li.external > h3 {
+  color: white;
+}
+/* line 192, src/scss/layout/themes/_base.scss */
+.page-header.navbar .top-menu .navbar-nav > li.dropdown-dark .dropdown-menu > li.external > a:hover {
+  color: #6ea6d6;
+}
+/* line 201, src/scss/layout/themes/_base.scss */
+.page-header.navbar .top-menu .navbar-nav > li.dropdown-dark .dropdown-menu.dropdown-menu-default > li a,
+.page-header.navbar .top-menu .navbar-nav > li.dropdown-dark .dropdown-menu .dropdown-menu-list > li a {
+  color: white;
+  border-bottom: 1px solid #7bbbe8 !important;
+}
+/* line 205, src/scss/layout/themes/_base.scss */
+.page-header.navbar .top-menu .navbar-nav > li.dropdown-dark .dropdown-menu.dropdown-menu-default > li a > i,
+.page-header.navbar .top-menu .navbar-nav > li.dropdown-dark .dropdown-menu .dropdown-menu-list > li a > i {
+  color: white;
+}
+/* line 209, src/scss/layout/themes/_base.scss */
+.page-header.navbar .top-menu .navbar-nav > li.dropdown-dark .dropdown-menu.dropdown-menu-default > li a:hover,
+.page-header.navbar .top-menu .navbar-nav > li.dropdown-dark .dropdown-menu .dropdown-menu-list > li a:hover {
+  background: #72b7e7;
+}
+/* line 218, src/scss/layout/themes/_base.scss */
+.page-header.navbar .top-menu .navbar-nav > li.dropdown-dark .dropdown-menu.dropdown-menu-default > li a {
+  border-bottom: 0 !important;
+}
+/* line 222, src/scss/layout/themes/_base.scss */
+.page-header.navbar .top-menu .navbar-nav > li.dropdown-dark .dropdown-menu.dropdown-menu-default > li.divider {
+  background: #7bbbe8;
+}
+/* line 235, src/scss/layout/themes/_base.scss */
+.page-header.navbar .top-menu .navbar-nav > li.dropdown-notification.dropdown-dark .dropdown-menu .dropdown-menu-list > li > a .time {
+  background: #4ba3e0;
+}
+/* line 240, src/scss/layout/themes/_base.scss */
+.page-header.navbar .top-menu .navbar-nav > li.dropdown-notification.dropdown-dark .dropdown-menu .dropdown-menu-list > li > a:hover .time {
+  background: #3598dc;
+}
+/* line 253, src/scss/layout/themes/_base.scss */
+.page-header.navbar .search-form {
+  background: #258fd7;
+}
+/* line 256, src/scss/layout/themes/_base.scss */
+.page-header.navbar .search-form:hover {
+  background: #60aee4;
+}
+/* line 261, src/scss/layout/themes/_base.scss */
+.page-header.navbar .search-form .input-group .form-control {
+  color: #83AAC8;
+}
+/* line 42, src/scss/global/components/_mixins.scss */
+.page-header.navbar .search-form .input-group .form-control::-moz-placeholder {
+  color: #7fa8c6;
+  opacity: 1;
+}
+/* line 43, src/scss/global/components/_mixins.scss */
+.page-header.navbar .search-form .input-group .form-control:-ms-input-placeholder {
+  color: #7fa8c6;
+}
+/* line 44, src/scss/global/components/_mixins.scss */
+.page-header.navbar .search-form .input-group .form-control::-webkit-input-placeholder {
+  color: #7fa8c6;
+}
+/* line 269, src/scss/layout/themes/_base.scss */
+.page-header.navbar .search-form .input-group .input-group-btn .btn.submit > i {
+  color: #83AAC8;
+}
+/* line 276, src/scss/layout/themes/_base.scss */
+.page-header.navbar .search-form.open {
+  background: #60aee4;
+}
+/* line 282, src/scss/layout/themes/_base.scss */
+.page-header.navbar .menu-toggler {
+  background-image: url(../../img/sidebar_toggler_icon_blue.png);
+}
+
+/* Default Horizontal Menu */
+/* line 289, src/scss/layout/themes/_base.scss */
+.page-header.navbar {
+  /* Default Mega Menu */
+  /* Light Mega Menu */
+}
+/* line 293, src/scss/layout/themes/_base.scss */
+.page-header.navbar .hor-menu .navbar-nav {
+  /* Mega menu content */
+  /* Classic menu */
+}
+/* line 297, src/scss/layout/themes/_base.scss */
+.page-header.navbar .hor-menu .navbar-nav > li.mega-menu-dropdown > .dropdown-menu {
+  box-shadow: 5px 5px rgba(96, 174, 228, 0.2);
+}
+/* line 305, src/scss/layout/themes/_base.scss */
+.page-header.navbar .hor-menu .navbar-nav > li.mega-menu-dropdown > .dropdown-menu .mega-menu-content .mega-menu-submenu li > h3 {
+  color: #f9fcfe;
+}
+/* line 316, src/scss/layout/themes/_base.scss */
+.page-header.navbar .hor-menu .navbar-nav > li > a {
+  color: #f9fcfe;
+}
+/* line 319, src/scss/layout/themes/_base.scss */
+.page-header.navbar .hor-menu .navbar-nav > li > a > i {
+  color: #cde6f6;
+}
+/* line 324, src/scss/layout/themes/_base.scss */
+.page-header.navbar .hor-menu .navbar-nav > li.open > a,
+.page-header.navbar .hor-menu .navbar-nav > li > a:hover {
+  color: white;
+  background: #60aee4 !important;
+}
+/* line 329, src/scss/layout/themes/_base.scss */
+.page-header.navbar .hor-menu .navbar-nav > li.open > a > i,
+.page-header.navbar .hor-menu .navbar-nav > li > a:hover > i {
+  color: #e3f1fa;
+}
+/* line 336, src/scss/layout/themes/_base.scss */
+.page-header.navbar .hor-menu .navbar-nav > li.active > a,
+.page-header.navbar .hor-menu .navbar-nav > li.active > a, .page-header.navbar .hor-menu .navbar-nav > li.current > a,
+.page-header.navbar .hor-menu .navbar-nav > li.current > a {
+  color: white;
+  background: #60aee4 !important;
+}
+/* line 341, src/scss/layout/themes/_base.scss */
+.page-header.navbar .hor-menu .navbar-nav > li.active > a > i,
+.page-header.navbar .hor-menu .navbar-nav > li.active > a > i, .page-header.navbar .hor-menu .navbar-nav > li.current > a > i,
+.page-header.navbar .hor-menu .navbar-nav > li.current > a > i {
+  color: #cde6f6;
+}
+/* line 346, src/scss/layout/themes/_base.scss */
+.page-header.navbar .hor-menu .navbar-nav > li.active .selected, .page-header.navbar .hor-menu .navbar-nav > li.current .selected {
+  border-top: 6px solid #60aee4;
+}
+/* line 351, src/scss/layout/themes/_base.scss */
+.page-header.navbar .hor-menu .navbar-nav > li .dropdown-menu {
+  box-shadow: 5px 5px rgba(96, 174, 228, 0.2);
+  background: #60aee4;
+}
+/* line 357, src/scss/layout/themes/_base.scss */
+.page-header.navbar .hor-menu .navbar-nav > li .dropdown-menu li > a {
+  color: #f9fcfe;
+}
+/* line 360, src/scss/layout/themes/_base.scss */
+.page-header.navbar .hor-menu .navbar-nav > li .dropdown-menu li > a > i {
+  color: #f9fcfe;
+}
+/* line 366, src/scss/layout/themes/_base.scss */
+.page-header.navbar .hor-menu .navbar-nav > li .dropdown-menu li:hover > a {
+  color: white;
+  background: #72b7e7;
+}
+/* line 370, src/scss/layout/themes/_base.scss */
+.page-header.navbar .hor-menu .navbar-nav > li .dropdown-menu li:hover > a > i {
+  color: white;
+}
+/* line 378, src/scss/layout/themes/_base.scss */
+.page-header.navbar .hor-menu .navbar-nav > li .dropdown-menu li.active > a,
+.page-header.navbar .hor-menu .navbar-nav > li .dropdown-menu li.active > a:hover, .page-header.navbar .hor-menu .navbar-nav > li .dropdown-menu li.current > a,
+.page-header.navbar .hor-menu .navbar-nav > li .dropdown-menu li.current > a:hover {
+  color: white;
+  background: #72b7e7;
+}
+/* line 383, src/scss/layout/themes/_base.scss */
+.page-header.navbar .hor-menu .navbar-nav > li .dropdown-menu li.active > a > i,
+.page-header.navbar .hor-menu .navbar-nav > li .dropdown-menu li.active > a:hover > i, .page-header.navbar .hor-menu .navbar-nav > li .dropdown-menu li.current > a > i,
+.page-header.navbar .hor-menu .navbar-nav > li .dropdown-menu li.current > a:hover > i {
+  color: white;
+}
+/* line 389, src/scss/layout/themes/_base.scss */
+.page-header.navbar .hor-menu .navbar-nav > li .dropdown-menu li.divider {
+  background-color: #76b9e7;
+}
+/* line 396, src/scss/layout/themes/_base.scss */
+.page-header.navbar .hor-menu .navbar-nav > li .dropdown-submenu > a:after {
+  color: #f9fcfe;
+}
+/* line 406, src/scss/layout/themes/_base.scss */
+.page-header.navbar .hor-menu.hor-menu-light .navbar-nav {
+  /* Mega menu content */
+  /* Classic menu */
+}
+/* line 410, src/scss/layout/themes/_base.scss */
+.page-header.navbar .hor-menu.hor-menu-light .navbar-nav > li.mega-menu-dropdown > .dropdown-menu {
+  box-shadow: 5px 5px rgba(102, 102, 102, 0.1);
+}
+/* line 418, src/scss/layout/themes/_base.scss */
+.page-header.navbar .hor-menu.hor-menu-light .navbar-nav > li.mega-menu-dropdown > .dropdown-menu .mega-menu-content .mega-menu-submenu li > h3 {
+  color: #666;
+}
+/* line 429, src/scss/layout/themes/_base.scss */
+.page-header.navbar .hor-menu.hor-menu-light .navbar-nav > li > a {
+  color: #f9fcfe;
+}
+/* line 432, src/scss/layout/themes/_base.scss */
+.page-header.navbar .hor-menu.hor-menu-light .navbar-nav > li > a > i {
+  color: #cde6f6;
+}
+/* line 437, src/scss/layout/themes/_base.scss */
+.page-header.navbar .hor-menu.hor-menu-light .navbar-nav > li > a:hover {
+  color: white;
+  background: #60aee4;
+}
+/* line 441, src/scss/layout/themes/_base.scss */
+.page-header.navbar .hor-menu.hor-menu-light .navbar-nav > li > a:hover > i {
+  color: #e3f1fa;
+}
+/* line 446, src/scss/layout/themes/_base.scss */
+.page-header.navbar .hor-menu.hor-menu-light .navbar-nav > li.open > a {
+  color: #333 !important;
+  background: white !important;
+}
+/* line 450, src/scss/layout/themes/_base.scss */
+.page-header.navbar .hor-menu.hor-menu-light .navbar-nav > li.open > a > i {
+  color: #333 !important;
+}
+/* line 457, src/scss/layout/themes/_base.scss */
+.page-header.navbar .hor-menu.hor-menu-light .navbar-nav > li.active > a,
+.page-header.navbar .hor-menu.hor-menu-light .navbar-nav > li.active > a:hover, .page-header.navbar .hor-menu.hor-menu-light .navbar-nav > li.current > a,
+.page-header.navbar .hor-menu.hor-menu-light .navbar-nav > li.current > a:hover {
+  color: white;
+  background: #60aee4;
+}
+/* line 462, src/scss/layout/themes/_base.scss */
+.page-header.navbar .hor-menu.hor-menu-light .navbar-nav > li.active > a > i,
+.page-header.navbar .hor-menu.hor-menu-light .navbar-nav > li.active > a:hover > i, .page-header.navbar .hor-menu.hor-menu-light .navbar-nav > li.current > a > i,
+.page-header.navbar .hor-menu.hor-menu-light .navbar-nav > li.current > a:hover > i {
+  color: #cde6f6;
+}
+/* line 468, src/scss/layout/themes/_base.scss */
+.page-header.navbar .hor-menu.hor-menu-light .navbar-nav > li .dropdown-menu {
+  box-shadow: 5px 5px rgba(102, 102, 102, 0.1);
+  background: white;
+}
+/* line 474, src/scss/layout/themes/_base.scss */
+.page-header.navbar .hor-menu.hor-menu-light .navbar-nav > li .dropdown-menu li > a {
+  color: #000;
+}
+/* line 477, src/scss/layout/themes/_base.scss */
+.page-header.navbar .hor-menu.hor-menu-light .navbar-nav > li .dropdown-menu li > a > i {
+  color: #888;
+}
+/* line 483, src/scss/layout/themes/_base.scss */
+.page-header.navbar .hor-menu.hor-menu-light .navbar-nav > li .dropdown-menu li:hover > a {
+  color: #000;
+  background: #f2f2f7;
+}
+/* line 487, src/scss/layout/themes/_base.scss */
+.page-header.navbar .hor-menu.hor-menu-light .navbar-nav > li .dropdown-menu li:hover > a > i {
+  color: #666;
+}
+/* line 495, src/scss/layout/themes/_base.scss */
+.page-header.navbar .hor-menu.hor-menu-light .navbar-nav > li .dropdown-menu li.active > a,
+.page-header.navbar .hor-menu.hor-menu-light .navbar-nav > li .dropdown-menu li.active > a:hover, .page-header.navbar .hor-menu.hor-menu-light .navbar-nav > li .dropdown-menu li.current > a,
+.page-header.navbar .hor-menu.hor-menu-light .navbar-nav > li .dropdown-menu li.current > a:hover {
+  color: #000;
+  background: #f2f2f7;
+}
+/* line 500, src/scss/layout/themes/_base.scss */
+.page-header.navbar .hor-menu.hor-menu-light .navbar-nav > li .dropdown-menu li.active > a > i,
+.page-header.navbar .hor-menu.hor-menu-light .navbar-nav > li .dropdown-menu li.active > a:hover > i, .page-header.navbar .hor-menu.hor-menu-light .navbar-nav > li .dropdown-menu li.current > a > i,
+.page-header.navbar .hor-menu.hor-menu-light .navbar-nav > li .dropdown-menu li.current > a:hover > i {
+  color: #666;
+}
+/* line 506, src/scss/layout/themes/_base.scss */
+.page-header.navbar .hor-menu.hor-menu-light .navbar-nav > li .dropdown-menu li.divider {
+  background-color: #f2f2f7;
+}
+/* line 512, src/scss/layout/themes/_base.scss */
+.page-header.navbar .hor-menu.hor-menu-light .navbar-nav > li .dropdown-menu {
+  border: 1px solid #efeff5;
+}
+/* line 516, src/scss/layout/themes/_base.scss */
+.page-header.navbar .hor-menu.hor-menu-light .navbar-nav > li > .dropdown-menu {
+  border-top: 0;
+}
+
+/* Page sidebar */
+/* line 526, src/scss/layout/themes/_base.scss */
+.exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover,
+.exex-sidebar {
+  background-color: #42474E;
+  /* Default sidebar */
+  /* light sidebar */
+  /* Sidebar search */
+}
+/* line 531, src/scss/layout/themes/_base.scss */
+.exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .exex-sidebar-menu,
+.exex-sidebar .exex-sidebar-menu {
+  /* 1st level links */
+  /* All links */
+}
+/* line 536, src/scss/layout/themes/_base.scss */
+.exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .exex-sidebar-menu > li > a,
+.exex-sidebar .exex-sidebar-menu > li > a {
+  border-top: 1px solid #4e545c;
+  color: #94989d;
+}
+/* line 540, src/scss/layout/themes/_base.scss */
+.exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .exex-sidebar-menu > li > a > i,
+.exex-sidebar .exex-sidebar-menu > li > a > i {
+  color: #94989d;
+}
+/* line 544, src/scss/layout/themes/_base.scss */
+.exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .exex-sidebar-menu > li > a > i[class^="icon-"],
+.exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .exex-sidebar-menu > li > a > i[class*="icon-"],
+.exex-sidebar .exex-sidebar-menu > li > a > i[class^="icon-"],
+.exex-sidebar .exex-sidebar-menu > li > a > i[class*="icon-"] {
+  color: #a1a5a9;
+}
+/* line 556, src/scss/layout/themes/_base.scss */
+.exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .exex-sidebar-menu > li > a > .arrow:before, .exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .exex-sidebar-menu > li > a > .arrow.open:before,
+.exex-sidebar .exex-sidebar-menu > li > a > .arrow:before,
+.exex-sidebar .exex-sidebar-menu > li > a > .arrow.open:before {
+  color: #94989d;
+}
+/* line 564, src/scss/layout/themes/_base.scss */
+.exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .exex-sidebar-menu > li.heading > h3,
+.exex-sidebar .exex-sidebar-menu > li.heading > h3 {
+  color: #5a5d62;
+}
+/* line 571, src/scss/layout/themes/_base.scss */
+.exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .exex-sidebar-menu > li:hover > a, .exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .exex-sidebar-menu > li.open > a,
+.exex-sidebar .exex-sidebar-menu > li:hover > a,
+.exex-sidebar .exex-sidebar-menu > li.open > a {
+  background: #497FAE;
+  color: #ffffff;
+}
+/* line 575, src/scss/layout/themes/_base.scss */
+.exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .exex-sidebar-menu > li:hover > a > i, .exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .exex-sidebar-menu > li.open > a > i,
+.exex-sidebar .exex-sidebar-menu > li:hover > a > i,
+.exex-sidebar .exex-sidebar-menu > li.open > a > i {
+  color: #ffffff;
+}
+/* line 580, src/scss/layout/themes/_base.scss */
+.exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .exex-sidebar-menu > li:hover > a > .arrow:before, .exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .exex-sidebar-menu > li:hover > a > .arrow.open:before, .exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .exex-sidebar-menu > li.open > a > .arrow:before, .exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .exex-sidebar-menu > li.open > a > .arrow.open:before,
+.exex-sidebar .exex-sidebar-menu > li:hover > a > .arrow:before,
+.exex-sidebar .exex-sidebar-menu > li:hover > a > .arrow.open:before,
+.exex-sidebar .exex-sidebar-menu > li.open > a > .arrow:before,
+.exex-sidebar .exex-sidebar-menu > li.open > a > .arrow.open:before {
+  color: #ffffff;
+}
+/* line 590, src/scss/layout/themes/_base.scss */
+.exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .exex-sidebar-menu > li.active > a, .exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .exex-sidebar-menu > li.active.open > a,
+.exex-sidebar .exex-sidebar-menu > li.active > a,
+.exex-sidebar .exex-sidebar-menu > li.active.open > a {
+  background: #1caf9a;
+  border-top-color: transparent;
+  color: #ffffff;
+}
+/* line 595, src/scss/layout/themes/_base.scss */
+.exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .exex-sidebar-menu > li.active > a:hover, .exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .exex-sidebar-menu > li.active.open > a:hover,
+.exex-sidebar .exex-sidebar-menu > li.active > a:hover,
+.exex-sidebar .exex-sidebar-menu > li.active.open > a:hover {
+  background: #1caf9a;
+}
+/* line 599, src/scss/layout/themes/_base.scss */
+.exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .exex-sidebar-menu > li.active > a > i, .exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .exex-sidebar-menu > li.active.open > a > i,
+.exex-sidebar .exex-sidebar-menu > li.active > a > i,
+.exex-sidebar .exex-sidebar-menu > li.active.open > a > i {
+  color: #ffffff;
+}
+/* line 604, src/scss/layout/themes/_base.scss */
+.exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .exex-sidebar-menu > li.active > a > .arrow:before, .exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .exex-sidebar-menu > li.active > a > .arrow.open:before, .exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .exex-sidebar-menu > li.active.open > a > .arrow:before, .exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .exex-sidebar-menu > li.active.open > a > .arrow.open:before,
+.exex-sidebar .exex-sidebar-menu > li.active > a > .arrow:before,
+.exex-sidebar .exex-sidebar-menu > li.active > a > .arrow.open:before,
+.exex-sidebar .exex-sidebar-menu > li.active.open > a > .arrow:before,
+.exex-sidebar .exex-sidebar-menu > li.active.open > a > .arrow.open:before {
+  color: #ffffff;
+}
+/* line 613, src/scss/layout/themes/_base.scss */
+.exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .exex-sidebar-menu > li.active + li > a,
+.exex-sidebar .exex-sidebar-menu > li.active + li > a {
+  border-top-color: transparent;
+}
+/* line 619, src/scss/layout/themes/_base.scss */
+.exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .exex-sidebar-menu > li.active.open + li > a,
+.exex-sidebar .exex-sidebar-menu > li.active.open + li > a {
+  border-top-color: #4e545c;
+}
+/* line 625, src/scss/layout/themes/_base.scss */
+.exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .exex-sidebar-menu > li:last-child > a,
+.exex-sidebar .exex-sidebar-menu > li:last-child > a {
+  border-bottom: 1px solid transparent !important;
+}
+/* line 636, src/scss/layout/themes/_base.scss */
+.exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .exex-sidebar-menu li > a > .arrow:before, .exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .exex-sidebar-menu li > a > .arrow.open:before,
+.exex-sidebar .exex-sidebar-menu li > a > .arrow:before,
+.exex-sidebar .exex-sidebar-menu li > a > .arrow.open:before {
+  color: #94989d;
+}
+/* line 646, src/scss/layout/themes/_base.scss */
+.exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .exex-sidebar-menu li:hover > a > .arrow:before, .exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .exex-sidebar-menu li:hover > a > .arrow.open:before,
+.exex-sidebar .exex-sidebar-menu li:hover > a > .arrow:before,
+.exex-sidebar .exex-sidebar-menu li:hover > a > .arrow.open:before {
+  color: #ffffff;
+}
+/* line 657, src/scss/layout/themes/_base.scss */
+.exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .exex-sidebar-menu li.active > a > .arrow:before, .exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .exex-sidebar-menu li.active > a > .arrow.open:before,
+.exex-sidebar .exex-sidebar-menu li.active > a > .arrow:before,
+.exex-sidebar .exex-sidebar-menu li.active > a > .arrow.open:before {
+  color: #ffffff;
+}
+/* line 667, src/scss/layout/themes/_base.scss */
+.exex-sidebar-closed .exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .exex-sidebar-menu:hover .sub-menu, .exex-sidebar-closed
+.exex-sidebar .exex-sidebar-menu:hover .sub-menu {
+  background-color: #42474E;
+}
+/* line 674, src/scss/layout/themes/_base.scss */
+.exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .exex-sidebar-menu .sub-menu > li > a,
+.exex-sidebar .exex-sidebar-menu .sub-menu > li > a {
+  color: #94989d;
+}
+/* line 677, src/scss/layout/themes/_base.scss */
+.exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .exex-sidebar-menu .sub-menu > li > a > i,
+.exex-sidebar .exex-sidebar-menu .sub-menu > li > a > i {
+  color: #94989d;
+}
+/* line 681, src/scss/layout/themes/_base.scss */
+.exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .exex-sidebar-menu .sub-menu > li > a > i[class^="icon-"],
+.exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .exex-sidebar-menu .sub-menu > li > a > i[class*="icon-"],
+.exex-sidebar .exex-sidebar-menu .sub-menu > li > a > i[class^="icon-"],
+.exex-sidebar .exex-sidebar-menu .sub-menu > li > a > i[class*="icon-"] {
+  color: #a1a5a9;
+}
+/* line 693, src/scss/layout/themes/_base.scss */
+.exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .exex-sidebar-menu .sub-menu > li > a > .arrow:before, .exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .exex-sidebar-menu .sub-menu > li > a > .arrow.open:before,
+.exex-sidebar .exex-sidebar-menu .sub-menu > li > a > .arrow:before,
+.exex-sidebar .exex-sidebar-menu .sub-menu > li > a > .arrow.open:before {
+  color: #94989d;
+}
+/* line 703, src/scss/layout/themes/_base.scss */
+.exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .exex-sidebar-menu .sub-menu > li:hover > a, .exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .exex-sidebar-menu .sub-menu > li.open > a, .exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .exex-sidebar-menu .sub-menu > li.active > a,
+.exex-sidebar .exex-sidebar-menu .sub-menu > li:hover > a,
+.exex-sidebar .exex-sidebar-menu .sub-menu > li.open > a,
+.exex-sidebar .exex-sidebar-menu .sub-menu > li.active > a {
+  background: #397FAE !important;
+}
+/* line 706, src/scss/layout/themes/_base.scss */
+.exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .exex-sidebar-menu .sub-menu > li:hover > a > i, .exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .exex-sidebar-menu .sub-menu > li.open > a > i, .exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .exex-sidebar-menu .sub-menu > li.active > a > i,
+.exex-sidebar .exex-sidebar-menu .sub-menu > li:hover > a > i,
+.exex-sidebar .exex-sidebar-menu .sub-menu > li.open > a > i,
+.exex-sidebar .exex-sidebar-menu .sub-menu > li.active > a > i {
+  color: #ffffff;
+  color: #c9cbce;
+}
+/* line 718, src/scss/layout/themes/_base.scss */
+.exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .exex-sidebar-menu .sub-menu > li:hover > a > .arrow:before, .exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .exex-sidebar-menu .sub-menu > li:hover > a > .arrow.open:before, .exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .exex-sidebar-menu .sub-menu > li.open > a > .arrow:before, .exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .exex-sidebar-menu .sub-menu > li.open > a > .arrow.open:before, .exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .exex-sidebar-menu .sub-menu > li.active > a > .arrow:before, .exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .exex-sidebar-menu .sub-menu > li.active > a > .arrow.open:before,
+.exex-sidebar .exex-sidebar-menu .sub-menu > li:hover > a > .arrow:before,
+.exex-sidebar .exex-sidebar-menu .sub-menu > li:hover > a > .arrow.open:before,
+.exex-sidebar .exex-sidebar-menu .sub-menu > li.open > a > .arrow:before,
+.exex-sidebar .exex-sidebar-menu .sub-menu > li.open > a > .arrow.open:before,
+.exex-sidebar .exex-sidebar-menu .sub-menu > li.active > a > .arrow:before,
+.exex-sidebar .exex-sidebar-menu .sub-menu > li.active > a > .arrow.open:before {
+  color: #ffffff;
+}
+/* line 730, src/scss/layout/themes/_base.scss */
+.exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .exex-sidebar-menu.exex-sidebar-menu-light,
+.exex-sidebar .exex-sidebar-menu.exex-sidebar-menu-light {
+  /* 1st level links */
+}
+/* line 736, src/scss/layout/themes/_base.scss */
+.exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .exex-sidebar-menu.exex-sidebar-menu-light > li:hover > a, .exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .exex-sidebar-menu.exex-sidebar-menu-light > li.open > a,
+.exex-sidebar .exex-sidebar-menu.exex-sidebar-menu-light > li:hover > a,
+.exex-sidebar .exex-sidebar-menu.exex-sidebar-menu-light > li.open > a {
+  background: #2376BB;
+}
+/* line 743, src/scss/layout/themes/_base.scss */
+.exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .exex-sidebar-menu.exex-sidebar-menu-light > li.active > a, .exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .exex-sidebar-menu.exex-sidebar-menu-light > li.active.open > a,
+.exex-sidebar .exex-sidebar-menu.exex-sidebar-menu-light > li.active > a,
+.exex-sidebar .exex-sidebar-menu.exex-sidebar-menu-light > li.active.open > a {
+  background: #2376BB;
+  border-left: 4px solid #1caf9a;
+  color: #f1f1f1;
+}
+/* line 748, src/scss/layout/themes/_base.scss */
+.exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .exex-sidebar-menu.exex-sidebar-menu-light > li.active > a:hover, .exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .exex-sidebar-menu.exex-sidebar-menu-light > li.active.open > a:hover,
+.exex-sidebar .exex-sidebar-menu.exex-sidebar-menu-light > li.active > a:hover,
+.exex-sidebar .exex-sidebar-menu.exex-sidebar-menu-light > li.active.open > a:hover {
+  border-left: 4px solid #1caf9a;
+  background: #2376BB;
+}
+/* line 753, src/scss/layout/themes/_base.scss */
+.exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .exex-sidebar-menu.exex-sidebar-menu-light > li.active > a > i, .exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .exex-sidebar-menu.exex-sidebar-menu-light > li.active.open > a > i,
+.exex-sidebar .exex-sidebar-menu.exex-sidebar-menu-light > li.active > a > i,
+.exex-sidebar .exex-sidebar-menu.exex-sidebar-menu-light > li.active.open > a > i {
+  color: #eeeeee;
+}
+/* line 758, src/scss/layout/themes/_base.scss */
+.exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .exex-sidebar-menu.exex-sidebar-menu-light > li.active > a > .arrow:before, .exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .exex-sidebar-menu.exex-sidebar-menu-light > li.active > a > .arrow.open:before, .exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .exex-sidebar-menu.exex-sidebar-menu-light > li.active.open > a > .arrow:before, .exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .exex-sidebar-menu.exex-sidebar-menu-light > li.active.open > a > .arrow.open:before,
+.exex-sidebar .exex-sidebar-menu.exex-sidebar-menu-light > li.active > a > .arrow:before,
+.exex-sidebar .exex-sidebar-menu.exex-sidebar-menu-light > li.active > a > .arrow.open:before,
+.exex-sidebar .exex-sidebar-menu.exex-sidebar-menu-light > li.active.open > a > .arrow:before,
+.exex-sidebar .exex-sidebar-menu.exex-sidebar-menu-light > li.active.open > a > .arrow.open:before {
+  color: #eeeeee;
+}
+/* line 766, src/scss/layout/themes/_base.scss */
+.exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .exex-sidebar-menu.exex-sidebar-menu-light > li .sub-menu,
+.exex-sidebar .exex-sidebar-menu.exex-sidebar-menu-light > li .sub-menu {
+  background: #494f56;
+}
+/* line 773, src/scss/layout/themes/_base.scss */
+.exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .exex-sidebar-menu.exex-sidebar-menu-light > li .sub-menu > li:hover > a, .exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .exex-sidebar-menu.exex-sidebar-menu-light > li .sub-menu > li.open > a, .exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .exex-sidebar-menu.exex-sidebar-menu-light > li .sub-menu > li.active > a,
+.exex-sidebar .exex-sidebar-menu.exex-sidebar-menu-light > li .sub-menu > li:hover > a,
+.exex-sidebar .exex-sidebar-menu.exex-sidebar-menu-light > li .sub-menu > li.open > a,
+.exex-sidebar .exex-sidebar-menu.exex-sidebar-menu-light > li .sub-menu > li.active > a {
+  background: #393d43 !important;
+}
+/* line 782, src/scss/layout/themes/_base.scss */
+.exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .sidebar-toggler,
+.exex-sidebar .sidebar-toggler {
+  background: url(../../img/sidebar_inline_toggler_icon_blue.jpg);
+}
+/* line 790, src/scss/layout/themes/_base.scss */
+.exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .sidebar-search .input-group,
+.exex-sidebar .sidebar-search .input-group {
+  border-bottom: 1px solid #555b64;
+}
+/* line 793, src/scss/layout/themes/_base.scss */
+.exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .sidebar-search .input-group .form-control,
+.exex-sidebar .sidebar-search .input-group .form-control {
+  background-color: #42474E;
+  color: #656d77;
+}
+/* line 42, src/scss/global/components/_mixins.scss */
+.exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .sidebar-search .input-group .form-control::-moz-placeholder,
+.exex-sidebar .sidebar-search .input-group .form-control::-moz-placeholder {
+  color: #656d77;
+  opacity: 1;
+}
+/* line 43, src/scss/global/components/_mixins.scss */
+.exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .sidebar-search .input-group .form-control:-ms-input-placeholder,
+.exex-sidebar .sidebar-search .input-group .form-control:-ms-input-placeholder {
+  color: #656d77;
+}
+/* line 44, src/scss/global/components/_mixins.scss */
+.exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .sidebar-search .input-group .form-control::-webkit-input-placeholder,
+.exex-sidebar .sidebar-search .input-group .form-control::-webkit-input-placeholder {
+  color: #656d77;
+}
+/* line 801, src/scss/layout/themes/_base.scss */
+.exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .sidebar-search .input-group .input-group-btn .btn > i,
+.exex-sidebar .sidebar-search .input-group .input-group-btn .btn > i {
+  color: #656d77;
+}
+/* line 809, src/scss/layout/themes/_base.scss */
+.exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .sidebar-search.sidebar-search-bordered .input-group,
+.exex-sidebar .sidebar-search.sidebar-search-bordered .input-group {
+  border: 1px solid #555b64;
+}
+/* line 815, src/scss/layout/themes/_base.scss */
+.exex-sidebar-closed .exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .sidebar-search.open .input-group, .exex-sidebar-closed
+.exex-sidebar .sidebar-search.open .input-group {
+  background-color: #42474E;
+}
+/* line 820, src/scss/layout/themes/_base.scss */
+.exex-sidebar-closed .exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .sidebar-search.open .remove > i, .exex-sidebar-closed
+.exex-sidebar .sidebar-search.open .remove > i {
+  color: #656d77;
+}
+/* line 829, src/scss/layout/themes/_base.scss */
+.exex-sidebar-closed .exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .sidebar-search.sidebar-search-solid .input-group, .exex-sidebar-closed
+.exex-sidebar .sidebar-search.sidebar-search-solid .input-group {
+  background: none;
+}
+/* line 834, src/scss/layout/themes/_base.scss */
+.exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .sidebar-search.sidebar-search-solid .input-group,
+.exex-sidebar .sidebar-search.sidebar-search-solid .input-group {
+  border: 1px solid #363a40;
+  background: #363a40;
+}
+/* line 838, src/scss/layout/themes/_base.scss */
+.exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .sidebar-search.sidebar-search-solid .input-group .form-control,
+.exex-sidebar .sidebar-search.sidebar-search-solid .input-group .form-control {
+  background: #363a40;
+}
+/* line 843, src/scss/layout/themes/_base.scss */
+.exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .sidebar-search.sidebar-search-solid.open .input-group,
+.exex-sidebar .sidebar-search.sidebar-search-solid.open .input-group {
+  border: 1px solid #42474E;
+  background: #42474E;
+}
+/* line 847, src/scss/layout/themes/_base.scss */
+.exex-sidebar-closed.exex-sidebar-fixed .exex-sidebar:hover .sidebar-search.sidebar-search-solid.open .input-group .form-control,
+.exex-sidebar .sidebar-search.sidebar-search-solid.open .input-group .form-control {
+  background: #42474E;
+}
+
+/* line 857, src/scss/layout/themes/_base.scss */
+.exex-sidebar-reversed .exex-sidebar-menu.exex-sidebar-menu-light {
+  /* 1st level links */
+}
+/* line 862, src/scss/layout/themes/_base.scss */
+.exex-sidebar-reversed .exex-sidebar-menu.exex-sidebar-menu-light > li.active > a, .exex-sidebar-reversed .exex-sidebar-menu.exex-sidebar-menu-light > li.active.open > a {
+  border-left: 0;
+  border-right: 4px solid #1caf9a;
+}
+/* line 866, src/scss/layout/themes/_base.scss */
+.exex-sidebar-reversed .exex-sidebar-menu.exex-sidebar-menu-light > li.active > a:hover, .exex-sidebar-reversed .exex-sidebar-menu.exex-sidebar-menu-light > li.active.open > a:hover {
+  border-left: 0;
+  border-right: 4px solid #1caf9a;
+}
+
+/*************
+Quick Sidebar
+*************/
+/***
+Quick Sidebar Layout
+***/
+/* line 883, src/scss/layout/themes/_base.scss */
+.exex-right-sidebar-wrapper {
+  background: #006666;
+}
+/* line 886, src/scss/layout/themes/_base.scss */
+.exex-right-sidebar-wrapper .exex-right-sidebar {
+  background: #006666;
+}
+
+/***
+Quick Sidebar Toggler
+***/
+/* line 895, src/scss/layout/themes/_base.scss */
+.exex-right-sidebar-toggler {
+  background: #009999;
+}
+/* line 898, src/scss/layout/themes/_base.scss */
+.exex-right-sidebar-toggler:hover {
+  background: #008a8a;
+}
+/* line 902, src/scss/layout/themes/_base.scss */
+.exex-right-sidebar-toggler > i {
+  color: #deeefc;
+}
+
+/***
+Quick Sidebar Content
+***/
+/* line 911, src/scss/layout/themes/_base.scss */
+.exex-right-sidebar-wrapper {
+  color: #deeefc;
+  /* Quick sidebar chat */
+  /*.exex-right-sidebar-chat {*/
+  /*}*/
+  /* Quick sidebar customer */
+  /*.exex-right-sidebar-alerts {*/
+  /*}*/
+}
+/* line 914, src/scss/layout/themes/_base.scss */
+.exex-right-sidebar-wrapper .exex-right-sidebar {
+  /* Quick sidebar tabs */
+  /* Quick sidebar general list heading */
+  /* Quick sidebar general list-items */
+}
+/* line 920, src/scss/layout/themes/_base.scss */
+.exex-right-sidebar-wrapper .exex-right-sidebar .nav-justified > li > a {
+  color: #d0e7fa;
+  background: #009999;
+}
+/* line 924, src/scss/layout/themes/_base.scss */
+.exex-right-sidebar-wrapper .exex-right-sidebar .nav-justified > li > a:hover {
+  background: teal;
+}
+/* line 930, src/scss/layout/themes/_base.scss */
+.exex-right-sidebar-wrapper .exex-right-sidebar .nav-justified > li.open > a {
+  color: #d0e7fa;
+  background: #009999;
+}
+/* line 938, src/scss/layout/themes/_base.scss */
+.exex-right-sidebar-wrapper .exex-right-sidebar .nav-justified > li.active > a {
+  border: 0;
+  background: #006666;
+}
+/* line 944, src/scss/layout/themes/_base.scss */
+.exex-right-sidebar-wrapper .exex-right-sidebar .nav-justified > li .dropdown-menu {
+  border: 0;
+  background: #009999;
+  box-shadow: 5px 5px rgba(0, 255, 255, 0.1);
+}
+/* line 949, src/scss/layout/themes/_base.scss */
+.exex-right-sidebar-wrapper .exex-right-sidebar .nav-justified > li .dropdown-menu:before {
+  border-bottom: 7px solid #009999;
+}
+/* line 953, src/scss/layout/themes/_base.scss */
+.exex-right-sidebar-wrapper .exex-right-sidebar .nav-justified > li .dropdown-menu:after {
+  border-bottom: 7px solid #009999;
+}
+/* line 958, src/scss/layout/themes/_base.scss */
+.exex-right-sidebar-wrapper .exex-right-sidebar .nav-justified > li .dropdown-menu > li > a {
+  color: #deeefc;
+}
+/* line 961, src/scss/layout/themes/_base.scss */
+.exex-right-sidebar-wrapper .exex-right-sidebar .nav-justified > li .dropdown-menu > li > a > i {
+  color: #d5e9fb;
+}
+/* line 965, src/scss/layout/themes/_base.scss */
+.exex-right-sidebar-wrapper .exex-right-sidebar .nav-justified > li .dropdown-menu > li > a:hover {
+  background: #00a8a8;
+  color: #deeefc;
+}
+/* line 969, src/scss/layout/themes/_base.scss */
+.exex-right-sidebar-wrapper .exex-right-sidebar .nav-justified > li .dropdown-menu > li > a:hover > i {
+  color: #e3f0fc;
+}
+/* line 976, src/scss/layout/themes/_base.scss */
+.exex-right-sidebar-wrapper .exex-right-sidebar .nav-justified > li .dropdown-menu > li.active > a {
+  background: #009e9e;
+  color: #deeefc;
+}
+/* line 982, src/scss/layout/themes/_base.scss */
+.exex-right-sidebar-wrapper .exex-right-sidebar .nav-justified > li .dropdown-menu > li.divider {
+  background-color: #00a8a8;
+}
+/* line 991, src/scss/layout/themes/_base.scss */
+.exex-right-sidebar-wrapper .exex-right-sidebar .list-heading {
+  color: #99caf5;
+}
+/* line 996, src/scss/layout/themes/_base.scss */
+.exex-right-sidebar-wrapper .exex-right-sidebar .list-items {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+/* line 1001, src/scss/layout/themes/_base.scss */
+.exex-right-sidebar-wrapper .exex-right-sidebar .list-items > li {
+  border-bottom-color: #007575;
+}
+/* line 1004, src/scss/layout/themes/_base.scss */
+.exex-right-sidebar-wrapper .exex-right-sidebar .list-items > li:hover {
+  background: #007575;
+}
+/* line 1011, src/scss/layout/themes/_base.scss */
+.exex-right-sidebar-wrapper .exex-right-sidebar-item {
+  /* back to list */
+}
+/* line 1015, src/scss/layout/themes/_base.scss */
+.exex-right-sidebar-wrapper .exex-right-sidebar-item .exex-right-sidebar-nav .exex-right-sidebar-back-to-list {
+  color: #d0e7fa;
+}
+/* line 1029, src/scss/layout/themes/_base.scss */
+.exex-right-sidebar-wrapper .exex-right-sidebar-project .media-list .media .media-body .media-heading-sub {
+  color: #8bc3f3;
+}
+/* line 1033, src/scss/layout/themes/_base.scss */
+.exex-right-sidebar-wrapper .exex-right-sidebar-project .media-list .media .media-body .media-heading-small {
+  color: #78b9f1;
+}
+/* line 1048, src/scss/layout/themes/_base.scss */
+.exex-right-sidebar-wrapper .exex-right-sidebar-customer .feeds li a {
+  color: #b5d8f7;
+}
+/* line 1050, src/scss/layout/themes/_base.scss */
+.exex-right-sidebar-wrapper .exex-right-sidebar-customer .feeds li a .desc {
+  text-decoration: underline;
+}
+/* line 1054, src/scss/layout/themes/_base.scss */
+.exex-right-sidebar-wrapper .exex-right-sidebar-customer .feeds li .desc {
+  color: #abd4f7;
+}
+/* line 1057, src/scss/layout/themes/_base.scss */
+.exex-right-sidebar-wrapper .exex-right-sidebar-customer .feeds li .date {
+  color: #78b9f1;
+}
+
+/******
+Page Footer
+******/
+/* line 1071, src/scss/layout/themes/_base.scss */
+.page-footer .page-footer-inner {
+  color: #a7adb5;
+}
+/* line 1075, src/scss/layout/themes/_base.scss */
+.page-footer-fixed .page-footer {
+  background-color: #32353b;
+}
+
+@media (min-width: 992px) {
+  /* 992px */
+  /* Sidebar menu closed */
+  /* line 1085, src/scss/layout/themes/_base.scss */
+  .exex-sidebar-menu.exex-sidebar-menu-hover-submenu > li:hover > .sub-menu {
+    box-shadow: 5px 5px rgba(73, 127, 174, 0.2);
+  }
+  /* line 1088, src/scss/layout/themes/_base.scss */
+  .exex-sidebar-menu.exex-sidebar-menu-hover-submenu > li:hover > .sub-menu.sidebar-toggler-wrapper, .exex-sidebar-menu.exex-sidebar-menu-hover-submenu > li:hover > .sub-menu.sidebar-search-wrapper {
+    box-shadow: none;
+  }
+
+  /* line 1097, src/scss/layout/themes/_base.scss */
+  .exex-sidebar-menu.exex-sidebar-menu-closed > li:hover {
+    box-shadow: 5px 5px rgba(73, 127, 174, 0.2);
+  }
+  /* line 1100, src/scss/layout/themes/_base.scss */
+  .exex-sidebar-menu.exex-sidebar-menu-closed > li:hover.sidebar-toggler-wrapper, .exex-sidebar-menu.exex-sidebar-menu-closed > li:hover.sidebar-search-wrapper {
+    box-shadow: none;
+  }
+  /* line 1105, src/scss/layout/themes/_base.scss */
+  .exex-sidebar-menu.exex-sidebar-menu-closed > li:hover > .sub-menu {
+    box-shadow: 5px 5px rgba(73, 127, 174, 0.2);
+  }
+  /* line 1108, src/scss/layout/themes/_base.scss */
+  .exex-sidebar-menu.exex-sidebar-menu-closed > li:hover > .sub-menu.sidebar-toggler-wrapper, .exex-sidebar-menu.exex-sidebar-menu-closed > li:hover > .sub-menu.sidebar-search-wrapper {
+    box-shadow: none;
+  }
+
+  /* Light sidebar menu */
+  /* line 1118, src/scss/layout/themes/_base.scss */
+  .exex-sidebar-menu.exex-sidebar-menu-light.exex-sidebar-menu-closed > li.heading {
+    padding: 0;
+    margin-top: 15px;
+    margin-bottom: 15px;
+    border-top: 1px solid #4e545c !important;
+  }
+
+  /* Fixed Sidebar */
+  /* line 1130, src/scss/layout/themes/_base.scss */
+  .exex-sidebar-fixed:not(.page-footer-fixed) .page-content {
+    border-bottom: 0;
+  }
+  /* line 1134, src/scss/layout/themes/_base.scss */
+  .exex-sidebar-fixed:not(.page-footer-fixed) .page-footer {
+    background-color: #fff;
+  }
+  /* line 1137, src/scss/layout/themes/_base.scss */
+  .exex-sidebar-fixed:not(.page-footer-fixed) .page-footer .page-footer-inner {
+    color: #333;
+  }
+
+  /* Boxed Layout */
+  /* line 1145, src/scss/layout/themes/_base.scss */
+  .page-boxed {
+    background-color: #3b3f46 !important;
+    /* Page container */
+    /* Page sidebar */
+    /* Page footer */
+  }
+  /* line 1149, src/scss/layout/themes/_base.scss */
+  .page-boxed .page-container {
+    background-color: #42474E;
+    border-left: 1px solid #4e545c;
+    border-bottom: 1px solid #4e545c;
+  }
+  /* line 1156, src/scss/layout/themes/_base.scss */
+  .page-boxed.exex-sidebar-reversed .page-container {
+    border-left: 0;
+    border-right: 1px solid #4e545c;
+  }
+  /* line 1163, src/scss/layout/themes/_base.scss */
+  .page-boxed.exex-sidebar-fixed .page-container {
+    border-left: 0;
+    border-bottom: 0;
+  }
+  /* line 1170, src/scss/layout/themes/_base.scss */
+  .page-boxed.exex-sidebar-reversed.exex-sidebar-fixed .page-container {
+    border-left: 0;
+    border-right: 0;
+    border-bottom: 0;
+  }
+  /* line 1180, src/scss/layout/themes/_base.scss */
+  .page-boxed.exex-sidebar-fixed .exex-sidebar {
+    border-left: 1px solid #4e545c;
+  }
+  /* line 1186, src/scss/layout/themes/_base.scss */
+  .page-boxed.exex-sidebar-reversed.exex-sidebar-fixed .exex-sidebar {
+    border-right: 1px solid #4e545c;
+    border-left: 0;
+  }
+  /* line 1195, src/scss/layout/themes/_base.scss */
+  .page-boxed.exex-sidebar-fixed.page-footer-fixed .page-footer {
+    background-color: #3b3f46 !important;
+  }
+  /* line 1198, src/scss/layout/themes/_base.scss */
+  .page-boxed.exex-sidebar-fixed.page-footer-fixed .page-footer .page-footer-inner {
+    color: #a7adb5;
+  }
+
+  /* Sidebar Menu Wirh Hoverable Submenu */
+  /* line 1211, src/scss/layout/themes/_base.scss */
+  .exex-sidebar-menu-hover-submenu li:hover a > .arrow {
+    border-right: 8px solid #3d6a91;
+  }
+  /* line 1214, src/scss/layout/themes/_base.scss */
+  .exex-sidebar-reversed .exex-sidebar-menu-hover-submenu li:hover a > .arrow {
+    border-left: 8px solid #3d6a91;
+  }
+  /* line 1220, src/scss/layout/themes/_base.scss */
+  .exex-sidebar-menu-hover-submenu li:hover > .sub-menu {
+    background: #3d6a91 !important;
+  }
+}
+@media (max-width: 991px) {
+  /* 991px */
+  /* Page sidebar */
+  /* line 1230, src/scss/layout/themes/_base.scss */
+  .exex-sidebar {
+    background-color: #26292d;
+    /* light sidebar */
+  }
+  /* line 1235, src/scss/layout/themes/_base.scss */
+  .exex-sidebar .exex-sidebar-menu > li > a {
+    border-top: 1px solid #42474E;
+  }
+  /* line 1241, src/scss/layout/themes/_base.scss */
+  .exex-sidebar .exex-sidebar-menu > li:hover > a, .exex-sidebar .exex-sidebar-menu > li.open > a {
+    background: #2f3338;
+  }
+  /* line 1247, src/scss/layout/themes/_base.scss */
+  .exex-sidebar .exex-sidebar-menu > li:last-child > a {
+    border-bottom: 0 !important;
+  }
+  /* line 1252, src/scss/layout/themes/_base.scss */
+  .exex-sidebar .exex-sidebar-menu > li .sub-menu {
+    background-color: #26292d !important;
+  }
+  /* line 1258, src/scss/layout/themes/_base.scss */
+  .exex-sidebar .exex-sidebar-menu .sidebar-search input {
+    background-color: #26292d !important;
+  }
+  /* line 1265, src/scss/layout/themes/_base.scss */
+  .exex-sidebar .exex-sidebar-menu.exex-sidebar-menu-light {
+    /* 1st level links */
+  }
+  /* line 1271, src/scss/layout/themes/_base.scss */
+  .exex-sidebar .exex-sidebar-menu.exex-sidebar-menu-light > li:hover > a, .exex-sidebar .exex-sidebar-menu.exex-sidebar-menu-light > li.open > a {
+    background: #2d3035;
+  }
+  /* line 1278, src/scss/layout/themes/_base.scss */
+  .exex-sidebar .exex-sidebar-menu.exex-sidebar-menu-light > li.active > a, .exex-sidebar .exex-sidebar-menu.exex-sidebar-menu-light > li.active.open > a {
+    background: #2d3035;
+  }
+  /* line 1281, src/scss/layout/themes/_base.scss */
+  .exex-sidebar .exex-sidebar-menu.exex-sidebar-menu-light > li.active > a:hover, .exex-sidebar .exex-sidebar-menu.exex-sidebar-menu-light > li.active.open > a:hover {
+    background: #2d3035;
+  }
+  /* line 1287, src/scss/layout/themes/_base.scss */
+  .exex-sidebar .exex-sidebar-menu.exex-sidebar-menu-light > li .sub-menu {
+    background: #26292d !important;
+  }
+  /* line 1294, src/scss/layout/themes/_base.scss */
+  .exex-sidebar .exex-sidebar-menu.exex-sidebar-menu-light > li .sub-menu > li:hover > a, .exex-sidebar .exex-sidebar-menu.exex-sidebar-menu-light > li .sub-menu > li.open > a, .exex-sidebar .exex-sidebar-menu.exex-sidebar-menu-light > li .sub-menu > li.active > a {
+    background: #2d3035 !important;
+  }
+}
+@media (max-width: 480px) {
+  /* 480px */
+  /* line 1307, src/scss/layout/themes/_base.scss */
+  .page-header.navbar {
+    /* Top menu */
+  }
+  /* line 1309, src/scss/layout/themes/_base.scss */
+  .page-header.navbar .top-menu {
+    /* background-color: $bg-color; */
+  }
+  /* line 1312, src/scss/layout/themes/_base.scss */
+  .page-header-fixed-mobile .page-header.navbar .top-menu {
+    background-color: #3598dc;
+  }
+  /* line 1318, src/scss/layout/themes/_base.scss */
+  .page-header.navbar .top-menu .navbar-nav > li.dropdown-user .dropdown-toggle {
+    /*background-color: lighten($header-top-menu-bg-hover-color, 1%);*/
+  }
+  /* line 1321, src/scss/layout/themes/_base.scss */
+  .page-header-fixed-mobile .page-header.navbar .top-menu .navbar-nav > li.dropdown-user .dropdown-toggle {
+    background: none;
+  }
+  /* line 1325, src/scss/layout/themes/_base.scss */
+  .page-header.navbar .top-menu .navbar-nav > li.dropdown-user .dropdown-toggle:hover {
+    background-color: #60aee4;
+  }
+}
+/****
+Boby
+****/
+/****
+ CSS3 Spinner Bar
+****/
+/* line 1343, src/scss/layout/themes/_base.scss */
+.page-spinner-bar > div,
+.block-spinner-bar > div {
+  background: #20c5ad;
+}

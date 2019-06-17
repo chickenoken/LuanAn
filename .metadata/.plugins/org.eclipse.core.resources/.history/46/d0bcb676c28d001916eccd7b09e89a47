@@ -1,0 +1,25 @@
+#salPayForm .slimScrollDiv {
+  height: auto !important;
+  max-height: 431px !important;
+}
+
+#tableSaleReceive {
+  height: auto !important;
+  max-height: 431px !important;
+}
+
+#tableSaleReceive table tbody tr td {
+  padding-bottom: 4px !important;
+  padding-top: 4px !important;
+}
+
+#tableSaleReceive table tbody tr td input[disabled="disabled"] {
+  background: inherit;
+}
+
+table .primary {
+  color: #fff;
+  background-color: #00BCD4 !important;
+  border-top: 1px solid  #00BCD4 !important;
+  border-bottom: 1px solid  #00BCD4 !important;
+}

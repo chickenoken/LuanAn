@@ -1,0 +1,52 @@
+<div class="modal-header">
+  <h3>Thêm nhân Viên</h3>
+</div>
+<div class="modal-body">
+  <div class="row">
+    <div class="form-group">
+      <div class="col-md-4"><span>Tên Nhân Viên</span></div>
+      <div class="col-md-8"><input type="text" ng-model="model.form.control.tenNv" style="width : 100%"></div>
+    </div>
+  </div>
+  <div class="row">
+    <div class="form-group">
+      <div class="col-md-4"><span>Role</span></div>
+      <div class="col-md-8">
+        <div class="radio" ng-model="model.form.control.role">
+          <label class="col-md-4"><input type="radio" name="role" value="admin">admin</label>
+          <label class="col-md-4"><input type="radio" name="role" value="system">system</label>
+          <label class="col-md-4"><input type="radio" name="role" value="employ">employ</label>
+        </div>
+      </div>
+    </div>
+  </div>
+    <div class="row">
+    <div class="form-group">
+      <div class="col-md-4"><span>Tài Khoản</span></div>
+      <div class="col-md-8">
+        <input type="text" ng-model="model.form.control.taiKhoan" style="width : 100%">
+      </div>
+    </div>
+  </div>
+  <div class="row">
+    <div class="form-group">
+      <div class="col-md-4"><span>Mật Khẩu</span></div>
+      <div class="col-md-8">
+        <input type="password" ng-model="model.form.control.matKhau" style="width : 100%">
+      </div>
+    </div>
+  </div>
+  <div class="row">
+    <div class="form-group">
+      <div class="col-md-4"><span>Nhập Lại Mật Khẩu</span></div>
+      <div class="col-md-8">
+        <input type="password" ng-model="model.form.control.matKhauNhap" style="width : 100%">
+      </div>
+    </div>
+  </div>
+
+</div>
+<div class="modal-footer">
+    <button class="btn btn-primary" ng-click="ok()">OK</button>
+    <button class="btn btn-warning" ng-click="cancel()">Cancel</button>
+</div>

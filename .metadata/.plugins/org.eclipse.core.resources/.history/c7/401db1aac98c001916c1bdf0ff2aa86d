@@ -1,0 +1,1526 @@
+    /**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision: 1.0 $  $Date: 2014/06/12 $
+ * @author Quang-Thien
+ */
+
+'use strict';
+
+exexSMSApp.factory('SalEstimateControlModel', [ 'BaseModel', '$rootScope', function(BaseModel, $rootScope) {
+
+    var model = BaseModel.getInstance();
+
+    model.form = {
+        salEstimateControl : {
+            estimateSno : '',
+            recodeNo : '',
+            custCd : '',
+            custName : '',
+            siteCd : '',
+            controlCd:'',
+            rcvSno : '',
+            salesSno : '',
+            orderSno : '',
+            stockSno : '',
+            estimateDate : '',
+            dueDate : '',
+            dueDateSub : '',
+            projectSno : '',
+            projectName : '',
+            estimateName : '',
+            addressInfoCustomer : '',
+            addressInfoDepart : '',
+            addressInfoOwner : '',
+            addressInfoPosition : '',
+            prefix : '2',
+            delPlanDate : '',
+            delPlanDateSub : '',
+            delPlace : '',
+            delPlaceSub : '貴社　指定場所',
+            salesGroupCd : '',
+            salesUserCd : '',
+            estimateSubmitDate : '',
+            estimateSubmitProcess : '',
+            remark : '',
+            taxRate : '',
+            creatingClass : '',
+            documentStatus : '',
+            resume : '',
+            dailyCloseFlag : false
+        },
+        listInvoice: [],
+        listUD00022 : [],
+        listMstUser : []
+    };
+
+    model.hidden = {
+        custCd: '',
+        discountRate : '',
+        custRank : '',
+        screenMode : 'INSERT',
+        screenName : 'EXEX01',
+        exportName: 'EXEX01',
+        version : '',
+        loginSession : '',
+        isDisabled : false,
+        isSalEXEX : false,
+        isSalEXEXProcess : false,
+        isCopy : false,
+        //TODO this will store all url from this screen
+        redirectUrl : 'SalEstimateList',
+        // END TODO
+        backMode : false,
+        ptlMode : false,
+        ptlScreen : '',
+        documentStatus : '',
+        isSubmited : false,
+        pPJM : false,
+        pPJMData : '',
+        pJPI : false,
+        isCopyDataProcess :  false,
+        isFileChange : false,
+        parentProjectSno : ''
+    };
+
+    return model;
+} ]);
+
+/**
+ * SAL ESTIMATE CONTROLLER
+ */
+exexSMSApp.controller('salEstimateControlCtrl',
+        ['$rootScope', '$scope', '$timeout', '$filter', 'SalEstimateControlModel', 'SalDetailsControlModel', 'SalEstimateControlService', 'DialogsService', 'RouteService', 'HeaderModel', 'Messages','ServerService',
+         function($rootScope, $scope, $timeout, $filter, SalEstimateControlModel, SalDetailsControlModel, SalEstimateControlService, DialogsService, RouteService, HeaderModel, Messages, ServerService){
+
+    $scope.model = SalEstimateControlModel;
+    $scope.modelDetailsControl = SalDetailsControlModel;
+    $scope.modelHeader = HeaderModel;
+
+    /**
+     * 初期
+     */
+    $scope.init = function() {
+        $scope.model.hidden.loginSession = angular.fromJson(sessionStorage.getItem("session"));
+        var estimateInfo = angular.fromJson(sessionStorage.getItem("salEstimate"));
+        var projectInfo = angular.fromJson(sessionStorage.getItem("projectSno"));
+        var processDetail = angular.fromJson(sessionStorage.getItem("processDetail"));
+        var customerInfo = angular.fromJson(sessionStorage.getItem("customerInfo"));
+        var fromSalEXEX = angular.fromJson(sessionStorage.getItem("fromSalEXEX"));
+
+        //TODO from list
+        if(!ValidateUtil.isValidTextEmpty(estimateInfo)){
+            $scope.model.form.salEstimateControl.custCd = estimateInfo.custCd;
+            $scope.model.hidden.custCd = estimateInfo.custCd;
+            $scope.model.form.salEstimateControl.estimateSno = estimateInfo.estimateSno;
+            $scope.model.hidden.backMode = estimateInfo.backMode;
+            $scope.model.hidden.screenMode = estimateInfo.screenMode;
+            $scope.model.hidden.ptlMode = estimateInfo.ptlMode;
+            $scope.model.hidden.ptlScreen = estimateInfo.ptlScreen;
+            $scope.model.hidden.isDisabled = estimateInfo.isDisabled;
+            $scope.model.hidden.documentStatus = estimateInfo.documentStatus;
+            $scope.modelDetailsControl.hidden.screenMode = estimateInfo.screenMode;
+            $scope.modelDetailsControl.hidden.isDisabled = estimateInfo.isDisabled;
+            $scope.model.hidden.redirectUrl = StringUtils.isEmpty(estimateInfo.redirectUrl) ? 'SalEstimateList' : estimateInfo.redirectUrl;
+            if(!ValidateUtil.isValidTextEmpty(estimateInfo.businessCd)){
+                $scope.model.hidden.pPJM = true;
+                $scope.model.hidden.pPJMData = estimateInfo;
+                $scope.model.hidden.redirectUrl = estimateInfo.redirectUrl;
+            }
+            $scope.inquiry(estimateInfo);
+        }
+
+        if(!ValidateUtil.isValidTextEmpty(projectInfo)){
+            $scope.model.form.salEstimateControl.projectSno = projectInfo.projectSno;
+            $scope.model.form.salEstimateControl.projectName = projectInfo.controlCd;
+            if(StringUtils.isEmpty(projectInfo.connectWorkNo)) {
+                $scope.model.form.salEstimateControl.estimateName = projectInfo.projectName;
+            }
+            $scope.model.form.salEstimateControl.custCd = projectInfo.custCd;
+            $scope.model.form.salEstimateControl.custName = projectInfo.custName;
+            $scope.model.form.salEstimateControl.billaddressNo = projectInfo.billaddressNo;
+            $scope.model.form.salEstimateControl.billaddressName = projectInfo.billaddressName;
+            $scope.model.form.salEstimateControl.billCloseTypeName = projectInfo.billCloseTypeName;
+
+            $scope.model.hidden.isSalEXEX = projectInfo.isSalEXEX;
+            // Call this function when From Project List, EXEX01.02.03
+            if(projectInfo.isSalEXEX || (!StringUtils.isEmpty(projectInfo.screenName) && (projectInfo.screenName === 'EXEX01' || projectInfo.screenName === 'EXEX02' || projectInfo.screenName === 'EXEX03'))){
+                $scope.onChangeCustomer($scope.model.form.salEstimateControl.custCd, false);
+            }
+
+            // TODO check goto from process
+            if(!ValidateUtil.isValidTextEmpty(projectInfo.pPJM)){
+                $scope.model.hidden.pPJM = true;
+                $scope.model.hidden.isSalEXEXProcess = projectInfo.isSalEXEXProcess;
+                $scope.model.hidden.pPJMData = projectInfo;
+                $scope.model.hidden.redirectUrl = projectInfo.redirectUrl;
+                $scope.model.form.salEstimateControl.custCd = projectInfo.custCd;
+
+                // get data of project to set to data estimate if connectWorkNo from process is empty
+                if(StringUtils.isEmpty(projectInfo.connectWorkNo)){
+                    $scope.onChangeProject(projectInfo.projectSno);
+                }
+
+                if(StringUtils.isEmpty(projectInfo.workNo) && !StringUtils.isEmpty(projectInfo.connectWorkNo) && !StringUtils.isEmpty(projectInfo.screenName)){
+                    if(projectInfo.screenName === 'EXEX01'){
+                        $scope.model.form.salEstimateControl.estimateSno = projectInfo.connectWorkNo;
+                    }else if(projectInfo.screenName === 'EXEX02'){
+                        $scope.model.form.salEstimateControl.rcvSno = projectInfo.connectWorkNo;
+                    }else if(projectInfo.screenName === 'EXEX03'){
+                        $scope.model.form.salEstimateControl.salesSno = projectInfo.connectWorkNo;
+                    }else if(projectInfo.screenName === 'EXEX06'){
+                        $scope.model.form.salEstimateControl.orderSno = projectInfo.connectWorkNo;
+                    }else if(projectInfo.screenName === 'EXEX07'){
+                        $scope.model.form.salEstimateControl.stockSno = projectInfo.connectWorkNo;
+                    }
+
+                    var paramSub = {
+                        custCd : $scope.model.form.salEstimateControl.custCd,
+                        estimateSno : $scope.model.form.salEstimateControl.estimateSno,
+                        rcvSno : $scope.model.form.salEstimateControl.rcvSno,
+                        salesSno : $scope.model.form.salEstimateControl.salesSno,
+                        orderSno : $scope.model.form.salEstimateControl.orderSno,
+                        stockSno : $scope.model.form.salEstimateControl.stockSno,
+                        recodeNo : '',
+                        projectSno : $scope.model.form.salEstimateControl.projectSno,
+                        screenMode : 'INSERT',
+                        screenName : projectInfo.screenName,
+                        toScreen : projectInfo.toScreen
+                    };
+                    $scope.loadSalCommonData(paramSub);
+                }
+
+                if(!ValidateUtil.isValidTextEmpty(projectInfo.workNo)){
+                    var params = {
+                            'estimateSno' : projectInfo.workNo,
+                            'recodeNo' : projectInfo.recodeNo,
+                            'backMode' : false,
+                            'screenMode' : 'VIEW',
+                            'isDisabled' : true,
+                            'ptlMode' : false
+                    };
+                    $scope.inquiry(params);
+                }
+            }
+            // TODO end
+        }
+
+        // TODO check goto from ProjectInformation
+        if(!ValidateUtil.isValidTextEmpty(processDetail)){
+            $scope.model.form.salEstimateControl.estimateSno = processDetail.estimateSno;
+            $scope.model.form.salEstimateControl.recodeNo = processDetail.recodeNo;
+            $scope.model.form.salEstimateControl.projectSno = processDetail.projectSno;
+            $scope.model.hidden.documentStatus = processDetail.documentStatus;
+            $scope.model.hidden.screenMode = processDetail.screenMode;
+            $scope.model.hidden.isDisabled = processDetail.isDisabled;
+            $scope.model.hidden.pJPI = processDetail.pJPI;
+            $scope.modelDetailsControl.hidden.pJPI = processDetail.pJPI;
+            $scope.inquiry(processDetail);
+        }
+
+        // TODO check goto from CrmList
+        if(!ValidateUtil.isValidTextEmpty(customerInfo)){
+            $scope.model.form.salEstimateControl.custCd = customerInfo.custCd;
+            $scope.model.form.salEstimateControl.custName = customerInfo.custName;
+            $scope.onChangeCustomer($scope.model.form.salEstimateControl.custCd, false);
+        }
+
+        // TODO from 5 EXEX screen
+        if(!ValidateUtil.isValidTextEmpty(fromSalEXEX)){
+            $scope.model.form.salEstimateControl.custCd = fromSalEXEX.custCd;
+            $scope.model.hidden.custCd = fromSalEXEX.custCd;
+            $scope.model.form.salEstimateControl.custName = fromSalEXEX.custName;
+            $scope.model.form.salEstimateControl.rcvSno = fromSalEXEX.rcvSno;
+            $scope.model.form.salEstimateControl.salesSno = fromSalEXEX.salesSno;
+            $scope.model.form.salEstimateControl.orderSno = fromSalEXEX.orderSno;
+            $scope.model.form.salEstimateControl.stockSno = fromSalEXEX.stockSno;
+            $scope.model.form.salEstimateControl.recodeNo = fromSalEXEX.recodeNo;
+            $scope.model.form.salEstimateControl.projectSno = fromSalEXEX.projectSno;
+            $scope.modelDetailsControl.hidden.screenMode = fromSalEXEX.screenMode;
+            $scope.modelDetailsControl.hidden.isDisabled = fromSalEXEX.isDisabled;
+            $scope.model.hidden.screenMode = fromSalEXEX.screenMode;
+            if(fromSalEXEX.screenName !== 'SfaProjectControl'){
+                $scope.model.hidden.screenName = fromSalEXEX.screenName;
+            }
+            $scope.model.hidden.redirectUrl = fromSalEXEX.redirectUrl;
+            $scope.model.hidden.isSalEXEX = fromSalEXEX.isSalEXEX;
+            var flgSelect = false;
+            if(fromSalEXEX.screenName === 'SfaProjectControl'){
+                flgSelect = true;
+            }
+            if(fromSalEXEX.screenMode === 'INSERT'){
+                $scope.model.form.salEstimateControl.estimateSno = '';
+                $scope.model.form.salEstimateControl.estimateName = fromSalEXEX.salDataName;
+                if(fromSalEXEX.screenName !== 'SfaProjectControl'){
+                    $scope.loadSalCommonData(fromSalEXEX);
+                }
+                if( fromSalEXEX.screenName !== 'EXEX06' && fromSalEXEX.screenName !== 'EXEX07'){
+                    $scope.onChangeCustomer($scope.model.form.salEstimateControl.custCd, flgSelect);
+                }
+            }
+            if(fromSalEXEX.screenMode === 'VIEW'){
+                $scope.model.form.salEstimateControl.estimateSno = fromSalEXEX.estimateSno;
+                var salEstimate = {
+                        estimateSno :  $scope.model.form.salEstimateControl.estimateSno,
+                        custCd : $scope.model.form.salEstimateControl.custCd,
+                        recodeNo : '',
+                        screenMode : $scope.model.hidden.screenMode,
+                        isDisabled : true,
+                };
+                $scope.inquiry(salEstimate);
+            }
+        }
+        $scope.getInit();
+    };
+
+    $scope.$on("SalEstimateControl#editEstimate", function(evt, param) {
+        $scope.model.hidden.screenMode = param.screenMode;
+        $scope.model.hidden.isDisabled = param.isDisabled;
+        $scope.modelDetailsControl.hidden.screenMode = param.screenMode;
+        $scope.modelDetailsControl.hidden.ptlMode = param.ptlMode;
+        $scope.modelDetailsControl.hidden.isDisabled = param.isDisabled;
+    });
+
+    $scope.$on("SalEstimateControl#editEstimateWF", function(evt, param) {
+        $scope.model.hidden.screenMode = param.screenMode;
+        $scope.model.hidden.isDisabled = param.isDisabled;
+        $scope.modelDetailsControl.hidden.screenMode = param.screenMode;
+        $scope.modelDetailsControl.hidden.isDisabled = param.isDisabled;
+        param.salEstimate.backMode = $scope.model.hidden.pPJM ? false : true;
+        param.salEstimate.ptlMode = $scope.model.hidden.ptlMode;
+        $scope.inquiry(param.salEstimate);
+    });
+
+    /**
+     * @name loadSalCommonData
+     * @description load EXEX common data
+     * @param  {JSON} param
+     * @return {JSON}
+     */
+    $scope.loadSalCommonData = function(param){
+        SalEstimateControlService.loadSalCommonData(param).then(
+            function(result) {
+                if(!ValidateUtil.isValidTextEmpty(result.data.warning)){
+                    DialogsService.showWarning(Messages.getMessage('check.error'), result.data.warning);
+                    return;
+                }
+                $scope.loadCommonDataToView(result.data.detail, result.data.listDetail);
+            }
+        );
+    };
+
+    /**load common data to view*/
+    $scope.loadCommonDataToView = function(exexDetail, listDetail){
+
+        $scope.model.form.salEstimateControl.projectSno = exexDetail.projectSno;
+        $scope.model.form.salEstimateControl.projectName = exexDetail.projectName;
+        $scope.model.form.salEstimateControl.refEstimateSno = exexDetail.estimateSno;
+        $scope.model.form.salEstimateControl.refEstimateName = exexDetail.estimateName;
+
+        $scope.model.form.salEstimateControl.estimateName = exexDetail.estimateName;
+        $scope.model.form.salEstimateControl.estimateDate = exexDetail.estimateDate;
+        $scope.model.form.salEstimateControl.deliveryTerms = exexDetail.deliveryTerms;
+        $scope.model.form.salEstimateControl.deliveryCompany = exexDetail.deliveryCompany;
+        $scope.model.form.salEstimateControl.paymentTerms = exexDetail.paymentTerms;
+        $scope.model.form.salEstimateControl.addressInfoOwner = exexDetail.addressInfoOwner;
+        $scope.model.form.salEstimateControl.addressInfoFax = exexDetail.addressInfoFax;
+        $scope.model.form.salEstimateControl.custCd = exexDetail.custCd;
+        $scope.model.form.salEstimateControl.custName = exexDetail.custName;
+        $scope.model.form.salEstimateControl.addressInfoCustomer = exexDetail.custName;
+        $scope.model.form.salEstimateControl.taxRate = exexDetail.taxRate;
+        $scope.model.form.salEstimateControl.taxType = exexDetail.taxType;
+        $scope.model.form.salEstimateControl.delPlace = exexDetail.delPlace;
+        $scope.model.form.salEstimateControl.delPlaceName = exexDetail.delPlaceName;
+        $scope.model.form.salEstimateControl.remark = exexDetail.remark;
+        $scope.model.form.salEstimateControl.rcvSno = exexDetail.rcvSno;
+        $scope.model.form.salEstimateControl.billaddressNo = exexDetail.billaddressNo;
+        $scope.model.form.salEstimateControl.billaddressName = exexDetail.billaddressName;
+        $scope.model.form.salEstimateControl.billCloseTypeName = exexDetail.billCloseTypeName;
+
+        $scope.model.form.salEstimateControl.dueDateSub = exexDetail.dueDateSub;
+        $scope.model.form.salEstimateControl.delPlaceSub = exexDetail.delPlaceSub;
+        $scope.model.form.salEstimateControl.delPlanDateSub = exexDetail.delPlanDateSub;
+        $scope.model.form.salEstimateControl.productName = exexDetail.productName;
+        $scope.model.form.salEstimateControl.productNo = exexDetail.productNo;
+        $scope.model.form.salEstimateControl.invoiceNo = exexDetail.invoiceNo;
+        $scope.model.form.salEstimateControl.resume = exexDetail.resume;
+        $scope.model.form.salEstimateControl.dailyCloseFlag = exexDetail.dailyCloseFlag == '1' ?  true : false;
+        $scope.model.form.salEstimateControl.foreignCurrCd = exexDetail.foreignCurrCd;
+        $scope.model.form.salEstimateControl.foreignCurrRate = exexDetail.foreignCurrRate;
+        $scope.model.form.salEstimateControl.salesSno = exexDetail.salesSno;
+        $scope.model.form.salEstimateControl.orderSno = exexDetail.orderSno;
+        $scope.model.form.salEstimateControl.stockSno = exexDetail.stockSno;
+        $scope.model.form.salEstimateControl.salesGroupCd = exexDetail.salesGroupCd;
+        $scope.model.form.salEstimateControl.salesUserCd = exexDetail.salesUserCd;
+
+        $scope.resetDetailList($scope.model.hidden.screenMode,listDetail);
+
+    }
+
+    /**
+     *  project event change
+     */
+    $scope.onChangeProject = function(projectSno){
+        $scope.model.form.salEstimateControl.refEstimateSno = "";
+        $scope.model.form.salEstimateControl.refEstimateName = "";
+        if(!StringUtils.isEmpty(projectSno)) {
+            ServerService.doPost('SalCommon/onChangeProject', projectSno).then(
+                function(okResult) {
+                    var error = okResult.data.failed;
+                    if (!StringUtils.isEmpty(error)) {
+                        DialogsService.showError(Messages.getMessage('system.error'), error);
+                    } else {
+                        var projectInfo = okResult.data.projectInfo;
+                        $scope.model.form.salEstimateControl.addressInfoCustomer = projectInfo.custName;
+                        $scope.model.form.salEstimateControl.custCd = projectInfo.custCd;
+                        $scope.model.form.salEstimateControl.custName = projectInfo.custControlCd + " " + projectInfo.custName;
+                        $scope.model.form.salEstimateControl.billaddressNo = projectInfo.billaddressNo;
+                        $scope.model.form.salEstimateControl.billaddressName = projectInfo.billaddressName;
+                        $scope.model.form.salEstimateControl.billCloseTypeName = projectInfo.billCloseTypeName;
+
+                        $scope.model.form.salEstimateControl.delPlace = projectInfo.delPlace;
+                        $scope.model.form.salEstimateControl.delPlaceName = projectInfo.delPlaceName;
+
+                        $scope.model.form.salEstimateControl.productNo = projectInfo.productNo;
+                        $scope.model.form.salEstimateControl.productName = projectInfo.productName;
+
+                        if(!StringUtils.isEmpty(projectInfo.parentProjectSno)) {
+                            $scope.model.form.salEstimateControl.estimateName = projectInfo.parentProjectName;
+                        } else {
+                            $scope.model.form.salEstimateControl.estimateName = projectInfo.projectName;
+                        }
+                    }
+                }
+            );
+        }
+    };
+
+    /**
+     * 初期表示
+     */
+    $scope.getInit = function(){
+        SalEstimateControlService.initData(null).then(
+            function(result) {
+                var error =  result.data.failed;
+                if(!ValidateUtil.isValidTextEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                }
+                $scope.model.form.listUD00013 = result.data.listUD00013;
+                $scope.model.form.listUD00017 = result.data.listUD00017;
+                $scope.model.form.listUD00018 = result.data.listUD00018;
+                $scope.model.form.listUD00019 = result.data.listUD00019;
+                $scope.model.form.listUD00022 = result.data.listUD00022;
+                $scope.model.form.listUD00062 = result.data.listUD00062;
+                $scope.model.form.listUD00074 = result.data.listUD00074;
+                $scope.model.form.listInvoice = result.data.listInvoice;
+                $scope.model.form.listMstUser = result.data.listSalesUser;
+                if($scope.model.hidden.screenMode === 'INSERT') {
+                    $scope.model.form.salEstimateControl.estimateDate = new Date();
+                    var sessionLogin = angular.fromJson(sessionStorage.getItem("session"));
+                    if(!ValidateUtil.isValidTextEmpty(sessionLogin)){
+                        $scope.model.form.salEstimateControl.salesUserCd = sessionLogin.userCd;
+                    }
+                }
+            }
+        );
+    };
+
+    /**
+     * コードによってを選択する
+     */
+    $scope.inquiry = function(estimateInfo){
+        delete estimateInfo.ptlScreen;
+        SalEstimateControlService.inquiry(estimateInfo).then(
+            function(result) {
+                var error =  result.data.failed;
+                var warning =  result.data.warning;
+                if(!ValidateUtil.isValidTextEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                }else if(!ValidateUtil.isValidTextEmpty(warning)){
+                    DialogsService.showWarning(Messages.getMessage('check.error'), warning).result.then(function() {
+                        sessionStorage.removeItem("salEstimate");
+                        RouteService.gotoUrl('SalEstimateList');
+                    });
+                    return;
+                }
+                // TODO check mode process view -> edit
+                if(null === sessionStorage.getItem("salEstimate") && $scope.model.hidden.pPJM){
+                    $scope.model.hidden.backMode = false;
+                    $scope.model.hidden.screenMode = 'VIEW';
+                    $scope.model.hidden.ptlMode = false;
+                    $scope.model.hidden.isDisabled = true;
+                    $scope.model.hidden.version = result.data.version;
+                    $scope.model.hidden.documentStatus = $scope.model.hidden.pPJMData.documentStatus;
+                    $scope.modelDetailsControl.hidden.isDisabled = true;
+                    $scope.modelDetailsControl.hidden.screenMode = 'VIEW';
+                }else{
+                    $scope.model.hidden.backMode = true;
+                    $scope.model.hidden.screenMode = estimateInfo.screenMode;
+                    $scope.model.hidden.ptlMode = estimateInfo.ptlMode;
+                    $scope.model.hidden.isDisabled = estimateInfo.isDisabled;
+                    $scope.model.hidden.version = result.data.version;
+                    $scope.modelDetailsControl.hidden.isDisabled = estimateInfo.isDisabled;
+                    $scope.modelDetailsControl.hidden.screenMode = estimateInfo.screenMode;
+                }
+                $scope.model.hidden.isCopyDataProcess = result.data.isCopyDataProcess;
+
+                var estimate = result.data.estimate;
+                $scope.model.form.salEstimateControl = estimate;
+                $scope.model.form.salEstimateControl.dailyCloseFlag = estimate.dailyCloseFlag == '1' ? true : false;
+
+                $scope.model.hidden.documentStatus = result.data.estimate.documentStatus;
+
+                $scope.resetDetailList('VIEW',result.data.estimateDetail);
+
+                $scope.modelDetailsControl.form.sumGrossMargin = result.data.estimate.grossMargin;
+                $scope.modelDetailsControl.form.sumGrossMarginRate = result.data.estimate.grossMarginRate;
+                $scope.modelDetailsControl.form.sumFreeTaxPriceTmp = result.data.estimate.freeTaxSumPrice;
+                $scope.modelDetailsControl.form.sumTax = result.data.estimate.sumTax;
+                $scope.modelDetailsControl.form.sumPrice = result.data.estimate.sumPrice;
+                $scope.modelDetailsControl.form.taxRate = result.data.estimate.taxRate.toString();
+                $scope.modelDetailsControl.form.rounding = $scope.model.hidden.loginSession.rounding;
+                $scope.model.hidden.parentProjectSno = result.data.estimate.parentProjectSno;
+
+                $scope.modelDetailsControl.form.discountValue = result.data.estimate.discountValue;
+                $scope.modelDetailsControl.form.taxInclusiveFixedPrice = result.data.estimate.taxInclusiveFixedPrice;
+                $scope.modelDetailsControl.form.taxExclusiveFixedPrice = result.data.estimate.taxExclusiveFixedPrice;
+                $scope.modelDetailsControl.form.sumTaxFixedPrice = result.data.estimate.sumTaxFixedPrice;
+                $scope.modelDetailsControl.form.freeTaxSumFixedPrice = result.data.estimate.freeTaxSumFixedPrice;
+                $scope.modelDetailsControl.form.sumFixedPrice = result.data.estimate.sumFixedPrice;
+
+            }
+        );
+    };
+
+    /**
+     * address info customer event change
+     */
+    $scope.onChangeCustomer = function(custCd, flgSelect) {
+        if(flgSelect){
+            $scope.model.form.salEstimateControl.billaddressNo = '';
+            $scope.model.form.salEstimateControl.billaddressName = '';
+            $scope.model.form.salEstimateControl.billCloseTypeName = '';
+        }
+        var params = {
+            custCd : custCd
+        };
+        if(!StringUtils.isEmpty(custCd)){
+            SalEstimateControlService.onChangeCustomer(params).then(
+                function(okResult) {
+                    if(!ValidateUtil.isValidTextEmpty(okResult.data.failed)){
+                        DialogsService.showError(Messages.getMessage('system.error'), okResult.data.failed);
+                        return;
+                    } else  {
+                        $scope.model.hidden.discountRate = okResult.data.mstCustomer.discountRate;
+                        $scope.model.hidden.custRank = okResult.data.mstCustomer.custRank;
+                        $scope.model.form.salEstimateControl.addressInfoCustomer = okResult.data.mstCustomer.custName;
+                        if(flgSelect){
+                            $rootScope.$broadcast("OnChange#BargainCust", {custCd : custCd});
+                        }
+                    }
+                }
+            );
+        } else{
+            $scope.model.hidden.discountRate = 0;
+            $scope.model.hidden.custRank = '';
+            $scope.model.form.salEstimateControl.addressInfoCustomer = '';
+        }
+    };
+
+    /**
+     * estimate date event change
+     */
+    $scope.$watchCollection('model.form.salEstimateControl.estimateDate', function(){
+        if($scope.model.hidden.screenMode === 'VIEW'){
+            return;
+        }
+
+        var estimateDate = $scope.model.form.salEstimateControl.estimateDate;
+        $scope.modelDetailsControl.hidden.issueDate = $scope.model.form.salEstimateControl.estimateDate;
+        if(!ValidateUtil.isValidTextEmpty(estimateDate)){
+            estimateDate = new Date(estimateDate);
+            SalEstimateControlService.getTaxRate(estimateDate).then(
+                function(result) {
+                    var error = result.data.failed;
+                    if(!ValidateUtil.isValidTextEmpty(error)){
+                        DialogsService.showError(Messages.getMessage('system.error'), error);
+                        return;
+                    }
+                    $scope.model.form.salEstimateControl.taxRate = result.data.taxRate;
+                    $rootScope.getTaxRate($scope.model.form.salEstimateControl.taxRate);
+                    $scope.getForeignCurrencyRate($scope.model.form.salEstimateControl);
+                }
+            );
+        }
+    });
+
+    $scope.init();
+
+    /**
+     *なし一覧チェック
+     */
+    $scope.validationListEmpty = function(listDetail){
+        var length = 0;
+        angular.forEach(listDetail, function(item, i){
+            if(!ValidateUtil.isValidTextEmpty(item.itemName)){
+                length += 1;
+            }
+        });
+        return length;
+    };
+
+    /**
+     * 見積を登録する
+     */
+    $scope.insert = function(paramControl, paramDetails, documentStatus, formInvalid){
+
+        $scope.model.hidden.isSubmited = true;
+        $scope.modelDetailsControl.hidden.isSubmitedDetail = $scope.model.hidden.isSubmited;
+
+        if (formInvalid) {
+            return;
+        }
+
+        if(paramDetails.form.sumPrice == 'Overflow Error'){
+            DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W10001'));
+            return;
+        }
+
+        if(paramDetails.form.sumGrossMarginRate == 'Overflow Error'){
+            DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W10003'));
+            return;
+        }
+
+        var paramsControl = $scope.convertToJSONControl(paramControl,paramDetails);
+        delete paramsControl.createUser;
+        var paramsDetail = $scope.convertToJSONDetails(paramDetails);
+
+        /** if list detail isEmpty show this message */
+        if($scope.validationListEmpty(paramsDetail) == 0){
+            DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00046'));
+            $scope.resetDetailList('', null);
+            return;
+        }
+
+        //TODO check has Project has process
+        if(!ValidateUtil.isValidTextEmpty($scope.model.hidden.pPJMData)){
+            if($scope.model.hidden.pPJMData.workflowFlag){
+                DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('W00231')).result.then(function(btn){
+                    $scope.insertServer(paramsControl, paramsDetail, '01');
+                });
+            }else{
+                DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage($scope.checkEXEXSno('S00003'))).result.then(function(btn){
+                    $scope.insertServer(paramsControl, paramsDetail, '01');
+                });
+            }
+        }else{
+            SalEstimateControlService.checkWorkFlow({}).then(
+                function(result) {
+                    var workFlow = result.data.workFlow;
+                    if(!ValidateUtil.isValidTextEmpty(documentStatus) && angular.equals(documentStatus, '01')){
+                        workFlow = '0000000000';
+                    }
+                    if(angular.equals(workFlow.slice(0,1), '1')){
+                        var options = {size: '875'};
+                        var msgConfirm = $scope.checkEXEXSno('S00003');
+                        var param = {
+                                screen : 'EXEX01',
+                                data : paramsControl,
+                                listDetailData : paramsDetail,
+                                mode : 'insert',
+                                workNo : '',
+                                recodeNo : 1,
+                                version : $scope.model.hidden.version,
+                                msgConfirm : msgConfirm
+                        };
+                        DialogsService.showDialog('PtlRequest', 'ptlRequestCtrl', param, options);
+                    }else{
+                        DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage($scope.checkEXEXSno('S00003'))).result.then(function(btn){
+                            $scope.insertServer(paramsControl, paramsDetail, documentStatus);
+                        });
+                    }
+                }
+            );
+        }
+    };
+
+    /**
+     * insert estimate
+     */
+    $scope.insertServer = function(paramsControl, paramsDetail, documentStatus){
+        var params = paramsControl;
+        delete params.version;
+        params.documentStatus = documentStatus;
+        params.detailEstimateList = angular.copy(paramsDetail);
+        SalEstimateControlService.insert(params).then(
+            function(result) {
+                var warning =  result.data.warning;
+                var success = result.data.success;
+                if(!ValidateUtil.isValidTextEmpty(success)){
+                    var salEstimate = {
+                            estimateSno :  result.data.salEstimate,
+                            custCd : result.data.custCd,
+                            recodeNo : 1,
+                            screenMode : "VIEW",
+                            backMode : $scope.model.hidden.pPJM ? false : true,
+                            isDisabled : true,
+                            ptlMode : false,
+                            ptlScreen : '',
+                            redirectUrl : $scope.model.hidden.redirectUrl
+                    };
+
+                    sessionStorage.setItem("salEstimate", JSON.stringify(salEstimate));
+                    DialogsService.showNotify(Messages.getMessage('title.info'), success)
+                        .result.then(function(btn){
+                            $scope.inquiry(salEstimate);
+                        }
+                    );
+                } else if(!ValidateUtil.isValidTextEmpty(warning)){
+                    DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                    return;
+                }
+            }
+        );
+    };
+
+    /**
+     * 見積を編集する
+     */
+    $scope.update = function(paramControl, paramDetails, documentStatus,formInvalid){
+        /**
+         * check validation main form
+         */
+        $scope.model.hidden.isSubmited = true;
+        $scope.modelDetailsControl.hidden.isSubmitedDetail = $scope.model.hidden.isSubmited;
+        if (formInvalid) {
+            return;
+        }
+
+        if($scope.modelDetailsControl.form.salDetailControl.sumPrice == 'Overflow Error'){
+            DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W10001'));
+            return;
+        }
+
+        if($scope.modelDetailsControl.form.salDetailControl.sumGrossMarginRate == 'Overflow Error'){
+            DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W10003'));
+            return;
+        }
+
+        var paramsControl = $scope.convertToJSONControl(paramControl,paramDetails);
+        delete paramsControl.validFlag;
+        delete paramsControl.lastUpdDate;
+        delete paramsControl.lastUpdUser;
+        var paramsDetail = $scope.convertToJSONDetails(paramDetails);
+        var confirmUpdate = Messages.getMessage('S00004');
+
+        /** if list detail isEmpty show this message */
+        if($scope.validationListEmpty(paramsDetail) == 0){
+            DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00046'));
+            $scope.resetDetailList('', null);
+            return;
+        }
+        //TODO check has Project has process
+        if(!ValidateUtil.isValidTextEmpty($scope.model.hidden.pPJMData)){
+            if($scope.model.hidden.pPJMData.workflowFlag){
+                DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('W00231')).result.then(function(btn){
+                    $scope.updateServer(paramsControl, paramsDetail, '01');
+                });
+            }else{
+                DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage($scope.checkEXEXSno('S00004'))).result.then(function(btn){
+                    $scope.updateServer(paramsControl, paramsDetail, '01');
+                });
+            }
+        }else{
+            SalEstimateControlService.checkWorkFlow({}).then(
+                function(result) {
+                    var workFlow = result.data.workFlow;
+                    if(angular.equals(workFlow.slice(0,1), '1') && ValidateUtil.isValidTextEmpty(documentStatus)){
+                        paramsControl.documentStatus = '';
+                        var options = {size: '875'};
+                        var msgConfirm = $scope.checkEXEXSno('S00004');
+                        var param = {
+                                screen : 'EXEX01',
+                                data : paramsControl,
+                                listDetailData : paramsDetail,
+                                mode : 'update',
+                                workNo : paramsControl.estimateSno,
+                                recodeNo : paramsControl.recodeNo,
+                                version : $scope.model.hidden.version,
+                                documentStatus : $scope.model.hidden.documentStatus,
+                                msgConfirm : msgConfirm
+                        };
+                        DialogsService.showDialog('PtlRequest', 'ptlRequestCtrl', param,options).result.then(function(param) {});
+                    }else{
+                        DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage($scope.checkEXEXSno('S00004'))).result.then(function(btn){
+                            $scope.updateServer(paramsControl, paramsDetail, documentStatus);
+                        });
+                    }
+                }
+            );
+        }
+    };
+
+    $scope.checkEXEXSno = function(defaultMsg){
+        if(!ValidateUtil.isValidTextEmpty($scope.model.hidden.custCd)
+                && ($scope.model.hidden.custCd !== $scope.model.form.salEstimateControl.custCd)
+                && (($scope.model.hidden.isCopy && ValidateUtil.isValidTextEmpty($scope.model.form.salEstimateControl.estimateSno) )
+                || !ValidateUtil.isValidTextEmpty($scope.model.form.salEstimateControl.rcvSno)
+                || !ValidateUtil.isValidTextEmpty($scope.model.form.salEstimateControl.salesSno)
+                || !ValidateUtil.isValidTextEmpty($scope.model.form.salEstimateControl.orderSno)
+                || !ValidateUtil.isValidTextEmpty($scope.model.form.salEstimateControl.stockSno)
+                || !ValidateUtil.isValidTextEmpty($scope.model.form.salEstimateControl.projectSno))){
+            defaultMsg = 'W00254';
+        }
+        return defaultMsg;
+    };
+
+
+    /**
+     * update estimate
+     */
+    $scope.updateServer = function(paramsControl, paramsDetail, documentStatus){
+        var params = paramsControl;
+        paramsControl.documentStatus = documentStatus;
+        params.detailEstimateList = angular.copy(paramsDetail);
+        SalEstimateControlService.update(params).then(
+            function(result) {
+                var warning =  result.data.warning;
+                var success = result.data.success;
+                if(!ValidateUtil.isValidTextEmpty(success)){
+                    var salEstimate = {
+                          estimateSno :  result.data.salEstimate,
+                          recodeNo : result.data.recodeNo,
+                          custCd : result.data.custCd,
+                          screenMode : "VIEW",
+                          backMode : $scope.model.hidden.pPJM ? false : true,
+                          isDisabled : true,
+                          ptlMode : false,
+                          ptlScreen : '',
+                          redirectUrl : $scope.model.hidden.redirectUrl
+                    };
+                    sessionStorage.setItem("salEstimate", JSON.stringify(salEstimate));
+                    //PREPARE SESSION FROM PROJECT PROCESS
+                    if(!StringUtils.isEmpty(sessionStorage.getItem("projectSno"))){
+                        var passingParam = SessionUtils.prepareSession(sessionStorage.getItem("projectSno"));
+                        passingParam.recodeNo = result.data.recodeNo;
+                        sessionStorage.setItem("projectSno", JSON.stringify(passingParam));
+                    }
+                    DialogsService.showNotify(Messages.getMessage('title.info'), success).result.then(function(btn){
+                        $scope.inquiry(salEstimate);
+                    });
+                } else if(!ValidateUtil.isValidTextEmpty(warning)){
+                    DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                    return;
+                }
+            }
+        );
+    };
+
+    /**
+     * 見積を削除する
+     */
+    $scope.deleteEstimate = function(paramControl, paramDetails){
+        //reset valid
+        $scope.model.hidden.isSubmited = false;
+        $scope.modelDetailsControl.hidden.isSubmitedDetail = $scope.model.hidden.isSubmited;
+        var params = {
+                estimateSno :  paramControl.form.salEstimateControl.estimateSno,
+                recodeNo : paramControl.form.salEstimateControl.recodeNo,
+                version : paramControl.form.salEstimateControl.version,
+                documentStatus : '09'
+        };
+        if(!ValidateUtil.isValidTextEmpty($scope.model.hidden.pPJMData)){
+            params.processPjmJson = $scope.model.hidden.pPJMData;
+        }
+        DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('S00005')).result.then(function(btn){
+            SalEstimateControlService.sdelete(params).then(
+                function(result) {
+                    var warning =  result.data.warning;
+                    var success = result.data.success;
+                    if(!ValidateUtil.isValidTextEmpty(success)){
+                        DialogsService.showNotify(Messages.getMessage('title.info'), success).result.then(function(btn){
+                            sessionStorage.removeItem("salEstimate");
+                            if(!ValidateUtil.isValidTextEmpty($scope.model.hidden.pPJMData)){
+                                RouteService.gotoUrl($scope.model.hidden.redirectUrl);
+                            }else{
+                                RouteService.gotoUrl("SalEstimateList");
+                            }
+                        });
+                    } else if(!ValidateUtil.isValidTextEmpty(warning)){
+                        DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                        return;
+                    }
+                }
+            );
+        });
+    };
+
+    /**
+     * 編集画面へ戻る
+     */
+    $scope.backEdit = function(){
+        //reset valid
+        $scope.model.hidden.isSubmited = false;
+        $scope.modelDetailsControl.hidden.isSubmitedDetail = $scope.model.hidden.isSubmited;
+        var estimateInfo = angular.fromJson(sessionStorage.getItem("salEstimate"));
+        if(null != estimateInfo){
+            $scope.inquiry(estimateInfo);
+        }
+        $rootScope.$broadcast("SalEstimateControl#editEstimate",{
+            screenMode : 'VIEW',
+            isDisabled : true
+        });
+    };
+
+    /**
+     * 一覧へ戻る
+     */
+    $scope.gotoUrl = function(url){
+        if(url === 'SalEstimateList'){
+            sessionStorage.removeItem("salEstimate");
+            RouteService.gotoUrl("SalEstimateList");
+        }else if(url === 'CrmControl'){
+            sessionStorage.removeItem("salEstimate");
+            RouteService.gotoUrl('CrmControl');
+        }else if(url === 'pPJM'){
+            RouteService.gotoUrl('SfaProjectProcessManagement');
+        }else if(url === 'ProjectInformation'){
+            sessionStorage.removeItem("processDetail");
+            RouteService.gotoUrl('ProjectInformation');
+        }else if(url === 'SfaProjectControl'){
+            // From sub account, not allow access
+            if($scope.model.hidden.pJPI) {
+                return;
+            }
+            var passingParam = {
+                    custCd : $scope.model.form.salEstimateControl.custCd,
+                    projectSno :  $scope.model.form.salEstimateControl.projectSno,
+                    screenMode : 'VIEW'
+            };
+            sessionStorage.setItem("projectItemControl", JSON.stringify(passingParam));
+            RouteService.gotoUrl('SfaProjectControl');
+        }
+    };
+
+    /**
+     * new a insert screen
+     */
+    $scope.newWin = function(){
+        sessionStorage.removeItem("salEstimate");
+        RouteService.gotoUrl('SalEstimateControl');
+    };
+
+    /**
+     * 複写ボタンのアクション
+     */
+    $scope.copy = function(paramControl, paramDetails){
+        $scope.model.form.salEstimateControl.estimateSno = '';
+        $scope.model.hidden.isCopy = true;
+        $scope.resetDetailList('', null);
+        $rootScope.$broadcast("SalEstimateControl#editEstimate",{
+            screenMode : 'INSERT',
+            isDisabled : false,
+        });
+    };
+
+    /**
+     * 編集ボタンのアクション
+     */
+    $scope.edit = function(paramControl){
+        var params = {
+                estimateSno :  paramControl.form.salEstimateControl.estimateSno,
+                recodeNo : paramControl.form.salEstimateControl.recodeNo,
+        };
+        SalEstimateControlService.checkData(params).then(
+            function(result) {
+                var error =  result.data.failed;
+                if(!ValidateUtil.isValidTextEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                }
+                var warning =  result.data.warning;
+                if(!ValidateUtil.isValidTextEmpty(warning)){
+                    if(angular.equals(warning,Messages.getMessage('W00172'))){
+                        DialogsService.showWarning(Messages.getMessage('check.error'), warning)
+                            .result.then(function() {
+                                sessionStorage.removeItem("salEstimate");
+                                RouteService.gotoUrl("SalEstimateList");
+                            });
+                        return;
+                    }else{
+                        DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                        return;
+                    }
+                }
+
+                $rootScope.$broadcast("SalEstimateControl#editEstimate",{
+                    screenMode : 'UPDATE',
+                    isDisabled : false
+                });
+                $scope.resetDetailList('', null);
+            }
+        );
+    };
+
+    /**
+     * convert estimate data to JSON data
+     */
+    $scope.convertToJSONControl = function(paramControl, paramDetails){
+
+        var params = '';
+        var salControl = angular.copy(paramControl.form.salEstimateControl);
+        var sumTax = angular.copy(paramDetails.form.sumTax);
+        var sumFreeTaxPrice = angular.copy(paramDetails.form.sumFreeTaxPrice);
+        var sumPrice = angular.copy(paramDetails.form.sumPrice);
+        var taxExclusive = angular.copy(paramDetails.form.taxExclusive);
+        var taxInclusive = angular.copy(paramDetails.form.taxInclusive);
+        params = salControl;
+        params.taxType = $scope.model.hidden.loginSession.taxType;
+        params.sumTax = sumTax;
+        params.freeTaxSumPrice = sumFreeTaxPrice;
+        params.sumPrice = sumPrice;
+        params.discountValue = paramDetails.form.sumDiscountValue;
+        params.grossMargin = angular.copy(paramDetails.form.sumGrossMargin);
+        params.grossMarginRate = angular.copy(paramDetails.form.sumGrossMarginRate);
+        params.taxExclusive = taxExclusive;
+        params.taxInclusive = taxInclusive;
+        params.creatingClass = $scope.model.hidden.screenName;
+
+        params.taxInclusiveFixedPrice = paramDetails.form.taxInclusiveFixedPrice;
+        params.taxExclusiveFixedPrice = paramDetails.form.taxExclusiveFixedPrice;
+        params.freeTaxSumFixedPrice = paramDetails.form.freeTaxSumFixedPrice;
+        params.sumTaxFixedPrice = paramDetails.form.sumTaxFixedPrice;
+        params.sumFixedPrice = paramDetails.form.sumFixedPrice;
+
+        params.addressInfoCustomer = params.addressInfoCustomer.toString();
+        params.estimateSubmitProcess = params.estimateSubmitProcess.toString();
+        params.prefix = params.prefix.toString();
+        if(!ValidateUtil.isValidTextEmpty(params.projectSno)){
+            params.projectSno = params.projectSno.toString();
+        }
+        if(!ValidateUtil.isValidTextEmpty(params.projectName)){
+            params.projectName = params.projectName.toString();
+        }
+        params.taxRate = paramDetails.form.taxRate.toString();
+
+        if(!ValidateUtil.isValidTextEmpty(params.delPlanDate)){
+            params.delPlanDate = new Date(params.delPlanDate);
+        }
+        if(!ValidateUtil.isValidTextEmpty(params.estimateDate)){
+            params.estimateDate = new Date(params.estimateDate);
+        }
+
+        // TODO process
+        if(!ValidateUtil.isValidTextEmpty($scope.model.hidden.pPJMData)){
+            if($scope.model.hidden.isCopy){
+                $scope.model.hidden.pPJMData.screenMode = 'COPY';
+            }
+            params.processPjmJson = $scope.model.hidden.pPJMData;
+        }
+        delete params.validFlag;
+        delete params.delPlaceName;
+        // TODO end
+        return params;
+    };
+
+    /**
+     * convert detail JSON data
+     */
+    $scope.convertToJSONDetails = function(paramDetails){
+        var salDetailControl = [];
+        var listGroupItem = paramDetails.form.listGroupItem;
+        angular.forEach(listGroupItem, function(item, i){
+            angular.forEach(item.detail, function(itemDetail, j){
+                itemDetail.positionNo = j + 1;
+                itemDetail.groupNo = null;
+                itemDetail.groupName = '';
+                if(!ValidateUtil.isValidTextEmpty(item.groupName)){
+                    itemDetail.groupName = item.groupName;
+                }
+                if(!ValidateUtil.isValidTextEmpty(itemDetail.itemUnit)){
+                    itemDetail.itemUnit = itemDetail.itemUnit.toString();
+                }
+                if(!ValidateUtil.isValidTextEmpty(paramDetails.form.taxRate)){
+                    itemDetail.taxRate = parseFloat(paramDetails.form.taxRate.toString());
+                }
+                if(!ValidateUtil.isValidTextEmpty(itemDetail.taxType)){
+                    itemDetail.taxType = itemDetail.taxType.toString();
+                }else{
+                    itemDetail.taxType = '';
+                }
+                if(!ValidateUtil.isValidTextEmpty(itemDetail.itemSum)){
+                    itemDetail.itemSum = parseFloat(itemDetail.itemSum);
+                }else{
+                    itemDetail.itemSum = '';
+                }
+                if(!ValidateUtil.isValidTextEmpty(itemDetail.itemName.itemName)){
+                    itemDetail.itemName = itemDetail.itemName.itemName;
+                    delete itemDetail.itemNameTmp;
+                    salDetailControl.push(itemDetail);
+                }else if(!ValidateUtil.isValidTextEmpty(itemDetail.itemName)){
+                    itemDetail.itemName = itemDetail.itemName;
+                    delete itemDetail.itemNameTmp;
+                    salDetailControl.push(itemDetail);
+                }
+            });
+        });
+        return salDetailControl;
+    };
+
+    /**
+     * reset detail list
+     */
+    $scope.resetDetailList = function(mode, detailList){
+        var detail = [];
+        $scope.modelDetailsControl.form.listGroupItem = [];
+        if(ValidateUtil.isValidTextEmpty(detailList)){
+            detail = $scope.modelDetailsControl.form.salDetailControl;
+        }else{
+            detail = detailList;
+        }
+        if(!ValidateUtil.isValidTextEmpty(detail)){
+            $scope.modelDetailsControl.form.salDetailControl = detail;
+            var mode = mode;
+            var warehouseNo = !ValidateUtil.isValidTextEmpty($scope.model.form.salEstimateControl.warehouseNo) ? $scope.model.form.salEstimateControl.warehouseNo : '0000000000'
+            $scope.model.form.listGroupItem = [];
+            var i = 1, length = $scope.modelDetailsControl.form.salDetailControl.length;
+            var salDetailControl = $scope.modelDetailsControl.form.salDetailControl[0];
+            var tmp = [];
+            tmp.push(salDetailControl);
+            var groupNo = !ValidateUtil.isValidTextEmpty(salDetailControl.groupNo) ? salDetailControl.groupNo : '';
+            var groupName = !ValidateUtil.isValidTextEmpty(salDetailControl.groupName) ? salDetailControl.groupName : '';
+            for(;i < length; i++){
+                var isGroup = false;
+                salDetailControl = $scope.modelDetailsControl.form.salDetailControl[i];
+                if(ValidateUtil.isValidTextEmpty(salDetailControl.groupNo)){
+                    salDetailControl.groupNo = '';
+                }
+                if(groupNo == salDetailControl.groupNo){
+                    tmp.push(salDetailControl);
+                }else{
+                    if(!ValidateUtil.isValidTextEmpty(groupNo)){
+                        isGroup = true;
+                    }else{
+                        isGroup = false;
+                    }
+                    var detail = {groupName: groupName, detail: tmp, isGroup: isGroup};
+                    $scope.modelDetailsControl.form.listGroupItem.push(detail);
+                    tmp = [];
+                    groupNo = !ValidateUtil.isValidTextEmpty(salDetailControl.groupNo) ? salDetailControl.groupNo : '';
+                    groupName = !ValidateUtil.isValidTextEmpty(salDetailControl.groupName) ? salDetailControl.groupName : '';
+                    tmp.push(salDetailControl);
+                }
+            }
+            if(i == length){
+                if(!ValidateUtil.isValidTextEmpty(groupNo)){
+                    isGroup = true;
+                }else{
+                    isGroup = false;
+                }
+                var detail = {groupName: groupName, detail: tmp, isGroup: isGroup};
+                $scope.modelDetailsControl.form.listGroupItem.push(detail);
+            }
+        }
+
+        if(mode != 'VIEW'){
+            var item = {
+                    tmpIndex : '',
+                    serialCd : '',
+                    warehouseNo : warehouseNo,
+                    warehouseName : '倉庫なし',
+                    itemCd : '',
+                    itemName : '',
+                    itemCost : '',
+                    itemSum : '',
+                    itemPrice : '',
+                    itemFixedPrice : '',
+                    itemUnit : '',
+                    listItemUnit : $scope.modelDetailsControl.form.listM010001,
+                    packageQuantity : 1,
+                    taxType : '',
+                    taxRate : '',
+                    tax : '',
+                    taxFixedPrice : '',
+                    freeTaxPrice : '',
+                    freeTaxPriceTmp : '',
+                    freeTaxFixedPrice : '',
+                    freeTaxFixedPriceTmp : '',
+                    price : '',
+                    priceTmp : '',
+                    priceType : '',
+                    bargainNo : '',
+                    discountValue : '',
+                    fixedPrice : '',
+                    fixedPriceTmp : ''
+                };
+            var length = $scope.modelDetailsControl.form.listGroupItem.length;
+            for(var i = 0;i <length ; i++ ){
+                var tmpItem = angular.copy(item);
+                $scope.modelDetailsControl.form.listGroupItem[i].detail.push(tmpItem);
+            }
+            if($scope.modelDetailsControl.form.listGroupItem[length - 1].isGroup){
+                var tmpItem = angular.copy(item);
+                var salDetailControl = [];
+                salDetailControl.push(tmpItem);
+                var detail = {detail: salDetailControl, isGroup: false};
+                $scope.modelDetailsControl.form.listGroupItem.push(detail);
+            }
+        }
+    };
+
+    /**
+     * back ptl list
+     */
+    $scope.backPtlList = function(){
+        RouteService.gotoUrl($scope.model.hidden.ptlScreen);
+    };
+
+    /**
+     * gotoUrlEXEX()
+     */
+    $scope.gotoUrlEXEX = function(url, screenMode, param){
+        // From sub account, not allow access
+        if($scope.model.hidden.pJPI) {
+            return;
+        }
+
+        var toScreen = '';
+        if(url === 'SalEstimateControl'){
+            toScreen = 'EXEX01';
+        }else if(url === 'SalRsvControl'){
+            toScreen = 'EXEX02';
+        }else if(url === 'SalDecideProcess'){
+            toScreen = 'EXEX03';
+        }else if(url === 'SalOrderControl'){
+            toScreen = 'EXEX06';
+        }else if(url === 'SalStockControl'){
+            toScreen = 'EXEX07';
+        }
+        var params = {
+                custCd : $scope.model.form.salEstimateControl.custCd,
+                custName : $scope.model.form.salEstimateControl.custName,
+                estimateSno : $scope.model.form.salEstimateControl.estimateSno,
+                rcvSno : $scope.model.form.salEstimateControl.rcvSno,
+                salesSno : $scope.model.form.salEstimateControl.salesSno,
+                orderSno : $scope.model.form.salEstimateControl.orderSno,
+                stockSno : $scope.model.form.salEstimateControl.stockSno,
+                recodeNo : $scope.model.form.salEstimateControl.recodeNo,
+                projectSno : $scope.model.form.salEstimateControl.projectSno,
+                salDataName : $scope.model.form.salEstimateControl.estimateName,
+                screenMode : screenMode,
+                screenName : 'EXEX01',
+                toScreen : toScreen,
+                isDisabled : false,
+                redirectUrl : 'SalEstimateControl'
+        };
+        sessionStorage.removeItem("salEstimate");
+        sessionStorage.removeItem("receiveItemInfo");
+        sessionStorage.removeItem("salDecideProcess");
+        sessionStorage.removeItem("salSell");
+        sessionStorage.removeItem("salStock");
+        sessionStorage.removeItem("projectSno");
+        sessionStorage.removeItem("customerInfo");
+        sessionStorage.setItem("fromSalEXEX", JSON.stringify(params));
+        RouteService.gotoUrl(url);
+    };
+
+    /** START: USE FOR EXPORT REPORT */
+    $scope.$on($scope.model.hidden.exportName + "#downloadReport", function(evt, param) {
+        $scope.downloadEstimateReport($scope.model, $scope.modelDetailsControl, param);
+    });
+
+    $scope.$on($scope.model.hidden.exportName + "#exportReport", function(evt, param) {
+        $scope.showCustomReport($scope.model.form.salEstimateControl, param);
+    });
+    /** END: USE FOR EXPORT REPORT */
+
+    /**show ckeditor report*/
+    $scope.showCustomReport = function(obj, param){
+        var listObjSno = [];
+        listObjSno.push(obj.estimateSno + '_' + obj.recodeNo);
+        var params ={'invoiceType': '01', objSno: listObjSno, 'tempNoCustomer': param.tempNo};
+        var options ={size: 1100};
+        DialogsService.showDialog('InvoiceTemplate/getCustomReportPage', 'CustomReportCtrl', params, options);
+    }
+
+    /**
+     * ダウンロードしたファイル
+     */
+    $scope.downloadEstimateReport = function(paramControl, paramDetails, type){
+        var param = $scope.convertToJSONControl(paramControl,paramDetails);
+        var params= {
+            'estimateSno' : param.estimateSno,
+            'recodeNo' : param.recodeNo,
+            'type': type
+        };
+        SalEstimateControlService.checkDataForReport(params).then(
+            function(result) {
+                var error =  result.data.failed;
+                var warning =  result.data.warning;
+                if(!ValidateUtil.isValidTextEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                }else if(!ValidateUtil.isValidTextEmpty(warning)){
+                    if(angular.equals(warning,Messages.getMessage('W00172'))){
+                        DialogsService.showWarning(Messages.getMessage('check.error'), warning).result.then(function() {
+                            sessionStorage.removeItem("salEstimate");
+                            RouteService.gotoUrl('SalEstimateList');
+                        });
+                        return;
+                    }else{
+                        DialogsService.showWarning(Messages.getMessage('check.error'), warning).result.then(function() {
+                        });
+                    }
+                }else{
+                    var customFlag = CompanyUtil.getCustomFlag(1);
+                    var pdfName = Messages.getMessage('PDF.ESTIMATE') + $scope.model.form.salEstimateControl.estimateSno+".pdf";
+
+                    if(customFlag == '1'){
+                        var options = {size: '800'};
+                        var dlg = DialogsService.showDialog('EstimateCustomInfo','estimateCustomInfoCtrl',{},options);
+                        dlg.result.then(function(btn){
+                            params.customInfo = $rootScope.data.customInfo;
+                            ServerService.doDownload('/SalEstimateControl/downloadSalEstimate',  params, 'application/pdf', pdfName);
+                        });
+                    }else{
+                        ServerService.doDownload('/SalEstimateControl/downloadSalEstimate',  params, 'application/pdf', pdfName);
+                    }
+                }
+            }
+        );
+    };
+
+    $scope.close = function () {
+        sessionStorage.removeItem('salEstimate');
+        $scope.$dismiss('cancel');
+    };
+
+    $scope.selectItem = function(value) {
+        var resume = !StringUtils.isEmpty($scope.model.form.salEstimateControl.resume) ? $scope.model.form.salEstimateControl.resume + "\n" : "";
+        $scope.model.form.salEstimateControl.resume = resume + value;
+    };
+
+    $scope.getForeignCurrencyRate = function(param) {
+        if(!StringUtils.isEmpty(param.estimateDate) && !StringUtils.isEmpty(param.foreignCurrCd)) {
+            var param = {
+                estimateDate : new Date(param.estimateDate),
+                foreignCurrCd : param.foreignCurrCd
+            }
+            ServerService.doPost('SalEstimateControl/getForeignCurrencyRateByCurrentCdAndDate', param).then(
+                function(okResult) {
+                    if(!StringUtils.isEmpty(okResult.data)) {
+                        $scope.model.form.salEstimateControl.foreignCurrRate = okResult.data.foreignCurrencyRate;
+                        $rootScope.$broadcast('SalEstimateControl#calculateItemDetail');
+                    }
+                }
+            );
+        } else {
+            $scope.model.form.salEstimateControl.foreignCurrRate = "";
+            $rootScope.$broadcast('SalEstimateControl#calculateItemDetail');
+        }
+    };
+
+    $scope.resetFile  = function(e) {
+        e.wrap('<form>').parent('form').trigger('reset');
+        e.unwrap();
+    };
+
+    $scope.removeItem = function(){
+        $scope.model.form.salEstimateControl.attachFileData = "";
+        $scope.model.form.salEstimateControl.attachFileName = "";
+        $scope.resetFile($('input[name="input-file"]'));
+    };
+
+    $scope.downloadFile = function() {
+        if(!StringUtils.isEmpty($scope.model.form.salEstimateControl.estimateSno) && !$scope.model.hidden.isFileChange ){
+            var params = {
+                estimateSno: $scope.model.form.salEstimateControl.estimateSno,
+                recodeNo : $scope.model.form.salEstimateControl.recodeNo
+            };
+            Utils.postToUrl("/SalEstimateControl/downloadFile", params);
+        }
+    }
+
+    $scope.onChangeRefEstimate = function(refEstimateSno) {
+        if(!StringUtils.isEmpty(refEstimateSno)) {
+            var params = {
+                estimateSno : refEstimateSno,
+                screenName : 'EXEX01'
+            };
+            SalEstimateControlService.loadSalCommonData(params).then(
+                function(result) {
+                    if(!ValidateUtil.isValidTextEmpty(result.data.warning)){
+                        DialogsService.showWarning(Messages.getMessage('check.error'), result.data.warning);
+                        return;
+                    }
+                    var exexDetail = result.data.detail;
+                    $scope.model.form.salEstimateControl.projectSno = exexDetail.projectSno;
+                    $scope.model.form.salEstimateControl.projectName = exexDetail.projectName;
+
+                    $scope.model.form.salEstimateControl.estimateName = exexDetail.estimateName;
+                    $scope.model.form.salEstimateControl.estimateDate = exexDetail.estimateDate;
+                    $scope.model.form.salEstimateControl.deliveryTerms = exexDetail.deliveryTerms;
+                    $scope.model.form.salEstimateControl.deliveryCompany = exexDetail.deliveryCompany;
+                    $scope.model.form.salEstimateControl.paymentTerms = exexDetail.paymentTerms;
+                    $scope.model.form.salEstimateControl.addressInfoOwner = exexDetail.addressInfoOwner;
+                    $scope.model.form.salEstimateControl.addressInfoFax = exexDetail.addressInfoFax;
+                    $scope.model.form.salEstimateControl.custCd = exexDetail.custCd;
+                    $scope.model.form.salEstimateControl.custName = exexDetail.custName;
+                    $scope.model.form.salEstimateControl.addressInfoCustomer = exexDetail.custName;
+                    $scope.model.form.salEstimateControl.taxRate = exexDetail.taxRate;
+                    $scope.model.form.salEstimateControl.taxType = exexDetail.taxType;
+                    $scope.model.form.salEstimateControl.delPlace = exexDetail.delPlace;
+                    $scope.model.form.salEstimateControl.delPlaceName = exexDetail.delPlaceName;
+                    $scope.model.form.salEstimateControl.remark = exexDetail.remark;
+                    $scope.model.form.salEstimateControl.rcvSno = exexDetail.rcvSno;
+                    $scope.model.form.salEstimateControl.billaddressNo = exexDetail.billaddressNo;
+                    $scope.model.form.salEstimateControl.billaddressName = exexDetail.billaddressName;
+                    $scope.model.form.salEstimateControl.billCloseTypeName = exexDetail.billCloseTypeName;
+
+                    $scope.model.form.salEstimateControl.dueDateSub = exexDetail.dueDateSub;
+                    $scope.model.form.salEstimateControl.delPlaceSub = exexDetail.delPlaceSub;
+                    $scope.model.form.salEstimateControl.delPlanDateSub = exexDetail.delPlanDateSub;
+                    $scope.model.form.salEstimateControl.productName = exexDetail.productName;
+                    $scope.model.form.salEstimateControl.productNo = exexDetail.productNo;
+                    $scope.model.form.salEstimateControl.invoiceNo = exexDetail.invoiceNo;
+                    $scope.model.form.salEstimateControl.resume = exexDetail.resume;
+                    $scope.model.form.salEstimateControl.dailyCloseFlag = exexDetail.dailyCloseFlag == '1' ?  true : false;
+                    $scope.model.form.salEstimateControl.foreignCurrCd = exexDetail.foreignCurrCd;
+                    $scope.model.form.salEstimateControl.foreignCurrRate = exexDetail.foreignCurrRate;
+                    $scope.model.form.salEstimateControl.salesSno = exexDetail.salesSno;
+                    $scope.model.form.salEstimateControl.orderSno = exexDetail.orderSno;
+                    $scope.model.form.salEstimateControl.stockSno = exexDetail.stockSno;
+                    $scope.model.form.salEstimateControl.salesGroupCd = exexDetail.salesGroupCd;
+                    $scope.model.form.salEstimateControl.salesUserCd = exexDetail.salesUserCd;
+                    $scope.resetDetailList($scope.model.hidden.screenMode, result.data.listDetail);
+                }
+            );
+        } else {
+            $scope.resetForm();
+            if(!StringUtils.isEmpty($scope.model.form.salEstimateControl.projectSno)) {
+                $scope.onChangeProject($scope.model.form.salEstimateControl.projectSno);
+            }
+        }
+    };
+
+    $scope.resetForm = function() {
+
+        $scope.model.form.salEstimateControl.estimateName = "";
+        $scope.model.form.salEstimateControl.custCd = "";
+        $scope.model.form.salEstimateControl.custName = "";
+        $scope.model.form.salEstimateControl.addressInfoCustomer = "";
+        $scope.model.form.salEstimateControl.billaddressNo = "";
+        $scope.model.form.salEstimateControl.billaddressName = "";
+        $scope.model.form.salEstimateControl.billCloseTypeName = "";
+
+        $scope.model.form.salEstimateControl.estimateDate = new Date();
+        $scope.model.form.salEstimateControl.deliveryTerms = "";
+        $scope.model.form.salEstimateControl.deliveryCompany = "";
+        $scope.model.form.salEstimateControl.paymentTerms = "";
+        $scope.model.form.salEstimateControl.addressInfoOwner = "";
+        $scope.model.form.salEstimateControl.addressInfoFax = "";
+        $scope.model.form.salEstimateControl.taxRate = "";
+        $scope.model.form.salEstimateControl.taxType = "";
+        $scope.model.form.salEstimateControl.delPlace = "";
+        $scope.model.form.salEstimateControl.delPlaceName = "";
+        $scope.model.form.salEstimateControl.remark = "";
+        $scope.model.form.salEstimateControl.rcvSno = "";
+        $scope.model.form.salEstimateControl.dueDateSub = "";
+        $scope.model.form.salEstimateControl.delPlaceSub = '貴社　指定場所';
+        $scope.model.form.salEstimateControl.delPlanDateSub = "";
+        $scope.model.form.salEstimateControl.productName = "";
+        $scope.model.form.salEstimateControl.productNo = "";
+        $scope.model.form.salEstimateControl.invoiceNo = "";
+        $scope.model.form.salEstimateControl.resume = "";
+        $scope.model.form.salEstimateControl.dailyCloseFlag = false;
+        $scope.model.form.salEstimateControl.foreignCurrCd = "";
+        $scope.model.form.salEstimateControl.foreignCurrRate = "";
+        $scope.model.form.salEstimateControl.salesSno = "";
+        $scope.model.form.salEstimateControl.orderSno = "";
+        $scope.model.form.salEstimateControl.stockSno = "";
+        $scope.model.form.salEstimateControl.salesGroupCd = '';
+        var sessionLogin = angular.fromJson(sessionStorage.getItem("session"));
+        if(!StringUtils.isEmpty(sessionLogin)){
+            $scope.model.form.salEstimateControl.salesUserCd = sessionLogin.userCd;
+        }
+        $scope.modelDetailsControl.form.listGroupItem = [];
+        $scope.modelDetailsControl.form.salDetailControl = [];
+
+        var item = {
+            tmpIndex : 1,
+            warehouseNo : '0000000000',
+            warehouseName : '倉庫なし',
+            itemCd : '',
+            itemName : '',
+            itemCost : '',
+            itemSum : '',
+            itemPrice : '',
+            itemFixedPrice : '',
+            itemUnit : '',
+            listItemUnit : $scope.modelDetailsControl.form.listM010001,
+            packageQuantity : 1,
+            taxType : $scope.modelDetailsControl.form.listS010003[1].code,
+            taxRate : '',
+            tax : '',
+            taxFixedPrice : '',
+            freeTaxPrice : '',
+            freeTaxPriceTmp : '',
+            freeTaxFixedPrice : '',
+            freeTaxFixedPriceTmp : '',
+            price : '',
+            priceTmp : '',
+            priceType : '0',
+            bargainNo : '',
+            discountValue : '',
+            fixedPrice : '',
+            fixedPriceTmp : ''
+        };
+
+        $scope.modelDetailsControl.form.salDetailControl.push(item);
+        var detail = {
+            groupName: '',
+            detail: $scope.modelDetailsControl.form.salDetailControl,
+            isGroup: false
+        };
+        $scope.modelDetailsControl.form.listGroupItem.push(detail);
+    }
+
+    $scope.exportDialogExcel = function(){
+        var params = {
+            estimateSno : $scope.model.form.salEstimateControl.estimateSno,
+            recodeNo : $scope.model.form.salEstimateControl.recodeNo,
+            parentProjectSno : $scope.model.hidden.parentProjectSno
+        }
+        var options = {size : '500'};
+        DialogsService.showDialog('SalEstimateControlExportDialog','salEstimateControlExportDialogCtrl', params, options);
+    }
+
+    /**
+     * get billAddress info when select change
+     */
+    $scope.billaddressChange = function (billaddressNo) {
+        if (!StringUtils.isEmpty(billaddressNo)) {
+            var param = billaddressNo;
+            ServerService.doPost('SfaProjectControl/onChangeBill', param).then(
+                function (okResult) {
+                    var error = okResult.data.failed;
+                    var warning = okResult.data.warning;
+                    if (!StringUtils.isEmpty(error)) {
+                        DialogsService.showError(Messages.getMessage('system.error'), error);
+                        return;
+                    } else if (!StringUtils.isEmpty(warning)) {
+                        DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                        return;
+                    }else{
+                        $scope.model.form.salEstimateControl.billCloseTypeName = okResult.data.billAddress.billCloseTypeName;
+                    }
+                }
+            )
+        }
+    };
+
+}]);

@@ -1,0 +1,17 @@
+<%@ tag pageEncoding="utf-8"%>
+<%@ taglib prefix="form"   uri="http://www.springframework.org/tags/form"%>
+<%@ taglib prefix="c"      uri="http://java.sun.com/jsp/jstl/core"%>
+<%@ taglib prefix="spring" uri="http://www.springframework.org/tags"%>
+<%@ taglib prefix="sms"    tagdir="/WEB-INF/tags"%>
+
+<c:set var="baseUrl">
+  <c:url value="/resources"></c:url>
+</c:set>
+
+<body class="page-header-fixed exex-right-sidebar-over-content page-footer-fixed exex-sidebar-fixed-1 exex-sidebar-closed">
+
+  <jsp:doBody />
+
+  <sms:ScriptInclude></sms:ScriptInclude>
+
+</body>

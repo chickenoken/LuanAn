@@ -1,0 +1,8 @@
+package org.planning.net.dao;
+
+@AnnotateWith(annotations = {
+        @Annotation(target = AnnotationTarget.CONSTRUCTOR, type = javax.inject.Inject.class),
+        @Annotation(target = AnnotationTarget.CONSTRUCTOR_PARAMETER, type = javax.inject.Named.class, elements = "\"config\"") })
+public @interface InjectConfig {
+
+}

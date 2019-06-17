@@ -1,0 +1,450 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision: 1.0 $  $Date: 2016/09/07 $
+ * @author quang-tung
+ */
+
+'use strict';
+
+exexSMSApp.factory('MstCodeModel', [ 'BaseModel', function(BaseModel) {
+
+    var model = BaseModel.getInstance();
+
+    model.form = {
+        search : {
+            codeType : '',
+            codeTypeName : '',
+        },
+        list : [],
+        listTmp1 : [],
+        listTmp : [],
+        listData : []
+    };
+
+    model.listColorPopover = ColorUtils.getListColor();
+    model.hidden = {
+        showCode : false,
+        rowCode: false,
+        isSubmited: false,
+        maxLength: "3",
+        table: false,
+        isUDCode: false,
+        screenMode: '',
+        codeTypeName: [],
+        locale: [],
+        nowLocale: locale
+    };
+    model.langs = {};
+
+
+    return model;
+} ]);
+
+exexSMSApp.controller('MstCodeCtrl',
+        ['$scope', '$timeout', 'DialogsService', 'MstCodeModel','MstCodeListService', 'Messages', 'HeaderModel',
+         function($scope, $timeout, DialogsService, MstCodeModel, mstCodeListService, Messages, HeaderModel){
+
+    $scope.model = MstCodeModel;
+    $scope.model.langs = HeaderModel.langs;
+    $scope.getInit = function() {
+        var param = {};
+        mstCodeListService.getInit(param)
+        .then(
+            function(result) {
+                if(!ValidateUtil.isValidTextEmpty(result.data)){
+                    $scope.model.form.listMstCode = result.data.listMstCode;
+                }
+            }
+        );
+    }
+
+    $scope.init = function(){
+        $scope.getInit();
+    };
+    $scope.init();
+    $scope.$watchCollection('model.form.search.codeType', function(){
+        $scope.model.hidden.table = false;
+        $scope.model.form.listDetailCode = [];
+        $scope.model.form.search.codeTypeName = '';
+        if (!StringUtils.isEmpty($scope.model.form.search.codeType) && $scope.model.form.search.codeType.indexOf('UD') >= 0){
+            $scope.model.hidden.isUDCode = true;
+        } else {
+            $scope.model.hidden.isUDCode = false;
+        }
+    });
+
+    $scope.sortableConfig = {
+        handle:'.handle',
+        ghostClass : 'ghost-test'
+    };
+
+    $scope.search = function(param) {
+        $scope.model.hidden.screenMode = '';
+        $scope.model.hidden.isSubmited = false;
+        if(ValidateUtil.isValidTextEmpty(param.codeType)){
+            $scope.model.form.listDetailCode = [];
+            return;
+        }
+
+        if(param.codeType === "CATE02"){
+            $scope.model.hidden.maxLength = "4";
+        }else if(param.codeType === "CATE03"){
+            $scope.model.hidden.maxLength = "6";
+        }else if(param.codeType === "CATE01"){
+            $scope.model.hidden.maxLength = "2";
+        }else {
+            $scope.model.hidden.maxLength = "3";
+        }
+
+        var params = {
+                codeType : !ValidateUtil.isValidTextEmpty(param.codeType) ? param.codeType : '',
+        };
+        mstCodeListService.search(params)
+        .then(
+            function(result) {
+                if(!ValidateUtil.isValidTextEmpty(result.data)){
+                    if(!ValidateUtil.isValidTextEmpty(result.data.failed)){
+                        DialogsService.showError(Messages.getMessage('system.error'), result.data.failed);
+                        return;
+                    }else if(!ValidateUtil.isValidTextEmpty(result.data.warning)){
+                        DialogsService.showWarning(Messages.getMessage('check.error'), result.data.warning);
+                        return;
+                    }else{
+                        $scope.model.form.listTmp = [];
+                        $scope.model.form.listTmp1 = [];
+                        $scope.model.form.listDetailCode = result.data.listCode;
+                        for (var i = 0; i < $scope.model.form.listDetailCode.length; i++) {
+                            $scope.model.form.listDetailCode[i].showCode = true;
+                            var color = '';
+                            if($scope.model.form.search.codeType == 'S020002' && StringUtils.isEmpty($scope.model.form.listDetailCode[i].remark)){
+                                color = '#001f3f';
+                            }
+                            $scope.model.form.listDetailCode[i].codeTypeName = $scope.model.form.listDetailCode[i].codeTypeName.split('#EXEX#');
+                            $scope.model.form.listDetailCode[i].locale = $scope.model.form.listDetailCode[i].locale.split('#EXEX#');
+                            $scope.model.form.listDetailCode[i].codeName = $scope.model.form.listDetailCode[i].codeName.split('#EXEX#');
+                            if(!StringUtils.isEmpty($scope.model.form.listDetailCode[i].remark)){
+                                $scope.model.form.listDetailCode[i].remark = $scope.model.form.listDetailCode[i].remark.split('#EXEX#');
+                            }else{
+                                $scope.model.form.listDetailCode[i].remark = [];
+                            }
+                            $scope.model.form.listTmp[i] = result.data.listCode[i].code;
+                            var tempCodeTypeNameList = [];
+                            var tempCodeName = [];
+                            var tempLocale = [];
+                            var tempRemark = [];
+                            var changeFlag = [];
+                            angular.forEach($scope.model.langs, function(value, key){
+                                var checkExist = $scope.model.form.listDetailCode[i].locale.indexOf(key);
+                                if(checkExist != -1) {
+                                    tempCodeTypeNameList.push($scope.model.form.listDetailCode[i].codeTypeName[checkExist]);
+                                    tempCodeName.push($scope.model.form.listDetailCode[i].codeName[checkExist]);
+                                    if($scope.model.form.search.codeType == 'S020002' && !StringUtils.isEmpty(color)){
+                                        tempRemark.push(color);
+                                    } else {
+                                        tempRemark.push($scope.model.form.listDetailCode[i].remark[checkExist]);
+                                    }
+                                    changeFlag.push('');
+                                } else {
+                                    tempCodeTypeNameList.push('');
+                                    tempCodeName.push('');
+                                    if($scope.model.form.search.codeType == 'S020002' && !StringUtils.isEmpty(color)){
+                                        tempRemark.push(color);
+                                    } else {
+                                        tempRemark.push('');
+                                    }
+                                    changeFlag.push('CREATE');
+                                }
+                                tempLocale.push(key);
+                            });
+                            $scope.model.form.listDetailCode[i].codeTypeName = tempCodeTypeNameList;
+                            $scope.model.form.listDetailCode[i].codeName = tempCodeName;
+                            $scope.model.form.listDetailCode[i].locale = tempLocale;
+                            $scope.model.form.listDetailCode[i].remark = tempRemark;
+                            $scope.model.form.listDetailCode[i].action = changeFlag;
+                            $scope.model.hidden.codeTypeName = tempCodeTypeNameList;
+                            $scope.model.hidden.locale = tempLocale;
+                        }
+                        $timeout(function (){
+                            $scope.model.hidden.table = true;
+                        },300);
+                    }
+                }
+            }
+        );
+    };
+
+    $scope.addNewRowItem = function(){
+       $scope.model.hidden.isSubmited = false;
+       if(!ValidateUtil.isValidTextEmpty($scope.model.form.search.codeType)
+               || !ValidateUtil.isValidTextEmpty($scope.model.form.search.codeTypeName)){
+           var session = angular.fromJson(sessionStorage.getItem("session"));
+           var tempCodeName = [];
+           var tempRemark = [];
+           var changeFlag = [];
+           angular.forEach($scope.model.langs, function(value, key){
+               tempCodeName.push('');
+               changeFlag.push('CREATE');
+               if($scope.model.form.search.codeType == 'S020002'){
+                   tempRemark.push('#001f3f');
+               }else{
+                   tempRemark.push('');
+               }
+           });
+           var cloneItem = { lastUpdDate:new Date()
+                       , lastUpdUser:session.userCd
+                       , userName:session.userName
+                       , codeType: $scope.model.form.search.codeType
+                       , codeTypeName: $scope.model.hidden.codeTypeName
+                       , code:""
+                       , codeName:tempCodeName
+                       , locale: $scope.model.hidden.locale
+                       , editFlag:true
+                       , validFlag:true
+                       , remark:tempRemark
+                       , createDate:new Date()
+                       , createUser:session.userCd
+                       , version:0
+                       , action: changeFlag
+            };
+           $scope.model.form.listDetailCode.push(cloneItem);
+       }
+    };
+
+    $scope.removeItem = function(index) {
+        $scope.model.hidden.isSubmited = false;
+        $scope.model.form.listDetailCode.splice(index, 1);
+        $scope.model.form.listTmp.splice(index, 1);
+        $scope.model.form.listTmp1.splice(index, 1);
+    };
+
+    $scope.onChangeData = function(index, langIdx, row){
+        if(StringUtils.isEmpty($scope.model.form.listDetailCode[index].action[langIdx])){
+            $scope.model.form.listDetailCode[index].action[langIdx] = "UPDATE";
+        }
+    }
+    $scope.onChangeValidFlag = function(index, row){
+        var changeFlag = $scope.model.form.listDetailCode[index].action;
+        var cnt = 0;
+        angular.forEach($scope.model.langs, function(value, key){
+            if(StringUtils.isEmpty(changeFlag[cnt])){
+                changeFlag[cnt] = "UPDATE";
+            }
+            cnt++;
+        });
+        $scope.model.form.listDetailCode[index].action = changeFlag;
+    }
+
+    $scope.onChangeCode = function(index, row){
+        var changeFlag = $scope.model.form.listDetailCode[index].action;
+        var cnt = 0;
+        angular.forEach($scope.model.langs, function(value, key){
+            if(StringUtils.isEmpty(changeFlag[cnt])){
+                changeFlag[cnt] = "UPDATE";
+            }
+            cnt++;
+        });
+        $scope.model.form.listDetailCode[index].action = changeFlag;
+        $scope.model.hidden.isSubmited = false;
+        row.showCode = false;
+        if(!ValidateUtil.isValidTextEmpty(row.code)){
+            if($scope.model.form.listTmp.indexOf(row.code) > -1){
+                $scope.model.form.listTmp[index] = '';
+                $scope.model.form.listTmp1[index] = row.code;
+                row.rowCode = true;
+            }else{
+                $scope.model.form.listTmp[index] = row.code;
+                $scope.model.form.listTmp1[index] = '';
+                row.rowCode = false;
+            }
+        }else{
+            $scope.model.form.listTmp[index] = '';
+            $scope.model.form.listTmp1[index] = '';
+            row.rowCode = false;
+        }
+    }
+
+    $scope.update = function(formInvalid){
+        if($scope.model.form.listDetailCode.length > 0
+                || ($scope.model.hidden.isUDCode && $scope.model.hidden.screenMode != 'NEW')){
+            $scope.model.hidden.isSubmited = true;
+            if (formInvalid) {
+                return;
+            }else{
+                //$scope.model.form.listData = angular.copy($scope.model.form.list);
+                var valueArr = $scope.model.form.listTmp1.map(function(item){
+                    return item;
+                });
+                var isDuplicate = valueArr.some(function(item, idx){
+                    if(!ValidateUtil.isValidTextEmpty(item)) {
+                        return valueArr.indexOf(item) != idx
+                    }
+                });
+                if(isDuplicate){
+                    return;
+                }
+                for (var i = 0; i < $scope.model.form.listTmp1.length; i++) {
+                    var item = $scope.model.form.listTmp1[i];
+                    if($scope.model.form.listTmp.indexOf(item) > -1){
+                        if(ValidateUtil.isValidTextEmpty(item)){
+                            $scope.model.form.listDetailCode[i].rowCode = false;
+                        }else{
+                            var error = true;
+                            $scope.model.form.listDetailCode[i].rowCode = true;
+                        }
+                    }else{
+                        $scope.model.form.listDetailCode[i].rowCode = false;
+                        //$scope.model.form.listData[i].code = $scope.model.form.listTmp[i];
+                    }
+                };
+            }
+            if(error){
+                return;
+            }
+            var listMstCode = $scope.createUpdateList();
+            var params = {
+                    listMstCode : listMstCode,
+                    codeType: $scope.model.form.search.codeType,
+                    codeTypeName: $scope.model.form.search.codeTypeName
+            }
+
+            DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('S00004'))
+            .result.then(function() {
+                mstCodeListService.update(params)
+                .then(
+                    function(result) {
+                        if(!ValidateUtil.isValidTextEmpty(result.data)){
+                            if(!ValidateUtil.isValidTextEmpty(result.data.failed)){
+                                DialogsService.showError(Messages.getMessage('system.error'), result.data.failed);
+                                return;
+                            }else if(!ValidateUtil.isValidTextEmpty(result.data.warning)){
+                                DialogsService.showWarning(Messages.getMessage('check.error'), result.data.warning);
+                                return;
+                            }else{
+                                DialogsService.showNotify(Messages.getMessage('title.info'), result.data.success)
+                                .result.then(function() {
+                                    $scope.model.form.listMstCode = result.data.listMstCode;
+                                    if(!ValidateUtil.isValidTextEmpty(result.data.codeType)){
+                                        $scope.getInit();
+                                        $scope.model.form.search.codeType = result.data.codeType;
+                                        $scope.model.hidden.table = true;
+                                        $scope.model.hidden.isSubmited = false;
+                                    }
+                                    $timeout(function (){
+                                        $scope.search($scope.model.form.search);
+                                    },20);
+                                });
+                            }
+                        }
+                    }
+                )
+            });
+        }
+    };
+
+    $scope.loadInitJsEvent = function(row, index, event, parentIndex){
+        var cnt = 0;
+        var changeFlag = $scope.model.form.listDetailCode[parentIndex].action;
+        var remarkList = $scope.model.form.listDetailCode[parentIndex].remark;
+        angular.forEach($scope.model.langs, function(value, key){
+            remarkList[cnt] = $(event.target).css('color');
+            if(StringUtils.isEmpty(changeFlag[cnt])){
+                changeFlag[cnt] = "UPDATE";
+            }
+            cnt++;
+        });
+        $scope.model.form.listDetailCode[parentIndex].action = changeFlag;
+        $scope.model.form.listDetailCode[parentIndex].remark = remarkList;
+        $('#eventColor' + parentIndex).css({"background-color": remarkList[0], "border-color": remarkList[0]});
+        $('.popover').remove();
+        angular.element('body').click();
+    };
+
+    $scope.onChangeCodeTypeName = function(idx, lang, codeTypeName){
+        if(ValidateUtil.isValidTextEmpty($scope.model.form.search.codeType)
+                && locale == lang){
+            $scope.model.form.search.codeTypeName = codeTypeName;
+        }
+        $scope.model.hidden.codeTypeName[idx] = codeTypeName;
+        angular.forEach($scope.model.form.listDetailCode, function(value, index){
+            value.codeTypeName[idx] = codeTypeName;
+            if(StringUtils.isEmpty(value.action[idx])){
+                value.action[idx] = "UPDATE";
+            }
+        });
+    };
+
+    /**create update list with all languages*/
+    $scope.createUpdateList = function(){
+        var listMstCode = [];
+        var locale = angular.fromJson(sessionStorage.getItem("session")).locale;
+        for (var i = 0; i < $scope.model.form.listDetailCode.length; i++) {
+            var cnt = 0;
+            angular.forEach($scope.model.langs, function(value, key){
+                var item = $scope.model.form.listDetailCode[i];
+                var updateItem = angular.copy(item);
+                updateItem.codeTypeName = item.codeTypeName[cnt];
+                updateItem.codeName = item.codeName[cnt];
+                updateItem.locale = item.locale[cnt];
+                if(updateItem.positionNo != i + 1 && StringUtils.isEmpty(item.action[cnt])){
+                    updateItem.action = "UPDATE";
+                }else{
+                    updateItem.action = item.action[cnt];
+                }
+                updateItem.remark = item.remark[cnt];
+                updateItem.positionNo = i + 1;
+                listMstCode.push(updateItem);
+                cnt++;
+            });
+        }
+        return listMstCode;
+    };
+
+    /**show dialog add code*/
+    $scope.addMstCode = function(){
+        $scope.model.form.search.codeType = '';
+        $timeout(function (){
+            $scope.model.hidden.screenMode = 'NEW';
+            $scope.model.hidden.table = true;
+            $scope.model.hidden.isUDCode = true;
+            $scope.model.form.search.codeTypeName = '';
+            var session = angular.fromJson(sessionStorage.getItem("session"));
+            var tempCodeTypeNameList = [];
+            var tempCodeName = [];
+            var tempLocale = [];
+            var tempRemark = [];
+            var changeFlag = [];
+            angular.forEach($scope.model.langs, function(value, key){
+                tempCodeTypeNameList.push('');
+                tempCodeName.push('');
+                tempRemark.push('');
+                tempLocale.push(key);
+                changeFlag.push('CREATE');
+            });
+            var tempItem = { lastUpdDate:new Date()
+                    , lastUpdUser:session.userCd
+                    , userName:session.userName
+                    , codeType: ''
+                    , codeTypeName:tempCodeTypeNameList
+                    , code:''
+                    , codeName:tempCodeName
+                    , locale: tempLocale
+                    , editFlag:true
+                    , validFlag:true
+                    , remark:tempRemark
+                    , createDate:new Date()
+                    , createUser:session.userCd
+                    , version:0
+                    , action: changeFlag
+            };
+            $scope.model.form.listTmp = [];
+            $scope.model.form.listTmp1 = [];
+            $scope.model.form.listDetailCode = [];
+            $scope.model.hidden.codeTypeName = tempCodeTypeNameList;
+            $scope.model.hidden.locale = tempLocale;
+            $scope.model.form.listDetailCode.push(tempItem);
+        });
+    }
+}]);

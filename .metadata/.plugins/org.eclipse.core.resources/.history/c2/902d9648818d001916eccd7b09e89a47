@@ -1,0 +1,3933 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision: 1.0 $  $Date: 2014/05/30 $
+ * @author : Quang-Thien
+ */
+
+'use strict';
+
+exexSMSApp.directive( 'modal', function(){
+    return {
+        restrict: 'EA',
+        transclude:true,
+        scope: {
+            id: '=',
+            modalbase: '=',
+            modalobject: '='
+        },
+        templateUrl : 'modalDialog'
+    };
+} );
+
+exexSMSApp.directive('exexLoading', ['$http','$compile' ,function ($http,$compile){
+    return {
+        restrict: 'E',
+        transclude: true,
+        template:
+            '<div id="bg-loading" ng-show="isAppLoading" style="width: 100% !important;height: 100% !important;position: fixed;top: 0;z-index: 9999;opacity: 0;left: 0;"></div> \n' +
+            '<div ng-show="isAppLoading" style="width:100%"> \n'+
+            '  <div class="alert alert-info" style="text-align:center;position: fixed;left: 50%;top: 35%;font-size: 20px;width: 280px;margin-left: -140px;z-index: 99999;"> \n'+
+            '  <i class="glyphicon glyphicon-refresh glyphicon-refresh-animate"></i>Loading...</div> \n' +
+            '</div>',
+        link: function (scope, element, attrs){
+            scope.isAppLoading = function () {
+                return $http.pendingRequests.length > 0;
+            };
+            scope.$watch(scope.isAppLoading, function (value){
+                if(value){
+                    element.show();
+                    element[0].removeAttribute('class')
+                    $compile(element);
+                }else{
+                    element.hide();
+                }
+            });
+        }
+    };
+}]);
+
+exexSMSApp.directive('chosenSelect', function() {
+    var linker = function(scope, element, attrs) {
+
+        var dropPosition = attrs.dropposition;
+        //var classChosen = attrs.classChosen;
+        var autofocus = attrs.autofocus;
+
+        var width = attrs.chosenWidth;
+        var list = attrs['chosenSelect'];
+        if (angular.isDefined(attrs.list) && attrs.list !== null) {
+            scope.$watch(attrs.list, function() {
+                $(element).trigger('liszt:updated');
+                $(element).trigger('chosen:updated');
+                //$(element).trigger('chosen:activate');
+            });
+        }
+        if (angular.isDefined(list) && list !== null) {
+            scope.$watch(list, function() {
+                $(element).trigger('liszt:updated');
+                $(element).trigger('chosen:updated');
+                //$(element).trigger('chosen:activate');
+            });
+        }
+        scope.$watch(attrs['ngModel'], function() {
+            $(element).trigger('chosen:updated');
+            //$(element).trigger('chosen:activate');
+        });
+        //$(element).filter('[autofocus]').trigger('chosen:activate');
+        var isDisabled = attrs['ngDisabled'];
+        if (angular.isDefined(isDisabled) && isDisabled !== null) {
+            scope.$watch(isDisabled, function(newValue) {
+                $(element).prop('disabled', newValue);
+                $(element).trigger('liszt:updated');
+                $(element).trigger('chosen:updated');
+            });
+        }
+        scope.$watch(attrs['ngModel'], function() {
+            $(element).trigger('chosen:updated');
+            if(null != autofocus || autofocus != undefined){
+                $(element).trigger('chosen:activate');
+            }
+        });
+        width = (width == null || width == '' || width === undefined) ? 'auto' : width;
+
+        var muiltiDropdow = attrs.muiltiDropdow;
+        if (muiltiDropdow == null || muiltiDropdow === '' || muiltiDropdow === 'true' || muiltiDropdow == true) {
+            muiltiDropdow = true;
+        } else if (muiltiDropdow === 'false' || muiltiDropdow == false) {
+            muiltiDropdow = false;
+        } else {
+            muiltiDropdow = true;
+        }
+
+        var singleBackstrokeDelete = attrs.singleBackstrokeDelete;
+        if (singleBackstrokeDelete == null || singleBackstrokeDelete === '' || singleBackstrokeDelete === 'true' || singleBackstrokeDelete == true) {
+            singleBackstrokeDelete = true;
+        } else if (singleBackstrokeDelete === 'false' || singleBackstrokeDelete == false) {
+            singleBackstrokeDelete = false;
+        } else {
+            singleBackstrokeDelete = true;
+        }
+
+        var maxSelected = attrs.maxSelected;
+        maxSelected = (maxSelected == null || maxSelected == '' || maxSelected === undefined) ? 10 : maxSelected;
+
+        var codeLength = attrs.codeLength;
+        codeLength = (codeLength == null || codeLength == '' || codeLength === undefined) ? 0 : codeLength;
+
+        $(element).chosen({
+            "width" : width,
+            "dropPosition" : dropPosition,
+            //"classChosen" : classChosen,
+            disable_search_threshold : 10,
+            muilti_dropdow : muiltiDropdow,
+            max_selected_options : maxSelected,
+            single_backstroke_delete : singleBackstrokeDelete,
+            "code_length" : codeLength
+        });
+        var deselect = attrs.chosenDeselect;
+        if (deselect == null || deselect === '' || deselect === 'true' || deselect == true) {
+            deselect = true;
+        } else if (deselect === 'false' || deselect == false) {
+            deselect = false;
+        } else {
+            deselect = true;
+        }
+        element.data('chosen').allow_single_deselect = deselect;
+    };
+
+    return {
+        restrict : 'A',
+        link : linker
+    };
+});
+
+
+exexSMSApp.directive('exexDateTimePicker', function(){
+    return {
+            restrict : 'EA',
+            replace: true,
+            transclude: true,
+            scope : {
+                dateId : '@',
+                dateClass : '@',
+                dateType : '=',
+                dateValue : '=',
+                dateMinValue : '=',
+                dateMaxValue : '=',
+                dateMaxLength : '=',
+                dateValidation : '=',
+                dateTimeFormat : '@',
+                autofocus : ' @',
+                width : '@',
+                disabled : '=',
+                required : '='
+            },
+            template : '<div class="input-group date form_datetime {{width}}"> \n' +
+                       '  <input class="form-control {{dateClass}} disabled-ime" type="text" sms-date-time-format ng-model="dateValue" numbers-only ' +
+                       '    id={{dateId}} name={{dateId}} auto-focus={{autofocus}} ng-disabled="disabled" maxlength="{{dateMaxLength}}" \n' +
+                       '    ng-required="required" > \n'+
+                       '  <span class="input-group-addon"> \n'+
+                       '    <span class="glyphicon glyphicon-th icon-date-picker"></span> \n'+
+                       '  </span> \n' +
+                       '</div>',
+            //link : linker
+            link : function(scope, element, attrs) {
+                var holiday = null;
+                if(!StringUtils.isEmpty(sessionStorage.getItem('holidays'))){
+                    holiday = angular.fromJson(sessionStorage.getItem('holidays'));
+                }
+                element.datetimepicker({
+                    language : locale,
+                    todayBtn : true,
+                    autoclose : true,
+                    todayHighlight : true,
+                    startView : 2,
+                    forceParse : 0,
+                    calendarWeeks : true,
+                    showMeridian : true,
+                    weekStart : 1,
+                    daysHoliday : holiday,
+                    format : attrs.dateTimeFormat
+                });
+            }
+    };
+});
+
+exexSMSApp.directive('exexDatePicker', function($rootScope, $filter){
+    var dataInputmask = "'alias' : 'yyyy/mm/dd'";
+    return {
+        restrict : 'EA',
+        replace: true,
+        transclude: true,
+        scope : {
+            dateid : '@',
+            dateType : '=',
+            dateValue : '=',
+            dateMinValue : '=',
+            dateMaxValue : '=',
+            dateValidation : '=',
+            dateFormat : '@',
+            autofocus : ' @',
+            width : '@',
+            disabled : '=',
+            readonly : '=',
+            required : '='
+        },
+        template :'<div class="input-group date form_date {{width}}"> \n' +
+                  '  <input class="form-control input-calendar yyyy_mm_dd disabled-ime" type="text" maxlength="10"' +
+                  '    ng-model="dateValue" style="border-right: none;" auto-focus={{autofocus}} id={{dateid}} name={{dateid}} ng-disabled="disabled" ng-readonly="readonly"' +
+                  '    ng-required="required" exex-date-input > \n' +
+                  '  <span style="border-left: none;" class="input-group-addon" ng-class="{hidden:disabled, readonly: readonly}"> \n'+
+                  '    <span class="glyphicon glyphicon-calendar icon-date-picker"></span> \n'+
+                  '  </span> \n' +
+                  '</div>',
+        link : function(scope, element, attrs) {
+            if(attrs.dateFormat == undefined || attrs.dateFormat == ''){
+                attrs.dateFormat = 'yyyy/mm/dd';
+            }
+            var holiday = null;
+            if(!StringUtils.isEmpty(sessionStorage.getItem('holidays'))){
+                holiday = angular.fromJson(sessionStorage.getItem('holidays'));
+            }
+            var date = element.datepicker({
+                maxViewMode: 2,
+                todayBtn: 'linked',
+                clearBtn: true,
+                autoclose: true,
+                language : locale,
+                weekStart: 1,
+                daysOfWeekHighlighted: "0,6",
+                todayHighlight : true,
+                daysHoliday : holiday,
+                orientation : 'auto',
+                format : attrs.dateFormat
+            });
+
+            $(date).on('clearDate', function(event) {
+                scope.$apply(function(){
+                    scope.dateValue = null;
+                })
+            });
+
+            $(date).on('changeDate', function(event) {
+                // when press ctrl + v --> set value date
+                angular.element(element).on("keyup", function(e) {
+                    if(e.ctrlKey && e.keyCode == '86'){
+                        var date = $(element).find('.input-calendar').val();
+                        scope.dateValue = $filter('date')(date, "yyyy/MM/dd");
+                        e.stopImmediatePropagation();
+                        return false;
+                    }
+                })
+            });
+
+            scope.$watch('dateValue', function(val){
+                if(!StringUtils.isEmpty(scope.dateValue)) {
+                    var newDate = new Date(val);
+                    if(newDate == 'Invalid Date') {
+                        element.datepicker('setDate', null);
+                    } else {
+                        element.datepicker('setDate', newDate);
+                    }
+                }
+                if(val === undefined) {
+                    $rootScope.$broadcast("checkFormatDate", $(element).find('.input-calendar').val());
+                }
+            });
+
+            $(date).on('change', function (event) {
+                // TODO call bargain price calc
+                $rootScope.$broadcast("OnChange#EXEDate",{
+                    dateName : event.target.name
+                });
+            });
+        }
+    };
+});
+
+exexSMSApp.directive('exexYMDPicker', function(){
+    var dataInputmask = "'alias' : 'yyyy/mm/dd'";
+    return {
+            restrict : 'EA',
+            replace: true,
+            transclude: true,
+            scope : {
+                dateid : '@',
+                dateType : '=',
+                dateValue : '=',
+                dateMinValue : '=',
+                dateMaxValue : '=',
+                dateValidation : '=',
+                dateFormat : '@',
+                autofocus : '@',
+                width : '@',
+                disabled : '=',
+                required : '='
+            },
+            template :'<div class="input-group date form_date {{width}}"> \n' +
+                      '  <input class="form-control input-calendar yyyy_mm_dd disabled-ime" type="text" sms-date-format numbers-only ' +
+                      '    ng-model="dateValue" auto-focus={{autofocus}} id={{dateid}} name={{dateid}} ng-disabled="disabled" \n'+
+                      '    ng-required="required" data-inputmask = "'+dataInputmask+'"> \n' +
+                      '  <span class="input-group-addon" ng-class="{hidden:disabled}"> \n'+
+                      '      <span class="glyphicon glyphicon-calendar icon-date-picker"></span> \n'+
+                      '  </span> \n' +
+                      '</div>',
+            link : function(scope, element, attrs) {
+                if(attrs.dateFormat == undefined || attrs.dateFormat == ''){
+                    attrs.dateFormat = 'yyyy/mm/dd';
+                }
+                var holiday = null;
+                if(!StringUtils.isEmpty(sessionStorage.getItem('holidays'))){
+                    holiday = angular.fromJson(sessionStorage.getItem('holidays'));
+                }
+                var date = element.datetimepicker({
+                    language : locale,
+                    weekStart : 1,
+                    todayBtn : 1,
+                    autoclose : 1,
+                    todayHighlight : 1,
+                    startView : 4,
+                    calendarWeeks : true,
+                    minView : 2,
+                    forceParse : 0,
+                    showMeridian : true,
+                    daysHoliday : holiday,
+                    viewMode: 'years',
+                    format : attrs.dateFormat,
+                    immediateUpdates: true
+                });
+            }
+    };
+});
+
+
+exexSMSApp.directive('exexMonthPicker', function(){
+    var dataInputmask = "'alias' : 'yyyy/mm'";
+    return {
+            restrict : 'EA',
+            replace: true,
+            transclude: true,
+            scope : {
+                dateid : '@',
+                dateType : '=',
+                dateValue : '=',
+                dateMinValue : '=',
+                dateMaxValue : '=',
+                dateValidation : '=',
+                dateFormat : '@',
+                autofocus : ' @',
+                width : '@',
+                disabled : '=',
+                required : '='
+            },
+            template :'<div class="input-group date form_date {{width}}" "> \n' +
+                      '  <input maxlength="7" class="form-control yyyy_mm_dd disabled-ime" type="text" sms-date-month-format \n' +
+                      '    ng-model="dateValue" auto-focus={{autofocus}} id={{dateid}} name={{dateid}} ng-disabled="disabled" \n'+
+                      '    ng-required="required" data-inputmask = "'+dataInputmask+'"> \n' +
+                      '  <span class="input-group-addon" ng-class="{hidden:disabled}"> \n'+
+                      '      <span class="glyphicon glyphicon-calendar icon-date-picker"></span> \n'+
+                      '  </span> \n' +
+                      '</div>',
+            //link : linker
+            link : function(scope, element, attrs) {
+                if(attrs.dateFormat == undefined || attrs.dateFormat == ''){
+                    attrs.dateFormat = 'yyyy/mm';
+                }
+                var holiday = null;
+                if(!StringUtils.isEmpty(sessionStorage.getItem('holidays'))){
+                    holiday = angular.fromJson(sessionStorage.getItem('holidays'));
+                }
+                element.datetimepicker({
+                    language : locale,
+                    weekStart : 1,
+                    todayBtn : 1,
+                    autoclose : 1,
+                    todayHighlight : 1,
+                    startView : 3,
+                    calendarWeeks : true,
+                    minView : 3,
+                    forceParse : 0,
+                    showMeridian : true,
+                    daysHoliday : holiday,
+                    format : attrs.dateFormat
+                });
+            }
+    };
+});
+
+exexSMSApp.directive('exexTimePicker', function(){
+    return {
+            restrict : 'EA',
+            replace: true,
+            transclude: true,
+            scope : {
+                timeId : '@',
+                timeType : '=',
+                timeValue : '=',
+                timeMinValue : '=',
+                timeMaxValue : '=',
+                timeValidation : '=',
+                timeFormat : '@',
+                width : '@',
+                disabled : '=',
+                required : '='
+            },
+            template : '<div class="input-group date form_time {{width}}"> \n' +
+                       '  <input class="form-control ds disabled-ime" type="text" ng-disabled="disabled" ng-model="timeValue" ng-required="required"> \n' +
+                       '  <span class="input-group-addon" ng-class="{hidden:disabled}"> \n'+
+                       '    <span class="glyphicon glyphicon-time icon-date-picker"></span> \n'+
+                       '  </span> \n' +
+                       '</div>',
+            link : function(scope, element, attrs) {
+                element.datetimepicker({
+                    language : locale,
+                    weekStart : 1,
+                    todayBtn : 1,
+                    autoclose : 1,
+                    todayHighlight : 1,
+                    startView : 1,
+                    minView : 0,
+                    maxView : 1,
+                    forceParse : 0,
+                    minuteStep : 15,
+                    format : attrs.timeFormat,
+                });
+            },
+    };
+});
+
+exexSMSApp.directive("inputDisabled", function(){
+    return function(scope, element, attrs){
+        scope.$watch(attrs.inputDisabled, function(val){
+            if(val){
+                element.removeAttr("disabled");
+            }else{
+                element.attr("disabled", "disabled");
+            }
+        });
+    };
+});
+
+exexSMSApp.directive("inputReadonly", function(){
+    return function(scope, element, attrs){
+        scope.$watch(attrs.inputReadonly, function(val){
+            if(val){
+                element.removeAttr("readonly");
+            }else{
+                element.attr("readonly", "readonly");
+            }
+      });
+    };
+});
+
+exexSMSApp.directive('smsDateFormat', function ($filter)  {
+    return {
+        require: 'ngModel',
+        restrict: 'A',
+        scope: { ngModel: '=' },
+        link: function (scope, element, attrs, ngModel) {
+            ngModel.$formatters.push(function (modelValue){
+                return $filter('date')(modelValue, 'yyyy/MM/dd');
+            });
+            ngModel.$parsers.push(function (viewValue){
+                if(ValidateUtil.isValidTextDate(viewValue)){
+                    return $filter('date')(viewValue, 'yyyy/MM/dd');
+                }
+            });
+        }
+    };
+});
+
+exexSMSApp.directive('smsDateMonthFormat', function ($filter)  {
+    return {
+        require: 'ngModel',
+        restrict: 'A',
+        scope: { ngModel: '=' },
+        link: function (scope, element, attrs, ngModel) {
+            ngModel.$formatters.push(function (modelValue){
+                return $filter('date')(modelValue, 'yyyy/M/dd');
+            });
+            ngModel.$parsers.push(function (viewValue){
+//                    var arr = viewValue.split('/');
+//                    console.log(arr[1]);
+//                    if(arr.length > 1){
+//                        viewValue = parseInt(arr[1]) < 10 ? '0' + arr[1] : viewValue;
+//                    }
+//                    return $filter('date')(viewValue, 'yyyy/MM/dd');
+                    return viewValue;
+            });
+        }
+    };
+});
+
+exexSMSApp.directive('smsDateTimeFormat', function ($filter) {
+    return {
+        require: 'ngModel',
+        restrict: 'A',
+        scope: { ngModel: '=' },
+        link: function (scope, element, attrs, ngModel) {
+            var fromUser = function (data) {
+                var date = new Date(data);
+                return $filter('date')(date, 'yyyy/MM/dd HH:mm:ss');
+            };
+            var toUser = function (data) {
+                if (data === '0001-01-01') {
+                    return '';
+                }else {
+                    return $filter('date')(data, 'yyyy/MM/dd HH:mm:ss');
+                }
+            };
+            ngModel.$parsers.push(fromUser);
+            ngModel.$formatters.unshift(toUser);
+        }
+    };
+});
+
+exexSMSApp.directive("colSort", function() {
+    return {
+        restrict: 'A',
+        transclude: true,
+        template: '<a href="" tabindex="-1" ng-click="sortBy()">' +
+                  '   <span ng-transclude></span>' +
+                  //'   <i class="glyphicon" ng-class="{\'glyphicon-sort-by-alphabet\' : predicate === by && !reverse,  \'glyphicon-sort-by-alphabet-alt\' : predicate===by && reverse}"></i>' +
+                  '   <i class="glyphicon" ng-class="selectedColumn();"></i>' +
+                  '</a>',
+        scope: {
+            predicate: '=',
+            by: '=',
+            reverse: '='
+        },
+        link: function(scope, element, attrs) {
+            scope.sortBy = function() {
+                /*scope.predicate = predicate;
+                scope.reverse = !scope.reverse;*/
+                if (scope.predicate === scope.by) {
+                    scope.reverse = !scope.reverse;
+                } else {
+                    scope.by = scope.predicate;
+                    scope.reverse = !scope.reverse;
+                }
+            };
+            scope.selectedColumn = function() {
+                /*if (scope.predicate === predicate && !scope.reverse) {
+                    return 'glyphicon-sort-by-alphabet';
+                } else {
+                    return 'glyphicon-sort-by-alphabet-alt';
+                }*/
+                if (scope.predicate === scope.by) {
+                    //return ('icon-chevron-' + ((scope.sort.reverse) ? 'down' : 'up'));
+                    return ('glyphicon glyphicon-sort-by-' + ((scope.reverse) ? 'alphabet-alt' : 'alphabet'));
+                } else {
+                    return 'glyphicon glyphicon-sort';
+                }
+            };
+        }
+    };
+});
+
+exexSMSApp.directive('autoFocus', function($timeout, $parse) {
+    return {
+          link: function(scope, element, attrs) {
+              var model = $parse(attrs.autoFocus);
+
+              function select2Focus() {
+                  $(this).closest('.select2').prev('select').select2('open');
+              }
+
+              scope.$watch(model, function(value) {
+                  if(value === true) {
+                      $timeout(function() {
+                          if(element.hasClass('select2') == true){
+                              //$('.form-control.select2').next('.select2').find('.select2-selection').one('focus', select2Focus).on('blur', function () {
+                              //    $(this).one('focus', select2Focus)
+                              //})
+                              element.next().children().children().focus();
+                            }else{
+                              element[0].focus();
+                            }
+                          $("div.daterangepicker").addClass('daterange-focus');
+                          scope.focus = 'autoFocus' in attrs;
+                          scope.smsDateMonthFormat = 'smsDateMonthFormat' in attrs;
+                          scope.smsDateFormat = 'smsDateFormat' in attrs;
+                          scope.smsDateTimeFormat = 'smsDateTimeFormat' in attrs;
+                          if(scope.focus && ( scope.smsDateMonthFormat || scope.smsDateFormat || scope.smsDateTimeFormat)){
+                              $("div.datetimepicker").addClass('daterange-focus');
+                          }
+                      },500);
+                  }
+              });
+          }
+    };
+});
+
+exexSMSApp.directive('autoButtonFocus', function($timeout, $parse) {
+    return {
+          link: function(scope, element, attrs) {
+              var model = $parse(attrs.autoButtonFocus);
+              scope.$watch(model, function(value) {
+                  if(value === true) {
+                      $timeout(function() {
+                          element[0].focus();
+                      },1);
+                  }
+              });
+          }
+    };
+});
+
+exexSMSApp.directive('format', ['$filter', function ($filter) {
+    return {
+        require: '?ngModel',
+        link: function (scope, elem, attrs, ctrl) {
+            if (!ctrl) {
+                return;
+            }
+            ctrl.$formatters.unshift(function (a) {
+                var value = $filter(attrs.format)(ctrl.$modelValue);
+                if(value == 0){
+                    return '';
+                }
+                return value;
+            });
+            ctrl.$parsers.unshift(function (viewValue) {
+                var plainNumber = viewValue.replace(/[^\d|\-+|\.+]/g, '');
+                elem.val($filter('number')(plainNumber));
+                return plainNumber;
+            });
+        }
+    };
+}]);
+
+exexSMSApp.directive('convert', function () {
+    return {
+        require: 'ngModel',
+        restrict: 'A',
+        scope: { ngModel: '=' },
+        link: function (scope, element, attrs, ngModel) {
+            ngModel.$parsers.unshift(function (viewValue){
+                var rex = /[\uFF10-\uFF19]/g;
+                viewValue = viewValue.replace(rex, function(ch) {
+                    return String.fromCharCode(ch.charCodeAt(0) - 65248);
+                });
+
+                scope.$watch(attrs.ngModel, function (current, old) {
+                    console.log("After: " + viewValue);
+                });
+            });
+        }
+    };
+});
+
+exexSMSApp.directive('autoInputChange', function () {
+    return {
+        require: 'ngModel',
+        restrict: 'A',
+        scope: { ngModel: '=' },
+        link: function (scope, element, attrs, ngModel) {
+            ngModel.$formatters.unshift(function (viewValue){
+                scope.$watch(attrs.ngModel, function (current, old) {
+                    element.val(viewValue);
+                    element.change();
+                    element.blur();
+                    return element.val();
+                });
+            });
+        }
+    };
+});
+
+exexSMSApp.directive('numbersOnly', function () {
+    return  {
+        require: 'ngModel',
+        restrict: 'A',
+        link: function (scope, elm, attrs, ngModel) {
+            var ctrlDown = false,
+            ctrlKey = 17,
+            cmdKey = 91,
+            vKey = 86,
+            cKey = 67;
+            elm.on('keydown', function (event) {
+                if ((event.keyCode == ctrlKey || event.keyCode == cmdKey)){
+                    ctrlDown =  true;
+                }
+                if (ctrlDown && (event.keyCode == vKey || event.keyCode == cKey)){
+                    return true;
+                }else{
+
+                    if(event.shiftKey && event.keyCode != 9){
+                        event.preventDefault();
+                        return false;
+                    }else if ([8, 9, 13, 16, 27, 35, 36, 37, 38, 39, 40, 46].indexOf(event.which) > -1) {
+                        // backspace, enter, escape, arrows, home, end
+                        return true;
+                    } else if (event.which >= 48 && event.which <= 57) {
+                        // numbers
+                        return true;
+                    }
+                    else if (event.which >= 96 && event.which <= 105) {
+                        // numpad number
+                        return true;
+                    } else if ([110, 190].indexOf(event.which) > -1) {
+                        // dot and numpad dot
+                        return true;
+                    }else {
+                        scope.$watch(attrs.ngModel, function (current, old) {
+                            if(isNaN(parseFloat(parseFloat(elm.val())))){
+                                elm.val('');
+                                ngModel.$setViewValue('');
+                                ngModel.$render();
+                            }
+                        });
+                        return false;
+                    }
+                }
+            }).keyup(function(event) {
+                if (event.keyCode == ctrlKey || event.keyCode == cmdKey) ctrlDown = false;
+            });
+        }
+    };
+});
+
+
+exexSMSApp.directive('numbersOnlyMinus', function () {
+    return  {
+        restrict: 'A',
+        link: function (scope, elm, attrs, ctrl) {
+            elm.on('keydown', function (event) {
+
+                if(event.shiftKey && event.keyCode != 9){
+                    event.preventDefault();
+                    return false;
+                }else if ([8, 9, 13, 16, 27, 35, 36, 37, 38, 39, 40, 46, 109, 189].indexOf(event.which) > -1) {
+                    // backspace, enter, escape, arrows, home, end
+                    return true;
+                } else if (event.which >= 48 && event.which <= 57) {
+                    // numbers
+                    return true;
+                } else if (event.which >= 96 && event.which <= 105) {
+                    // numpad number
+                    return true;
+                }else {
+                    event.preventDefault();
+                    return false;
+                }
+            });
+        }
+    };
+});
+
+exexSMSApp.directive('numChar', function () {
+    return  {
+        restrict: 'A',
+        link: function (scope, elm, attrs, ctrl) {
+            elm.on('keydown', function (event) {
+                if(event.shiftKey & (event.which >= 48 && event.which <= 57)){
+                    // !@#$%&*()_+
+                    event.preventDefault();
+                    return false;
+                }else if ([8, 9, 13, 27, 35, 36, 37, 38, 39, 40, 46].indexOf(event.which) > -1) {
+                    // backspace, enter, escape, arrows, home, end
+                    return true;
+                } else if (event.which >= 48 && event.which <= 57) {
+                    // numbers
+                    return true;
+                } else if (event.which >= 96 && event.which <= 105) {
+                    // numpad number
+                    return true;
+                }else if(event.which >= 65 && event.which <= 91){
+                    // a-z, A-Z
+                    return true;
+                }else {
+                    event.preventDefault();
+                    return false;
+                }
+            });
+        }
+    };
+});
+
+exexSMSApp.directive('exexNumeric', [function () {
+    'use strict';
+    // Declare a empty options object
+    var options = {aPad : false};
+    var strTmp = "";
+    return {
+        // Require ng-model in the element attribute for watching changes.
+        require: '?ngModel',
+        // This directive only works when used in element's attribute (e.g: cr-numeric)
+        restrict: 'A',
+        compile: function (tElm, tAttrs) {
+            if(!ValidateUtil.isValidTextEmpty(tAttrs.asign)){
+                options = {aPad : false, aSign: " " + tAttrs.asign, pSign: 's'};
+            }
+            var isTextInput = tElm.is('input:text');
+            return function (scope, elm, attrs, controller) {
+                // Get instance-specific options.
+                if(!ValidateUtil.isValidTextEmpty(attrs.maxlength)){
+                    var maxLength = parseInt(attrs.maxlength, 10);
+                    var vMax = strTmp.pad("9", maxLength);
+                    options.vMax = vMax;
+                }
+
+                if(!ValidateUtil.isValidTextEmpty(attrs.ngmaxlength)){
+                    var maxLength = parseInt(attrs.ngmaxlength, 10);
+                    var vMax = strTmp.pad("9", maxLength);
+                    options.vMax = vMax;
+                }
+
+                if(!ValidateUtil.isValidTextEmpty(attrs.ngminlength)){
+                    var minLength = parseInt(attrs.ngminlength, 10);
+                    var vMin = strTmp.pad("9", minLength);
+                    options.vMin = '-' + vMin;
+                }
+
+                var opts = angular.extend({}, options, scope.$eval(attrs.exexNumeric));
+
+                // Helper method to update autoNumeric with new value.
+                var updateElement = function (element, newVal) {
+                    if(newVal == 'Overflow Error'){
+                        return element.val('Overflow Error');
+                    }
+                    // Only set value if value is numeric
+                    if ($.isNumeric(newVal)){
+                        element.autoNumeric('set', newVal);
+                    }
+                };
+
+                // Initialize element as autoNumeric with options.
+                elm.autoNumeric(opts);
+
+                // if element has controller, wire it (only for <input type="text" />)
+                if (controller) {
+                    // watch for external changes to model and re-render element
+                    scope.$watch(tAttrs.ngModel, function (current, old) {
+                        controller.$render();
+                    });
+                    // render element as autoNumeric
+                    controller.$render = function () {
+                        updateElement(elm, controller.$viewValue);
+                    };
+                    // Detect changes on element and update model.
+                    elm.on('change', function (e) {
+                        scope.$apply(function () {
+                            controller.$setViewValue(elm.autoNumeric('get'));
+                        });
+                    });
+                }
+                else {
+                    // Listen for changes to value changes and re-render element.
+                    // Useful when binding to a readonly input field.
+                        attrs.$observe('value', function (val) {
+                            updateElement(elm, val);
+                        });
+                }
+            };
+        } // compile
+    }; // return
+}]);
+
+
+exexSMSApp.directive('exexDaterange', ['$compile', '$parse', '$filter', function ($compile, $parse, $filter) {
+
+    return {
+        restrict: 'EA',
+        require: 'ngModel',
+        link: function ($scope, $element, $attributes, ngModel) {
+            var options = {};
+            $scope.locale = {
+                    applyLabel: '適用',
+                    cancelLabel: 'クリア',
+                    fromLabel: 'From',
+                    toLabel: 'To',
+                    weekLabel: '週',
+                    customRangeLabel: 'Custom Range',
+                    daysOfWeek: ["日", "月", "火", "水", "木", "金", "土"],
+                    monthNames: ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"],
+                    firstDay : 0
+                };
+            options.format = $attributes.format || 'YYYY/MM/DD';
+            options.separator = $attributes.separator || ' - ';
+            options.minDate = $attributes.minDate && moment($attributes.minDate);
+            options.maxDate = $attributes.maxDate && moment($attributes.maxDate);
+            options.dateLimit = $attributes.limit && moment.duration.apply(this, $attributes.limit.split(' ').map(function (elem, index) { return index === 0 && parseInt(elem, 10) || elem; }) );
+            options.ranges = $attributes.ranges && $parse($attributes.ranges)($scope);
+            //options.locale = $attributes.locale && $parse($attributes.locale)($scope);
+            options.locale = daterangelocale[locale];
+            options.locale.firstDay = 0;
+            options.opens = $attributes.opens || 'right';
+            options.showWeekNumbers = $attributes.showWeekNumbers || false;
+            options.linkedCalendars = false;
+            var holiday = null;
+            if(!StringUtils.isEmpty(sessionStorage.getItem('holidays'))){
+                holiday = angular.fromJson(sessionStorage.getItem('holidays'));
+            }
+            options.daysHoliday = holiday;
+            options.buttonClasses = 'btn waves-effect waves-light';
+            options.applyClass = 'green';
+            options.cancelClass = 'yellow';
+
+            function format(date) {
+                return date.format(options.format);
+            }
+
+            function formatted(dates) {
+                return [format(dates.startDate), format(dates.endDate)].join(options.separator);
+            }
+
+            ngModel.$formatters.unshift(function (modelValue) {
+                if (!modelValue) {
+                    return '';
+                }
+                return modelValue;
+            });
+
+            ngModel.$parsers.unshift(function (viewValue) {
+                return viewValue;
+            });
+
+            $scope.$watch($attributes.ngModel, function (modelValue) {
+                if (!modelValue || (!modelValue.startDate)) {
+                    //ngModel.$setViewValue({ startDate: moment().startOf('day').toDate(), endDate: moment().startOf('day').toDate() });
+                    return;
+                }
+                $element.data('daterangepicker').startDate = moment(modelValue.startDate);
+                $element.data('daterangepicker').endDate = moment(modelValue.endDate);
+                $element.data('daterangepicker').updateView();
+                $element.data('daterangepicker').updateCalendars();
+                //$element.data('daterangepicker').updateInputText();
+
+                angular.element('#fromDate').html(ngModel.$modelValue.startDate);
+                angular.element('#toDate').html(ngModel.$modelValue.endDate);
+            });
+
+            $element.daterangepicker(options, function(start, end) {
+                $scope.$apply(function () {
+                    ngModel.$setViewValue({ startDate: $filter('date')(start.toDate(), 'yyyy/MM/dd'), endDate: $filter('date')(end.toDate(), 'yyyy/MM/dd') });
+                    angular.element('#fromDate').html($filter('date')(start.toDate(), 'yyyy/MM/dd'));
+                    angular.element('#toDate').html($filter('date')(end.toDate(), 'yyyy/MM/dd'));
+                });
+            });
+            angular.element('.a-daterange-from').on('cancel.daterangepicker', function(ev, picker) {
+                $scope.$apply(function () {
+                    ngModel.$setViewValue({
+                        startDate: $filter('date')(DateUtils.getPreviousMonth(), "yyyy/MM/dd"),
+                        endDate: $filter('date')(DateUtils.getCurrentDate(), "yyyy/MM/dd")
+                    });
+                });
+                angular.element('#fromDate').html('');
+                angular.element('#toDate').html('');
+            });
+            angular.element('.a-daterange-to').on('cancel.daterangepicker', function(ev, picker) {
+                $scope.$apply(function () {
+                    ngModel.$setViewValue({
+                        startDate: $filter('date')(DateUtils.getPreviousMonth(), "yyyy/MM/dd"),
+                        endDate: $filter('date')(DateUtils.getCurrentDate(), "yyyy/MM/dd")
+                    });
+                });
+                angular.element('#fromDate').html('');
+                angular.element('#toDate').html('');
+            });
+        }
+    };
+}]);
+
+exexSMSApp.directive('exexDaterangeNone', ['$compile', '$parse', '$filter', function ($compile, $parse, $filter) {
+
+    return {
+        restrict: 'EA',
+        require: 'ngModel',
+        link: function ($scope, $element, $attributes, ngModel) {
+            var options = {};
+            $scope.locale = {
+                    applyLabel: '適用',
+                    cancelLabel: 'クリア',
+                    fromLabel: 'From',
+                    toLabel: 'To',
+                    weekLabel: '週',
+                    customRangeLabel: 'Custom Range',
+                    daysOfWeek: ["日", "月", "火", "水", "木", "金", "土"],
+                    monthNames: ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"],
+                    firstDay : 0
+                };
+            options.format = $attributes.format || 'YYYY/MM/DD';
+            options.separator = $attributes.separator || ' - ';
+            options.minDate = $attributes.minDate && moment($attributes.minDate);
+            options.maxDate = $attributes.maxDate && moment($attributes.maxDate);
+            options.dateLimit = $attributes.limit && moment.duration.apply(this, $attributes.limit.split(' ').map(function (elem, index) { return index === 0 && parseInt(elem, 10) || elem; }) );
+            options.ranges = $attributes.ranges && $parse($attributes.ranges)($scope);
+            //options.locale = $attributes.locale && $parse($attributes.locale)($scope);
+            options.locale = daterangelocale[locale];
+            options.locale.firstDay = 0;
+            options.opens = $attributes.opens || 'right';
+            options.showWeekNumbers = $attributes.showWeekNumbers || false;
+            options.showDropdowns= false;
+            options.linkedCalendars = false;
+            var holiday = null;
+            if(!StringUtils.isEmpty(sessionStorage.getItem('holidays'))){
+                holiday = angular.fromJson(sessionStorage.getItem('holidays'));
+            }
+            options.daysHoliday = holiday;
+            options.buttonClasses = 'btn waves-effect waves-light';
+            options.applyClass = 'green';
+            options.cancelClass = 'yellow';
+
+            function format(date) {
+                return date.format(options.format);
+            }
+
+            function formatted(dates) {
+                return [format(dates.startDate), format(dates.endDate)].join(options.separator);
+            }
+
+            ngModel.$formatters.unshift(function (modelValue) {
+                if (!modelValue) {
+                    return '';
+                }
+                return modelValue;
+            });
+
+            ngModel.$parsers.unshift(function (viewValue) {
+                return viewValue;
+            });
+
+            $scope.$watch($attributes.ngModel, function (modelValue) {
+                if (!modelValue || (!modelValue.startDate)) {
+                    //ngModel.$setViewValue({ startDate: moment().startOf('day').toDate(), endDate: moment().startOf('day').toDate() });
+                    return;
+                }
+                $element.data('daterangepicker').startDate = moment(modelValue.startDate);
+                $element.data('daterangepicker').endDate = moment(modelValue.endDate);
+                $element.data('daterangepicker').updateView();
+                $element.data('daterangepicker').updateCalendars();
+                //$element.data('daterangepicker').updateInputText();
+
+                angular.element('#fromDateNone').html(ngModel.$modelValue.startDate);
+                angular.element('#toDateNone').html(ngModel.$modelValue.endDate);
+            });
+
+            $element.daterangepicker(options, function(start, end) {
+                $scope.$apply(function () {
+                    ngModel.$setViewValue({
+                        startDate: $filter('date')(start.toDate(), 'yyyy/MM/dd'),
+                        endDate: $filter('date')(end.toDate(), 'yyyy/MM/dd')
+                    });
+                    angular.element('#fromDateNone').html($filter('date')(start.toDate(), 'yyyy/MM/dd'));
+                    angular.element('#toDateNone').html($filter('date')(end.toDate(), 'yyyy/MM/dd'));
+                });
+            });
+
+            angular.element('.a-daterange-from-none').on('cancel.daterangepicker', function(ev, picker) {
+                $scope.$apply(function () {
+                    ngModel.$setViewValue({
+                        startDate: "",
+                        endDate: ""
+                    });
+                });
+                angular.element('#fromDateNone').html('');
+                angular.element('#toDateNone').html('');
+            });
+            angular.element('.a-daterange-to-none').on('cancel.daterangepicker', function(ev, picker) {
+                $scope.$apply(function () {
+                    ngModel.$setViewValue({
+                        startDate: "",
+                        endDate: ""
+                    });
+                });
+                angular.element('#fromDateNone').html('');
+                angular.element('#toDateNone').html('');
+            });
+        }
+    };
+}]);
+
+exexSMSApp.directive('exexDaterangeUpdateNone', ['$compile', '$parse', '$filter', function ($compile, $parse, $filter) {
+
+    return {
+        restrict: 'EA',
+        require: 'ngModel',
+        link: function ($scope, $element, $attributes, ngModel) {
+            var options = {};
+            $scope.locale = {
+                    applyLabel: '適用',
+                    cancelLabel: 'クリア',
+                    fromLabel: 'From',
+                    toLabel: 'To',
+                    weekLabel: '週',
+                    customRangeLabel: 'Custom Range',
+                    daysOfWeek: ["日", "月", "火", "水", "木", "金", "土"],
+                    monthNames: ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"],
+                    firstDay : 1
+                };
+            options.format = $attributes.format || 'YYYY/MM/DD';
+            options.separator = $attributes.separator || ' - ';
+            options.minDate = $attributes.minDate && moment($attributes.minDate);
+            options.maxDate = $attributes.maxDate && moment($attributes.maxDate);
+            options.dateLimit = $attributes.limit && moment.duration.apply(this, $attributes.limit.split(' ').map(function (elem, index) { return index === 0 && parseInt(elem, 10) || elem; }) );
+            options.ranges = $attributes.ranges && $parse($attributes.ranges)($scope);
+            //options.locale = $attributes.locale && $parse($attributes.locale)($scope);
+            options.locale = daterangelocale[locale];
+            options.opens = $attributes.opens || 'right';
+            options.showWeekNumbers = $attributes.showWeekNumbers || false;
+            options.showDropdowns= false;
+            options.linkedCalendars = false;
+            var holiday = null;
+            if(!StringUtils.isEmpty(sessionStorage.getItem('holidays'))){
+                holiday = angular.fromJson(sessionStorage.getItem('holidays'));
+            }
+            options.daysHoliday = holiday;
+            options.buttonClasses = 'btn waves-effect waves-light';
+            options.applyClass = 'green';
+            options.cancelClass = 'yellow';
+
+            function format(date) {
+                return date.format(options.format);
+            }
+
+            function formatted(dates) {
+                return [format(dates.startDate), format(dates.endDate)].join(options.separator);
+            }
+
+            ngModel.$formatters.unshift(function (modelValue) {
+                if (!modelValue) {
+                    return '';
+                }
+                return modelValue;
+            });
+
+            ngModel.$parsers.unshift(function (viewValue) {
+                return viewValue;
+            });
+
+            $scope.$watch($attributes.ngModel, function (modelValue) {
+                if (!modelValue || (!modelValue.startDate)) {
+                    //ngModel.$setViewValue({ startDate: moment().startOf('day').toDate(), endDate: moment().startOf('day').toDate() });
+                    return;
+                }
+                $element.data('daterangepicker').startDate = moment(modelValue.startDate);
+                $element.data('daterangepicker').endDate = moment(modelValue.endDate);
+                $element.data('daterangepicker').updateView();
+                $element.data('daterangepicker').updateCalendars();
+                //$element.data('daterangepicker').updateInputText();
+
+                angular.element('#fromUpdateDateNone').html(ngModel.$modelValue.startDate);
+                angular.element('#toUpdateDateNone').html(ngModel.$modelValue.endDate);
+            });
+
+            $element.daterangepicker(options, function(start, end) {
+                $scope.$apply(function () {
+                    ngModel.$setViewValue({
+                        startDate: $filter('date')(start.toDate(), 'yyyy/MM/dd'),
+                        endDate: $filter('date')(end.toDate(), 'yyyy/MM/dd')
+                    });
+                    angular.element('#fromUpdateDateNone').html($filter('date')(start.toDate(), 'yyyy/MM/dd'));
+                    angular.element('#toUpdateDateNone').html($filter('date')(end.toDate(), 'yyyy/MM/dd'));
+                });
+            });
+
+            angular.element('.a-daterange-from-none').on('cancel.daterangepicker', function(ev, picker) {
+                $scope.$apply(function () {
+                    ngModel.$setViewValue({
+                        startDate: "",
+                        endDate: ""
+                    });
+                });
+                angular.element('#fromUpdateDateNone').html('');
+                angular.element('#toUpdateDateNone').html('');
+            });
+            angular.element('.a-daterange-to-none').on('cancel.daterangepicker', function(ev, picker) {
+                $scope.$apply(function () {
+                    ngModel.$setViewValue({
+                        startDate: "",
+                        endDate: ""
+                    });
+                });
+                angular.element('#fromUpdateDateNone').html('');
+                angular.element('#toUpdateDateNone').html('');
+            });
+        }
+    };
+}]);
+
+
+exexSMSApp.directive("contenteditable", function($compile) {
+    return {
+        link : function(scope, element, attrs) {
+
+            element.bind("focus", function() {
+                scope.name = scope.name.replace(/</g, "&lt;").replace(/>/g,
+                        "&gt;");
+                scope.$apply();
+            });
+            element.bind("blur", function() {
+                scope.name = element[0].innerHTML.replace(/[&]lt[;]/g, "<")
+                        .replace(/[&]gt[;]/g, ">");
+                scope.$apply();
+            });
+        }
+    };
+});
+
+exexSMSApp.directive('ngEnter', function() {
+    return function(scope, element, attrs) {
+        element.bind("keydown keypress", function(event) {
+            if(event.which === 13) {
+                scope.$apply(function(){
+                        scope.$eval(attrs.ngEnter);
+                });
+                event.preventDefault();
+            }
+        });
+    };
+});
+
+exexSMSApp.directive('ngTab', function() {
+    return function(scope, element, attrs) {
+        element.bind("keydown keypress", function(event) {
+            if(event.which === 9) {
+                scope.$apply(function(){
+                        scope.$eval(attrs.ngEnter);
+                });
+            }
+        });
+    };
+});
+
+//exexSMSApp.directive('ngBlur', ['$parse', function($parse) {
+//    return function(scope, element, attr) {
+//        var fn = $parse(attr['ngBlur']);
+//        element.bind('blur', function(event) {
+//            scope.$apply(function() {
+//                fn(scope, {$event:event});
+//            });
+//        });
+//    };
+//}]);
+
+exexSMSApp.directive('sfapopover', function ($compile, $rootScope) {
+    var itemsTemplate = "<h3 class='popover-title-sfa' style='display: block !important'><span class='bango' style='padding-right: 34px !important;margin-left: 5px;'>{{snotitle}}</span><span style='padding-right: 35px !important;margin-left: 22px;'>{{datetitle}}</span><span>{{documenttitle}}</span></h3>" +
+                            "<a  class='close' ng-click='close()'>&times;</a>" +
+                            "<div id='pop-over' class='scrollbar-custom height-{{height}}' ng-class='{over: count > 6}' style='height: auto;'>" +
+                            "<ul class='unstyled'>" +
+                                "<li ng-repeat='item in items' style='width: 260px;'>" +
+                                    "<div ng-if='item.documentStatus == 03'>" +
+                                    "<a ng-click='exportPDFReportFromPopOver(item,screen)' class='pull-left'>{{item.code}}</a><div class='data-date pull-left' style='padding-left: 28px !important;'>{{item.date | date : 'yyyy/MM/dd'}}</div><div style='padding-left: 28px !important;text-align: center;'>{{item.documentStatusName}}</div>" +
+                                    "</div>" +
+                                    "<div ng-if='item.documentStatus != 03'>" +
+                                    "<div class='pull-left'>{{item.code}}</div><div class='data-date pull-left' style='padding-left: 28px !important;'>{{item.date | date : 'yyyy/MM/dd'}}</div><div style='padding-left: 28px;text-align: center;'>{{item.documentStatusName}}</div>" +
+                                    "</div>" +
+                                "</li>" +
+                            "</ul>" +
+                        "</div>";
+    var getTemplate = function (contentType) {
+        var template = '';
+        switch (contentType) {
+            case 'items':
+                template = itemsTemplate;
+                break;
+        }
+        return template;
+    };
+    return {
+        restrict: "A",
+        link: function ($scope, element, attrs) {
+            var popOverContent;
+            popOverContent = getTemplate("items");
+            popOverContent = $compile("<span>" + popOverContent + "</span>")($scope);
+            var options = {
+                content: popOverContent,
+                placement: "auto",
+                html: true,
+                trigger: "click",
+                selector: '.fa-comment',
+                date: $scope.date,
+                animation: true
+            };
+
+            $(element).popover(options).on("click", function () {
+                var _this = this;
+                $('[data-toggle=popover]').not(this).popover('hide');
+                $(this).popover("show");
+            });
+
+            $scope.exportPDFReportFromPopOver = function(item,screen){
+                $(element).popover('hide');
+                $rootScope.$broadcast("SfaProjectList#exportPdf",{
+                    item : item,
+                    screen : screen
+                });
+            };
+
+            $scope.close = function(){
+                $(element).popover('hide');
+            };
+
+            var destroy = function () {
+                $(element).popover('destroy');
+            };
+
+            $scope.$on("$destroy", function () {
+                destroy();
+            });
+        },
+        scope: {
+            items: '=',
+            snotitle : '@',
+            datetitle : '@',
+            documenttitle : '@',
+            height : '@',
+            screen : '@',
+            count : '@'
+        }
+    };
+});
+
+exexSMSApp.directive('slimscroll', function() {
+    'use strict';
+    return {
+        restrict : 'A',
+        link : function($scope, $elem, $attr) {
+            var off = [];
+            var option = {};
+
+            var refresh = function() {
+                if ($attr.slimscroll) {
+                    option = $scope.$eval($attr.slimscroll);
+                } else if ($attr.slimscrollOption) {
+                    option = $scope.$eval($attr.slimscrollOption);
+                }
+                $($elem).slimScroll({
+                    destroy : true
+                });
+                //$($elem).slimScroll({ destroy: true });
+                $($elem).slimScroll(option);
+            };
+
+            var init = function() {
+                refresh();
+
+                if ($attr.slimscroll && !option.noWatch) {
+                    off.push($scope.$watchCollection($attr.slimscroll,refresh));
+                }
+
+                if ($attr.slimscrollWatch) {
+                    off.push($scope.$watchCollection($attr.slimscrollWatch,refresh));
+                }
+
+                if ($attr.slimscrollListenTo) {
+                    off.push($scope.$on($attr.slimscrollListenTo, refresh));
+                }
+            };
+
+            var destructor = function() {
+                off.forEach(function(unbind) {
+                    unbind();
+                });
+                off = null;
+            };
+
+            off.push($scope.$on('$destroy', destructor));
+            init();
+        }
+    };
+});
+
+exexSMSApp.directive('perfectScrollbar', ['$parse', '$window', function($parse, $window) {
+    var psOptions = [
+                     'wheelSpeed', 'wheelPropagation', 'minScrollbarLength', 'useBothWheelAxes',
+                     'useKeyboard', 'suppressScrollX', 'suppressScrollY', 'scrollXMarginOffset',
+                     'scrollYMarginOffset', 'includePadding'//, 'onScroll', 'scrollDown'
+    ];
+
+    return {
+        restrict: 'EA',
+        transclude: true,
+        template: '<div ng-transclude></div>',
+        replace: true,
+        link: function($scope, $elem, $attr) {
+            var jqWindow = angular.element($window);
+            var options = {};
+
+            for (var i=0, l=psOptions.length; i<l; i++) {
+                var opt = psOptions[i];
+                if ($attr[opt] !== undefined) {
+                    options[opt] = $parse($attr[opt])();
+                }
+            }
+
+            $scope.$evalAsync(function() {
+                $elem.perfectScrollbar(options);
+                var onScrollHandler = $parse($attr.onScroll);
+                $elem.scroll(function(){
+                    var scrollTop = $elem.scrollTop();
+                    var scrollHeight = $elem.prop('scrollHeight') - $elem.height();
+                    $scope.$apply(function() {
+                        onScrollHandler($scope, {
+                            scrollTop: scrollTop,
+                            scrollHeight: scrollHeight
+                        });
+                    });
+                });
+            });
+
+            function update(event) {
+                $scope.$evalAsync(function() {
+                    if ($attr.scrollDown == 'true' && event != 'mouseenter') {
+                        setTimeout(function () {
+                            $($elem).scrollTop($($elem).prop("scrollHeight"));
+                        }, 100);
+                    }
+                    $elem.perfectScrollbar('update');
+                });
+            }
+
+            // This is necessary when you don't watch anything with the scrollbar
+            $elem.bind('mouseenter', update('mouseenter'));
+
+            // Possible future improvement - check the type here and use the appropriate watch for non-arrays
+            if ($attr.refreshOnChange) {
+                $scope.$watchCollection($attr.refreshOnChange, function() {
+                    update();
+                });
+            }
+
+            // this is from a pull request - I am not totally sure what the original issue is but seems harmless
+            if ($attr.refreshOnResize) {
+                jqWindow.on('resize', update);
+            }
+
+            $elem.bind('$destroy', function() {
+                jqWindow.off('resize', update);
+                $elem.perfectScrollbar('destroy');
+            });
+
+        }
+    };
+}]);
+
+exexSMSApp.directive('bootstrapSwitch', [
+   function() {
+       return {
+           restrict: 'A',
+           require: '?ngModel',
+           link: function(scope, element, attrs, ngModel) {
+               element.bootstrapSwitch({onText: attrs.ontext, offText: attrs.offtext});
+               element.on('switchChange.bootstrapSwitch', function(event, state) {
+                   if (ngModel) {
+                       scope.$apply(function() {
+                           ngModel.$setViewValue(state);
+                       });
+                   }
+               });
+
+               scope.$watch(attrs.ngModel, function(newValue, oldValue) {
+                   if (newValue) {
+                       element.bootstrapSwitch('state', true, true);
+                   } else {
+                       element.bootstrapSwitch('state', false, true);
+                   }
+               });
+               if(attrs.ngDisabled == "true"){
+                   element.prop("checked", attrs.values).trigger("change.bootstrapSwitch", true);
+                   element.bootstrapSwitch('disabled', attrs.ngDisabled, true);
+               }
+           }
+       };
+   }
+]);
+
+exexSMSApp.directive('bootstrapSwitchCustomer', [
+  function() {
+    return {
+        restrict : 'A',
+        require : '?ngModel',
+        link : function(scope, element, attrs, ngModel) {
+            element.bootstrapSwitch({
+                onText : attrs.ontext,
+                offText : attrs.offtext
+            });
+            element.on('switchChange.bootstrapSwitch', function(event, state) {
+                if (ngModel) {
+                    scope.$apply(function() {
+                        ngModel.$setViewValue(!state);
+                    });
+                }
+            });
+
+            scope.$watch(attrs.ngModel, function(newValue, oldValue) {
+                if (newValue) {
+                    element.bootstrapSwitch('state', false, true);
+                } else {
+                    element.bootstrapSwitch('state', true, true);
+                }
+            });
+        }
+    };
+} ]);
+
+/*this will focus on dilog ( not tab in parent windows) */
+//exexSMSApp.directive('modalContent', function() {
+//    return {
+//        restrict: 'C',
+//        scope: true,
+//        link: function(scope, elm) {
+//            elm.on('keyup', function(evt) {
+//                if (evt.which === 9) { // tab
+//
+//                    var children = $('.modal :tabbable');
+//                    var first = children[0];
+//                    var last = children[children.length - 1];
+//                    var onFirstWithShift = evt.target === first && evt.shiftKey;
+//                    var onLastNoShift = evt.target === last && !evt.shiftKey;
+//                    if (onFirstWithShift || onLastNoShift) {
+//                        evt.preventDefault();
+//                    }
+//                }
+//            });
+//            elm.on('keydown', function(evt) {
+//                if (evt.which === 9) { // tab
+//                    var children = $('.modal :tabbable');
+//                    var first = children[0];
+//                    var last = children[children.length - 1];
+//                    if (evt.target === first && evt.shiftKey) {
+//                        // user is going from first to last
+//                        evt.preventDefault();
+//                        last.focus();
+//                    } else if (evt.target === last && !evt.shiftKey) {
+//                        // uesr is going from last to first
+//                        evt.preventDefault();
+//                        first.focus();
+//                    }
+//                }
+//            });
+//        }
+//    };
+//});
+
+exexSMSApp.directive('input',function(){
+    return {
+        restrict : 'E',
+        link : function(scope,element,attrs){
+            element.bind("keydown",function(event){
+                if(event.which === 13 || event.keyCode === 13){
+                    event.preventDefault();
+                    var fields = $(this).parents('form:eq(0),body').find('input:visible:enabled:not(readonly), select:visible:enabled:not(readonly), textarea:not(:disabled),button');
+                    var index = fields.index(this);
+                    if(index > -1 && (index+1) < fields.length){
+                        if(!$(fields[index]).hasClass('not-enter')){
+                            fields.eq(index+1).focus();
+                        }
+                    }
+                }
+            });
+        }
+    };
+});
+
+exexSMSApp.directive('select',function(){
+    return {
+        restrict : 'E',
+        link : function(scope,element,attrs){
+            element.bind("keydown",function(event){
+                if(event.which === 13 || event.keyCode === 13){
+                    event.preventDefault();
+                    var fields = $(this).parents('form:eq(0),body').find('input:visible:enabled:not(readonly), select:visible:enabled:not(readonly), textarea:not(:disabled),button');
+                    var index = fields.index(this);
+                    if(index > -1 && (index+1) < fields.length){
+                        fields.eq(index+1).focus();
+                    }
+                }
+            });
+        }
+    };
+});
+
+exexSMSApp.directive('exexNumericItemSum', [function () {
+    'use strict';
+    // Declare a empty options object
+    var options = {aPad : false};
+    var strTmp = "";
+    return {
+        require: '?ngModel',
+        restrict: 'A',
+        compile: function (tElm, tAttrs) {
+
+            var isTextInput = tElm.is('input:text');
+
+            return function (scope, elm, attrs, controller) {
+                if(!ValidateUtil.isValidTextEmpty(attrs.ngmaxlength)){
+                    var maxLength = parseInt(attrs.ngmaxlength, 10);
+                    var vMax = strTmp.pad("9", maxLength);
+                    options.vMax = vMax + ".99";
+                }
+                if(!ValidateUtil.isValidTextEmpty(attrs.ngminlength)){
+                    var minLength = parseInt(attrs.ngminlength, 10);
+                    var vMin = strTmp.pad("9", minLength);
+                    options.vMin = '-' + vMin + ".99";
+                }
+
+                var opts = angular.extend({}, options, scope.$eval(attrs.exexNumeric));
+
+                // Helper method to update autoNumeric with new value.
+                var updateElement = function (element, newVal) {
+                    if(newVal == 'Overflow Error'){
+                        return element.val('Overflow Error');
+                    }
+                    // Only set value if value is numeric
+                    if ($.isNumeric(newVal)){
+                        element.autoNumeric('set', newVal);
+                    }
+                };
+
+                // Initialize element as autoNumeric with options.
+                elm.autoNumeric(opts);
+
+                // if element has controller, wire it (only for <input type="text" />)
+                if (controller) {
+                    // watch for external changes to model and re-render element
+                    scope.$watch(tAttrs.ngModel, function (current, old) {
+                        controller.$render();
+                    });
+                    // render element as autoNumeric
+                    controller.$render = function () {
+                        updateElement(elm, controller.$viewValue);
+                    };
+                    // Detect changes on element and update model.
+                    elm.on('change', function (e) {
+                        scope.$apply(function () {
+                            controller.$setViewValue(elm.autoNumeric('get'));
+                        });
+                    });
+                } else {
+                    // Listen for changes to value changes and re-render element.
+                    // Useful when binding to a readonly input field.
+//                    if (isTextInput) {
+                        attrs.$observe('value', function (val) {
+                            updateElement(elm, val);
+                        });
+//                    }
+                }
+            };
+        } // compile
+    }; // return
+}]);
+
+exexSMSApp.directive('numbersItemSum', function () {
+    return  {
+        restrict: 'A',
+        link: function (scope, elm, attrs, ctrl) {
+            elm.on('keydown', function (event) {
+
+                if(event.shiftKey && event.keyCode != 9){
+                    event.preventDefault();
+                    return false;
+                }else if ([8, 9, 13, 16, 27, 35, 36, 37, 38, 39, 40, 46, 109, 189].indexOf(event.which) > -1) {
+                    // backspace, enter, escape, arrows, home, end
+                    return true;
+                } else if (event.which >= 48 && event.which <= 57) {
+                    // numbers
+                    return true;
+                } else if (event.which >= 96 && event.which <= 105) {
+                    // numpad number
+                    return true;                } else if ([110, 190].indexOf(event.which) > -1) {
+                    // dot and numpad dot
+                    return true;
+                }else {
+                    event.preventDefault();
+                    return false;
+                }
+            });
+        }
+    };
+});
+/*=======================20160419 new directive support responsive===============*/
+/* all directive must have exex* prefix name */
+
+exexSMSApp.directive('exexSelect2', function($timeout, $parse, ServerService){
+    var linker = function(scope, element, attrs, ngModel) {
+        var placeholder = '' || attrs.placeholder;
+        var allowClear = ((placeholder != undefined && attrs.allowClear == 'true') ? true : false);
+        var maximumSelectionLength = attrs.maxSelected || 0;
+        var minimumResultsForSearch = (attrs.hidSearch == 'true' ? 'Infinity' : 0);
+        var sessionSort = ((attrs.sessionSort != undefined && attrs.sessionSort == 'true') ? true : false);
+        var select2Initialized = true;
+
+        var serialCd = attrs.serialcd;
+        var options = {
+            language : locale,
+            placeholder : placeholder,
+            allowClear : allowClear,
+            maximumSelectionLength : maximumSelectionLength,
+            minimumResultsForSearch : minimumResultsForSearch
+        };
+
+        $timeout(function() {
+            element.select2(options);
+            element.select2Initialized = true;
+        });
+
+        var refreshSelect = function() {
+            if (!element.select2Initialized){
+                return;
+            }
+            $timeout(function() {
+                element.trigger('change.select2');
+            });
+        };
+
+        var recreateSelect = function () {
+            if (!element.select2Initialized){
+                return;
+            }
+            $timeout(function() {
+                element.select2('destroy');
+                element.select2(options);
+            });
+        };
+
+        scope.$watch(attrs.ngModel, function(){
+            if(sessionSort){
+                if (!select2Initialized){
+                    return;
+                }
+                if(!StringUtils.isEmpty(ngModel.$viewValue) && ngModel.$viewValue.length > 0){
+                    var list = [];
+                    for (var i = 0; i < ngModel.$viewValue.length; i++) {
+                        var item= ngModel.$viewValue[i];
+                        if(angular.isNumber(item)){
+                            list.push('number:'+item);
+                        } else {
+                            list.push('string:'+item);
+                        }
+
+                    }
+                    $timeout(function(){
+                        element.data('preserved-order', list); // store it for later
+                        element.select2(options);
+                        select2_renderSelections(element);
+                    }, 200)
+                } else {
+                    // fix error js
+                    $timeout(function(){
+                        element.data('preserved-order', []); // store it for later
+                        element.select2(options);
+                        select2_renderSelections(element);
+                    })
+                }
+            } else {
+                $timeout(function() {
+                    refreshSelect();
+                }, 200)
+            }
+        });
+
+        if (attrs.ngOptions) {
+            if(!sessionSort){
+                var list = attrs.ngOptions.match(/ in ([^ ]*)/)[1];
+                // watch for option list change
+                scope.$watch(list, recreateSelect);
+            }
+        }
+
+        if (attrs.ngDisabled) {
+            if(!sessionSort){
+                $timeout(function() {
+                    scope.$watch(attrs.ngDisabled, refreshSelect);
+                },200);
+            }
+        }
+
+        if(!StringUtils.isEmpty(attrs.sort) && attrs.sort === 'false'){
+            $(element).on('select2:select', function (evt) {
+                // detach sorted
+                var elm = evt.params.data.element;
+                var $elm = $(elm);
+                $elm.detach();
+                $(this).append($elm);
+                $(this).trigger("change");
+            });
+        }
+
+        //START for select multiple sort
+        function convertModel(data){
+            var model = [];
+            for (var i = 0; i < data.length; i++) {
+                var item = data[i].toString();
+                if(item.indexOf('number:') > -1) {
+                    var itemTmp = item.replace('number:', '');
+                    model.push(parseInt(itemTmp));
+                } else {
+                    var itemTmp = item.replace('string:', '');
+                    model.push(itemTmp);
+                }
+            }
+            ngModel.$setViewValue(model);
+        }
+
+        function select2_renderSelections(element){
+            var order      = element.data('preserved-order') || [];
+            var container = element.next('.select2-container');
+            var tags      = container.find('li.select2-selection__choice');
+            var input     = tags.last().next();
+
+            // apply tag order
+            angular.forEach(order, function(val, x){
+                var el = tags.filter(function(i,tag){
+                    return $(tag).data('data').id === val;
+                });
+                input.before(el);
+            });
+        }
+
+        function selectionHandler(e){
+            var select2Initialized = false;
+            var val       = e.params.data.id;
+            var order     = element.data('preserved-order') || [];
+            switch (e.type){
+               case 'select2:select':
+                 order[ order.length ] = val;
+               break;
+            case 'select2:unselect':
+               var found_index = order.indexOf(val);
+               if (found_index >= 0 )
+                 order.splice(found_index,1);
+               break;
+            }
+            element.data('preserved-order', order); // store it for later
+            select2_renderSelections(element);
+            convertModel(element.data('preserved-order'));
+        }
+
+        element.on('select2:select select2:unselect', function (e) {
+            if(sessionSort){
+                selectionHandler(e);
+                select2Initialized = true;
+            }
+        });
+
+        element.on('select2:selecting select2:unselecting', function (e) {
+            if(sessionSort){
+                select2Initialized = false;
+            }
+        });
+
+        //END for select multiple sort
+    };
+    return {
+        restrict : 'A',
+        require: 'ngModel',
+        link : linker
+    };
+});
+
+exexSMSApp.directive('exexSelect2Tree', function($timeout){
+    var linker = function(scope, element, attrs, ngModel) {
+
+        scope.listGroupSelect = [];
+        var placeholder = '' || attrs.placeholder;
+        var allowClear = (placeholder != undefined && attrs.allowClear == 'true') ? true : false;
+        var maximumSelectionLength = attrs.maxSelected || 0;
+        var minimumResultsForSearch = (attrs.hidSearch == 'true' ? 'Infinity' : 0);
+        var isSelected;
+        var onSelect = false;
+        var deSelect = false;
+        var index = 0;
+
+        var options = {
+            nameElement : attrs.name,
+            language : locale,
+            placeholder : placeholder,
+            allowClear : allowClear,
+            maximumSelectionLength : maximumSelectionLength,
+            minimumResultsForSearch : minimumResultsForSearch,
+            closeOnSelect: true,
+            templateResult: function (data, container) {
+                if (data.loading) {
+                    index = 0;
+                    return data.text;
+                }
+                if (data.element) {
+                    //insert span element and add 'parent' property
+                    var option = $("<span></span><span style='font-weight: bold'><i class='fa fa-users'></i>&nbsp;" + data.text + "</span>");
+                    var $element = $(data.element);
+                    var data = scope.listData[index];
+                    var level = data.level;
+
+                    $(container).attr("val", data.groupCd);
+                    $(container).attr("parent", data.parentCd);
+                    $(container).attr("level", level);
+                    $(container).attr("index", index);
+
+                    var $this = $(container).css({"display" : "block"});
+
+                    var hasDataChild = data.hasDataChild;
+                    if (level == "0") {
+                        if(index == 0 || (scope.listData.length - 1 > index)) {
+                            $(option[0]).addClass("switch fa fa-minus");
+                        }
+
+                    } else if (level == '1' || level == '2'){
+                        if(hasDataChild){
+                            $(option[0]).addClass("switch fa fa-plus");
+                        }
+                        if(level == '2') {
+                            $this.css({"display" : "none"});
+                        }
+                    } else if(level == '3') {
+                        $this.css({"display" : "none"});
+                    }
+                    index++;
+                    return option;
+                } else {
+                    return data.text;
+                }
+            },
+            escapeMarkup: function (markup) {
+                return markup;
+            }
+        };
+
+        var scrollTop = 0;
+        setTimeout(function() {
+            element.select2(options);
+            element.select2Initialized = true;
+        });
+
+        $(element).on("select2:open", function (e){
+            setTimeout(function() {
+                //override mousedown for collapse/expand
+                $(".switch").mousedown(function(e) {
+                    isSelected = true;
+                    var current = $(this);
+                    var isOpened = $(current).hasClass("fa-plus");
+                    var parentElm = $(current).parent();
+                    var groupCd = $(parentElm).attr("val");
+                    var levelParent = isNaN(parseInt($(parentElm).attr("level"))) ? 1 : parseInt($(parentElm).attr("level"));
+                    var indexParent = isNaN(parseInt($(parentElm).attr("index"))) ? 1 : parseInt($(parentElm).attr("index"));
+
+                    $(".select2-results__options li").each(function(i) {
+                        var level = parseInt($(this).attr("level"));
+                        if(i > indexParent){
+                            var elm = $(".select2-results__options li[val='" + $(this).attr("val") + "']");
+                            if (isOpened) {
+                                if(levelParent == level){
+                                    return false;
+                                } else if(levelParent < level && levelParent + 1 == level){
+                                    elm.slideDown(300);
+                                }
+                            } else {
+                                if(levelParent == level){
+                                    return false;
+                                } else if(levelParent < level){
+                                    if(levelParent == 0 || levelParent == 1){
+                                        elm.find(".fa-minus").removeClass("fa-minus").addClass("fa-plus");
+                                    }
+                                    elm.slideUp(300);
+                                }
+                            }
+                        } else if (i == indexParent){
+                            var elmParentCd = $(".select2-results__options li[val='" + groupCd + "'] span:eq(0)");
+                            if (isOpened) {
+                                elmParentCd.removeClass("fa-plus").addClass("fa-minus");
+                            } else {
+                                elmParentCd.removeClass("fa-minus").addClass("fa-plus");
+                            }
+                        }
+                    });
+                    if(indexParent > 0){
+                        if(isOpened){
+                            setTimeout(function(){
+                                var optionOffset = $("ul.select2-results__options li:nth-child("+indexParent+")")[0].offsetTop;
+                                var currentOffset = current[0].offsetTop ? current[0].offsetTop : 0;
+                                scrollTop = optionOffset == 0 ? currentOffset - 8 : optionOffset;
+                                $('ul.select2-results__options').animate({
+                                    scrollTop: scrollTop
+                                });
+                            }, 300);
+                        }
+                    }
+                });
+
+                //override mouseup to nothing
+                $(".switch").mouseup(function(e) {
+                    isSelected = false;
+                    e.preventDefault();
+                    return false;
+                });
+            }, 0);
+        });
+
+        $(element).on('select2:selecting', function (e) {
+            var groupCd = (e.params.args.data.id).replace('string:', '');
+            if(groupCd == '$old' || groupCd == '$'){
+                e.preventDefault();
+                return;
+            }
+            if(isSelected){
+                isSelected = false;
+                e.preventDefault();
+                return;
+            }
+            onSelect = true;
+        });
+
+
+        // reset state
+        $(element).on('select2:close', function (e) {
+            onSelect = false;
+            deSelect = false;
+        });
+
+        var refreshSelect = function() {
+            if (!element.select2Initialized){
+                return;
+            }
+            $timeout(function() {
+                element.trigger('change.select2');
+            });
+        };
+
+        scope.$watch(function() { return ngModel.$modelValue },
+            function(newValue) {
+                if(deSelect) return;
+                if(onSelect) {
+                    changeValue(newValue);
+                } else {
+                    $timeout(function() {
+                        changeValue(newValue);
+                    }, 200);
+                }
+            }
+        );
+
+        var changeValue = function(newValue) {
+            if(!StringUtils.isEmpty(attrs.multiple)) {
+                if(!StringUtils.isEmpty(newValue) && newValue.length > 0) {
+                    var length = newValue.length;
+                    var groupCd = newValue[0];
+                    for(var i = length-1; i >= 0; i--){
+                        if(!StringUtils.isEmpty(newValue[i]) && scope.listGroupSelect.indexOf(newValue[i]) == -1){
+                            for(var j = scope.listData.length-1; j >= 0; j--){
+                                var item = scope.listData[j];
+                                if(newValue[i] == item.groupCd && item.oldFlag){
+                                    scope.listGroupSelect.push(newValue[i]);
+                                    return;
+                                }
+                            };
+                            groupCd = newValue[i];
+                        }
+                    };
+                    GroupUtil.getParentGroup(groupCd, scope.listData, newValue);
+                    scope.listGroupSelect = angular.copy(newValue);
+                }
+            }
+
+            // trigger ng-change in js
+            if(!StringUtils.isEmpty(attrs.ngChangeSelect2)) {
+                console.log(newValue);
+                scope.ngChangeSelect2();
+            }
+            refreshSelect();
+        }
+
+        //scope.$watch(attrs.ngModel, refreshSelect);
+
+        if (attrs.ngDisabled) {
+            $timeout(function() {
+                scope.$watch(attrs.ngDisabled, refreshSelect);
+            },200);
+        }
+
+        $(element).on('select2:unselecting', function (e) {
+            if($(element).attr("is-search")) {
+                deSelect = true;
+            }
+        });
+
+        //Prevent event click clear
+        $(element).not("[is-search]").on('select2:unselecting', function(e) {
+            $(element).parent().find('span.select2-selection__clear').not('[attr="is-search"]').click(function() {
+                $(element).val(null).trigger("change");
+            });
+            e.preventDefault();
+        });
+
+    };
+
+    return {
+        restrict : 'A',
+        require: 'ngModel',
+        link : linker,
+        scope : {
+            listData : '=?',
+            listGroupSelect : '=?',
+            ngChangeSelect2 : '&ngChangeSelect2'
+        }
+    };
+});
+
+exexSMSApp.directive('exexSelect2Ajax', function($timeout){
+    var linker = function(scope, element, attrs, ngModel) {
+        var placeholder = '' || attrs.placeholder;
+        var allowClear = ((placeholder != undefined && attrs.allowClear == 'true') ? true : false);
+        var maximumSelectionLength = attrs.maxSelected || 0;
+        var minimumResultsForSearch = (attrs.hidSearch == 'true' ? 'Infinity' : 0);
+
+        var serialCd = attrs.serialcd;
+
+        var options = {
+            language : {
+                noResults: function () {
+                    return "";
+                },
+                searching : function(){
+                    return "";
+                },
+            },
+            placeholder : placeholder,
+            allowClear : allowClear,
+            maximumSelectionLength : maximumSelectionLength,
+            minimumResultsForSearch : minimumResultsForSearch,
+            ajax: {
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name=_csrf]').attr("content")
+                },
+                data: serialCd,
+                url: getContextPath() + '/SalDetailsControl/loadUnitAjax',
+                type: "POST",
+                dataType: 'json',
+                contentType: "application/json",
+                delay : 250,
+                processResults: function (data) {
+                    var list = [];
+                    $(element).html('');
+                    angular.forEach(data.listM010001, function(item, key){
+                        var itemTmp = {
+                                id : item.unitCd,
+                                text : item.unitName,
+                                element : item.lineNo
+                        };
+                        list.push(itemTmp);
+                        if ($(element).find("option[value='" + item.unitCd + "']").length) {
+                            //$(element).val(item.unitCd).trigger("change");
+                        } else {
+                            $(element).append('<option selected="false" value="'+item.unitCd+'" lineNo="'+item.lineNo+'">'+item.unitName+'</option>');
+                        }
+                    });
+                    return {
+                        results: list
+                    };
+                },
+                cache : true
+            },
+        };
+
+        $timeout(function() {
+            element.select2(options);
+            element.select2Initialized = true;
+        });
+
+        var refreshSelect = function() {
+            if (!element.select2Initialized){
+                return;
+            }
+            $timeout(function() {
+                element.trigger('change.select2');
+            });
+        };
+
+        var recreateSelect = function () {
+            if (!element.select2Initialized){
+                return;
+            }
+            $timeout(function() {
+                element.select2('destroy');
+                element.select2(options);
+            });
+        };
+
+        scope.$watch(attrs.ngModel, refreshSelect);
+
+        if (attrs.ngOptions) {
+            var list = attrs.ngOptions.match(/ in ([^ ]*)/)[1];
+            // watch for option list change
+            scope.$watch(list, recreateSelect);
+        }
+
+        if (attrs.ngDisabled) {
+            $timeout(function() {
+                scope.$watch(attrs.ngDisabled, refreshSelect);
+            },200);
+        }
+
+        $(element).on('select2:opening', function (evt) {
+            evt.stopPropagation();
+        });
+    };
+    return {
+        restrict : 'A',
+        require: 'ngModel',
+        link : linker
+    };
+});
+
+exexSMSApp.directive('exexSelect2AjaxInfinite', function($timeout){
+    var linker = function(scope, element, attrs, ngModel) {
+        var placeholder = '' || attrs.placeholder;
+        var allowClear = ((placeholder != undefined && attrs.allowClear == 'true') ? true : false);
+        var maxPageSize = 100;
+        var loadData = attrs.loadData;
+        var sessionSort = ((attrs.sessionSort != undefined && attrs.sessionSort == 'true') ? true : false);
+        var listLength;
+        var onSelected = false;
+        var options = {
+            nameElement : attrs.name,
+            language : locale,
+            placeholder : placeholder,
+            allowClear : allowClear,
+            ajax: {
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name=_csrf]').attr("content")
+                },
+                url: getContextPath() + '/AjaxData/loadDataAjax',
+                type: "POST",
+                dataType: 'json',
+                contentType: "application/json",
+                delay: 250,
+                data: function (params) {
+                    var items = {
+                        searchParam : !StringUtils.isEmpty(params.term) ? params.term : "",
+                        page: !StringUtils.isEmpty(params.page) ? params.page : 1,
+                        pageSize : maxPageSize,
+                        loadData : loadData,
+                        isFilter: false
+                    };
+                    if(loadData == 'PROJECT' || loadData == 'PARENT_PROJECT'){
+                        items.custCd = !StringUtils.isEmpty(scope.custCd) ? scope.custCd : "";
+                    } else if(loadData == 'WAREHOUSE'){
+                        items.inventorySno = !StringUtils.isEmpty(scope.inventorySno) ? scope.inventorySno : "";
+                        items.recodeNo = !StringUtils.isEmpty(scope.recodeNo) ? scope.recodeNo : "";
+                    } else if(loadData == 'ITEM'){
+                        items.onlySetItem = scope.onlySetItem;
+                    } else if(loadData == 'ITEM_FILTER'){
+                        items.isFilter = true;
+                    } else if(loadData == 'USER'){
+                        items.groupCd = !StringUtils.isEmpty(scope.groupCd) ? scope.groupCd : "";
+                    } else if(loadData == 'ESTIMATE' || loadData == 'RECEIVE'){
+                        items.projectSno = !StringUtils.isEmpty(scope.projectSno) ? scope.projectSno : "";
+                    } else if(loadData == 'BILLADDRESS_FOR_TAM'){
+                        items.projectSno = !StringUtils.isEmpty(scope.projectSno) ? scope.projectSno : "";
+                        items.custCd = !StringUtils.isEmpty(scope.custCd) ? scope.custCd : "";
+                    } else if(loadData == 'KARTE' && !StringUtils.isEmpty(scope.isCreateNewReceive)) {
+                        items.isCreateNewReceive = true;
+                    }
+                    return JSON.stringify(items);
+                },
+                processResults: function (data, params) {
+                    var list = [];
+                    if(scope.notSearch && StringUtils.isEmpty(scope.custCd)){
+                        list = [];
+                        listLength = 0;
+                    }else{
+                        listLength = data.resultList.length;
+                        if(listLength > 0){
+                            params.page = params.page || 1;
+                            angular.forEach(data.resultList, function(item, key){
+                                var itemTmp = {
+                                    id : item.valueId,
+                                    text : item.valueText
+                                };
+                                if(scope.showInfo){
+                                    itemTmp.text = item.valueId + ' ' + item.valueText;
+                                }
+                                if(loadData == 'WAREHOUSE_FOR_SUB_PROJECT' || loadData == 'BILLADDRESS_FOR_CARTE') {
+                                    itemTmp.valueExplain = item.valueExplain;
+                                    itemTmp.text = !StringUtils.isEmpty(item.valueText) ? item.valueText : '';
+                                }
+                                if(loadData == 'WAREHOUSE'){
+                                    itemTmp.disabled = !item.activeFlag;
+                                }
+                                if(loadData == 'CUSTOMER_FOR_TAM' || loadData == 'BILLADDRESS_FOR_TAM'){
+                                    itemTmp.controlCd = item.controlCd;
+                                }
+                                if(StringUtils.isEmpty(scope.listSelected) || (!StringUtils.isEmpty(scope.listSelected) && scope.listSelected.indexOf(itemTmp.id) == -1)){
+                                    list.push(itemTmp);
+                                }
+                            });
+                        }
+                    }
+                    return {
+                        results: list,
+                        pagination: {
+                            more: listLength < maxPageSize ? false : true
+                        }
+                    };
+                },
+                cache: true
+            },
+            escapeMarkup: function (markup) {
+                return markup;
+            },
+            templateResult: function (data) {
+                if (data.loading) {
+                    return data.text;
+                }
+                var markup = "";
+                if (loadData == 'WAREHOUSE_FOR_SUB_PROJECT' || loadData == 'BILLADDRESS_FOR_CARTE') {
+                    markup = "<span>" + data.text +  " " + data.valueExplain + "</span>"
+                } else if (loadData == 'KARTE') {
+                    data.text = !StringUtils.isEmpty(data.text) ? data.text : "";
+                    markup = "<span>" + data.text + "</span>"
+                } else if (loadData == 'CUSTOMER_FOR_TAM' || loadData == 'BILLADDRESS_FOR_TAM') {
+                    var controlCd = !StringUtils.isEmpty(data.controlCd) ? data.controlCd + " " : "";
+                    data.text = controlCd + data.text;
+                    markup = "<span>" + data.text + "</span>"
+                } else {
+                    markup = "<span>" + data.text + "</span>"
+                }
+                return  markup;
+            }
+        };
+
+        $timeout(function() {
+            element.empty();
+            element.select2(options);
+        });
+
+        var refreshSelect = function() {
+            $timeout(function() {
+                if(!StringUtils.isEmpty(scope.listData)){
+                    element.empty();
+                    var listData = scope.listData;
+                    var selectedValues = element.val();
+                    for (var i = 0; i < listData.length; i++) {
+                        var no = listData[i].no;
+                        var name = listData[i].name;
+                        if(!StringUtils.isEmpty(no)){
+                            element.append('<option label="' + name + '" value="'+no+'">'+name+'</option>');
+                            if (selectedValues == null) {
+                                selectedValues = new Array();
+                            }
+                            selectedValues.push(no);
+                        }
+                    }
+                    element.val(selectedValues).trigger('change');
+                }else{
+                    element.empty();
+                    if(!StringUtils.isEmpty(scope.valueId)){
+                        if(scope.showCd){
+                            element.append('<option label="' + scope.valueText + '" value="' + scope.valueId + '">' + scope.valueId + ' ' + scope.valueText + '</option>');
+                        }else{
+                            if (loadData == 'CUSTOMER_FOR_TAM' || loadData == 'BILLADDRESS_FOR_TAM') {
+                                var controlCd = "";
+                                if(!onSelected) {
+                                    controlCd = !StringUtils.isEmpty(scope.controlCd) ? scope.controlCd + " " : "";
+                                }
+                                var customText = controlCd + scope.valueText;
+                                element.append('<option label="' + customText + '" value="' + scope.valueId + '">' + customText + '</option>');
+                            } else {
+                                scope.valueText = !StringUtils.isEmpty(scope.valueText) ? scope.valueText : "";
+                                element.append('<option label="' + scope.valueText + '" value="' + scope.valueId + '"> '+ scope.valueText + '</option>');
+                            }
+                        }
+                    }
+                    element.trigger('change.select2');
+                }
+            });
+        };
+
+        //START for select multiple sort
+        function convertModel(data){
+            var model = [];
+            for (var i = 0; i < data.length; i++) {
+                var item = data[i];
+                if(item.indexOf('number:') > 0){
+                    model.push(parseInt(item.replace('number:', '')));
+                } else {
+                    model.push(item);
+                }
+            }
+            ngModel.$setViewValue(model);
+        }
+
+        function select2_renderSelections(element){
+            var order      = element.data('preserved-order') || [];
+            var container = element.next('.select2-container');
+            var tags      = container.find('li.select2-selection__choice');
+            var input     = tags.last().next();
+
+            // apply tag order
+            angular.forEach(order, function(val, x){
+                var el = tags.filter(function(i,tag){
+                    return $(tag).data('data').id === val;
+                });
+                input.before(el);
+            });
+        }
+
+        function selectionHandler(e){
+            var select2Initialized = false;
+            var val       = e.params.data.id;
+            var order     = element.data('preserved-order') || [];
+            switch (e.type){
+               case 'select2:select':
+                 order[ order.length ] = val;
+               break;
+            case 'select2:unselect':
+               var found_index = order.indexOf(val);
+               if (found_index >= 0 )
+                 order.splice(found_index,1);
+               break;
+            }
+            element.data('preserved-order', order); // store it for later
+            select2_renderSelections(element);
+            convertModel(element.data('preserved-order'));
+        }
+
+        element.on('select2:open', function (e) {
+            element.data('preserved-order', ngModel.$viewValue);
+        });
+
+        element.on('select2:select', function (e) {
+            if(sessionSort){
+                selectionHandler(e);
+            }
+        });
+
+        $(element).on('select2:selecting', function (e) {
+            onSelected = true;
+            if(StringUtils.isEmpty(attrs.multiple)){
+                if(loadData == 'CUSTOMER_FOR_TAM' || loadData == 'BILLADDRESS_FOR_TAM') {
+                    scope.controlCd =  e.params.args.data.controlCd;
+                }
+                scope.valueId = e.params.args.data.id;
+                scope.valueText = e.params.args.data.text;
+            }
+        });
+
+        element.on('select2:unselect', function (e) {
+            element.data('preserved-order', ngModel.$viewValue);
+            if(sessionSort){
+                selectionHandler(e);
+            }
+        });
+
+        //watch value attribute valueId
+        scope.$watch('valueId', function(value){
+            refreshSelect();
+        });
+
+        //watch value attribute valueId
+        scope.$watch('valueText', function(value){
+            refreshSelect();
+        });
+
+        //watch value attribute listData
+        scope.$watch('listData', function(value){
+            refreshSelect();
+        });
+
+        //watch value attribute valueId
+        scope.$watch('warehouseNo', function(value){
+            refreshSelect();
+        });
+
+      //watch value attribute valueId
+        scope.$watch('controlCd', function(value){
+            refreshSelect();
+        });
+
+
+    };
+    return {
+        restrict : 'A',
+        require: 'ngModel',
+        scope : {
+            listSelected : '=?',
+            valueText: '=?',
+            valueId: '=?',
+            listData : '=?',
+            inventorySno : '=?',
+            recodeNo : '=?',
+            warehouseNo : '=?',
+            onlySetItem : '=?',
+            showCd : '=?',
+            notSearch : '=?',
+            custCd : '=?',
+            showInfo: '=?',
+            projectSno : '=?',
+            groupCd : '=?',
+            controlCd : '=?',
+            isCreateNewReceive :'=?'
+        },
+        link : linker
+    };
+});
+
+exexSMSApp.directive('exexAutocompleteAjax', function($timeout){
+    var linker = function(scope, element, attrs, ngModel) {
+        var placeholder = '' || attrs.placeholder;
+        var allowClear = ((placeholder != undefined && attrs.allowClear == 'true') ? true : false);
+        var maximumSelectionLength = attrs.maxSelected || 0;
+        var minimumResultsForSearch = (attrs.hidSearch == 'true' ? 'Infinity' : 0);
+        var maxPageSize = 100;
+        var listLength;
+        var textData = '';
+        var loadData = attrs.loadData;
+        var options = {
+            tags : true,
+            forceabove : true,
+            nameElement : attrs.id,
+            language : locale,
+            placeholder : placeholder,
+            allowClear : allowClear,
+            maximumSelectionLength : maximumSelectionLength,
+            minimumResultsForSearch : minimumResultsForSearch,
+            createTag: function (params) {
+                if(StringUtils.isEmpty(attrs.ngBlur)){
+                    scope.isSelected = false;
+                    textData = params.term;
+                    element.empty();
+                    scope.$apply(function(){
+                        ngModel.$setViewValue(textData);
+                    });
+                    element.append('<option label="' + textData + '" value="'+textData+'">'+ textData +'</option>');
+                    element.trigger('change.select2');
+                }
+            },
+            ajax: {
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name=_csrf]').attr("content")
+                },
+                url: getContextPath() + '/AjaxData/loadDataAjax',
+                type: "POST",
+                dataType: 'json',
+                contentType: "application/json",
+                delay: 250,
+                data: function (params) {
+                    var items = {
+                        searchParam : !StringUtils.isEmpty(params.term) ? params.term : "",
+                        page: !StringUtils.isEmpty(params.page) ? params.page : 1,
+                        pageSize : maxPageSize,
+                        loadData : loadData
+                    };
+                    return JSON.stringify(items);
+                },
+                processResults: function (data, params) {
+                    var list = [];
+                    listLength = data.resultList.length;
+                    if(data.resultList.length > 0){
+                        params.page = params.page || 1;
+                        angular.forEach(data.resultList, function(item, key){
+                            var itemTmp = {
+                                id : item.valueId,
+                                text : item.valueText
+                            };
+                            if (loadData == 'CUSTOMER_BUSINESS'){
+                                itemTmp.registStatus = item.registStatus;
+                                itemTmp.registStatusName = item.registStatusName;
+                            } else if (loadData == 'EXIST_CUSTOMER'){
+                                itemTmp.clientType = item.clientType;
+                                itemTmp.clientTypeName = item.clientTypeName;
+                                itemTmp.disabled = true;
+                            } else if (loadData == 'BILLADDRESS'){
+                                itemTmp.disabled = true;
+                            }
+                            list.push(itemTmp);
+                        });
+                    }
+                    return {
+                        results: list,
+                        pagination: {
+                            more: listLength < maxPageSize ? false : true
+                        }
+                    };
+                },
+                cache: true
+            },
+            //START: for BusinessCardControl ( 顧客/発注先名 )
+            escapeMarkup: function (markup) {
+                return markup;
+            },
+            templateResult: function (data) {
+                if (data.loading) {
+                    return data.text;
+                }
+                var markup = "";
+                if (loadData == 'CUSTOMER_BUSINESS' && !StringUtils.isEmpty(data.registStatus)) {
+                    markup = "<div class='parent-customer'>"
+                           + "<span>" + data.text + "</span>"
+                           + "<span class='pull-right regist-status-"+ data.registStatus +"'>" + data.registStatusName + "</span>"
+                           + "</div>"
+                } else if (loadData == 'EXIST_CUSTOMER' && !StringUtils.isEmpty(data.clientType)) {
+                    markup = "<div class='parent-customer'>"
+                        + "<span>" + data.text + "</span>"
+                        + "<span class='pull-right client-type-"+ data.clientType +"'>" + data.clientTypeName + "</span>"
+                        + "</div>"
+                } else {
+                    markup = "<span>" + data.text + "</span>"
+                }
+                return  markup;
+            }
+            //END
+        };
+
+        $timeout(function() {
+//            element.empty();
+            element.select2(options);
+        });
+
+        var refreshSelect = function(event) {
+            element.empty();
+            $timeout(function() {
+                var id = scope.valueId;
+                var text = ngModel.$viewValue;
+                if(!StringUtils.isEmpty(text) && StringUtils.isEmpty(id)){
+                    element.append('<option label="' + text + '" value="'+text+'">'+ text +'</option>');
+                }else if (!StringUtils.isEmpty(id)){
+                    element.append('<option label="' + text + '" value="'+id+'">'+ text +'</option>');
+                }
+                element.trigger('change.select2');
+            });
+        };
+
+        //watch value attribute valueText
+        scope.$watch('valueText', function(value){
+            if(StringUtils.isEmpty(value)){
+                return;
+            }
+            refreshSelect('valueText');
+        });
+
+        $(element).on('select2:open', function (e) {
+            scope.isSelected = false;
+            $('.select2-search__field').attr('maxlength', attrs.maxlength);
+            if($('.select2-custStockName .select2-selection').hasClass('change-value')){
+                $('.select2-custStockName .select2-dropdown .select2-search__field').addClass('change-value');
+            }else {
+                if($('.select2-custStockName .select2-dropdown .select2-search__field').hasClass('change-value')){
+                    $('.select2-custStockName .select2-dropdown .select2-search__field').removeClass('change-value');
+                }
+            }
+
+            var oldClass = element.data('select2').id;
+            var newClass = "select2-" + attrs.id;
+            //fix for table in screen SalDetailsControl
+            if(oldClass != newClass){
+                element.data('select2').id = newClass;
+                //update new class
+                element.data('select2').$dropdown.removeClass(oldClass).addClass(newClass);
+                element.data('select2').$container.removeClass(oldClass).addClass(newClass);
+                element.data('select2').$results.removeAttr("id").attr("id" , newClass + "-results");
+            }
+            $timeout(function() {
+                var elm = $(".select2-" + attrs.id + " .select2-search--dropdown .select2-search__field");
+                var length = element.select2('data').length;
+                if(length > 0){
+                    var text = !StringUtils.isEmpty(ngModel.$viewValue) ? ngModel.$viewValue : "";
+                    elm[length-1].value = text;
+                } else {
+//                    elm[length-1].value = "";
+                }
+            });
+        });
+
+        $(element).on('select2:selecting', function (e) {
+            if(!StringUtils.isEmpty(attrs.ngChangeSelect2)){
+                setDataChange(e.params.args.data.id, true);
+            } else {
+                scope.isSelected = true;
+                textData = e.params.args.data.text;
+                scope.$apply(function(){
+                    ngModel.$setViewValue(e.params.args.data.text);
+                });
+            }
+        });
+
+        $(element).on('select2:unselecting', function (e) {
+            scope.isSelected = false;
+            refreshSelect('unselecting');
+        });
+
+        $(element).on("select2:closing", function (e) {
+            var elm = $(".select2-" + attrs.id + " .select2-search--dropdown .select2-search__field")[0];
+            if(!StringUtils.isEmpty(elm)){
+                var text = elm.value;
+                textData = text;
+                if(!StringUtils.isEmpty(attrs.ngBlur)){
+                    setDataBlur(text, false);
+                }
+            }
+        });
+
+        //Event when close select
+        $(element).on("select2:close", function (e) {
+            if(!scope.isSelected){
+                if(!StringUtils.isEmpty(attrs.ngBlur)){
+                    setDataBlur(ngModel.$viewValue);
+                } else if(!StringUtils.isEmpty(attrs.ngChangeSelect2) && !StringUtils.isEmpty(ngModel.$viewValue)){
+                    setDataChange(ngModel.$viewValue, false);
+                } else {
+                    scope.$apply(function(){
+                        ngModel.$setViewValue(textData);
+                    });
+                }
+                refreshSelect('close');
+            } else {
+                refreshSelect('close');
+            }
+        });
+
+        var setDataChange = function (value, isSelected){
+            scope.$apply(function(){
+                ngModel.$setViewValue(value);
+                scope.isSelected = isSelected;
+            });
+            scope.ngChangeSelect2();
+            element.empty();
+        }
+
+        var setDataBlur = function (value){
+            scope.$apply(function(){
+                ngModel.$setViewValue(value);
+            });
+            scope.ngBlurSelect2();
+            element.empty();
+        }
+
+    };
+    return {
+        restrict : 'A',
+        require: 'ngModel',
+        scope: {
+            valueText : '=?',
+            valueId : '=?',
+            isSelected : '=?',
+            ngBlurSelect2: '&ngBlur',
+            ngChangeSelect2 : '&ngChangeSelect2'
+        },
+        link : linker
+    };
+});
+
+exexSMSApp.directive('exexMultiAutocomplete', function($timeout){
+    var linker = function(scope, element, attrs, ngModel) {
+        var placeholder = '' || attrs.placeholder;
+        var allowClear = ((placeholder != undefined && attrs.allowClear == 'true') ? true : false);
+        var maximumSelectionLength = attrs.maxSelected || 0;
+        var minimumResultsForSearch = (attrs.hidSearch == 'true' ? 'Infinity' : 0);
+        var maxPageSize = 100;
+
+        var options = {
+            tags : true,
+            nameElement : attrs.name,
+            language : locale,
+            placeholder : placeholder,
+            allowClear : allowClear,
+            maximumSelectionLength : maximumSelectionLength,
+            minimumResultsForSearch : minimumResultsForSearch,
+            insertTag: function (data, tag) {
+                // Insert the tag at the end of the results
+                data.push(tag);
+            }
+        };
+
+        $timeout(function() {
+            element.select2(options);
+            element.select2Initialized = true;
+        });
+
+        var refreshSelect = function() {
+            if (!element.select2Initialized){
+                return;
+            }
+            $timeout(function() {
+                element.val(null).trigger('change.select2');
+                if(!StringUtils.isEmpty(scope.listData)){
+                    var listData = scope.listData;
+                    var listDataTag = scope.listDataTag;
+                    for (var i = 0; i < listDataTag.length; i++) {
+                        var id = listDataTag[i].id;
+                        var text = listDataTag[i].text;
+                        if(!StringUtils.isEmpty(id)){
+                            if(element.find("option[value="+ id +"]").length == 0){
+                                element.append('<option title="TAG" value="' + id + '" data-select2-tag="true">' + text + '</option>');
+                            }
+                        }
+                    }
+                    element.val(listData).trigger('change.select2');
+                }else{
+                    element.trigger('change.select2');
+                }
+            },200);
+        };
+
+        var recreateSelect = function () {
+            if (!element.select2Initialized){
+                return;
+            }
+            $timeout(function() {
+                element.select2('destroy');
+                element.select2(options);
+            });
+        };
+
+        scope.$watch(attrs.ngModel, function(){
+            if (!element.select2Initialized){
+                return;
+            }
+            $timeout(function(){
+                refreshSelect();
+            })
+        });
+
+        //watch value attribute listData
+        scope.$watch("listData", function(){
+            refreshSelect();
+
+        });
+
+        if (attrs.ngOptions) {
+            var list = attrs.ngOptions.match(/ in ([^ ]*)/)[1];
+            // watch for option list change
+            scope.$watch(list, recreateSelect);
+        }
+
+        if (attrs.ngDisabled) {
+            $timeout(function() {
+                scope.$watch(attrs.ngDisabled, refreshSelect);
+            },200);
+        }
+
+    };
+    return {
+        restrict : 'A',
+        require: 'ngModel',
+        scope: {
+            listData : '=?',
+            listDataTag : '=?'
+        },
+        link : linker
+    };
+});
+
+
+exexSMSApp.directive('exexResponsive',['$window', '$timeout', function ($window, $timeout){
+    return {
+        link : function(scope, element) {
+            scope.autoCollapse = function (){
+                var bodySize =  $window.innerWidth;
+                scope.$apply(function(){
+                    scope.responsiveXSS = bodySize < 400 ? true : false;
+                    scope.responsiveXS = bodySize < 768 ? true : false;
+                    scope.responsiveSM = bodySize < 992 ? true : false;
+                    scope.responsiveMD = bodySize <= 1024 ? true : false;
+                });
+                if (bodySize<992){
+//                    angular.element(document.querySelectorAll('#collapse')).removeClass("in");
+//                    angular.element(document.querySelectorAll('#collapseIcon')).addClass("collapsed");
+                }else{
+//                    angular.element(document.querySelectorAll('#collapse')).addClass("in");
+//                    angular.element(document.querySelectorAll('#collapseIcon')).removeClass("collapsed");
+                }
+                if (bodySize<380){
+                    angular.element(document.querySelectorAll('#daterange')).removeClass("input-group");
+//                    angular.element(document.querySelectorAll('#collapseModal')).removeClass("in");
+//                    angular.element(document.querySelectorAll('#collapseModalIcon')).addClass("collapsed");
+                }else{
+                    angular.element(document.querySelectorAll('#daterange')).addClass("input-group");
+//                    angular.element(document.querySelectorAll('#collapseModal')).addClass("in");
+//                    angular.element(document.querySelectorAll('#collapseModalIcon')).removeClass("collapsed");
+                };
+            };
+            $(window).resize(function() {
+                $timeout(function() {
+                    scope.autoCollapse();
+                },10);
+            });
+            $timeout(function() {
+                scope.autoCollapse();
+            },10);
+        }
+    };
+}]);
+
+exexSMSApp.directive('onSizeChanged', ['$window', function ($window) {
+    return {
+        restrict: 'A',
+        scope: {
+            onSizeChanged: '&'
+        },
+        link: function (scope, $element, attr) {
+            var element = $element[0];
+
+            cacheElementSize(scope, element);
+            $window.addEventListener('resize', onWindowResize);
+
+            function cacheElementSize(scope, element) {
+                scope.cachedElementWidth = element.offsetWidth;
+                scope.cachedElementHeight = element.offsetHeight;
+            }
+
+            function onWindowResize() {
+                var expression = scope.onSizeChanged();
+                expression();
+            };
+        }
+    };
+}]);
+
+exexSMSApp.directive('exexYearPicker', function(){
+    var dataInputmask = "'alias' : 'yyyy/mm'";
+    return {
+            restrict : 'EA',
+            replace: true,
+            transclude: true,
+            scope : {
+                dateid : '@',
+                dateType : '=',
+                dateValue : '=',
+                dateMinValue : '=',
+                dateMaxValue : '=',
+                dateValidation : '=',
+                dateFormat : '@',
+                autofocus : ' @',
+                width : '@'
+            },
+            template :'<div class="input-group date form_date"> \n' +
+                      '  <input maxlength="7" class="form-control yyyy_mm_dd disabled-ime" type="text" sms-date-month-format ' +
+                      '      ng-model="dateValue" auto-focus={{autofocus}} id={{dateid}} name={{dateid}} data-inputmask = "'+dataInputmask+'"> \n' +
+                      '  <span class="input-group-addon"> \n'+
+                      '      <span class="glyphicon glyphicon-calendar icon-date-picker"></span> \n'+
+                      '  </span> \n' +
+                      '</div>',
+            link : function(scope, element, attrs) {
+                if(attrs.dateFormat == undefined || attrs.dateFormat == ''){
+                    attrs.dateFormat = 'yyyy/mm';
+                }
+                var holiday = null;
+                if(!StringUtils.isEmpty(sessionStorage.getItem('holidays'))){
+                    holiday = angular.fromJson(sessionStorage.getItem('holidays'));
+                }
+                element.datetimepicker({
+                    language : locale,
+                    weekStart : 1,
+                    todayBtn : 1,
+                    autoclose : 1,
+                    todayHighlight : 1,
+                    startView : 4,
+                    calendarWeeks : true,
+                    minView : 4,
+                    forceParse : 0,
+                    showMeridian : true,
+                    daysHoliday : holiday,
+                    format : attrs.dateFormat
+                });
+            }
+    };
+});
+
+exexSMSApp.directive('exexMessagesValidation', function () {
+    var linker = function(scope, element, attrs) {
+        if(commonFieldLabel !== undefined){
+            // get common on EXEXHead.tag
+            scope.inputLabel = commonFieldLabel;
+        }
+        if(attrs.ngMessages !== undefined){
+            var id = attrs.ngMessages.split('.')[1]+'Label';
+            scope.inputLabel = angular.element(element).parent().parent().find('#'+id).text();
+            scope.maxValue = attrs.maxlength;
+        }
+    };
+    return {
+        restrict : 'EA',
+        //transclude: true,
+        scope: {
+            inputLabel : '&' ,
+            minValue: '=',
+            maxValue: '&',
+            exexDateFormat: '&',
+            exexItemFormat: '&',
+            exexHankakuFormat: '&',
+            exexHankakuCheckFormat: '&',
+            exexCheckSize: '&',
+            exexCheckDataStorage: '&',
+            exexDateTimeFormat: '&',
+            exexCheckTime: '&',
+            exexDigitsLength: '&'
+        },
+        link : linker,
+        templateUrl : getContextPath() + '/ExexDirective/ExexMessagesValidation'
+    };
+});
+
+exexSMSApp.directive('exexDateInput',['$filter','$parse', function ($filter, $parse) {
+    // convert: yyyy.mm.dd || yyyy-mm-dd || yyyy/mm/dd ---> yyyy/mm/dd
+    var regex = /^\d{4}[\/\-\.](0?[1-9]|1[012])[\/\-\.](0[1-9]|1\d|2\d|3[01])$/;
+    var linker = function(scope, element, attrs, ctrl, ngModel) {
+        ctrl.$validators.exexDateFormat = function(modelValue) {
+            if(!ValidateUtil.isValidTextEmpty(modelValue) && modelValue.length < 10) {
+                return false;
+            }else{
+                var modelValueTmp = $filter('date')(modelValue, 'yyyy/MM/dd');
+                return ctrl.$isEmpty(modelValueTmp) || regex.test(modelValueTmp);
+            }
+        };
+
+        scope.$on('checkFormatDate', function(event, date){
+            if(date.length < 10) {
+                ctrl.$validators.exexDateFormat(date);
+            }
+        });
+
+        ctrl.$formatters.push(function (modelValue){
+            return $filter('date')(modelValue, 'yyyy/MM/dd');
+        });
+    };
+    return {
+        restrict : 'A',
+        require: 'ngModel',
+        scope: {
+            ngModel : '='
+        },
+        link : linker
+    };
+}]);
+
+exexSMSApp.directive("fileread", [function () {
+    return {
+        scope: {
+            fileread: '=?',
+            filename: '=?',
+            filesize: '=?',
+            filetype: '=?',
+            checkSize: '=?',
+            isFileChange: '=?',
+            isImportCsv : '=?',
+            ngChange : '&ngChange'
+        },
+        restrict: 'A',
+        require: 'ngModel',
+        link: function (scope, element, attrs, ngModel) {
+          var checkSize = function(size) {
+            if (size  <= CONSTANT.FILE_SIZE) {
+              return true;
+            } else {
+              return false;
+            }
+          };
+          var isTypeValid, validMimeTypes;
+          validMimeTypes = ["pdf", "doc", "docx", "xls", "xlsx"];
+          isTypeValid = function(type) {
+            if ((validMimeTypes === (void 0) || validMimeTypes === '') || validMimeTypes.indexOf(type) > -1) {
+              return true;
+            } else {
+              return false;
+            }
+          };
+          scope.$watch('checkSize', function(newValue, oldValue) {
+            if (!newValue){
+              ngModel.$setValidity('exexCheckSize', true);
+            }
+          }, true);
+          element.bind("change", function (changeEvent) {
+            scope.isFileChange = true;
+            var file = changeEvent.target.files[0];
+
+            if(!ValidateUtil.isValidTextEmpty(file)){
+                var size = !ValidateUtil.isValidTextEmpty(file.size) ? file.size : 0;
+                if(!ValidateUtil.isValidTextEmpty(file)){
+                  var array_name = file.name.split('.');
+                  var type = array_name[array_name.length - 1];
+                  scope.filetype = type;
+                }
+                if(checkSize(size) == false){
+                  ngModel.$setValidity('exexCheckSize', false);
+                  scope.checkSize=true;
+                } else {
+                  ngModel.$setValidity('exexCheckSize', true);
+                  scope.checkSize=false;
+                }
+                scope.filesize = size;
+
+                scope.filename = changeEvent.target.files[0].name;
+                scope.$apply(scope);
+
+                var reader = new FileReader();
+                reader.onload = function (loadEvent) {
+                  scope.fileread = loadEvent.target.result;
+                  ngModel.$setViewValue(scope.filename);
+                  //call ng-change
+                  if(!StringUtils.isEmpty(attrs.ngChange)){
+                      scope.ngChange();
+                  }
+                  scope.$apply(scope);
+                };
+
+                if(scope.isImportCsv == true){
+                    reader.readAsText(file, "Shift_JIS");
+                }else{
+                    reader.readAsDataURL(changeEvent.target.files[0]);
+                }
+            }
+          });
+        }
+    };
+}]);
+
+exexSMSApp.directive('exexHankaku',['$filter','$parse', function ($filter, $parse) {
+    var regex = /^[ -~｡-ﾟ]*$/;
+    var linker = function(scope, element, attrs, ngModel) {
+        ngModel.$parsers.unshift(function(viewValue) {
+            if(viewValue){
+                scope.exexHankakuFormat = (viewValue && regex.test(viewValue)) ? 'valid' : undefined;
+                if (scope.exexHankakuFormat){
+                    ngModel.$setValidity('exexHankakuFormat', true);
+                    return viewValue;
+                }else{
+                    ngModel.$setValidity('exexHankakuFormat', false);
+                    return undefined;
+                }
+            }
+            return viewValue;
+        });
+    };
+    return {
+        restrict : 'A',
+        require: 'ngModel',
+        scope: {
+            ngModel : '='
+        },
+        link : linker
+    };
+}]);
+
+exexSMSApp.directive('exexHankakuCheck',['$filter','$parse', function ($filter, $parse) {
+    var regex = /^[ァ-ンｧ-ﾝﾞﾟ 　]*$/;
+    var linker = function(scope, element, attrs, ngModel) {
+        ngModel.$parsers.unshift(function(viewValue) {
+            if(viewValue){
+                scope.exexHankakuFormat = (viewValue && regex.test(viewValue)) ? 'valid' : undefined;
+                if (scope.exexHankakuFormat){
+                    ngModel.$setValidity('exexHankakuCheckFormat', true);
+                    return viewValue;
+                }else{
+                    ngModel.$setValidity('exexHankakuCheckFormat', false);
+                    return undefined;
+                }
+            }
+            ngModel.$setValidity('exexHankakuCheckFormat', true);
+            return viewValue;
+        });
+    };
+    return {
+        restrict : 'A',
+        require: 'ngModel',
+        scope: {
+            ngModel : '='
+        },
+        link : linker
+    };
+}]);
+
+exexSMSApp.directive('exexNumberFormatter', ['exexNumberConfig', function(exexNumberConfig) {
+    var __hasProp = {}.hasOwnProperty;
+    var addCommasToInteger, controlKeys, defaultOptions, getOptions, hasMultipleDecimals, isNotControlKey, isNotDigit, isNumber, makeIsValid, makeMaxDecimals, makeMaxDigits, makeMaxNumber, makeMinNumber;
+    defaultOptions = exexNumberConfig.defaultOptions;
+    getOptions = function(scope) {
+        var option, options, value, _ref;
+        options = angular.copy(defaultOptions);
+        if (scope.options != null
+                && scope.options != "") {
+            _ref = scope.$eval(scope.options);
+            for (option in _ref) {
+                if (!__hasProp.call(_ref, option))
+                    continue;
+                value = _ref[option];
+                options[option] = value;
+            }
+        }
+        return options;
+    };
+    isNumber = function(val) {
+        return !isNaN(parseFloat(val)) && isFinite(val);
+    };
+    isNotDigit = function(which) {
+        return which < 44 || which > 57 || which === 47;
+    };
+    controlKeys = [0, 8, 13];
+    isNotControlKey = function(which) {
+        return controlKeys.indexOf(which) === -1;
+    };
+    hasMultipleDecimals = function(val) {
+        return (val != null) && val.toString().split('.').length > 2;
+    };
+    makeMaxDecimals = function(maxDecimals) {
+        var regexString, validRegex;
+        if (maxDecimals > 0) {
+            regexString = "^-?\\d*\\.?\\d{0," + maxDecimals + "}$";
+        } else {
+            regexString = "^-?\\d*$";
+        }
+        validRegex = new RegExp(regexString);
+        return function(val) {
+            return validRegex.test(val);
+        };
+    };
+    makeMaxNumber = function(maxNumber) {
+        return function(val, number) {
+            return number <= maxNumber;
+        };
+    };
+    makeMinNumber = function(minNumber) {
+        return function(val, number) {
+            return number >= minNumber;
+        };
+    };
+    makeMaxDigits = function(maxDigits) {
+        var validRegex;
+        validRegex = new RegExp("^-?\\d{0," + maxDigits + "}(\\.\\d*)?$");
+        return function(val) {
+            return validRegex.test(val);
+        };
+    };
+    makeIsValid = function(options) {
+        var validations;
+        validations = [];
+        if (options.maxDecimals != null) {
+            validations.push(makeMaxDecimals(options.maxDecimals));
+        }
+        if (options.max != null) {
+            validations.push(makeMaxNumber(options.max));
+        }
+        if (options.min != null) {
+            validations.push(makeMinNumber(options.min));
+        }
+//      if (options.maxDigits != null) {
+//        validations.push(makeMaxDigits(options.maxDigits));
+//      }
+        return function(val) {
+            var i, number, _i, _ref;
+            if (!isNumber(val)) {
+                return false;
+            }
+            if (hasMultipleDecimals(val)) {
+                return false;
+            }
+            number = Number(val);
+            for (i = _i = 0, _ref = validations.length; 0 <= _ref ? _i < _ref : _i > _ref; i = 0 <= _ref ? ++_i : --_i) {
+                if (!validations[i](val, number)) {
+                  return false;
+                }
+            }
+            return true;
+        };
+    };
+    addCommasToInteger = function(val) {
+        var commas, decimals, wholeNumbers;
+        decimals = val.indexOf('.') == -1 ? '' : val.replace(/^-?\d+(?=\.)/, '');
+        wholeNumbers = val.replace(/(\.\d+)$/, '');
+        commas = wholeNumbers.replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1,');
+        return "" + commas + decimals;
+    };
+    return {
+        restrict: 'A',
+        require: 'ngModel',
+        scope: {
+            options: '@exexNumberFormatter'
+        },
+        link: function(scope, elem, attrs, ngModelCtrl) {
+            var isValid, options;
+            options = getOptions(scope);
+            isValid = makeIsValid(options);
+            scope.checkFormatter = function(viewVal, fromModel){
+                if (options.isCurrency === false && viewVal == ""){
+                    ngModelCtrl.$setValidity('exexItemFormat', true);
+                    return viewVal;
+                }
+                var val = '';
+                if(fromModel) {
+                    val = viewVal.toString().replace(/,/g, '');
+                } else {
+                    val = elem.val().replace(/,/g, '');
+                }
+                if (val.length == 0 && !StringUtils.isEmpty(viewVal)){
+                    // when replace all commas, if length = 0 then set invalid
+                    ngModelCtrl.$setValidity('exexItemFormat', false);
+                    return val;
+                }
+                if(val.length > options.maxDigits){
+                    elem.val(val.substr(0, options.maxDigits));
+                }
+                var noCommasVal;
+                var henkan = viewVal.toString().replace(new RegExp(',', 'g'), '').substr(0,options.maxDigits);
+                var hankaku  = "0123456789";
+                var zenkaku = "０１２３４５６７８９";
+                var str1 = "";
+                for (var i = 0; i < henkan.length; i++) {
+                    var c1 = henkan.charAt(i);
+                    var l1 = hankaku.indexOf(c1, 0);
+                    var n1 = zenkaku.indexOf(c1, 0);
+                    if (l1 >= 0) {
+                        str1 += c1;
+                    } else if (n1 >= 0) {
+                        c1 = hankaku.charAt(n1);
+                        str1 += c1;
+                    } else {
+                        str1 += c1;
+                    }
+                }
+
+                if(options.isCurrency === undefined){
+                    while(str1.length > 1 && ((str1.charAt(0) === '0' && str1.charAt(1) !== '.') || str1.charAt(0) === '.'))
+                        str1 = str1.substr(1);
+                }
+                noCommasVal = str1.replace(/^[]+/g,"");
+
+                if (isValid(noCommasVal) || !noCommasVal) {
+                    if(options.isDecimal){
+                        if((val.indexOf('.') == -1 && val.length > 20) || (val.indexOf('.') > -1 && val.length > 21)){
+                            ngModelCtrl.$setValidity('exexDigitsLength', false);
+                        }else{
+                            ngModelCtrl.$setValidity('exexDigitsLength', true);
+                        }
+                    }
+                    ngModelCtrl.$setValidity('exexItemFormat', true);
+                    return noCommasVal;
+                } else {
+                    ngModelCtrl.$setValidity('exexDigitsLength', true);
+                    ngModelCtrl.$setValidity('exexItemFormat', false);
+                    return noCommasVal;
+                }
+            }
+
+            ngModelCtrl.$parsers.unshift(function(viewVal) {
+                return scope.checkFormatter(viewVal);
+            });
+
+            ngModelCtrl.$formatters.push(function(val) {
+                if(options.isDecimal && val != null){
+                    if((val.indexOf('.') == -1 && val.length > 20) || (val.indexOf('.') > -1 && val.length > 21)){
+                        ngModelCtrl.$setValidity('exexDigitsLength', false);
+                    }else{
+                        ngModelCtrl.$setValidity('exexDigitsLength', true);
+                    }
+                }
+                if (options.isCurrency === false) {
+                    if(val == "" || val == null){
+                        ngModelCtrl.$setValidity('exexItemFormat', true);
+                        return val;
+                    }else{
+                        scope.checkFormatter(val, true);
+                        return val;
+                    }
+                }
+                if ((options.nullDisplay != null) && (!val || val === '')) {
+                    return options.nullDisplay;
+                }
+                if (val == "" || val == null){
+                    ngModelCtrl.$setValidity('exexItemFormat', true);
+                    return val;
+                } else if (!isValid(val)) {
+                    ngModelCtrl.$setValidity('exexItemFormat', false);
+                    return val;
+                } else {
+                    ngModelCtrl.$setValidity('exexItemFormat', true);
+                }
+                if (options.isCurrency === undefined) {
+                    val = addCommasToInteger(val.toString());
+                }
+                if (options.prepend != null) {
+                    val = "" + options.prepend + val;
+                }
+                if (options.append != null) {
+                    val = "" + val + options.append;
+                }
+                return val;
+            });
+            elem.on('blur', function() {
+                var formatter, viewValue, _i, _len, _ref;
+                viewValue = ngModelCtrl.$modelValue;
+                if ((viewValue == null) || !isValid(viewValue)) {
+                    return;
+                }
+                _ref = ngModelCtrl.$formatters;
+                for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+                    formatter = _ref[_i];
+                    viewValue = formatter(viewValue);
+                }
+                ngModelCtrl.$viewValue = viewValue;
+                return ngModelCtrl.$render();
+            });
+            elem.on('focus', function() {
+                var val;
+                val = elem.val();
+                if (options.prepend != null) {
+                    val = val.replace(options.prepend, '');
+                }
+                if (options.append != null) {
+                    val = val.replace(options.append, '');
+                }
+                elem.val(val.replace(/,/g, ''));
+
+                return elem[0].select();
+            });
+            if (options.preventInvalidInput === true) {
+                return elem.on('keypress', function(e) {
+                    if (isNotDigit(e.which) && isNotControlKey(e.which)) {
+                        return e.preventDefault();
+                    }
+                });
+            }
+        }
+    };
+}]);
+
+exexSMSApp.provider('exexNumberConfig', function() {
+    var _defaultOptions;
+    _defaultOptions = {};
+    this.setDefaultOptions = function(defaultOptions) {
+        return _defaultOptions = defaultOptions;
+    };
+    this.$get = function() {
+        return {
+            defaultOptions : _defaultOptions
+        };
+    };
+});
+
+exexSMSApp.directive('exexMultiDatePicker', function($filter){
+    var dataInputmask = "'alias' : 'yyyy/mm/dd'";
+    return {
+            restrict : 'EA',
+            replace: true,
+            transclude: true,
+            scope : {
+                dateid : '@',
+                dateType : '=',
+                dateValue : '=',
+                dateMinValue : '=',
+                dateMaxValue : '=',
+                dateValidation : '=',
+                dateFormat : '@',
+                autofocus : ' @',
+                width : '@',
+                disabled : '=',
+                readonly : '=',
+                required : '='
+            },
+            template :'<div class="input-group multi-date date form_date {{width}}"> \n' +
+                      '   <input class="form-control {{dateClass}} ng-animate-disabled" type="text" ng-model="dateValue" numbers-only ' +
+                      '    ng-hide="true" id={{dateId}} name={{dateId}} auto-focus={{autofocus}} ng-disabled="disabled" maxlength="{{dateMaxLength}}" \n' +
+                      '    ng-required="required" > \n'+
+                      '  <span class="input-group-addon" ng-class="{hidden:disabled, readonly: readonly}"> \n'+
+                      '    <span class="glyphicon glyphicon-calendar icon-date-picker"></span> \n'+
+                      '  </span> \n' +
+                      '</div>',
+            link : function(scope, element, attrs) {
+                var date = element.datepicker({
+                    todayBtn: "linked",
+//                    clearBtn: true,
+                    language: locale,
+                    multidate: true,
+                    todayHighlight: true,
+                    weekStart: 1,
+                    daysOfWeekHighlighted: "0,6",
+                    orientation: "bottom left",
+                    format: "yyyy/mm/dd"
+                });
+            }
+    };
+});
+
+exexSMSApp.directive('exexDatePickerForDetail', function($rootScope, $filter, $window){
+    var dataInputmask = "'alias' : 'yyyy/mm/dd'";
+    return {
+        restrict : 'EA',
+        replace: true,
+        transclude: true,
+        scope : {
+            dateid : '@',
+            dateType : '=',
+            dateValue : '=',
+            dateMinValue : '=',
+            dateMaxValue : '=',
+            dateValidation : '=',
+            dateFormat : '@',
+            autofocus : ' @',
+            width : '@',
+            disabled : '=',
+            readonly : '=',
+            required : '='
+        },
+        template :'<div class="input-group date form_date {{width}}"> \n' +
+                  '  <input class="form-control input-calendar yyyy_mm_dd disabled-ime" type="text" ' +
+                  '    ng-model="dateValue" style="border-right: none;" auto-focus={{autofocus}} id={{dateid}} name={{dateid}} ng-disabled="disabled" ng-readonly="readonly"' +
+                  '    ng-required="required" exex-date-input data-inputmask = "'+dataInputmask+'"> \n' +
+                  '  <span style="border-left: none;" class="input-group-addon" ng-class="{hidden:disabled, readonly: readonly}"> \n'+
+                  '    <span class="glyphicon glyphicon-calendar icon-date-picker"></span> \n'+
+                  '  </span> \n' +
+                  '</div>',
+        link : function(scope, element, attrs) {
+            if(attrs.dateFormat == undefined || attrs.dateFormat == ''){
+                attrs.dateFormat = 'yyyy/mm/dd';
+            }
+            var holiday = null;
+            if(!StringUtils.isEmpty(sessionStorage.getItem('holidays'))){
+                holiday = angular.fromJson(sessionStorage.getItem('holidays'));
+            }
+            var date = element.datepicker({
+                maxViewMode: 2,
+                todayBtn: 'linked',
+                clearBtn: true,
+                autoclose: true,
+                language : locale,
+                weekStart: 1,
+                daysOfWeekHighlighted: "0,6",
+                todayHighlight : true,
+                daysHoliday : holiday,
+                orientation : 'auto',
+                format : attrs.dateFormat
+            });
+
+            $(date).on('clearDate', function(event) {
+                scope.$apply(function(){
+                    scope.dateValue = null;
+                })
+            });
+
+            $(date).on('changeDate', function(event) {
+                // when press ctrl + v --> set value date
+                angular.element(element).on("keyup", function(e) {
+                    if(e.ctrlKey && e.keyCode == '86'){
+                        var date = $(element).find('.input-calendar').val();
+                        scope.dateValue = $filter('date')(date, "yyyy/MM/dd");
+                        e.stopImmediatePropagation();
+                        return false;
+                    }
+                })
+            });
+
+            scope.$watch('dateValue', function(val){
+                if(!StringUtils.isEmpty(scope.dateValue)) {
+                    element.datepicker('setDate', new Date(val));
+                }
+            });
+        }
+    };
+});
+
+exexSMSApp.directive('exexInputMaskDateTime', function() {
+    return {
+        require: "ngModel",
+        link: function (scope, elem, attr, ctrl) {
+            $(elem).inputmask({
+                mask: "y/2/1 h:s:s",
+                alias: "datetime",
+                placeholder: "yyyy/mm/dd hh:mm:ss",
+                clearMaskOnLostFocus: true,
+                showMaskOnHover: false,
+                showMaskOnFocus: false
+            });
+            elem.on('keyup', function (){
+                scope.$apply(function(){
+                    ctrl.$setViewValue(elem.val());
+                });
+            });
+        }
+    };
+});
+
+
+exexSMSApp.directive('exexInputProject', function() {
+    return {
+        require: "ngModel",
+        link: function (scope, elem, attr, ctrl) {
+            $(elem).inputmask({
+                mask: "99-999-99",
+                alias: "text",
+                clearMaskOnLostFocus: true,
+                showMaskOnHover: false,
+                showMaskOnFocus: false
+            });
+            elem.on('keyup', function (){
+                scope.$apply(function(){
+                    ctrl.$setViewValue(elem.val());
+                });
+            });
+        }
+    };
+});
+
+exexSMSApp.directive('exexInputRemark', function() {
+    return {
+        require: "ngModel",
+        link: function (scope, elem, attr, ctrl) {
+            $(elem).inputmask({
+                mask: "*** * *",
+                clearMaskOnLostFocus: true,
+                showMaskOnHover: false,
+                showMaskOnFocus: false,
+                skipOptionalPartCharacter: " ",
+                greedy: false
+            });
+            elem.on('blur', function (){
+                scope.$apply(function(){
+                    ctrl.$setViewValue(elem.val());
+                });
+            });
+        }
+    };
+});
+
+/*exexSMSApp.directive("exexResizeTextareaHeight", function() {
+  return {
+    restrict: 'A',
+    link: function(scope, elem, attrs) {
+      if(elem[0].nodeName === 'TEXTAREA') {
+        var HEIGHT = attrs['resizeTextareaHeight'] ? attrs['resizeTextareaHeight'] : 20;
+        var resize = function(e) {
+          var textHeight = e.target.scrollHeight;
+          var height = Math.floor(textHeight / HEIGHT) * HEIGHT;
+          elem.css('height', height + 'px');
+        };
+        elem.css({
+          'lineHeight': HEIGHT + 'px',
+          'height': HEIGHT + 'px',
+         });
+        elem.on('input', resize);
+        scope.$watch(attrs.ngModel, function() {
+          var textHeight = elem[0].scrollHeight;
+          var height = Math.ceil((textHeight) / HEIGHT) * HEIGHT;
+          if(height > HEIGHT) {
+            height = height - HEIGHT;
+          }
+          elem.css('height', height + 'px');
+        });
+      }
+    }
+  };
+});*/
+
+exexSMSApp.directive('exexResizeTextareaHeight', ['$timeout', '$window', function($timeout, $window) {
+    'use strict';
+    return {
+        require: 'ngModel',
+        restrict: 'A, C',
+        link: function(scope, element, attrs, ngModel) {
+            // cache a reference to the DOM element
+            var ta = element[0],
+                $ta = element;
+            // ensure the element is a textarea, and browser is capable
+            if (ta.nodeName !== 'TEXTAREA' || !$window.getComputedStyle) {
+                return;
+            }
+            // set these properties before measuring dimensions
+            $ta.css({
+                'overflow': 'hidden',
+                'overflow-y': 'hidden',
+                'word-wrap': 'break-word'
+            });
+            // force text reflow
+            var text = ta.value;
+            ta.value = '';
+            ta.value = text;
+
+            var append = "",
+            $win = angular.element($window),
+            mirrorInitStyle = 'position: absolute; top: -999px; right: auto; bottom: auto;' +
+                              'left: 0; overflow: hidden; -webkit-box-sizing: content-box;' +
+                              '-moz-box-sizing: content-box; box-sizing: content-box;' +
+                              'min-height: 0 !important; height: 0 !important; padding: 0;' +
+                              'word-wrap: break-word; border: 0;',
+            $mirror = angular.element('<textarea aria-hidden="true" tabindex="-1" ' +
+                                      'style="' + mirrorInitStyle + '"/>').data('elastic', true),
+            mirror = $mirror[0],
+            taStyle = getComputedStyle(ta),
+//            resize = taStyle.getPropertyValue('resize'),
+            borderBox = taStyle.getPropertyValue('box-sizing') === 'border-box' ||
+                        taStyle.getPropertyValue('-moz-box-sizing') === 'border-box' ||
+                        taStyle.getPropertyValue('-webkit-box-sizing') === 'border-box',
+            boxOuter = !borderBox ? {width: 0, height: 0} : {
+                          width:  parseInt(taStyle.getPropertyValue('border-right-width'), 10) +
+                                  parseInt(taStyle.getPropertyValue('padding-right'), 10) +
+                                  parseInt(taStyle.getPropertyValue('padding-left'), 10) +
+                                  parseInt(taStyle.getPropertyValue('border-left-width'), 10),
+                          height: parseInt(taStyle.getPropertyValue('border-top-width'), 10) +
+                                  parseInt(taStyle.getPropertyValue('padding-top'), 10) +
+                                  parseInt(taStyle.getPropertyValue('padding-bottom'), 10) +
+                                  parseInt(taStyle.getPropertyValue('border-bottom-width'), 10)
+                        },
+            minHeightValue = parseInt(taStyle.getPropertyValue('min-height'), 10),
+            heightValue = parseInt(taStyle.getPropertyValue('height'), 10),
+            minHeight = Math.max(minHeightValue, heightValue) - boxOuter.height,
+            maxHeight = parseInt(taStyle.getPropertyValue('max-height'), 10),
+            mirrored,
+            active,
+            copyStyle = ['font-family',
+                         'font-size',
+                         'font-weight',
+                         'font-style',
+                         'letter-spacing',
+                         'line-height',
+                         'text-transform',
+                         'word-spacing',
+                         'text-indent'];
+
+            // exit if elastic already applied (or is the mirror element)
+            if ($ta.data('elastic')) {
+                return;
+            }
+
+            // Opera returns max-height of -1 if not set
+            maxHeight = maxHeight && maxHeight > 0 ? maxHeight : 9e4;
+
+            // append mirror to the DOM
+            if (mirror.parentNode !== document.body) {
+                angular.element(document.body).append(mirror);
+            }
+
+            // set resize and apply elastic
+            /*$ta.css({
+                'resize': (resize === 'none' || resize === 'vertical') ? 'none' : 'horizontal'
+            }).data('elastic', true);*/
+
+            function initMirror() {
+                var mirrorStyle = mirrorInitStyle;
+                mirrored = ta;
+                // copy the essential styles from the textarea to the mirror
+                taStyle = getComputedStyle(ta);
+                angular.forEach(copyStyle, function(val) {
+                    mirrorStyle += val + ':' + taStyle.getPropertyValue(val) + ';';
+                });
+                mirror.setAttribute('style', mirrorStyle);
+            }
+
+            function adjust() {
+                var taHeight, taComputedStyleWidth, mirrorHeight, width, overflow;
+                if (mirrored !== ta) {
+                    initMirror();
+                }
+                // active flag prevents actions in function from calling adjust again
+                if (!active) {
+                    active = true;
+                    mirror.value = ta.value + append; // optional whitespace to improve animation
+                    mirror.style.overflowY = ta.style.overflowY;
+
+                    taHeight = ta.style.height === '' ? 'auto' : parseInt(ta.style.height, 10);
+
+                    taComputedStyleWidth = getComputedStyle(ta).getPropertyValue('width');
+
+                    // ensure getComputedStyle has returned a readable 'used value' pixel width
+                    if (taComputedStyleWidth.substr(taComputedStyleWidth.length - 2, 2) === 'px') {
+                        // update mirror width in case the textarea width has changed
+                        width = parseInt(taComputedStyleWidth, 10) - boxOuter.width;
+                        mirror.style.width = width + 'px';
+                    }
+                    mirrorHeight = mirror.scrollHeight;
+                    if (mirrorHeight > maxHeight) {
+                        mirrorHeight = maxHeight;
+                        overflow = 'scroll';
+                    } else if (mirrorHeight < minHeight) {
+                        mirrorHeight = minHeight;
+                    }
+                    mirrorHeight += boxOuter.height;
+                    ta.style.overflowY = overflow || 'hidden';
+
+                    if (taHeight !== mirrorHeight) {
+                        scope.$emit('elastic:resize', $ta, taHeight, mirrorHeight);
+                        ta.style.height = mirrorHeight + 'px';
+                    }
+                    // small delay to prevent an infinite loop
+                    $timeout(function() {
+                        active = false;
+                    }, 1, false);
+                }
+            }
+
+            function forceAdjust() {
+                active = false;
+                adjust();
+            }
+
+            /*
+             * initialise
+             */
+
+            // listen
+            if ('onpropertychange' in ta && 'oninput' in ta) {
+                // IE9
+                ta['oninput'] = ta.onkeyup = adjust;
+            } else {
+                ta['oninput'] = adjust;
+            }
+
+            $win.bind('resize', forceAdjust);
+
+            scope.$watch(function() {
+                return ngModel.$modelValue;
+            }, function(newValue) {
+                forceAdjust();
+            });
+
+            scope.$on('elastic:adjust', function() {
+                initMirror();
+                forceAdjust();
+            });
+
+            $timeout(adjust, 0, false);
+
+            scope.$on('$destroy', function() {
+                $mirror.remove();
+                $win.unbind('resize', forceAdjust);
+            });
+        }
+    };
+}]);
+
+exexSMSApp.directive('exexResponsiveTable',['$window', '$timeout', function ($window, $timeout){
+    return {
+        scope: {
+            scrollwidth: "=",
+            tablewidth: "=",
+            tableheight: "=",
+            scrollStyle: "=",
+            widthQ2: "=",
+            listHeight: "=",
+            leftMenuWidth: "=",
+            heightPagination: "=",
+            heightTh: "="
+        },
+        restrict: 'A',
+        link : function(scope, element) {
+            scope.autoCollapse = function (){
+
+                //START: KIEM TRA LOAI BROWSER
+                var scrollWidth = 0;
+                var ua = window.navigator.userAgent;
+                var msie = ua.indexOf("MSIE ");
+                var firefox = ua.indexOf("Firefox");
+                if (firefox > -1 || msie > -1 || !!navigator.userAgent.match(/Trident.*rv\:11\./)) { // If Internet Explorer, return version number
+                    scrollWidth = 7;
+                }
+                //END: KIEM TRA LOAI BROWSER
+
+                scope.scrollStyle = {};
+                var winWidth = $(window).width();
+                var maxHeight = $(window).height() - (scope.tableheight + scope.heightPagination + 196 + scope.heightTh);
+                var width = winWidth - 120;
+                var widthResize = 95;
+                scope.scrollStyle =  {
+                    "min-height": "350px",
+                    "max-height" : maxHeight + "px",
+                    "width" : winWidth - widthResize - scope.leftMenuWidth - scrollWidth + 10 + "px",
+                    "overflow": "scroll",
+                };
+
+                scope.widthQ2 = {
+                    "width" : winWidth- widthResize - scope.leftMenuWidth - scrollWidth + "px",
+                    "overflow": "hidden",
+                }
+
+            };
+            $(window).resize(function() {
+                $timeout(function() {
+                    scope.autoCollapse();
+                },10);
+            });
+            $timeout(function() {
+                scope.autoCollapse();
+            },10);
+        }
+    };
+}]);
+
+exexSMSApp.directive('exexTimepicker', function(){
+    return {
+        require: 'ngModel',
+        restrict: 'A',
+        scope : {
+            ngModel: '=ngModel'
+        },
+        link: function (scope, element, attrs, ngModel) {
+            var minuteStep = attrs.minuteStep;
+            element.timepicker({
+                autoclose: true,
+                showSeconds: false,
+                showMeridian: false,
+                twoDigitsHour : true,
+                minuteStep : parseInt(minuteStep),
+                defaultTime : scope.ngModel
+            });
+            element.timepicker().on('changeTime.timepicker', function(e) {
+                scope.$apply(function () {
+                    e.time.value = scope.ngModel;
+                });
+            });
+        }
+    };
+});
+
+exexSMSApp.directive('exexMaxlength', function () {
+    return {
+        require: 'ngModel',
+        link: function (scope, element, attrs, ngModelCtrl) {
+            if(!StringUtils.isEmpty(attrs.exexMaxlength)) {
+                var maxlength = parseInt(attrs.exexMaxlength);
+                scope.initMaxlength = function(){
+                    ngModelCtrl.$setValidity('exex-maxlength', ngModelCtrl.$modelValue.length <= maxlength);
+                }
+
+                scope.$watch(attrs['ngModel'], function() {
+                    if(!StringUtils.isEmpty(ngModelCtrl.$modelValue)) {
+                        if(ngModelCtrl.$modelValue != '0') {
+                            scope.initMaxlength();
+                        }
+                    }
+                });
+            }
+        }
+    };
+});

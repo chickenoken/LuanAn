@@ -1,0 +1,28 @@
+package org.planning.net.entity;
+
+import org.seasar.doma.Column;
+import org.seasar.doma.Entity;
+
+@Entity
+public class HoaDon {
+
+    @Column(name = "MA_HOA_DON")
+    private String MA_HOA_DON;
+
+    @Column(name = "MA_KHACH_HANG")
+    private String maKhachHang;
+
+    @Column(name = "MA_SAN_PHAM")
+    private String maKhachHang;
+
+    @Column(name = "MA_NHAN_VIEN")
+    private String maKhachHang;
+
+    @Column(name ="SO_LUONG")
+    private String maKhachHang;
+
+    @Column(name ="THANH_TIEN")
+    private String maKhachHang;
+
+
+}

@@ -1,0 +1,365 @@
+@CHARSET "UTF-8";
+
+.modal-footer-message {
+  padding: 9px 20px 10px;
+  text-align: right;
+  border-top: 1px solid #e5e5e5;
+}
+
+.portlet {
+  margin-bottom: 60px;
+}
+
+th a:-webkit-any-link {
+  color: white;
+}
+
+th a[href] {
+  color: white;
+}
+
+th a i {
+  float: right;
+}
+
+.label-padding {
+  padding: 26px 10px 26px 0px !important;
+}
+
+.label-padding-bill {
+  padding: 25px 10px 41px 0px !important;
+}
+
+.label-padding-address{
+  padding: 50px 0px 50px 0px !important;
+}
+
+.modal.fade .modal-dialog.w-image {
+    position: relative;
+    display: table;
+    overflow-x: auto;
+    width: auto;
+    min-width: 10%;
+    max-width: 65%;
+}
+
+@media ( max-width : 992px) {
+  .exex-form .form-group, .exex-form-mst .form-group {
+    margin-bottom: 0px;
+  }
+  .form-horizontal .control-label {
+    padding-top: 7px;
+    margin-bottom: 0;
+    text-align: right;
+  }
+  .buttons {
+    margin-left: -7px;
+    padding: 5px 13px 5px 13px;
+  }
+  .portlet {
+    margin-bottom: 0px;
+  }
+}
+
+.modal-dialog.w-action-control{
+  width: 830px;
+}
+.modal-dialog.w-owner-control {
+  width: 1280px;
+}
+
+.modal-dialog.w-site-control {
+  width: 1100px;
+}
+
+.modal-dialog.w-dept-control {
+  width: 790px;
+}
+
+.modal-dialog.w-change-control {
+  width: 400px;
+}
+
+.modal-dialog.w-bill-control {
+  width: 800px;
+}
+
+.modal-dialog.w-warehouse-control {
+  width: 860px;
+}
+@media only screen and (max-width: 1300px) {
+  .modal-dialog.w-owner-control {
+    width: 97%;
+  }
+  .fileinput-new {
+    white-space: normal !important;
+  }
+}
+@media ( max-width : 768px) {
+  .modal-dialog.w-action-control, .modal-dialog.w-owner-control,
+    .modal-dialog.w-dept-control, .modal-dialog.w-bill-control,
+    .modal-dialog.w-warehouse-control {
+    width: 80%;
+  }
+  .modal-dialog.w-site-control {
+    width: 70%;
+  }
+  .modal-dialog {
+    margin: 30px auto;
+  }
+  .w-sm {
+    width: 300px;
+  }
+  .modal-dialog.w-change-control {
+    width: 350px;
+  }
+  .modal.fade .modal-dialog.w-image {
+      width: 85%;
+      max-width: 100%;
+  }
+  .modal.fade .modal-dialog.w-image img{
+      width: 100% !important;
+  }
+  #exportCsv.p-r-10{
+    padding-right: 0px !important;
+  }
+}
+
+@media ( max-width : 425px) {
+  .modal-dialog.w-action-control, .modal-dialog.w-owner-control,
+    .modal-dialog.w-site-control, .modal-dialog.w-dept-control,
+    .modal-dialog.w-change-control, .modal-dialog.w-bill-control,
+    .modal-dialog.w-warehouse-control {
+    width: 95%;
+  }
+  .modal-dialog {
+    margin: 30px auto;
+  }
+  .w-sm {
+    width: 300px;
+  }
+  .modal.fade .modal-dialog.w-image {
+    width: 95%;
+  }
+  .modal.fade .modal-dialog.w-image img{
+      width: 100% !important;
+  }
+  .height-duoble {
+     height: auto;
+  }
+}
+
+.table {
+  margin-bottom: 0;
+}
+
+.form-group div ul.dropdown-menu {
+  max-height: 170px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  font-size: 14px;
+  background-color: #FFF;
+  border-radius: 0px !important;
+  border: 1px solid #4fc3f7 !important;
+  -webkit-box-shadow: 0px 4px 2px -2px #cccccc;
+  box-shadow: 0px 2px 8px 2px rgba(204, 204, 204, 0.8);
+  width: 96%;
+  margin-top: -1px
+}
+
+.form-group div ul.dropdown-menu li>a:hover, .dropdown-menu .active>a,
+  .dropdown-menu .active>a:hover {
+  background-color: #3598dc;
+  color: #fff;
+}
+
+/*** RESPONSIVE ***/
+@media only screen and (max-width: 1024px) {
+  .exex-form .form-group, .exex-form-mst .form-group {
+    margin-bottom: 0px;
+  }
+  .form-horizontal .control-label {
+    padding-top: 7px;
+    margin-bottom: 0;
+    text-align: right;
+  }
+  .buttons {
+    margin-left: -7px;
+    padding: 0px 25px 5px 25px;
+  }
+}
+
+@media only screen and (max-width: 993px) {
+  .col-md-1, .col-md-10, .col-md-11, .col-md-12, .col-md-2, .col-md-3,
+    .col-md-4, .col-md-5, .col-md-6, .col-md-7, .col-md-8, .col-md-9 {
+    padding-right: 0px;
+    padding-left: 0px;
+  }
+  #daterange.input-group {
+    padding-left: 0px !important;
+    padding-right: 0px !important;
+  }
+  .modal-dialog.w-owner-control {
+    width: 80%;
+  }
+}
+
+@media only screen and (min-width: 992px) {
+  .col-3 {
+    width: 29.166666665%;
+    float: left;
+  }
+}
+
+/*** END RESPONSIVE ***/
+
+#businessCustomerForm .select2-container--default.select2-container--disabled .select2-selection--multiple ,
+#individualCustomerForm  .select2-container--default.select2-container--disabled .select2-selection--multiple,
+#ownerForm .select2-container--default.select2-container--disabled .select2-selection--multiple{
+    background-color: #fff;
+    cursor: default;
+    border-color: #7f7f80;
+}
+
+#businessCustomerForm .select2-container--default.select2-container--disabled .select2-selection--multiple .select2-selection__clear ,
+#individualCustomerForm .select2-container--default.select2-container--disabled .select2-selection--multiple .select2-selection__clear,
+#ownerForm .select2-container--default.select2-container--disabled .select2-selection--multiple .select2-selection__clear{
+	display: none;
+}
+
+#mst-bill-table tr th, #crm-dept-table tr th, #crm-site-table tr th, #crm-owner-table  tr th{
+    background-color: #87CEEB;
+    color: #FFF;
+    text-align: right;
+    vertical-align: middle;
+    border-bottom: 1px solid #FFF;
+}
+
+#crm-div .pager li>a, #crm-div .pager li>span {
+    border-radius: 15px !important;
+    margin-right: 20px;
+    color: #FFFFFF;
+    border: none;
+}
+
+#crm-div nav {
+    -webkit-box-shadow: 0 0px 0px 0 rgba(0,0,0,.16), 0 0px 0px 0 rgba(0,0,0,.12);
+    -moz-box-shadow: 0 0px 0px 0 rgba(0,0,0,.16), 0 0px 0px 0 rgba(0,0,0,.12);
+    box-shadow: 0 0px 0px 0 rgba(0,0,0,.16), 0 0px 0px 0 rgba(0,0,0,.12);
+}
+
+#crm-div .pager {
+    margin: 0px 0;
+}
+
+#crm-div .no-image{
+    background: url(../../img/no-image.png) no-repeat;
+    cursor: pointer;
+    width: 200px;
+    height: 150px;
+}
+
+#crm-owner-table  .no-image{
+    background: url(../../img/no-image.png) no-repeat;
+    cursor: pointer;
+    width: 240px;
+    height: 150px;
+    background-size: 100% 100%;
+    margin-bottom: 0px;
+}
+
+#crm-owner-table .thumbnail {
+	margin-bottom: 0px;
+}
+
+ #crm-site-table div[disabled] {
+    border-radius: 0;
+    border: none;
+    border-bottom: solid 1px Gray;
+    background-color: transparent;
+    padding-top: 7px;
+    width: 100%;
+}
+.modal-backdrop{
+    z-index: 1040;
+}
+
+.w-84 {
+  width: 84px !important;
+}
+
+.exex-form div[disabled=disabled]{
+    border-radius: 0;
+    border: none;
+    border-bottom: solid 1px Gray;
+    background-color: #fff;
+    padding-left: 10px;
+/*     width: 100%; */
+}
+
+.date[disabled=disabled]{
+	border-bottom: solid 1px #FFF !important;;
+	padding-left: 0px !important;
+}
+
+#UDdisable .select2-container--default.select2-container--disabled .select2-selection--single {
+    border: 1px solid #9FA4AB !important;
+    border-radius: 2px !important;
+}
+
+#UDdisable .select2-container--default.select2-container--disabled .select2-selection--single .select2-selection__arrow{
+    display: block !important;
+}
+
+.m-t-7 {
+  margin-top : 7px;
+}
+
+/** Thien add */
+/* .portlet>.portlet-title {
+    border: 0!important;
+    margin-bottom: 0;
+    border-bottom: 2px solid #f17a4e !important;
+    margin-bottom: 10px;
+    min-height: 41px;
+}
+
+.portlet>.portlet-title>.tools>a {
+  color: #434b52;
+}
+
+.portlet {
+    box-shadow: 0 2px 5px 2px rgba(66, 64, 64, 0.27);
+    border-radius: 0px;
+}
+
+.exex-form .label-title, .exex-form-mst .label-title {
+    background-color: transparent;
+    color: #333;
+}
+ */
+.label-in-table {
+    min-height: 34px;
+    background: skyblue;
+    color: #FFF;
+}
+.dot-line {
+    background-color: #fff;
+    border-top: 2px dashed green;
+    margin: 0px 12px 0px 0px;
+}
+.height-duoble {
+    height: 72px;
+}
+.group-box{
+    padding: 5px 0px 5px 10px;
+    border: 1px solid #ddd;
+}
+.m-b-7 {
+    margin-bottom: 7px!important;
+}
+
+#siteForm .portlet,
+#deptForm .portlet{
+    margin-bottom: 15px;
+}

@@ -1,0 +1,211 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+
+/**
+ * @version $Revision: 1.0 $ $Date:  $
+ * @author quang-tung
+ */
+
+'use strict';
+exexSMSApp.factory('QuickStartModel', [ 'BaseModel', function(BaseModel) {
+
+    var model = BaseModel.getInstance();
+    model.form = {
+        projectName : '',
+        custName : '',
+        custCd : '',
+        businessCd: ''
+    };
+
+    model.hidden = {
+        screenMode : 'INSERT',
+        isSubmited : false
+    };
+
+    return model;
+}]);
+
+exexSMSApp.service('QuickStartService', ['$q', 'ServerService',function ($q, ServerService) {
+    var _self = this;
+
+    _self.initData = function(param) {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('QuickStart/getInit', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    _self.createData = function(param) {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('QuickStart/createData', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+}]);
+
+exexSMSApp.controller('quickStartCtrl',
+        ['$scope', 'QuickStartModel', 'HeaderModel', '$uibModalInstance', 'data', 'DialogsService', 'RouteService', 'QuickStartService', 'SfaProjectControlService','SfaProjectControlModel', 'Messages',
+         function($scope, QuickStartModel, HeaderModel, $uibModalInstance, data, DialogsService, RouteService, QuickStartService, SfaProjectControlService, SfaProjectControlModel, Messages){
+
+    $scope.model = QuickStartModel;
+    $scope.modelHeader = HeaderModel;
+    $scope.modelSfaProject = SfaProjectControlModel;
+
+    $scope.getInit = function() {
+        var param = {};
+        SfaProjectControlService.initData(param)
+        .then(
+            function(result) {
+                var error = result.data.failed;
+                if(!ValidateUtil.isValidTextEmpty(result.data.failed)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                }
+                $scope.model.form.listMstBusiness = result.data.listMstBusiness;
+                $scope.model.form.custCd = data.custCd;
+                $scope.model.form.custName = data.custName;
+                $scope.model.form.projectName = '';
+                $scope.model.hidden.isSubmited = false;
+            }
+        );
+    };
+
+    $scope.init = function() {
+        $scope.model.hidden.screenMode = 'INSERT';
+        $scope.getInit();
+    }
+    $scope.init();
+
+    $scope.getBusinessProcess = function(){
+        var param = {
+                businessCd : $scope.model.form.businessCd
+        };
+        SfaProjectControlService.initProjProcessSetting(param).then(
+            function(result) {
+                $scope.modelSfaProject.form.business.listProcessSetting = result.data.listProcessSetting.listProcessSetting;
+                $scope.modelSfaProject.form.business.listP010004 = result.data.listP010004;
+                $scope.modelSfaProject.form.business.listMstGroup = result.data.listMstGroup;
+                $scope.modelSfaProject.form.business.listUser = result.data.listUser;
+        });
+    };
+
+    $scope.openProcessSetting = function(){
+        var options = {
+            size: 'process'
+        };
+        DialogsService.showDialog('SfaProjectProcessSetting', 'sfaProjectProcessSettingCtrl', {},options).result.then(function(param) { });
+    };
+
+    $scope.convertParam = function(params){
+        var param = {
+            projectName: params.projectName,
+            custCd: params.custCd,
+            businessCd: params.businessCd,
+            listProcessSetting: $scope.modelSfaProject.form.business.listProcessSetting
+        };
+
+        if(param.listProcessSetting.length > 0){
+            $scope.convertDataProcess(param);
+        } else {
+            param.listGroupProcessSetting = '';
+            param.listProcessSetting = '';
+        }
+
+        return param;
+    };
+
+    $scope.convertDataProcess = function(param){
+        var groupProcess = [];
+        var process = [];
+        angular.forEach(param.listProcessSetting, function(value, key){
+            if(!value.isDisabled){
+                if(!ValidateUtil.isValidTextEmpty(value.processGroupNo) && !ValidateUtil.isValidTextEmpty(value.processGroupName)){
+                    var tmp = {
+                        companyCd: value.companyCd,
+                        projectSno: value.projectSno,
+                        businessCd: value.businessCd,
+                        processGroupNo: value.processGroupNo,
+                        processGroupName: value.processGroupName,
+                        groupGroupCd: value.groupGroupCd,
+                        groupUserCd: value.groupUserCd,
+                        iconNo: value.iconNo
+                    };
+                    groupProcess.push(tmp);
+                }
+                angular.forEach(value.lstProjectGroupProcess, function(subValue, subKey){
+                    process.push(subValue);
+                });
+            }
+        });
+        param.listGroupProcessSetting = JSON.stringify(groupProcess);
+        param.listProcessSetting = JSON.stringify(process);
+    };
+
+    /**データを追加*/
+    $scope.createData = function(params, formInvalid){
+        $scope.model.hidden.isSubmited = true;
+        if (formInvalid) {
+            return;
+        };
+        DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('S00003'))
+        .result.then(function(btn){
+            var param = $scope.convertParam(params);
+            QuickStartService.createData(param).then(
+                function(result) {
+                    var error =  result.data.failed;
+                    var warning =  result.data.warning;
+                    var success =  result.data.success;
+                    if(!ValidateUtil.isValidTextEmpty(error)){
+                        DialogsService.showError(Messages.getMessage('system.error'), error);
+                        return;
+                    }else if(!ValidateUtil.isValidTextEmpty(warning)){
+                        DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                        return;
+                    }else{
+                        var dlg = DialogsService.showNotify(Messages.getMessage('title.info'), success);
+                        dlg.result.then(function(btn){
+                           $scope.model.hidden.screenMode = 'VIEW';
+                           $scope.model.hidden.custCd = result.data.quickStart.custCd;
+                           $scope.model.hidden.custName = result.data.quickStart.custName;
+                           $scope.model.hidden.custType = result.data.quickStart.custType;
+                           $scope.model.hidden.billAddressNo = result.data.quickStart.billaddressNo;
+                           var project = {
+                                   projectSno: result.data.quickStart.projectSno,
+                                   projectName : param.projectName,
+                           }
+                           $uibModalInstance.close(project);
+                       });
+                    }
+                })
+            },function(btn){
+                $scope.model.hidden.isSubmited = false;
+            }
+        );
+    };
+
+    $scope.close = function() {
+        sessionStorage.removeItem("salesReport");
+        sessionStorage.removeItem("salesReportUrl");
+        $uibModalInstance.close(true);
+    };
+
+}]);

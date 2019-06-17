@@ -1,0 +1,203 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision: 21917 $  $Date: 2017-12-25 10:52:28 +0900 (月, 25 12 2017) $
+ * @author minh-thuan
+ */
+
+'use strict';
+
+exexSMSApp.factory('SearchItemModel', [ 'BaseModel', '$rootScope', function(BaseModel, $rootScope) {
+
+    var model = BaseModel.getInstance();
+
+    model.form = {
+        search : {
+            itemName : '',
+            itemCd : '',
+            janCd : '',
+            category1 : '',
+            category2 : '',
+            category3 : '',
+            onlySetItem : false,
+            exceptSetItem : false
+        },
+        mstItemList: [],
+        listCATE01:[],
+        listCATE02:[],
+        listCATE03:[],
+        //TODO common pagination info
+        paginationInfo : {
+            page: 0,
+            pageSize: 10,
+            totalPage: 0,
+            totalRecord: 0,
+            from: 0,
+            to: 0
+        }
+    };
+
+    model.hidden = {
+        screenMode : '',
+        isDisabled : true,
+        isReservationMode : false
+    };
+
+    return model;
+} ]);
+
+/**
+ * 品目一覧コントローラ
+ */
+exexSMSApp.controller('searchItemCtrl',
+        ['ServerService', '$scope', '$uibModalInstance', 'DialogsService', '$timeout', 'SearchItemModel', 'data', 'Messages',
+         function(ServerService, $scope, $uibModalInstance, DialogsService, $timeout, SearchItemModel, data, Messages){
+
+    $scope.model = SearchItemModel;
+
+    $scope.init = function(){
+        if(!StringUtils.isEmpty(data) && !StringUtils.isEmpty(data.isReservationMode)) {
+            $scope.model.hidden.isReservationMode = data.isReservationMode;
+            $scope.model.form.search.onlySetItem = false;
+            $scope.model.form.search.exceptSetItem = true;
+        }
+        $scope.getInit();
+    };
+
+    $scope.$on("MstItemList#search", function(evt, param) {
+        $scope.search(1, param);
+    });
+
+    $scope.getInit = function(){
+        ServerService.doPost('MstItemList/getInit', {})
+            .then(function(okResult) {
+                var error = okResult.data.failed;
+                if(!ValidateUtil.isValidTextEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'),error);
+                     return;
+                } else {
+                    $scope.model.form.listCATE01 = okResult.data.category1;
+                    $scope.model.form.listCATE02 = okResult.data.category2;
+                    $scope.model.form.listCATE03 = okResult.data.category3;
+                    $scope.model.form.search.sourceWarehouseNo = !ValidateUtil.isValidTextEmpty(data) ? data.sourceWarehouseNo: '';
+                    $scope.model.hidden.isDisabled = !ValidateUtil.isValidTextEmpty(data) ? data.isDisabled: false;
+                    $scope.doSearch(1, $scope.model.form.search);
+                }
+            }
+        );
+    };
+
+    $scope.search = function(param){
+        $scope.doSearch(1,param);
+    };
+
+    $scope.doSearch = function(page,param){
+        var params = {
+             itemCd : param.itemCd,
+             itemName : param.itemName,
+             janCd : param.janCd,
+             category1 : $scope.model.form.search.category1,
+             category2 : $scope.model.form.search.category2,
+             category3 : $scope.model.form.search.category3,
+             onlySetItem: $scope.model.form.search.onlySetItem,
+             exceptSetItem : $scope.model.form.search.exceptSetItem,
+             page : page,
+             pageSize : $scope.model.form.paginationInfo.pageSize
+        };
+        ServerService.doPost('MstItemList/search', params).then(
+            function(okResult) {
+                var error = okResult.data.failed;
+                var warning = okResult.data.warning;
+                if(!ValidateUtil.isValidTextEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'),error);
+                     return;
+                } else if (!ValidateUtil.isValidTextEmpty(warning)){
+                    DialogsService.showWarning(Messages.getMessage('check.error'),warning);
+                    return;
+                } else {
+                    $scope.model.form.mstItemList = okResult.data.listItem;
+                    $scope.model.form.paginationInfo = okResult.data.paginationInfo;
+                }
+            }
+        );
+    };
+
+    $scope.init();
+
+    /**
+     * close popup
+     */
+    $scope.close = function() {
+        $uibModalInstance.dismiss('close');
+    };
+
+    $scope.selectItem = function(item) {
+        if($scope.model.hidden.isReservationMode) {
+            var params = {
+                reservationSerialCd : item.serialCd,
+                reservationItemCd : item.itemCd,
+                reservationItemName : item.itemName,
+                reservationItemName2 : item.itemName2,
+                reservationJanCd : item.janCd,
+                reservationOutOfProdFlag : item.outOfProdFlag,
+                reservationItemLeadTime : item.leadTime,
+                reservationItemUnit : item.itemUnit,
+                reservationItemUnitName : item.itemUnitName,
+                reservationItemStockQuantity : item.itemStockQuantity,
+                reservationItemOrderRemainQuantity : item.itemOrderRemainQuantity
+            };
+            $uibModalInstance.close(params);
+        } else {
+            var params = {
+                serialCd : item.serialCd,
+                itemCd : item.itemCd,
+                itemName : item.itemName
+            };
+            ServerService.doPost('SalDetailsControl/getItemDetails', params).then(
+                function(okResult) {
+                    if(!ValidateUtil.isValidTextEmpty(okResult.data.itemDetails)){
+                        sessionStorage.setItem("product", JSON.stringify(okResult.data.itemDetails));
+                        $uibModalInstance.dismiss('close');
+                    }
+                }
+            );
+        }
+    };
+
+    $scope.showPopup = function(param){
+        var params ={
+            serialCd : param.serialCd,
+        };
+        ServerService.doPost('MstItemControl/getItem', params).then(
+            function(okResult) {
+                var error = okResult.data.failed;
+                if(!ValidateUtil.isValidTextEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'),error);
+                     return;
+                }
+                if(!ValidateUtil.isValidTextEmpty(okResult.data.itemImage)){
+                    var options = {size: 'image'};
+                    DialogsService.showDialog('/dialogs/custom.html','customDialogCtrl',okResult.data.itemImage,options);
+                }
+            }
+        );
+    }
+
+}]);
+
+exexSMSApp.controller('customDialogCtrl',function($scope, $uibModalInstance, data){
+    //-- Methods --//
+    $scope.itemImage = data;
+    $scope.close = function(){
+        $uibModalInstance.dismiss('no');
+    }; // end close
+});
+
+exexSMSApp.run(['$templateCache',function($templateCache){
+    $templateCache.put('/dialogs/custom.html',
+            '<div class="modal-body" ng-click="close()" style="text-align: center;">' +
+                '<img ng-src="{{itemImage}}" style="width:auto;max-height: 500px;min-height: 200px;">' +
+            '</div>');
+}]);

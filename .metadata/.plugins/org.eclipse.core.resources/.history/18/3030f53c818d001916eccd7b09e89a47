@@ -1,0 +1,150 @@
+/**
+ * ajax通信
+ * 
+ * $Revision:  $  $Date:  $
+ */
+(function($) {
+	//$.ajaxをラップして、初期値設定、検証処理とエラー処理を追加したもの
+	$.fn.callservice = function(options) {
+		var target = $(this);
+		var options = $.extend({
+			type : 'POST',
+			contentType : 'application/json; charset=UTF-8',
+			mimeType : 'application/json',
+			dataType : 'json',
+			cache : false,
+			async: true,
+			url : null,
+			validationtarget : null,
+			request : null,
+			//2度押し対応
+			autodisabled : true,
+			disableselector: ':submit',
+			//リロードエラー対応
+			ignoreReloaderror : true,
+			
+			fnValidate : function() {
+				if(options.validationtarget == null)
+					return true;
+				var items = $(options.validationtarget);
+				items.validate();
+				if (!items.valid()) {
+					return false;
+				}
+				return true;
+			},
+			fnToJSON : function(data) {
+				// 検証結果がOK:データ取得する				
+				var request = ko.toJSON(data);
+				return request;
+
+			},
+            beforeSend : function( xhr ){
+            },
+			success : function(response) {
+				//Nothing
+			},
+			error : function(xhr, status, er) {
+				//Nothing
+			},
+			complete : function(data) {
+				//Nothing
+			},
+			fnUnsupportedError : null
+		}, options);
+
+		var defaultErrorHandlling = function(response){
+			for (var i = 0; i < response.fieldErrors.length; i++) {
+				if(response.fieldErrors[i].field==="global"){
+					appendErrorMessage(response.fieldErrors[i].message);
+				}else if(response.fieldErrors[i].field.indexOf('.') >= 0){
+					if(options.fnUnsupportedError != null){
+						console.log("unsupportedError:"+ response.fieldErrors[i]);
+						options.fnUnsupportedError(response.fieldErrors[i]);						
+					}
+					else
+						appendErrorMessage("unsupported:" + response.fieldErrors[i].message +"(" + response.fieldErrors[i].field + ')');
+				}else{
+					var success = addErrorTips(response.fieldErrors[i].field, response.fieldErrors[i].message);
+					if(!success && options.fnUnsupportedError != null){						
+						console.log("unsupportedError:"+ response.fieldErrors[i]);
+						options.fnUnsupportedError.call(response.fieldErrors[i]);
+						
+					}
+				}
+			}
+		};
+
+		
+		//Tooltipをクリアする
+		clearErrorTips();
+		$('#popupError').hide();
+			
+		if (!options.fnValidate()){
+			// 検証結果がNG:Tootipを表示する
+			loadTips();
+			
+			return;
+		}
+		var request = options.fnToJSON(options.request);
+		console.log("request:" + request);
+		$("#ajax_loader").show();
+		
+		$.ajax({
+			type : options.type,
+			url : options.url,
+			contentType : options.contentType,
+			mimeType : options.mimeType,
+			data : request,
+			dataType : options.dataType,
+			cache : options.cache,
+			async: options.async,
+			beforeSend : function(jqXHR, settings) {
+				if (options.async && options.autodisabled)
+					$(options.disableselector).attr('disabled', 'disabled');				
+				options.beforeSend(jqXHR, settings);
+				$('.popup-error-messages').empty();
+				jqXHR.setRequestHeader("X-EXEX-AJAX", "true");
+			},
+			success : function(response) {
+				if (response != null && response.fieldErrors != null) {
+					defaultErrorHandlling(response);
+					loadTips();
+				} else {
+					options.success(response);
+				}
+			},
+			error : function(xhr, status, er) {
+				//ajax通信中のブラウザリロード時エラー対応
+				if (options.ignoreReloaderror && !xhr.getAllResponseHeaders()) {
+					xhr.abort();
+					if (isPageBeingRefreshed) {
+						return; 
+					}
+				}
+				var errorText = xhr.responseText;
+				if(xhr.responseText.indexOf('<html>') >= 0){
+					errorText = xhr.responseText.substring(xhr.responseText.indexOf('<body>'), xhr.responseText.indexOf('</body>'));
+				}
+				$('.popup-error-messages').append(errorText);
+				
+				options.error(xhr, status, er);
+			},
+			complete : function(data) {
+				//debugger;
+				$("#ajax_loader").hide();
+				if (options.async && options.autodisabled)
+					$(options.disableselector).removeAttr('disabled');
+				options.complete(data);
+				if($('.popup-error-messages').html() != '')
+					$('#popupError').show();				
+			    $(".popup-error-close").click(function(){
+					$('#popupError').hide();
+			    });
+			}
+		});
+		return false;
+	};
+})(jQuery);
+
+

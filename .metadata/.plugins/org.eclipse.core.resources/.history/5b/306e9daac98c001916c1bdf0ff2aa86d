@@ -1,0 +1,203 @@
+'use strict';
+
+exexSMSApp.factory('mstIconControlModel',['BaseModel', function(BaseModel){
+    var model = BaseModel.getInstance();
+    model.form = {
+        iconEdit : {
+            iconNo : '',
+            iconName : '',
+            version : '',
+            iconBinaryData : '',
+            msg : ''
+
+        }
+    };
+    model.hidden = {
+            iconSize : 0,
+            userDataStorage : 0,
+            isSubmited : false
+    };
+
+    return model;
+}]);
+
+exexSMSApp.controller('mstIconControllerDialogCtrl',
+        ['$rootScope', '$scope', '$uibModalInstance', 'DialogsService', 'mstIconControlModel', 'data', 'Messages', 'ServerService',
+         function($rootScope, $scope, $uibModalInstance, DialogsService, mstIconControlModel, data, Messages, ServerService){
+
+    $scope.model = mstIconControlModel;
+
+    $scope.init= function(){
+        $scope.getIconList = function() {
+            $rootScope.$broadcast("MstIconList#search");
+        };
+        $scope.loadPage();
+    };
+
+    $scope.loadPage = function(){
+        if(!ValidateUtil.isValidTextEmpty(data.iconNo)){
+            var param = {
+                    'iconNo': data.iconNo
+            };
+            ServerService
+            .doPost('MstIconControl/getIconDetail', param)
+            .then(
+                function(okResult) {
+                    var error = okResult.data.failed;
+                    if(!ValidateUtil.isValidTextEmpty(error)){
+                        DialogsService.showError(Messages.getMessage('system.error'),error);
+                        return;
+                    }
+                    $scope.model.form.iconEdit = okResult.data.data;
+                },
+                function(errResult){
+                });
+        }else{
+            $scope.model.form.iconEdit.iconBinaryData = '';
+            $scope.model.form.iconEdit.iconName = '';
+            $scope.model.form.iconEdit.iconNo = '';
+        }
+   };
+
+    $scope.clear = function() {
+         $scope.model.form.iconEdit.iconName = '';
+         $scope.model.form.iconEdit.iconBinaryData = '';
+    };
+
+    $scope.close = function() {
+        $scope.clear();
+        $uibModalInstance.dismiss('close');
+    };
+
+    $scope.deleteIcon = function(param){
+        var params = {
+                iconNo : param.iconNo
+        };
+        var dlg = DialogsService.showConfirm(Messages.getMessage('title.confirm'),Messages.getMessage('S00005'));
+        dlg.result.then(function(btn){
+            ServerService
+            .doPost('MstIconControl/deleteIcon', params)
+            .then(
+                function(okResult) {
+                    var success = okResult.data.success;
+                    var warning = okResult.data.warning;
+                    var error = okResult.data.failed;
+                    if (!ValidateUtil.isValidTextEmpty(success)) {
+                        DialogsService.showNotify(Messages.getMessage('title.info'),success);
+                        $uibModalInstance.dismiss('close');
+                        $scope.getIconList();
+                    } else {
+                        if(!ValidateUtil.isValidTextEmpty(warning)){
+                            DialogsService.showWarning(Messages.getMessage('check.error'),warning);
+                        }else{
+                            DialogsService.showError(Messages.getMessage('system.error'),error);
+                        }
+                    }
+                },
+                function(errResult){
+                });
+        });
+    };
+
+    $scope.updateIcon = function(param){
+        $scope.model.hidden.isSubmited = true;
+        var userDataStorage = !ValidateUtil.isValidTextEmpty(data.userDataStorage) ? data.userDataStorage : 0;
+        var dataStorage = parseFloat(userDataStorage) + parseFloat($scope.model.hidden.iconSize);
+        if($scope.model.hidden.iconSize > (CONSTANT.ICON_SIZE)){
+            return DialogsService.showWarning(Messages.getMessage('check.error'),Messages.getMessage('W00252',(CONSTANT.ICON_SIZE/1024).toString() + 'KB '));;
+        }else if (dataStorage > data.maxDataStorage){
+            return DialogsService.showWarning(Messages.getMessage('check.error'),Messages.getMessage('W00253'));;
+        }
+
+        var params = {
+                iconName : param.iconName,
+                iconNo : param.iconNo,
+                version : param.version,
+                iconBinaryData : param.iconBinaryData,
+                userDataStorage : dataStorage
+        };
+        if(!ValidateUtil.isValidTextEmpty(param.msg) || ValidateUtil.isValidTextEmpty(param.iconName) || ValidateUtil.isValidTextEmpty(param.iconBinaryData)){
+            DialogsService.showWarning(Messages.getMessage('check.error'),Messages.getMessage('W11000'));
+        } else {
+            var dlg = DialogsService.showConfirm(Messages.getMessage('title.confirm'),Messages.getMessage('S00004'));
+            dlg.result.then(function(btn){
+                ServerService
+                .doPost('MstIconControl/updateIcon', params)
+                .then(
+                    function(okResult) {
+                        var success = okResult.data.success;
+                        var warning = okResult.data.warning;
+                        var error = okResult.data.failed;
+                        if (!ValidateUtil.isValidTextEmpty(success)) {
+                            DialogsService.showNotify(Messages.getMessage('title.info'),success);
+                            $uibModalInstance.dismiss('close');
+                            $scope.getIconList();
+                            $scope.clear();
+                        } else {
+                            if(!ValidateUtil.isValidTextEmpty(warning)){
+                                DialogsService.showWarning(Messages.getMessage('check.error'),warning);
+                            }else{
+                                DialogsService.showError(Messages.getMessage('system.error'),error);
+                            }
+                        }
+                    },
+                    function(errResult){
+                    });
+            },function(btn){});
+        }
+    };
+
+
+    $scope.addIcon = function(param){
+        $scope.model.hidden.isSubmited = true;
+        var userDataStorage = !ValidateUtil.isValidTextEmpty(data.userDataStorage) ? data.userDataStorage : 0;
+        var dataStorageTmp = parseFloat(userDataStorage) + parseFloat($scope.model.hidden.iconSize);
+        if($scope.model.hidden.iconSize > (CONSTANT.ICON_SIZE)){
+            return DialogsService.showWarning(Messages.getMessage('check.error'),Messages.getMessage('W00252',(CONSTANT.ICON_SIZE/1024).toString() + 'KB '));
+        }else if (dataStorageTmp > data.maxDataStorage){
+            return DialogsService.showWarning(Messages.getMessage('check.error'),Messages.getMessage('W00253'));
+        }
+
+        var params = {
+                iconName : param.iconName,
+                iconNo : param.iconNo,
+                iconBinaryData : param.iconBinaryData,
+                userDataStorage : dataStorageTmp
+        };
+
+        if( !ValidateUtil.isValidTextEmpty(param.msg) ){
+            DialogsService.showWarning(Messages.getMessage('check.error'),Messages.getMessage('W11000'));
+        } else if( ValidateUtil.isValidTextEmpty(param.iconName) ) {
+            DialogsService.showWarning(Messages.getMessage('check.error'),Messages.getMessage('W11000'));
+        } else if( ValidateUtil.isValidTextEmpty(param.iconBinaryData) ) {
+            DialogsService.showWarning(Messages.getMessage('check.error'),Messages.getMessage('W11001'));
+        } else {
+        var dlg = DialogsService.showConfirm(Messages.getMessage('title.confirm'),Messages.getMessage('S00003'));
+            dlg.result.then(function(btn){
+                ServerService
+                .doPost('MstIconControl/addIcon', params)
+                .then(
+                    function(okResult) {
+                        var error = okResult.data.failed;
+                        var success = okResult.data.success;
+                        if(!ValidateUtil.isValidTextEmpty(error)){
+                            DialogsService.showError(Messages.getMessage('system.error'), error);
+                            return;
+                        }
+                        if(!ValidateUtil.isValidTextEmpty(success)){
+                            DialogsService.showNotify(Messages.getMessage('title.info'),success);
+                            $uibModalInstance.dismiss('close');
+                            $scope.clear();
+                            $scope.getIconList();
+                        }else {
+                            if(!ValidateUtil.isValidTextEmpty(okResult.data.warning)){
+                               DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W11000'));
+                           }
+                        }
+                    },
+                    function(errResult){
+                    });
+            },function(btn){});
+        }
+    };
+}]);

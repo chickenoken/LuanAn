@@ -1,0 +1,215 @@
+'use strict';
+function service($q, serverService) {
+
+    var _self = this;
+    _self.init = function(param) {
+        var deferred = $q.defer();
+        serverService
+            .doPost('InvoiceTemplateList/getInit', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    _self.search = function(param) {
+        var deferred = $q.defer();
+        serverService
+            .doPost('InvoiceTemplateList/search', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+
+    /**
+     * get init data for detail
+     */
+    _self.initDetail = function(param) {
+        var deferred = $q.defer();
+        serverService
+            .doPost('InvoiceTemplate/getInit', param)
+            .then(
+                function(okResult) {
+                    deferred.resolve(okResult);
+                },
+                function(errResult) {
+                    deferred.reject(errResult);
+                });
+
+        return deferred.promise;
+    };
+
+    /**
+     * get all data of invoice template by invoice type.
+     */
+    _self.getInvoiceTemplateByType = function(param) {
+        var deferred = $q.defer();
+        serverService
+            .doPost('InvoiceTemplate/getInvoiceTemplateByType', param)
+            .then(
+                function(okResult) {
+                    deferred.resolve(okResult);
+                },
+                function(errResult) {
+                    deferred.reject(errResult);
+                });
+
+        return deferred.promise;
+    };
+
+    /**
+     * get data for invoice template.
+     */
+    _self.getInvoiceTemplateData = function(param) {
+        var deferred = $q.defer();
+        serverService
+            .doPost('InvoiceTemplate/getInvoiceTemplateData', param)
+            .then(
+                function(okResult) {
+                    deferred.resolve(okResult);
+                },
+                function(errResult) {
+                    deferred.reject(errResult);
+                });
+
+        return deferred.promise;
+    };
+
+
+    /**
+     * change invoice template .
+     */
+    _self.changeInvoiceTemplate = function(param) {
+        var deferred = $q.defer();
+        serverService
+            .doPost('InvoiceTemplate/changeInvoiceTemplate', param)
+            .then(
+                function(okResult) {
+                    deferred.resolve(okResult);
+                },
+                function(errResult) {
+                    deferred.reject(errResult);
+                });
+
+        return deferred.promise;
+    };
+
+    /**
+     * check data.
+     */
+    _self.checkData = function(param) {
+        var deferred = $q.defer();
+        serverService
+            .doPost('InvoiceTemplateList/checkData', param)
+            .then(
+                function(okResult) {
+                    deferred.resolve(okResult);
+                },
+                function(errResult) {
+                    deferred.reject(errResult);
+                });
+
+        return deferred.promise;
+    };
+
+    /**
+     * save template.
+     */
+    _self.saveTemplate = function(param) {
+        var deferred = $q.defer();
+        serverService
+            .doPost('InvoiceTemplate/saveTemplate', param)
+            .then(
+                function(okResult) {
+                    deferred.resolve(okResult);
+                },
+                function(errResult) {
+                    deferred.reject(errResult);
+                });
+
+        return deferred.promise;
+    };
+
+    /**
+     * update template.
+     */
+    _self.updateTemplate = function(param) {
+        var deferred = $q.defer();
+        serverService
+            .doPost('InvoiceTemplate/updateTemplate', param)
+            .then(
+                function(okResult) {
+                    deferred.resolve(okResult);
+                },
+                function(errResult) {
+                    deferred.reject(errResult);
+                });
+
+        return deferred.promise;
+    };
+
+    /**
+     * delete template.
+     */
+    _self.deleteTemplate = function(param) {
+        var deferred = $q.defer();
+        serverService
+            .doPost('InvoiceTemplate/deleteTemplate', param)
+            .then(
+                function(okResult) {
+                    deferred.resolve(okResult);
+                },
+                function(errResult) {
+                    deferred.reject(errResult);
+                });
+
+        return deferred.promise;
+    };
+
+    /**変更*/
+    _self.initReview = function(param) {
+        var deferred = $q.defer();
+        serverService
+            .doPost('InvoiceTemplate/initReview', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+        return deferred.promise;
+    };
+
+    /**
+     * update bill issue date
+     */
+    _self.updateBillIssue = function(param) {
+        var deferred = $q.defer();
+        serverService
+            .doPost('InvoiceTemplate/updateBillIssue', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+        return deferred.promise;
+    };
+}
+service.
+    $inject = ['$q', 'ServerService'];
+exexSMSApp.service('InvoiceTemplateService', service);

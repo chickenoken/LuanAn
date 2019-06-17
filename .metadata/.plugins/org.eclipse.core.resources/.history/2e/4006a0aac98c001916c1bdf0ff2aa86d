@@ -1,0 +1,342 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision: 1.0 $  $Date: 2014/06/18 $
+ * @author huy-du
+ */
+
+exexSMSApp.factory('MstItemListModel', [ 'BaseModel', function(BaseModel) {
+
+    var model = BaseModel.getInstance();
+
+    model.form = {
+            search : {
+                serialCd : '',
+                itemCd:'',
+                itemName:'',
+                itemName2:'',
+                itemName3:'',
+                maker:'',
+                category1:'',
+                category2:'',
+                category3:'',
+                itemType:'',
+                itemUnit:'',
+                taxType:'',
+                sumPriceFrom:'',
+                sumPriceTo:'',
+                itemPrice:'',
+                onlySetItem: false,
+                exceptSetItem : false,
+                janCd: ''
+            },
+           listM010002:[],
+           listS010003:[],
+           listM010001:[],
+           listCATE01:[],
+           listCATE02:[],
+           listCATE03:[],
+           listMaker:[],
+           mstItemList: [],
+           //TODO common pagination info
+           paginationInfo : {
+               page: 0,
+               pageSize: 20,
+               totalPage: 0,
+               totalRecord: 0,
+               from: 0,
+               to: 0
+           }
+      };
+
+    model.hidden = {
+            screenMode : '',
+            isDisabled : true,
+            checkBox : false
+        };
+
+    return model;
+
+}]);
+
+exexSMSApp.service('MstItemListService', ['$q', 'ServerService',function ($q, ServerService) {
+    var _self = this;
+
+    _self.initData = function(param) {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('MstItemList/getInit', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    _self.search = function(param) {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('MstItemList/search', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    _self.searchCategory = function(param) {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('MstItemList/searchCategory', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    _self.checkData = function(param) {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('MstItemList/checkData', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+}]);
+
+/**
+ * 品目一覧コントローラ
+ */
+exexSMSApp.controller('mstItemListCtrl',
+        ['$scope', 'ServerService', 'MstItemListService', 'DialogsService', 'MstItemListModel', 'RouteService', 'Messages',
+         function($scope, ServerService, MstItemListService, DialogsService, MstItemListModel, RouteService, Messages){
+
+    $scope.model = MstItemListModel;
+
+    $scope.init = function(){
+        MstItemListService.initData({}).then(
+            function(result) {
+                $scope.model.form.listM010002 = result.data.listM010002;
+                $scope.model.form.listS010003 = result.data.listS010003;
+                $scope.model.form.listM010001 = result.data.listM010001;
+                $scope.model.form.listCATE01 = result.data.category1;
+                $scope.model.form.listCATE02 = result.data.category2;
+                $scope.model.form.listCATE03 = result.data.category3;
+                $scope.model.form.listMaker = result.data.maker;
+                var sessionSearch = angular.fromJson(sessionStorage.getItem("mstItemListSession"));
+                if(!StringUtils.isEmpty(sessionSearch)){
+                    $scope.model.form.search = sessionSearch;
+                    $scope.search(sessionSearch.page);
+                }else{
+                    $scope.search();
+                }
+            }
+        );
+    };
+
+    $scope.search = function(page){
+        $scope.doSearch(page);
+    };
+
+    $scope.doSearch = function(page){
+        var params = {
+            itemName : $scope.model.form.search.itemName,
+            itemType : $scope.model.form.search.itemType,
+            itemCd : $scope.model.form.search.itemCd,
+            category1 : $scope.model.form.search.category1,
+            category2 : $scope.model.form.search.category2,
+            category3 : $scope.model.form.search.category3,
+            maker : $scope.model.form.search.maker,
+            taxType : $scope.model.form.search.taxType,
+            itemUnit : $scope.model.form.search.itemUnit,
+            sumPriceFrom : $scope.model.form.search.sumPriceFrom,
+            sumPriceTo : $scope.model.form.search.sumPriceTo,
+            onlySetItem: $scope.model.form.search.onlySetItem,
+            exceptSetItem : $scope.model.form.search.exceptSetItem,
+            janCd : $scope.model.form.search.janCd,
+            page : !StringUtils.isEmpty(page) ? page : 1,
+            pageSize : $scope.model.form.paginationInfo.pageSize
+        };
+        sessionStorage.setItem("mstItemListSession", JSON.stringify(params));
+        MstItemListService.search(params).then(
+            function(result) {
+                var error = result.data.failed;
+                var warning = result.data.warning;
+                if(!ValidateUtil.isValidTextEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                }else if(!ValidateUtil.isValidTextEmpty(warning)){
+                    DialogsService.showWarning(Messages.getMessage('check.error'),warning);
+                    return;
+                }else{
+                    $scope.model.form.mstItemList = result.data.listItem;
+                    $scope.model.form.paginationInfo = result.data.paginationInfo;
+                }
+
+                // add colresizable to table
+                setTimeout(function(){
+                    $scope.setColResizable();
+                });
+            }
+        );
+    };
+
+    $scope.init();
+
+    $scope.$on("MstItemList#search", function(evt, param) {
+        $scope.search();
+    });
+
+    $scope.openDialog = function(data, result) {
+        var param = {
+                category1 :  "",
+                category2 :  "",
+                item:[],
+                mstItemList : [],
+                listM010002:[],
+                listS010003:[],
+                listM010001:[],
+                listCATE01:[],
+                listCATE02:[],
+                listCATE03:[],
+        };
+        switch (result) {
+            case 'addItem':
+                sessionStorage.removeItem('mstItem');
+                sessionStorage.removeItem('mstItemDialog');
+                RouteService.gotoUrl('MstItemControl');
+                break;
+            case 'inventoryHistory':
+                var param = {
+                    'serialCd':data.serialCd
+                };
+                MstItemListService.checkData(param).then(
+                    function(result) {
+                        var warning = result.data.warning;
+                        if(!ValidateUtil.isValidTextEmpty(warning)){
+                            DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                            $scope.search();
+                            return;
+                        }else{
+                            param.itemCd = data.itemCd;
+                            param.itemName = data.itemName;
+                            sessionStorage.setItem('mstItemDialog',JSON.stringify(param));
+                            DialogsService.showDialog('MstItemDialog', 'mstItemDialogCtrl', 'data', {size: '800'}).result.then(function(param) {}, function () {
+                                sessionStorage.removeItem('mstItemDialog');
+                            });
+                        }
+                    }
+                );
+                break;
+            default:
+                var param = {
+                    'serialCd' : data.serialCd
+                };
+                MstItemListService.checkData(param).then(
+                    function(result) {
+                        var warning = result.data.warning;
+                        if(!ValidateUtil.isValidTextEmpty(warning)){
+                            DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                            $scope.search();
+                            return;
+                        }else{
+                            sessionStorage.setItem('mstItem',JSON.stringify(param));
+                            RouteService.gotoUrl('MstItemControl');
+                        }
+                    }
+                );
+                break;
+        };
+    };// end launch
+
+    $scope.exportExcel = function(param){
+        var params = {
+            itemCd : param.itemCd,
+            itemName : param.itemName,
+            category1 : param.category1 ? param.category1 : "",
+            category2 : param.category2 ? param.category2 : "",
+            category3 : param.category3 ? param.category3 : "",
+            maker : param.maker,
+            itemType : param.itemType,
+            taxType : param.taxType,
+            itemUnit : param.itemUnit,
+            sumPriceFrom : !ValidateUtil.isValidTextEmpty(param.sumPriceFrom) ? parseInt(param.sumPriceFrom) : '',
+            sumPriceTo : !ValidateUtil.isValidTextEmpty(param.sumPriceTo) ? parseInt(param.sumPriceTo) : '',
+            janCd : param.janCd,
+            onlySetItem: param.onlySetItem,
+            exceptSetItem : param.exceptSetItem
+        };
+        var fileName = Messages.getMessage('common.excel.file.name.item') + '_' + DateUtils.getYYYYMMDD(new Date());
+        ServerService.doDownload('/MstItemList/downloadItemExcel', angular.toJson(params), 'application/vnd.ms-excel', fileName + '.xlsx');
+    };
+
+    $scope.showPopup = function(param){
+        var params ={
+            serialCd : param.serialCd
+        };
+        ServerService.doPost('MstItemControl/getItem', params).then(
+            function(okResult) {
+                if(!ValidateUtil.isValidTextEmpty(okResult.data.failed)){
+                    DialogsService.showError(Messages.getMessage('system.error'), okResult.data.failed);
+                    return;
+                }
+                if(!ValidateUtil.isValidTextEmpty(okResult.data.itemImage)){
+                    DialogsService.showDialog('/dialogs/custom.html','customDialogCtrl', okResult.data.itemImage, {size: 'image'});
+                }
+            }
+        );
+    }
+
+    // set colResizable
+    $scope.setColResizable = function(){
+        // remove JCLRgrips if having
+        $('.JCLRgrips').remove();
+
+        angular.element('#tableMstItemList').colResizable({
+            liveDrag: true,
+            postbackSafe: true,
+            useLocalStorage: true
+        });
+    }
+}]);
+
+exexSMSApp.controller('customDialogCtrl',function($scope, $uibModalInstance, data){
+    //-- Methods --//
+    $scope.itemImage = data;
+    $scope.close = function(){
+        $uibModalInstance.dismiss('no');
+    }; // end close
+});
+
+exexSMSApp.run(['$templateCache',function($templateCache){
+    $templateCache.put('/dialogs/custom.html',
+            '<div class="modal-body" ng-click="close()" style="text-align: center;">' +
+                '<img ng-src="{{itemImage}}" style="width:auto;max-height: 500px;min-height: 200px;">' +
+            '</div>');
+}]);
+

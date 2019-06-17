@@ -1,0 +1,11 @@
+INDEX VERSION 1.4+D:\DO AN JAVA\pleiades\workspaceNet\.metadata\.plugins\org.eclipse.wst.jsdt.core\indexes
+443426823.index
+239862795.index
+1582353161.index
+3837087150.index
+2905908203.index
+736776693.index
+1922480373.index
+4095245904.index
+736776693.index
+1154554954.index

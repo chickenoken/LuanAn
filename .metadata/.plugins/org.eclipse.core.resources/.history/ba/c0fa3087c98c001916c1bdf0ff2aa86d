@@ -1,0 +1,69 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision:  $  $Date:  $
+ * @author : huy-du
+ */
+'use strict';
+
+exexSMSApp.factory('BudgetChartDialogModel', [ 'BaseModel', '$rootScope', function(BaseModel, $rootScope) {
+
+    var model = BaseModel.getInstance();
+    return model;
+}]);
+
+exexSMSApp.controller('BudgetChartCtrl',
+        ['$rootScope', '$scope', '$uibModalInstance', 'data', 'DialogsService','BudgetChartDialogModel',
+         function($rootScope, $scope, $uibModalInstance, data, DialogsService, BudgetChartDialogModel) {
+
+    $scope.model = BudgetChartDialogModel;
+
+    $scope.loadChartData = function(){
+        $scope.listData = [];
+            var line = [];
+            var label = [];
+            for(var x = 0; x <  data.listData.listObject.length; x++){
+                line[x] = data.listData.listObject[x].listAnalytics[1].listValue;
+                label[x] = data.listData.listObject[x].objectName;
+            }
+
+            var listDate = angular.copy(data.listHeader);
+            var l = [];
+            var length = listDate.length;
+            for (var y = 0; y < length; y++) {
+                var item = {};
+                item['x'] = listDate[y];
+                for (var z = 0; z < line.length; z++){
+                    l[z] = line[z][y];
+                    item['line'+(z+1)] = l[z];
+                }
+                $scope.listData.push(item);
+            };
+
+            var dataColumnStr = "[";
+            var chartType;
+            for(var k = 1; k <= data.listData.listObject.length; k++){
+                if (k <= 3) chartType = 'bar';
+                else chartType = 'line';
+                dataColumnStr += "{\"id\":\"line"+k+"\",";
+                dataColumnStr += "\"type\":\""+ chartType + "\",\"name\":\"" + label[k-1] + "\",";
+                dataColumnStr += "\"color\":\""+ ChartUtil.getChartColor(k-1);
+                if(k == data.listData.listObject.length){
+                    dataColumnStr += "\"}";
+                }else{
+                    dataColumnStr += "\"},";
+                }
+            }
+            dataColumnStr += ']';
+            $scope.datacolumns = JSON.parse(dataColumnStr);
+            $scope.datax = {"id" : "x"};
+    };
+
+    $scope.loadChartData();
+    $scope.close = function(){
+        $uibModalInstance.dismiss();
+    };
+}]);
+

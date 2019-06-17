@@ -1,0 +1,23 @@
+package org.planning.net.dao;
+
+import java.sql.ResultSet;
+import java.sql.SQLException;
+
+import org.planning.net.dto.LoginDto;
+import org.springframework.jdbc.core.RowMapper;
+
+public class LoginDao implements RowMapper<LoginDto> {
+
+	  public static final String BASE_SQL = //
+	            "Select nv.MA_NHAN_VIEN,nv.TEN_NHAN_VIEN "//
+	                    + " from NHAN_VIEN nv ";
+
+	@Override
+	public LoginDto mapRow(ResultSet rs, int rowNum) throws SQLException {
+		LoginDto nv = new LoginDto();
+		nv.setMaNhanVien(rs.getString("MA_NHAN_VIEN"));
+		nv.setTenNhanVien(rs.getString("TEN_NHAN_VIEN"));
+		return null;
+	}
+
+}

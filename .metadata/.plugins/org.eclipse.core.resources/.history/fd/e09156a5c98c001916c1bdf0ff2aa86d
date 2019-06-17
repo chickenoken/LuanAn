@@ -1,0 +1,378 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision:  $  $Date:  $
+ * @author : quang-tung
+ */
+'use strict';
+exexSMSApp.factory('SalesReportListForCustomerModel', [ 'BaseModel', function(BaseModel) {
+    var model = BaseModel.getInstance();
+    model.form = {
+        search : {
+            activityDateFrom : '',
+            activityDateTo : '',
+            reportGroupCd : [],
+            reportUserCd : [],
+            lastUpdUserCd : [],
+            activityCode : [],
+            custName : '',
+            custOwnerName : '',
+            haveAttachFile : false,
+            exportCsv : '',
+            searchOrderKey : [],
+            searchOrderSort: ''
+        },
+        listSalesReport : [],
+        paginationInfo : {
+            page : 0
+        }
+    };
+
+    model.listA050001 = [];
+    model.listUser = [];
+    model.listGroup = [];
+    model.hidden = {
+        custCd : '',
+        custName : '',
+        fromScreen : '',
+        listGroupSelect:[],
+        listParamSearch : [],
+        searchOrderKey : [],
+        searchOrderSort : [],
+        listSearch:[],
+        listTmp: [],
+        selectedAll : false,
+        listSelected : [],
+        selectedSalesReportNoList: []
+    };
+    return model;
+}]);
+
+exexSMSApp.controller('SalesReportListForCustomerCtrl',
+        ['$scope', '$filter', 'SalesReportListForCustomerModel', 'DialogsService', 'RouteService', 'SalesReportListService', 'Messages', 'ServerService', '$uibModalInstance', 'data',
+         function($scope, $filter, SalesReportListForCustomerModel,  DialogsService, RouteService, SalesReportListService, Messages, ServerService, $uibModalInstance, data){
+
+    $scope.model = SalesReportListForCustomerModel;
+
+    $scope.newListParamSearch = function(){
+        $scope.model.hidden.listTmp = angular.copy($scope.model.hidden.listParamSearch);
+        for (var i = 0; i < $scope.model.hidden.listSearch.length; i++) {
+            var item = $scope.model.hidden.listSearch[i];
+            var removeIndex = $scope.model.hidden.listTmp.map(function(items) { return items.model; }).indexOf(item.model);
+                 if (item.model == 'activityDate') { $scope.model.hidden.listTmp.splice(removeIndex, 1) }
+            else if (item.model == 'reportGroupCd') { $scope.model.hidden.listTmp.splice(removeIndex, 1) }
+            else if (item.model == 'reportUserCd') { $scope.model.hidden.listTmp.splice(removeIndex, 1) }
+            else if (item.model == 'activityCode') { $scope.model.hidden.listTmp.splice(removeIndex, 1) }
+            else if (item.model == 'lastUpdUserCd') { $scope.model.hidden.listTmp.splice(removeIndex, 1) }
+        }
+    }
+
+    $scope.prepareListParamSearch = function (session){
+        var listParamSearch = $scope.model.hidden.listParamSearch;
+        var sessionLogin = angular.fromJson(sessionStorage.getItem("session"));
+        var sessionSearch = angular.fromJson(sessionStorage.getItem("salesReportForCustomerSearch"));
+        for (var i = 0; i < $scope.model.hidden.listSearch.length; i++) {
+            var item = $scope.model.hidden.listSearch[i];
+            item.listDetailParam = angular.copy($scope.model.hidden.listTmp);
+            if (item.model == 'activityDate') {
+                item.listDetailParam.push(listParamSearch[0]);
+                if(StringUtils.isEmpty(sessionSearch) || (!StringUtils.isEmpty(sessionSearch)
+                        && sessionSearch.activityDateFrom === undefined && sessionSearch.activityDateTo === undefined )){
+                    $scope.model.form.search.activityDateFrom = DateUtils.getPreviousMonth();
+                    $scope.model.form.search.activityDateTo = DateUtils.getCurrentDate();
+                }
+            }
+            else if (item.model == 'reportGroupCd') {
+                item.listDetailParam.push(listParamSearch[1]);
+                if(!StringUtils.isEmpty(sessionLogin) && (!StringUtils.isEmpty(sessionSearch) && sessionSearch.reportGroupCd == undefined)
+                    && (StringUtils.isEmpty($scope.model.form.search.reportGroupCd) || $scope.model.form.search.reportGroupCd.length == 0)){
+                    $scope.model.form.search.reportGroupCd = !StringUtils.isEmpty(sessionLogin.groupCd) ? [sessionLogin.groupCd] : [];
+                }
+            }
+            else if (item.model == 'reportUserCd') {
+                item.listDetailParam.push(listParamSearch[2])
+                if(!StringUtils.isEmpty(sessionLogin) && (!StringUtils.isEmpty(sessionSearch) && sessionSearch.reportUserCd == undefined)
+                    && (StringUtils.isEmpty($scope.model.form.search.reportUserCd) || $scope.model.form.search.reportUserCd.length == 0)){
+                    $scope.model.form.search.reportUserCd = [sessionLogin.userCd];
+                }
+            }
+            else if (item.model == 'activityCode') { item.listDetailParam.push(listParamSearch[3])}
+            else if (item.model == 'lastUpdUserCd') { item.listDetailParam.push(listParamSearch[4])}
+        }
+    }
+
+    $scope.prepareSessionSearch = function(session){
+        var listSearch = [];
+        for(var key in session){
+            var item = {}
+            if (key == 'activityDateFrom') { $scope.model.form.search.activityDateFrom = session[key]; item.model = 'activityDate' }
+            else if (key == 'activityDateTo') { $scope.model.form.search.activityDateTo = session[key] }
+            else if (key == 'reportGroupCd') { $scope.model.form.search.reportGroupCd = session[key]; item.model = key }
+            else if (key == 'reportUserCd') { $scope.model.form.search.reportUserCd = session[key]; item.model = key }
+            else if (key == 'activityCode') { $scope.model.form.search.activityCode = session[key]; item.model = key }
+            else if (key == 'lastUpdUserCd') { $scope.model.form.search.lastUpdUserCd = session[key]; item.model = key }
+            if(!StringUtils.isEmpty(item.model)){
+                listSearch.push(item);
+            }
+        }
+        $scope.model.hidden.listSearch = listSearch;
+        $scope.newListParamSearch();
+        $scope.prepareListParamSearch(session);
+    }
+
+    $scope.convertParamsSearch = function(param, page){
+        var searchOrderKey = [];
+        if (!StringUtils.isEmpty(param.searchOrderKey)){
+            for (var i = 0; i < param.searchOrderKey.length; i++) {
+                for (var j = 0; j < $scope.model.hidden.searchOrderKey.length; j++) {
+                    if (param.searchOrderKey[i] == $scope.model.hidden.searchOrderKey[j].id) {
+                        searchOrderKey.push($scope.model.hidden.searchOrderKey[j]);
+                    }
+                }
+            }
+        }
+        var params = {
+            haveAttachFile : param.haveAttachFile,
+            searchOrderKeyStr : JSON.stringify(searchOrderKey),
+            searchOrderKey : param.searchOrderKey,
+            searchOrderSort : param.searchOrderSort,
+            page : 0,
+            pageSize : 0,
+            fromCustomer : true,
+            custCd : data.custCd
+        };
+        for (var i = 0; i < $scope.model.hidden.listSearch.length; i++) {
+            var item = $scope.model.hidden.listSearch[i];
+             if (item.model == 'activityDate') {
+                params.activityDateFrom = !StringUtils.isEmpty(param.activityDateFrom) ? new Date(param.activityDateFrom) : null;
+                params.activityDateTo = !StringUtils.isEmpty(param.activityDateTo) ? new Date(param.activityDateTo) : null;
+            } else if (item.model == 'reportGroupCd') {
+                params.reportGroupCd = !StringUtils.isEmpty(param.reportGroupCd) ? param.reportGroupCd : [];
+            } else if (item.model == 'reportUserCd') {
+                params.reportUserCd = !StringUtils.isEmpty(param.reportUserCd) ? param.reportUserCd : [];
+            } else if (item.model == 'activityCode') {
+                params.activityCode = !StringUtils.isEmpty(param.activityCode) ? param.activityCode : [];
+            } else if (item.model == 'lastUpdUserCd') {
+                params.lastUpdUserCd = !StringUtils.isEmpty(param.lastUpdUserCd) ? param.lastUpdUserCd : [];
+            }
+        }
+        return params;
+    };
+
+    $scope.changeListParamSearch = function (){
+        $scope.newListParamSearch();
+        $scope.prepareListParamSearch();
+    }
+
+    $scope.newRowParamSearch = function(){
+        $scope.newListParamSearch();
+        var tmp = ""
+        var param = {
+                model : $scope.model.hidden.listTmp[0].model,
+                listDetailParam : $scope.model.hidden.listTmp
+        };
+        $scope.model.hidden.listSearch.push(param);
+        for (var i = 0; i < param.listDetailParam.length; i++) {
+            var tmp = $scope.model.hidden.listTmp[i];
+            if(param.model == tmp.model){
+                param.listDetailParam.splice(i, 1);
+            }
+        }
+        $scope.prepareListParamSearch();
+    }
+
+    $scope.removeItem = function(index) {
+        $scope.model.hidden.listSearch.splice(index, 1);
+        $scope.newListParamSearch();
+        $scope.prepareListParamSearch();
+    };
+
+    /**初期*/
+    $scope.init = function(){
+        $scope.model.hidden.selectedAll = false;
+        $scope.model.form.listSalesReport.listData = [];
+        $scope.model.hidden.selectedSalesReportNoList = [];
+        SalesReportListService.initData(null).then(
+            function(result) {
+                $scope.model.hidden.listParamSearch = [{id: 1, model: 'activityDate', name: angular.element('#activityDateLabel').text()},
+                                                       {id: 2, model: 'reportGroupCd', name: angular.element('#reportGroupCdLabel').text()},
+                                                       {id: 3, model: 'reportUserCd', name: angular.element('#reportUserCdLabel').text()},
+                                                       {id: 4, model: 'activityCode', name: angular.element('#activityCodeLabel').text()},
+                                                       {id: 5, model: 'lastUpdUserCd', name: angular.element('#lastUpdUserCdLabel').text()}];
+                $scope.model.hidden.searchOrderKey = [{id: 1, model: 'activityDate', name: angular.element('#activityDateLabel').text()}];
+                $scope.model.hidden.searchOrderSort = [{id: 1, model: 'desc', name: angular.element('#descLabel').text()},
+                                                      {id: 2, model: 'asc', name: angular.element('#ascLabel').text()}];
+                if(!StringUtils.isEmpty(result.data)){
+                    $scope.model.listA050001 = result.data.listA050001;
+                    $scope.model.listUser = result.data.listUser;
+                    $scope.model.listGroup = result.data.listGroup;
+                    $scope.model.form.search.activityDateFrom = DateUtils.getPreviousMonth();
+                    $scope.model.form.search.activityDateTo = DateUtils.getCurrentDate();
+
+                    if(!StringUtils.isEmpty(result.data.listMstSalesReport)){
+                        for (var i = 0; i < result.data.listMstSalesReport.length; i++) {
+                            var orderKey = {
+                                    id : $scope.model.hidden.searchOrderKey.length + 1,
+                                    freeItemFlag : result.data.listMstSalesReport[i].freeItemFlag,
+                                    lineNo: result.data.listMstSalesReport[i].lineNo,
+                                    name : result.data.listMstSalesReport[i].controlLabelName,
+                                    model : 'mstSalesReport_' + i,
+                            };
+                            $scope.model.hidden.searchOrderKey.push(orderKey);
+                        }
+                    }
+
+                    var sessionLogin = angular.fromJson(sessionStorage.getItem("session"));
+                    if(!StringUtils.isEmpty(sessionLogin)){
+                        $scope.model.form.search.reportGroupCd = !StringUtils.isEmpty(sessionLogin.groupCd) ? [sessionLogin.groupCd] : [];
+                        $scope.model.form.search.reportUserCd = [sessionLogin.userCd];
+                    }
+
+                    var salesReportSearch = angular.fromJson(sessionStorage.getItem("salesReportForCustomerSearch"));
+                    if(!StringUtils.isEmpty(salesReportSearch)){
+                        $scope.model.form.search = angular.copy(salesReportSearch);
+                        delete $scope.model.form.search.paginationInfo;
+                        delete $scope.model.form.search.page;
+                        $scope.prepareSessionSearch($scope.model.form.search)
+                        $scope.doSearch(salesReportSearch.page);
+                    } else {
+                        $scope.model.form.search.searchOrderKey = [1];
+                        $scope.newRowParamSearch();
+                        $scope.search();
+                    }
+                }
+            }
+        );
+    };
+
+    /**検索。*/
+    $scope.search = function() {
+        $scope.doSearch(1);
+    };
+
+    $scope.doSearch = function(page){
+        var param = $scope.convertParamsSearch($scope.model.form.search, page);
+        var searchOrderKey = []
+        sessionStorage.setItem("salesReportForCustomerSearch", JSON.stringify(param));
+        searchOrderKey = param.searchOrderKey;
+        delete param.searchOrderKey;
+
+        $scope.model.form.search.searchOrderKey = [];
+        SalesReportListService.search(param).then(
+            function(result) {
+                $scope.model.hidden.selectedAll = false;
+                $scope.model.form.search.searchOrderKey = angular.copy(searchOrderKey);
+                $scope.model.form.listSalesReport = result.data;
+                // Table Paging
+                $scope.model.currentPage = 1; //current page
+                $scope.model.entryLimit = 20; //max no of items to display in a page
+                $scope.model.number = 20;
+                var length = !StringUtils.isEmpty($scope.model.form.listSalesReport.listData) ? $scope.model.form.listSalesReport.listData.length : 0;
+                $scope.model.filteredItems = length; //Initially for no filter
+                $scope.model.totalItems = length;
+                if(length > 0){
+                    $scope.model.beginValFilter = 1;
+                }else{
+                    $scope.model.beginValFilter = 0;
+                }
+
+                $scope.setPage = function(pageNo) {
+                    $scope.currentPage = pageNo;
+                };
+
+                $scope.model.filter = function() {
+                    $timeout(function() {
+                        $scope.model.filteredItems = $scope.model.form.filtered.length;
+                        if($scope.model.form.filtered.length > 0){
+                            $scope.model.beginValFilter = 1;
+                        }else{
+                            $scope.model.beginValFilter = 0;
+                        }
+                    }, 10);
+                };
+                // End Table Paging
+
+                setTimeout( function(){
+                    $scope.setColResizable();
+                })
+            }
+        );
+    };
+    $scope.init();
+
+    $scope.update = function(){
+        angular.forEach($scope.model.form.listSalesReport.listData, function(item, i){
+            if(item.checked) {
+                $scope.model.hidden.selectedSalesReportNoList.push(item.salesReportNo);
+            }
+        })
+        if($scope.model.hidden.selectedSalesReportNoList.length > 0) {
+            DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('S00004')).result.then(function (btn) {
+                var param = {
+                    custCd: data.custCd,
+                    selectedSalesReportNoList : $scope.model.hidden.selectedSalesReportNoList
+                }
+                ServerService.doPost('SalesReportListForCustomer/updateForCustomer', param).then(
+                    function(result) {
+                        if(!StringUtils.isEmpty(result.data.warning)){
+                            DialogsService.showWarning(Messages.getMessage('check.error'), result.data.warning);
+                            $scope.search($scope.model.form.search);
+                            return;
+                        }else if(!StringUtils.isEmpty(result.data.failed)){
+                            DialogsService.showError(Messages.getMessage('system.error'), result.data.failed);
+                            return;
+                        }else{
+                            DialogsService.showNotify(Messages.getMessage('title.info'), result.data.success).result.then(function(btn){
+                                $scope.search();
+                                $scope.model.hidden.selectedAll = false;
+                                $scope.model.form.listSalesReport.listData = [];
+                                $scope.model.hidden.selectedSalesReportNoList = [];
+                                $uibModalInstance.close(true);
+                            });
+                        }
+                    }
+                );
+            })
+        }
+    };
+
+
+    $scope.downloadFile = function(param){
+        if(!StringUtils.isEmpty(param)){
+            if(!StringUtils.isEmpty(param.split('#')[0])){
+                var params = {
+                    'salesReportNo': param.split('#')[1],
+                    'salesReportSubNo': param.split('#')[2],
+                    'mstDetailTableName' : param.split('#')[3],
+                    'detailFreeItemFlag' : param.split('#')[4] == '1' ? true : false,
+                    'lineNo' : param.split('#')[5]
+                };
+                Utils.postToUrl("/SalesReportControl/downloadFile", params);
+            }
+        }
+    };
+
+    $scope.setColResizable = function(){
+        // remove JCLRgrips if having
+        $('.JCLRgrips').remove();
+
+        angular.element('#tableSalesReport').colResizable({
+            liveDrag: true,
+            postbackSafe: true,
+            useLocalStorage: true
+        });
+    }
+
+    $scope.close = function() {
+        $uibModalInstance.dismiss();
+    };
+
+
+    $scope.checkList = function(selectedAll){
+        angular.forEach($scope.model.form.listSalesReport.listData, function(item, i){
+            $scope.model.form.listSalesReport.listData[i].checked = selectedAll;
+        })
+    };
+}]);

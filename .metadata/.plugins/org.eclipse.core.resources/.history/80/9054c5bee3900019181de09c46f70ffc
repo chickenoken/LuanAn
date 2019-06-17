@@ -1,0 +1,35 @@
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/js/bootstrap.min.js"></script>
+<div class="modal-header">
+  <h3>Thêm nhân Viên</h3>
+</div>
+<div class="modal-body">
+  <div class="row">
+    <div class="form-group">
+      <div class="col-md-4"><span>Tên Nhân Viên</span></div>
+      <div class="col-md-8"><input type="text" ng-model="model.form.control.tenNv" style="width : 100%"></div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="form-group">
+      <div class="col-md-4"><span>Role</span></div>
+      <div class="col-md-8">
+			  <div class="dropdown">
+			    <button class="btn btn-default dropdown-toggle" type="button" data-toggle="dropdown">Tutorials
+			    <span class="caret"></span></button>
+			    <ul class="dropdown-menu">
+			      <li><a href="#">Normal</a></li>
+			      <li class="disabled"><a href="#">Disabled</a></li>
+			      <li class="active"><a href="#">Active</a></li>
+			      <li><a href="#">Normal</a></li>
+			    </ul>
+  </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+<div class="modal-footer">
+    <button class="btn btn-primary" ng-click="ok()">OK</button>
+    <button class="btn btn-warning" ng-click="cancel()">Cancel</button>
+</div>

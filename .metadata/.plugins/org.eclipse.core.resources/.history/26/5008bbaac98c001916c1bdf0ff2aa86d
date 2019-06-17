@@ -1,0 +1,119 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision: 1.0 $  $Date:  $
+ * @author quang-tung
+ */
+
+exexSMSApp.factory('SetItemChangeListModel', [ 'BaseModel', function(BaseModel) {
+
+    var model = BaseModel.getInstance();
+
+    model.form = {
+        search :{
+            changeDateFrom : '',
+            changeDateTo : '',
+            setItemName : '',
+            changeType : '',
+            warehouseNo : '',
+            createUser : ''
+        },
+        listM010003 : [],
+        listMstUser : [],
+        paginationInfo : {
+            page: 0,
+            pageSize: 20,
+            totalPage: 0,
+            totalRecord: 0,
+            from: 0,
+            to: 0
+        }
+    };
+    return model;
+} ]);
+
+exexSMSApp.controller('SetItemChangeListCtrl',
+        ['$scope', '$filter', 'SetItemChangeListModel', 'DialogsService', 'ServerService', 'RouteService', 'Messages',
+         function($scope, $filter, SetItemChangeListModel,  DialogsService, ServerService, RouteService, Messages){
+
+    $scope.model = SetItemChangeListModel;
+
+    $scope.getInit = function(){
+        ServerService.doPost('SetItemChangeList/getInit', null).then(
+            function(okResult) {
+                $scope.model.form.listMstUser = okResult.data.listUser;
+                $scope.model.form.listM010003 = okResult.data.listM010003;
+                var sessionSearch = angular.fromJson(sessionStorage.getItem("setItemChangeListSession"));
+                if(!StringUtils.isEmpty(sessionSearch)){
+                    $scope.model.form.search = sessionSearch;
+                    $scope.doSearch(sessionSearch.page, sessionSearch);
+                } else {
+                    $scope.search($scope.model.form.search);
+                }
+            }
+        );
+    };
+
+    $scope.search = function(param){
+        $scope.doSearch(1,param);
+    };
+
+    $scope.doSearch = function(page, param){
+        var params = {
+            changeDateFrom : !StringUtils.isEmpty(param.changeDateFrom) ? new Date(param.changeDateFrom) : null,
+            changeDateTo : !StringUtils.isEmpty(param.changeDateTo) ? new Date(param.changeDateTo) : null,
+            setItemName : !StringUtils.isEmpty(param.setItemName) ? param.setItemName : "",
+            changeType : !StringUtils.isEmpty(param.changeType) ? param.changeType : "",
+            warehouseNo : !StringUtils.isEmpty(param.warehouseNo) ? param.warehouseNo : "",
+            createUser: !StringUtils.isEmpty(param.createUser) ? param.createUser : "",
+            page : page,
+            pageSize : $scope.model.form.paginationInfo.pageSize
+        };
+        params.warehouseName = $scope.model.form.search.warehouseName;
+        sessionStorage.setItem("setItemChangeListSession",JSON.stringify(params));
+        delete params.warehouseName;
+
+        ServerService.doPost('SetItemChangeList/search', params).then(
+            function(okResult) {
+                $scope.model.form.paginationInfo = okResult.data.paginationInfo;
+                $scope.model.form.listSetItemChange = okResult.data.resultList;
+                // add colresizable to table
+                setTimeout(function(){
+                    $scope.setColResizable();
+                });
+            }
+         );
+    };
+    $scope.getInit();
+
+    $scope.openSetItem = function(row, changeType){
+        var options = {size: '1100'};
+        var param = {
+            fromScreen : 'SetItemChangeList'
+        }
+        if(StringUtils.isEmpty(changeType)){
+            param.changeNo = row.changeNo;
+        }else {
+            param.changeType = changeType;
+        }
+        DialogsService.showDialog('SetItemControl', 'setItemCtrl', param,options).result.then(function(doSearch){
+            if(doSearch){
+                $scope.search($scope.model.form.search);
+            }
+        });
+    };
+
+    // set colResizable
+    $scope.setColResizable = function(){
+        // remove JCLRgrips if having
+        $('.JCLRgrips').remove();
+
+        angular.element('#tableSetItemChangeList').colResizable({
+            liveDrag: true,
+            postbackSafe: true,
+            useLocalStorage: true
+        });
+    }
+}]);

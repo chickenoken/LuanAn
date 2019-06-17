@@ -1,0 +1,9 @@
+package org.planning.net.controller;
+
+import org.springframework.stereotype.Controller;
+
+@Controller
+public class IndexController {
+
+    private static final String VIEW_NAME = "Login";
+}

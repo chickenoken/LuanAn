@@ -1,0 +1,130 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision:  $  $Date:  $
+ * @author : quang-tung
+ */
+'use strict';
+exexSMSApp.factory('ItemReservationControlModel', [ 'BaseModel', '$rootScope', function(BaseModel, $rootScope) {
+    var model = BaseModel.getInstance();
+
+    model.form = {
+        listResult : []
+    };
+
+    model.hidden = {
+        screenMode : ""
+    }
+
+    return model;
+}]);
+
+exexSMSApp.controller('ItemReservationCtrl',
+        ['$scope', '$uibModalInstance', 'ItemReservationControlModel', 'DialogsService', 'ServerService', 'Messages', 'data',
+         function($scope, $uibModalInstance, ItemReservationControlModel, DialogsService, ServerService, Messages, data) {
+
+    $scope.model = ItemReservationControlModel;
+
+    $scope.getItem = function(item) {
+        ServerService.doPost('SalRsvControl/selectReservationInfo', item.serialCd).then(
+            function(okResult) {
+                for (var j = 0; j < okResult.data.itemReservation.length; j++) {
+                    var itemRsv = okResult.data.itemReservation[j];
+                    itemRsv.janCd = item.janCd;
+                    itemRsv.itemSum = item.itemSum;
+                    itemRsv.reservationItemUnit = item.itemUnit;
+                    itemRsv.reservationItemUnitName = item.itemUnitName;
+                    itemRsv.reservationItemSum = item.itemSum * itemRsv.reservationItemNumInSet;
+
+                    itemRsv.reservationLineNo = $scope.model.form.index;
+                    $scope.model.form.listResult.push(itemRsv);
+                }
+                if($scope.model.form.index < data.listItem.length) {
+                    var itemData = data.listItem[$scope.model.form.index++];
+                    if(itemData.reservationFlag == "1") {
+                        $scope.setItem(itemData);
+                    } else {
+                        $scope.getItem(itemData);
+                    }
+                }
+            }
+        );
+    };
+
+    $scope.setItem = function(item) {
+        for (var i = 0; i < item.reservationData.length; i++) {
+            var itemRsv = item.reservationData[i];
+            itemRsv.reservationLineNo = $scope.model.form.index;
+
+            itemRsv.janCd = item.janCd;
+            itemRsv.itemSum = item.itemSum;
+            itemRsv.reservationItemUnit = item.itemUnit;
+            itemRsv.reservationItemUnitName = item.itemUnitName;
+            itemRsv.reservationItemSum = item.itemSum * itemRsv.reservationItemNumInSet;
+
+            $scope.model.form.listResult.push(itemRsv);
+        }
+        if($scope.model.form.index < data.listItem.length) {
+            var itemData = data.listItem[$scope.model.form.index++];
+            if(itemData.reservationFlag == "1") {
+                $scope.setItem(itemData);
+            } else {
+                $scope.getItem(itemData);
+            }
+        }
+    };
+
+    $scope.getInit = function() {
+        $scope.model.hidden.screenMode = data.screenMode;
+        $scope.model.hidden.documentStatus = data.documentStatus;
+        $scope.model.form.listResult = [];
+        $scope.model.form.index = 1;
+        var itemData = angular.copy(data.listItem[0]);
+        if(itemData.reservationFlag == "1") {
+            $scope.setItem(itemData);
+        } else {
+            $scope.getItem(itemData);
+        }
+    }
+    $scope.getInit();
+
+    $scope.save = function() {
+        $uibModalInstance.close($scope.model.form.listResult);
+    };
+
+    $scope.close = function(){
+        $uibModalInstance.dismiss();
+    };
+
+    $scope.calcTotalReservationSum = function(row) {
+        var reservationSumUsingItemStock = !StringUtils.isEmpty(row.reservationSumUsingItemStock) ? parseFloat(row.reservationSumUsingItemStock) : 0;
+        var reservationSumUsingOrderRemain = !StringUtils.isEmpty(row.reservationSumUsingOrderRemain) ? parseFloat(row.reservationSumUsingOrderRemain) : 0;
+        var reservationSumUsingCreateOrder = !StringUtils.isEmpty(row.reservationSumUsingCreateOrder) ? parseFloat(row.reservationSumUsingCreateOrder) : 0;
+        var sum = reservationSumUsingItemStock + reservationSumUsingOrderRemain + reservationSumUsingCreateOrder;
+        row.totalReservationSum = !isNaN(sum) ? sum : null;
+    }
+
+    $scope.openDialog = function (row, index) {
+        var options = {size: 'auto'};
+        var param = {
+            isReservationMode : true
+        }
+        DialogsService.showDialog('SearchItem', 'searchItemCtrl', param, options)
+        .result.then(function (item) {
+            row.reservationSerialCd = item.reservationSerialCd;
+            row.reservationItemCd = item.reservationItemCd;
+            row.reservationItemName = item.reservationItemName;
+            row.reservationItemName2 = item.reservationItemName2;
+            row.reservationJanCd = item.reservationJanCd;
+            row.reservationItemLeadTime = item.reservationItemLeadTime;
+            row.reservationItemUnit = item.reservationItemUnit;
+            row.reservationItemUnitName = item.reservationItemUnitName;
+            row.reservationItemStockQuantity = item.reservationItemStockQuantity;
+            row.reservationItemOrderRemainQuantity = item.reservationItemOrderRemainQuantity;
+            row.outOfProdFlag = item.reservationOutOfProdFlag;
+        });
+    };
+
+}]);

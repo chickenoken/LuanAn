@@ -1,0 +1,245 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ * SalEstimateControlService
+ *
+ * @author quang-tung
+ *
+ * @version $Revision:  $  $Date:  $
+ */
+'use strict';
+
+exexSMSApp.service('InventoryService', ['$q', 'ServerService',function ($q, ServerService) {
+    var _self = this;
+
+    //TODO InventoryList
+    _self.initData = function(param) {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('InventoryList/getInit', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    _self.search = function(param) {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('InventoryList/search', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    _self.isExistData = function(param) {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('InventoryList/isExistData', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    //TODO InventoryPrepare
+    _self.initDataView = function(param) {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('InventoryPrepare/getInit', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    _self.insertData = function(param) {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('InventoryPrepare/insert', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    //TODO InventoryExcution
+
+    _self.initDataExcution = function(param) {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('InventoryExcution/getInit', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    _self.getInventory = function(param) {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('InventoryExcution/getInventory', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    _self.excutionFilter = function(param) {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('InventoryExcution/excutionFilter', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    _self.checkData = function(param) {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('InventoryExcution/checkData', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    _self.onChangeItemNum = function(param) {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('InventoryExcution/onChangeItemNum', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+
+    _self.updateDetailInvetoryInPage = function(param) {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('InventoryExcution/updateDetailInvetoryInPage', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    _self.update = function(param) {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('InventoryExcution/update', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    _self.deleteData = function(param) {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('InventoryExcution/delete', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    _self.importData = function(param) {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('InventoryExcution/importData', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+}]);

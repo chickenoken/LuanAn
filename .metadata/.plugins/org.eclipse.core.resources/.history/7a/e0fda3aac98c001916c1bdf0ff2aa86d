@@ -1,0 +1,252 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision: $ $Date: $
+ * @author Quang-Tung
+ *
+ */
+
+'use strict';
+
+exexSMSApp.factory('MstSubAccountControlModel', [ 'BaseModel', function(BaseModel) {
+
+    var model = BaseModel.getInstance();
+
+    model.form = {
+        subAccount:{
+            loginId:'',
+            customerId:'',
+            password:'',
+            endDate:'',
+            remark:'',
+            version:'',
+          },
+          custCd: '',
+    };
+    model.hidden = {
+            subAccountCaution: '',
+            agree: false,
+            screenMode : 'INSERT',
+            isSubmited: false
+    };
+    return model;
+} ]);
+
+exexSMSApp.controller('mstSubAccountControlCtrl',
+        ['$rootScope', '$scope', '$filter', '$uibModalInstance', 'MstSubAccountControlModel', 'DialogsService', 'data', 'Messages', 'ServerService',
+         function($rootScope, $scope, $filter, $uibModalInstance, MstSubAccountControlModel, DialogsService, data, Messages, ServerService) {
+
+    $scope.model = MstSubAccountControlModel;
+
+
+    $scope.done = function(){
+        $uibModalInstance.close();
+    };
+
+    $scope.no = function(){
+        $uibModalInstance.dismiss('no');
+    };
+
+    $scope.getInit = function(){
+        ServerService
+        .doPost('MstSubAccountControl/getInit', {})
+        .then(
+            function(okResult) {
+                var error = okResult.data.failed;
+                var warning = okResult.data.warning;
+                if(!ValidateUtil.isValidTextEmpty(error)){
+                     DialogsService.showError(Messages.getMessage('system.error'), error);
+                     return;
+                } else if(!ValidateUtil.isValidTextEmpty(warning)){
+                    DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                    return;
+                } else {
+                    $scope.model.hidden.subAccountCaution = okResult.data.subAccountCaution;
+                    $scope.model.form.companyCd = okResult.data.companyCd;
+                }
+            },
+            function(errResult){
+            });
+    };
+
+    $scope.init = function(){
+        $scope.getInit();
+        $scope.model.hidden.isSubmited = false;
+        var projectCustItemInfo = angular.fromJson(sessionStorage.getItem("projectCustItemInfo"));
+        $scope.model.form.custCd = projectCustItemInfo.custCd;
+        if (!ValidateUtil.isValidTextEmpty(data.subAccount)){
+            $scope.model.hidden.screenMode = 'EDIT';
+            $scope.model.form.subAccount.loginId = data.subAccount.loginId;
+            $scope.model.form.subAccount.customerId = data.subAccount.customerId;
+            $scope.model.form.subAccount.password = data.subAccount.password;
+            $scope.model.form.subAccount.endDate = data.subAccount.endDate;
+            $scope.model.form.subAccount.remark = data.subAccount.remark;
+            $scope.model.form.subAccount.version = data.subAccount.version;
+            $scope.model.hidden.agree = true;
+        }else{
+            $scope.model.hidden.screenMode = 'INSERT';
+            $scope.model.form.subAccount.loginId = "";
+            $scope.model.form.subAccount.customerId = "";
+            $scope.model.form.subAccount.password = "";
+            $scope.model.form.subAccount.endDate = "";
+            $scope.model.form.subAccount.remark = "";
+            $scope.model.hidden.agree = false;
+        }
+    };
+    $scope.init();
+
+    $scope.changeCustomerId = function(){
+        if(ValidateUtil.isValidTextEmpty($scope.model.form.subAccount.customerId)){
+            $scope.model.form.subAccount.loginId = "";
+        }else{
+            $scope.model.form.subAccount.loginId = $scope.model.form.companyCd + $scope.model.form.subAccount.customerId;
+        }
+    };
+
+    $scope.insert = function(param, formInvalid) {
+        $scope.model.hidden.isSubmited = true;
+        if (formInvalid) {
+            return;
+        }
+        var params = {
+                custCd : $scope.model.form.custCd,
+                loginId : param.loginId,
+                customerId : param.customerId,
+                password : param.password,
+                endDate : !ValidateUtil.isValidTextEmpty(param.endDate) ? new Date(param.endDate) : "",
+                remark: param.remark
+            };
+        DialogsService.showConfirm(Messages.getMessage('title.confirm'),Messages.getMessage('S00003'))
+        .result.then(function(btn){
+            ServerService
+            .doPost('MstSubAccountControl/addSubAccount', params)
+            .then(
+                function(okResult) {
+                    var success = okResult.data.success;
+                    var warning = okResult.data.warning;
+                    var error = okResult.data.failed;
+                    var login_id = okResult.data.exist_login_id;
+                    var options = {size: '500'};
+                    var param = {};
+                    if (!ValidateUtil.isValidTextEmpty(success)) {
+                        DialogsService.showNotify(Messages.getMessage('title.info'), success)
+                        .result.then(function(btn){
+                            $uibModalInstance.dismiss('close');
+                            DialogsService.showDialog('MstSubAccountList','mstSubAccountListCtrl', param, options);
+                            $scope.loadListSubAccount();
+                        });
+                    } else if(!ValidateUtil.isValidTextEmpty(warning)){
+                        DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                        return;
+                    }else if(!ValidateUtil.isValidTextEmpty(error)){
+                        DialogsService.showError(Messages.getMessage('system.error'), error);
+                        return;
+                    }else if(!ValidateUtil.isValidTextEmpty(login_id)){
+                        DialogsService.showWarning(Messages.getMessage('check.error'), login_id);
+                        return;
+                    }
+                },
+                function(errResult){
+                });
+        },function(btn){ });
+    };
+
+    $scope.update = function(param, formInvalid) {
+        $scope.model.hidden.isSubmited = true;
+        if (formInvalid) {
+            return;
+        }
+        var params = {
+                custCd : data.custCd,
+                custAccountCd: data.custAccountCd,
+                loginId : param.loginId,
+                customerId : param.customerId,
+                password : param.password,
+                endDate : !ValidateUtil.isValidTextEmpty(param.endDate) ? new Date(param.endDate) : "",
+                remark: param.remark,
+                version : param.version
+        };
+        DialogsService.showConfirm(Messages.getMessage('title.confirm'),Messages.getMessage('S00004'))
+        .result.then(function(btn){
+            ServerService
+            .doPost('MstSubAccountControl/updateSubAccount', params)
+            .then(
+                function(okResult) {
+                    var success = okResult.data.success;
+                    var warning = okResult.data.warning;
+                    var error = okResult.data.failed;
+                    var login_id = okResult.data.exist_login_id;
+                    var options = {size: '500'};
+                    var param = {};
+                    if (!ValidateUtil.isValidTextEmpty(success)) {
+                        DialogsService.showNotify(Messages.getMessage('title.info'), success)
+                        .result.then(function(btn){
+                            $uibModalInstance.dismiss('close');
+                            DialogsService.showDialog('MstSubAccountList','mstSubAccountListCtrl', param, options);
+                            $scope.loadListSubAccount();
+                        });
+                    } else if(!ValidateUtil.isValidTextEmpty(warning)){
+                        DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                        return;
+                    }else if(!ValidateUtil.isValidTextEmpty(error)){
+                        DialogsService.showError(Messages.getMessage('system.error'), error);
+                        return;
+                    }else if(!ValidateUtil.isValidTextEmpty(login_id)){
+                        DialogsService.showWarning(Messages.getMessage('check.error'), login_id);
+                        return;
+                    }
+                },
+                function(errResult){
+                });
+       },function(btn){ });
+   };
+
+    $scope.deleteSubAccount = function(param) {
+        var params = {
+                custCd : data.custCd,
+                custAccountCd: data.custAccountCd,
+                loginId : param.loginId,
+                customerId : param.customerId,
+                password : param.password,
+                endDate : !ValidateUtil.isValidTextEmpty(param.endDate) ? new Date(param.endDate) : "",
+                remark: param.remark,
+                version : param.version
+        };
+        DialogsService.showConfirm(Messages.getMessage('title.confirm'),Messages.getMessage('S00005'))
+        .result.then(function(btn){
+            ServerService
+            .doPost('MstSubAccountControl/deleteLogicSubAccount', params)
+            .then(
+                function(okResult) {
+                    var success = okResult.data.success;
+                    var warning = okResult.data.warning;
+                    var error = okResult.data.failed;
+                    var options = {size: '500'};
+                    var param = {};
+                    if (!ValidateUtil.isValidTextEmpty(success)) {
+                        DialogsService.showNotify(Messages.getMessage('title.info'), success)
+                        .result.then(function(btn){
+                            $uibModalInstance.dismiss('close');
+                            DialogsService.showDialog('MstSubAccountList','mstSubAccountListCtrl', param, options);
+                            $scope.loadListSubAccount();
+                        });
+                    } else  if(!ValidateUtil.isValidTextEmpty(warning)){
+                        DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                        return;
+                    }else if(!ValidateUtil.isValidTextEmpty(error)){
+                        DialogsService.showError(Messages.getMessage('system.error'), error);
+                        return;
+                    }
+                },
+                function(errResult){
+                });
+        },function(btn){});
+    };
+
+    $scope.loadListSubAccount = function() {
+        var params ={};
+        $rootScope.$broadcast("MstSubAccountControl#loadList",params);
+    };
+}]);

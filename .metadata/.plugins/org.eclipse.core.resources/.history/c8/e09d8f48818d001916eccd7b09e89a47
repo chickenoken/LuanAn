@@ -1,0 +1,82 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision: $ $Date: $
+ */
+exexSMSApp.controller('componentsLayoutCtr', ['$scope','$timeout','$log', function($scope, $timeout, $log){
+    var newId = 1;
+    $scope.treeData = [];
+    $scope.ignoreChanges = false;
+    $scope.newNode = {};
+    $scope.treeData = [];
+
+    $scope.treeConfig = {
+        core : {
+            multiple : true,
+            animation: true,
+            error : function(error) {
+                toaster.pop('error', 'JS Tree Error', error.reason)
+            },
+            check_callback : true,
+            worker : true
+        },
+        types : {
+            default : {
+                icon : 'fa fa-users'
+            },
+            star : {
+                icon : 'glyphicon glyphicon-star'
+            },
+            cloud : {
+                icon : 'glyphicon glyphicon-cloud'
+            }
+        },
+        version : 1,
+        plugins : ["types", "contextmenu", "dnd"]
+    }
+
+    $scope.originalData = [
+        { id : 'data1', parent : '#', text : 'Parent ', state: { opened: true}},
+        { id : 'data2', parent : '#', text : 'Parent 1', state: { opened: true} },
+        { id : 'data3', parent : '#', text : 'Parent 2', state: { opened: true} },
+        { id : 'data4', parent : 'data3', text : 'Child 1' , state: { opened: true}, icon : 'fa fa-user'},
+        { id : 'data5', parent : 'data3', text : 'Child 2' , state: { opened: true}, icon : 'fa fa-user'}
+    ];
+
+
+    angular.copy($scope.originalData,$scope.treeData);
+
+    $scope.reCreateTree = function() {
+        $scope.isDisabledButton = true;
+        $scope.ignoreChanges = true;
+        $scope.promise = $timeout(function(){
+            angular.copy($scope.originalData,$scope.treeData);
+            $scope.treeConfig.version++;
+            $scope.isDisabledButton = false;
+        },3000);
+    };
+
+    $scope.simulateAsyncData = function() {
+        $scope.isDisabledButton = true;
+        $scope.promise = $timeout(function(){
+            $scope.treeData.push({ id : (newId++).toString(), parent : $scope.treeData[0].id, text : 'Async Loaded', icon : 'fa fa-user' })
+            $scope.isDisabledButton = false;
+        },3000);
+    };
+
+    $scope.addNewNode = function() {
+        $scope.treeData.push({ id : (newId++).toString(), parent : $scope.newNode.parent, text : $scope.newNode.text, icon : 'fa fa-user' });
+    };
+
+    $scope.readyCB = function() {
+        $timeout(function() {
+            $scope.ignoreChanges = false;
+        });
+    };
+
+    $scope.applyModelChanges = function() {
+        return !$scope.ignoreChanges;
+    };
+}]);

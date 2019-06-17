@@ -1,0 +1,423 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision: $ $Date: $
+ * @author SystemEXE Quang-Thien
+ */
+
+'use strict';
+
+exexSMSApp.factory('HeaderModel', [ 'BaseModel', '$rootScope', function(BaseModel, $rootScope) {
+
+    var model = BaseModel.getInstance();
+
+    model.login = {
+            currentUser : {
+                userCd : '',
+                userName : '',
+                loginId : ''
+            },
+            permission : {
+                roleCd : '',
+                roleName : '',
+                clb0400Access : '',
+                sfa0110Access : '',
+                sfa0210Access : '',
+                sfa0310Access : '',
+                sfa0410Access : '',
+                sfa0510Access : '',
+                sfa0610Access : '',
+                sfa0710Access : '',
+                sfa0810Access : '',
+                sfa1110Access : '',
+                sfa1510Access : ''
+            },
+            license : ''
+        };
+
+    model.langs = {ja: '日本語', vi:'Tiếng Việt'};
+
+    // master code L020001 don't delete
+    model.ctmTempl = {
+    };
+
+    model.hidden = {
+        logoffTime : 0,
+        workflow: true,
+        workflowStyle:'hidden',
+        listStatus:'',
+        openRightBar : false
+    };
+    model.label = {
+        subProjectTitleFreeLabel: "",
+        subProjectNameFreeLabel: ""
+    }
+
+    return model;
+} ]);
+
+exexSMSApp.service('HeaderService', ['$q', 'ServerService',function ($q, ServerService) {
+    var self = this;
+
+    self.initData = function() {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('Header/initData', {})
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    self.logout = function(){
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('Logout/logout', {})
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    self.changeLocale = function(param){
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('Header/changeLocale', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+}]);
+
+exexSMSApp.controller('HeaderCtrl',
+        ['$timeout', '$scope', '$rootScope', '$translate', '$window', 'RouteService', 'DialogsService', 'HeaderService', 'HeaderModel' , 'Messages', 'ServerService',
+         function($timeout, $scope, $rootScope, $translate, $window, RouteService, DialogsService, HeaderService, HeaderModel, Messages, ServerService) {
+
+    $scope.model = HeaderModel;
+
+    $scope.goToSfaProjectList = function(item,model,label) {
+        var param = {
+                custCd : item.custCd,
+                custName : item.custName,
+                connectionStatus :  item.connectionStatus
+        };
+        sessionStorage.setItem("projectCustItemInfo", JSON.stringify(param));
+        RouteService.gotoUrl('SfaProjectList');
+    };
+
+    $scope.setLang = function(langKey, $event) {
+        // set the current locale
+        $scope.selectLang = $scope.model.langs[langKey];
+        var sessionLogin = SessionUtils.prepareSession(sessionStorage.getItem("session"));
+        sessionLogin.locale = langKey;
+        sessionStorage.setItem("session", JSON.stringify(sessionLogin));
+        // You can change the language during runtime
+        $translate.use(langKey);
+        var param = {
+            locale : langKey
+        }
+        HeaderService.changeLocale(param).then(
+        function(okResult) {
+            $scope.getFreeLabel();
+        })
+    };
+
+    $scope.initData = function() {
+        HeaderService.initData().then(
+            function(result) {
+                /* Get free label */
+                var freeLabel = angular.fromJson(sessionStorage.getItem("freeLabel"));
+                if(!StringUtils.isEmpty(freeLabel)) {
+                    $scope.model.label = freeLabel;
+                }
+
+                $scope.model.login.permission = result.data.info.permission;
+                $scope.model.login.currentUser.userCd = result.data.info.userCd;
+                $scope.model.login.currentUser.userName = result.data.info.userName;
+                $scope.model.login.currentUser.rounding = result.data.info.rounding;
+                $scope.model.login.license = result.data.info.license;
+                $scope.model.hidden.listStatus = result.data.info.applySize;
+                $scope.model.hidden.approveSize = result.data.info.applySize[0].count;
+                $scope.model.hidden.stateSize = parseInt(result.data.info.applySize[1].count) + parseInt(result.data.info.applySize[2].count);
+                $scope.model.hidden.workflow = result.data.info.isWorkflow;
+                if(result.data.info.isWorkflow){
+                    $scope.model.hidden.workflowStyle = 'show';
+                }
+                $scope.model.ctmTempl = result.data.info.ctmTempl;
+
+                $scope.model.hidden.logoffTime = Messages.getMessage('SESSION_TIMEOUT');//8 * 60 * 60 * 1000;
+                $rootScope.login = $scope.model.login;
+                var param = {
+                        userCd : result.data.info.userCd,
+                        userName : result.data.info.userName,
+                        rounding : result.data.info.rounding,
+                        workflow : result.data.info.workflow,
+                        taxType : result.data.info.taxType,
+                        groupCd : result.data.info.groupCd,
+                        groupType : result.data.info.groupType,
+                        license : result.data.info.license,
+                        locale : result.data.info.locale,
+                        accountClosingMonth: result.data.info.accountClosingMonth,
+                        customFlag: result.data.info.customFlag,
+                        customInvoiceUsing : result.data.info.customInvoiceUsing,
+                };
+                $translate.use(result.data.info.locale);
+                $scope.selectLang = $scope.model.langs[result.data.info.locale] || "日本語";
+
+                sessionStorage.setItem("session", JSON.stringify(param));
+                $scope.autoLogoffTimer = null;
+                var sessionLogin = angular.fromJson(sessionStorage.getItem("session"));
+
+                if(ValidateUtil.isValidTextEmpty(sessionLogin)){
+                    RouteService.gotoUrl('Login');
+                }
+
+                if(!StringUtils.isEmpty(result.data.info.userName)){
+                    $scope.model.login.currentUser.userName = result.data.info.userName;
+                }
+                var loginSubAccount = angular.fromJson(sessionStorage.getItem("loginSubAccount"));
+                if(!StringUtils.isEmpty(loginSubAccount)){
+                    $scope.model.login.currentUser.loginId = loginSubAccount.loginId;
+                }
+            }
+        );
+    };
+    $scope.initData();
+
+    $scope.logout = function() {
+        HeaderService.logout()
+        .then(
+            function(result) {
+                var loginSubAccount = angular.fromJson(sessionStorage.getItem("loginSubAccount"));
+                if(ValidateUtil.isValidTextEmpty(loginSubAccount)){
+                    sessionStorage.clear();
+                    RouteService.gotoUrl('Login');
+                }else{
+                    sessionStorage.clear();
+                    RouteService.gotoUrl('LoginSubAccount');
+                }
+            }
+        );
+    };
+
+    $scope.logoutAuto = function() {
+        DialogsService.showNotify(Messages.getMessage('common.sessiontimeout.title'),
+                Messages.getMessage('common.sessiontimeout.message')).result.then(function(btn){
+            var loginSubAccount = angular.fromJson(sessionStorage.getItem("loginSubAccount"));
+            if(ValidateUtil.isValidTextEmpty(loginSubAccount)){
+                sessionStorage.clear();
+                RouteService.gotoUrl('Login');
+            }else{
+                sessionStorage.clear();
+                RouteService.gotoUrl('LoginSubAccount');
+            }
+        },function(btn){
+            if(ValidateUtil.isValidTextEmpty(loginSubAccount)){
+                sessionStorage.clear();
+                RouteService.gotoUrl('Login');
+            }else{
+                sessionStorage.clear();
+                RouteService.gotoUrl('LoginSubAccount');
+            }
+        });
+    };
+
+    $scope.$watch('model.hidden.logoffTime', function() {
+        $scope.startAutoLogoff();
+    });
+
+    $scope.startAutoLogoff = function() {
+        if ($scope.model != undefined && $scope.model.hidden != undefined
+                && $scope.model.hidden.logoffTime != undefined && $scope.model.hidden.logoffTime > 0) {
+            $scope.autoLogoffTimer = $timeout(function() {
+            }, $scope.model.hidden.logoffTime);
+        }
+    };
+
+    $scope.$on('UserOperated', function() {
+        $timeout.cancel($scope.autoLogoffTimer);
+        $scope.startAutoLogoff();
+    });
+
+    $scope.$on("Header#initData", function(evt, param) {
+        $scope.initData();
+    });
+
+    $scope.divResize =  function() {
+        $rootScope.$broadcast("divResize");
+    };
+
+    /**
+     * header menu
+     * @param url
+     */
+    $scope.gotoUrl = function(url) {
+        switch (url) {
+            case 'MstItemList':
+                sessionStorage.removeItem('mstItem');
+                sessionStorage.removeItem('mstItemDialog');
+                sessionStorage.removeItem('mstItemListSession');
+                RouteService.gotoUrl('MstItemList');
+                break;
+            case 'MstUser':
+                RouteService.gotoUrl('MstUser');
+                break;
+            case 'MstGroupControl':
+                sessionStorage.removeItem("groupType");
+                RouteService.gotoUrl('MstGroupControl');
+                break;
+            case 'MstApproveGroupControl':
+                sessionStorage.setItem("groupType", "APPROVE_GROUP");
+                RouteService.gotoUrl('MstApproveGroupControl');
+                break;
+            case 'MstStockList':
+                sessionStorage.removeItem("stockListSearch");
+                RouteService.gotoUrl('MstStockList');
+                break;
+            case 'MstGroupControl':
+                RouteService.gotoUrl('MstGroupControl');
+                break;
+            case 'MstTaxControl':
+                RouteService.gotoUrl('MstTaxControl');
+                break;
+            case 'MstBankList':
+                RouteService.gotoUrl('MstBankList');
+                break;
+            case 'MstRoleList':
+                sessionStorage.removeItem("mstRole");
+                RouteService.gotoUrl('MstRoleList');
+                break;
+            case 'ExExContract' :
+                sessionStorage.removeItem("processInfo");
+                RouteService.gotoUrl('ExExContract');
+                break;
+            case 'ExExSetting' :
+                RouteService.gotoUrl('ExExSetting');
+                break;
+            case 'MailList' :
+                RouteService.gotoUrl('MailList');
+                break;
+            case 'MstMail' :
+                RouteService.gotoUrl('MstMail');
+                break;
+            case 'MstBusinessList' :
+                sessionStorage.removeItem("business");
+                RouteService.gotoUrl('MstBusinessList');
+                break;
+            case 'MstBusinessControl' :
+                RouteService.gotoUrl('MstBusinessControl');
+                break;
+            case 'MstMailSetting':
+                RouteService.gotoUrl('MstMailSetting');
+                break;
+            case 'MstIconList' :
+                RouteService.gotoUrl('MstIconList');
+                break;
+            case 'MstCustomerItemSetting' :
+                RouteService.gotoUrl('MstCustomerItemSetting');
+                break;
+            case 'MstSiteItemSetting' :
+                RouteService.gotoUrl('MstSiteItemSetting');
+                break;
+            case 'MstProjectItemSetting' :
+                RouteService.gotoUrl('MstProjectItemSetting');
+                break;
+            case 'MstSubProjectSetting' :
+                RouteService.gotoUrl('MstSubProjectSetting');
+                break;
+            case 'MstSalesReport' :
+                RouteService.gotoUrl('MstSalesReport');
+                break;
+            case 'MstCodeList':
+                RouteService.gotoUrl('MstCodeList');
+                break;
+            case 'MstDeliveryPlaceList':
+                RouteService.gotoUrl('MstDeliveryPlaceList');
+                break;
+            case 'MstWarehouseList':
+                RouteService.gotoUrl('MstWarehouseList');
+                break;
+            case 'MstBillAddressList':
+                RouteService.gotoUrl('MstBillAddressList');
+                break;
+            case 'MstOutputItemList':
+                RouteService.gotoUrl('MstOutputItemList');
+                break;
+            case 'InvoiceTemplateList':
+                sessionStorage.removeItem("invoiceTemplateSession");
+                RouteService.gotoUrl('InvoiceTemplateList');
+                break;
+            case 'OwnerCardList':
+                sessionStorage.removeItem("ownerCardSearch");
+                RouteService.gotoUrl('OwnerCardList');
+                break;
+            case 'CsvImportControl' :
+                RouteService.gotoUrl('CsvImportControl');
+                break;
+            case 'MstDepartItemSetting' :
+                RouteService.gotoUrl('MstDepartItemSetting');
+                break;
+            case 'MstForeignCurrency' :
+                RouteService.gotoUrl('MstForeignCurrency');
+                break;
+            case 'MstInstallationLocation':
+                RouteService.gotoUrl('MstInstallationLocation');
+                break;
+            case 'MstApproveRoute' :
+                RouteService.gotoUrl('MstApproveRoute');
+                break;
+        }
+    };
+
+    $scope.downloadGuidelines = function() {
+        var params = {
+            ticket : 'PDF'
+        };
+        Utils.postToUrl("/Login/downloadGuidelines", params);
+    };
+
+    $scope.getDataRightBar =  function() {
+        if(!$scope.model.hidden.openRightBar){
+            $rootScope.$broadcast("getDataRightBar");
+            $scope.model.hidden.openRightBar = true;
+        } else {
+            $scope.model.hidden.openRightBar = false;
+        }
+    };
+
+    $scope.getFreeLabel = function() {
+        ServerService.doPost('Login/selectFreeLabel', {}).then(
+        function(okResult) {
+            if(!StringUtils.isEmpty(okResult.data.freeDto) && okResult.data.freeDto.length > 0){
+                var freeLabel = {};
+                angular.forEach(okResult.data.freeDto, function (item, i) {
+                    freeLabel[item.labelKey] = item.labelValue;
+                })
+                sessionStorage.setItem('freeLabel', JSON.stringify(freeLabel));
+            }
+            $window.location.reload(true);
+        });
+    };
+}]);

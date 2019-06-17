@@ -1,0 +1,122 @@
+@CHARSET "UTF-8";
+
+.date-picker-menu{
+  padding: 5px !important;
+}
+.time-picker-menu button,
+.date-picker-menu button {
+  box-shadow: none !important;
+}
+.uib-datepicker table{
+    outline: none;
+}
+.time-picker-menu
+.uib-datepicker table tr th button i{
+    color: #000000 !important;
+}
+.uib-yearpicker button,
+.uib-yearpicker button[disabled],
+.uib-datepicker button {
+    box-shadow: none;
+    background-color : #FFFFFF;
+    color: #000000;
+}
+.uib-yearpicker button:hover, .uib-monthpicker button:hover, .uib-datepicker button:hover,
+.uib-yearpicker button:active:hover, .uib-monthpicker button:active:hover, .uib-datepicker button:active:hover {
+    color: #000000;
+    background-color : #EEEEEE;
+}
+.uib-yearpicker button:active:focus, .uib-monthpicker button:active:focus, .uib-datepicker button:active:focus {
+    background-color : #EEEEEE;
+}
+.uib-yearpicker button:focus, .uib-monthpicker button:focus,  .uib-datepicker button:focus {
+    background-color : #FFFFFF;
+}
+ .uib-yearpicker button:active,.uib-monthpicker button:active,.uib-datepicker button:active {
+    background-color : #EEEEEE;
+ }
+
+.uib-daypicker tr td button,
+.uib-daypicker tr th button {
+    color: #000000;
+    padding : 5px !important;
+}
+.uib-monthpicker tr td button,
+.uib-yearpicker tr td button{
+    width: 52px !important;
+    padding: 17px 0 17px 0;
+}
+.uib-monthpicker tr th button,
+.uib-yearpicker tr th button{
+    margin-bottom: 5px !important;
+    padding: 5px !important;
+}
+.uib-monthpicker tr th:nth-child(2) button,
+.uib-yearpicker tr th:nth-child(2) button{
+    padding: 5px 0px !important;
+}
+
+.uib-yearpicker tr td button.active, .uib-monthpicker tr td button.active, .uib-daypicker tr td button.active,
+.uib-yearpicker tr td button.active:focus, .uib-monthpicker tr td button.active:focus, .uib-daypicker tr td button.active:focus {
+    background-color : #4B8DF8;
+
+}
+.uib-yearpicker tr td button.active:hover,
+.uib-monthpicker tr td button.active:hover,
+.uib-daypicker tr td button.active:hover {
+    background-color : #2678FC;
+}
+.uib-yearpicker tr td button.active span,
+.uib-monthpicker tr td button.active span,
+.uib-daypicker tr td button.active span{
+  color: #FFFFFF;
+}
+.uib-yearpicker tr td button.active span.text-info,
+.uib-monthpicker tr td button.active span.text-info,
+.uib-daypicker tr td button.active span.text-info {
+  color: #FFFFFF;
+}
+
+.uib-daypicker tr td:first-child button span {
+    color: #1BDDF5;
+}
+.uib-daypicker tr td:last-child button span {
+    color: #F99;
+}
+.uib-timepicker tr td button,
+.uib-timepicker tr td button:focus,
+.uib-timepicker tr td button:active:focus,
+.uib-timepicker tr td button:active:hover {
+    color: #FFFFFF;
+    background-color : #3598DC;
+}
+.uib-timepicker tr td button:hover,
+.uib-timepicker tr td button:active {
+    color: #FFFFFF;
+    background-color : #2386CA;
+}
+.uib-timepicker tr td a.btn.btn-link:hover {
+    box-shadow: none;
+}
+.uib-datepicker .uib-monthpicker
+.uib-datepicker .uib-yearpicker {
+    margin: 0px 6px !important;
+}
+.uib-daypicker tr td:nth-child(8),
+.uib-daypicker tr td:nth-child(9),
+.uib-daypicker tr td:nth-child(10),
+.uib-daypicker tr td:nth-child(11),
+.uib-daypicker tr td:nth-child(12),
+.uib-daypicker tr td:nth-child(13),
+.uib-daypicker tr td:nth-child(14){
+  display: none !important;
+}
+
+.datetime-picker-dropdown:before, .datetime-picker-dropdown:after {
+  border-width: 6px;
+  content: '';
+  display: block;
+  position: absolute;
+  right: 14px;
+  border-style: solid;
+}

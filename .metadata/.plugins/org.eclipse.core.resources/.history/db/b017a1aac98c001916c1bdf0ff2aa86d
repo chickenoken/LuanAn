@@ -1,0 +1,150 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision: 1.0 $  $Date: 2014/07/01 $
+ * @author quang-thien
+ */
+
+'use strict';
+
+exexSMSApp.factory('MstOutputItemModel', [ 'BaseModel', function(BaseModel) {
+
+    var model = BaseModel.getInstance();
+
+    model.form = {
+        search : {
+            outputName : '',
+        },
+        listResult : [],
+    };
+
+
+    model.hidden = {
+            paramSearch : '',
+            page : 0,
+            paginationPage : 0,
+            totalPage : 0,
+            fromScreen : '',
+    };
+
+    return model;
+} ]);
+
+exexSMSApp.controller('MstOutputItemCtrl',
+        ['$rootScope', '$scope', '$timeout', '$window', 'DialogsService', 'MstOutputItemModel', 'Messages', 'ServerService',
+         function($rootScope, $scope, $timeout, $window, DialogsService, MstOutputItemModel, Messages, ServerService){
+
+    $scope.model = MstOutputItemModel;
+
+    $scope.init = function(){
+        $scope.doSearch();
+    };
+
+    $scope.$on("MstOutputItem#editOutputItem", function(evt, param) {
+        $scope.doSearch();
+    });
+
+    $scope.doSearch = function() {
+        var params = {
+            outputName : !StringUtils.isEmpty($scope.model.form.search.outputName) ? $scope.model.form.search.outputName : "",
+        };
+        ServerService
+        .doPost('MstOutputItemList/search', params)
+        .then(
+            function(okResult) {
+                var error = okResult.data.failed;
+                var warning = okResult.data.warning;
+                if (!StringUtils.isEmpty(error)) {
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    $scope.model.form.list = [];
+                    return;
+                }else if(!StringUtils.isEmpty(warning)){
+                    DialogsService.showWarning(Messages.getMessage('check.error'),warning);
+                    $scope.model.form.list = [];
+                    return;
+                }else{
+                    $scope.model.form.listResult = okResult.data.resultList;
+                    var length = $scope.model.form.listResult.length;
+
+                    // Table Paging
+                    $scope.model.currentPage = 1; //current page
+                    $scope.model.entryLimit = 20; //max no of items to display in a page
+                    $scope.model.number = 20;
+                    $scope.model.filteredItems = length; //Initially for no filter
+                    $scope.model.totalItems = length;
+                    if(length > 0){
+                        $scope.model.beginValFilter = 1;
+                    }else{
+                        $scope.model.beginValFilter = 0;
+                    }
+
+                    $scope.setPage = function(pageNo) {
+                        $scope.currentPage = pageNo;
+                    };
+
+                    $scope.model.filter = function() {
+                        $timeout(function() {
+                            $scope.model.filteredItems = $scope.model.form.filtered.length;
+                            if($scope.model.form.filtered.length > 0){
+                                $scope.model.beginValFilter = 1;
+                            }else{
+                                $scope.model.beginValFilter = 0;
+                            }
+                        }, 10);
+                    };
+                    // End Table Paging
+                }
+
+                // add colresizable to table
+                setTimeout(function(){
+                    $scope.setColResizable();
+                });
+            },
+            function(errResult){
+            });
+    };
+
+    /**
+     * open new or edit user popup
+     */
+    $scope.openDialog = function(row, result) {
+        var options = {size: 'outputItem'};
+        switch (result) {
+            case 'insert':
+                var dlg = DialogsService.showDialog('MstOutputItemControl', 'mstOutputItemControlCtrl', {},options);
+                    dlg.result.then(function(param) {
+                });
+                break;
+            case 'update':
+                var param = {
+                    outputNo: row.outputNo,
+                    outputType: row.outputType,
+                    custType: row.custType
+            }
+                var dlg = DialogsService.showDialog('MstOutputItemControl', 'mstOutputItemControlCtrl', param, options);
+                 dlg.result.then(function(param) { });
+                break;
+        };
+    };// end launch
+
+    $scope.init();
+
+    $scope.editOutputItem = function(param){
+        $rootScope.$broadcast("MstOutputItem#editOutputItem",{});
+    };
+
+    // set colResizable
+    $scope.setColResizable = function(){
+        // remove JCLRgrips if having
+        $('.JCLRgrips').remove();
+
+        angular.element('#tableMstOutputItemList').colResizable({
+            liveDrag: true,
+            postbackSafe: true,
+            useLocalStorage: true
+        });
+    }
+
+}]);

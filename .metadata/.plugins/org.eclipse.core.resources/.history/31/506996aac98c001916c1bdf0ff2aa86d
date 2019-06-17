@@ -1,0 +1,62 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision:  $ $Date:  $
+ * @author quang-tung
+ */
+
+'use strict';
+
+exexSMSApp.factory('TestSendMailModel', [ 'BaseModel', function(BaseModel) {
+
+            var model = BaseModel.getInstance();
+            model.testSendMail = {mailAddress :''};
+            model.hidden = {
+                isSubmited : false,
+            }
+            return model;
+        } ]);
+
+exexSMSApp .controller( 'testSendMailCtrl',
+        ['$scope', '$uibModalInstance', '$window', '$timeout', 'TestSendMailModel', 'data', 'DialogsService', 'Messages', 'ServerService',
+         function($scope, $uibModalInstance, $window, $timeout, TestSendMailModel, data, DialogsService, Messages, ServerService) {
+
+  $scope.model = TestSendMailModel;
+  $scope.model.testSendMail = data;
+
+    $scope.testSendMail = function(formInvalid){
+        $scope.model.hidden.isSubmited = true;
+        if (formInvalid) {
+            return;
+        }
+        var param = $scope.model.testSendMail;
+        ServerService
+            .doPost('TestSendMail/send', param)
+            .then(
+                    function(okResult) {
+                        var error = okResult.data.failed;
+                        var warning = okResult.data.warning;
+                        var success = okResult.data.success;
+                        if(!ValidateUtil.isValidTextEmpty(success)){
+                            DialogsService.showNotify(Messages.getMessage('title.info'), success);
+                            $scope.model.hidden.isSubmited = false;
+                            $uibModalInstance.close();
+                        } else if(!ValidateUtil.isValidTextEmpty(error)){
+                            DialogsService.showError(Messages.getMessage('system.error'), error);
+                            return;
+                        }else if(!ValidateUtil.isValidTextEmpty(warning)){
+                            DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                            return;
+                        }
+                    },
+                    function(errResult){
+                    });
+    };
+
+    $scope.close = function() {
+        $scope.model.hidden.isSubmited = false;
+        $uibModalInstance.close();
+    };
+}]);

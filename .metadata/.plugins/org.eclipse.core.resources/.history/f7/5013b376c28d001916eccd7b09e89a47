@@ -1,0 +1,133 @@
+@CHARSET "UTF-8";
+
+.form-inline  .ui-datepicker-trigger{
+ margin-top: -2px !important;
+}
+
+.saleReseive-table table tr td {
+ padding: 7px 4px 7px 4px;
+}
+
+
+.saleReseive-table table tr td .form-control {
+	display: inline-block;
+	width: 100%;
+	height: 31px;
+	padding: 3px 6px;
+	font-size: 12px;
+	line-height: 1.42857;
+	color: #555;
+	background-color: #FFF;
+	background-image: none;
+	border: 1px solid #CCC;
+	border-radius: 4px;
+	-webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
+	box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
+	-webkit-transition: border-color ease-in-out 0.15s, box-shadow ease-in-out 0.15s;
+	transition: border-color ease-in-out 0.15s, box-shadow ease-in-out 0.15s;
+}
+
+.fixed-resize-textarea{
+	resize:none !important;
+	outline: none;
+
+}
+
+#test .dropdown-menu {
+	position: absolute;
+	top: 100%;
+	left: 0;
+	z-index: 1000;
+	display: none;
+	float: left;
+	min-width: 160px;
+	padding: 5px 0;
+	margin: 2px 0 0;
+	list-style: none;
+	font-size: 12px;
+	background-color: #FFF;
+	border: 1px solid #CCC;
+	border: 1px solid rgba(0, 0, 0, 0.15);
+	border-radius: 4px;
+	-webkit-box-shadow: 0 6px 12px rgba(0, 0, 0, 0.175);
+	box-shadow: 0 6px 12px rgba(0, 0, 0, 0.175);
+	background-clip: padding-box;
+}
+
+.div-calculate{
+	float: left;
+	margin-left: 8px;
+}
+
+.div-calculate label{
+	padding: 5px 5px 0px 5px;
+	text-align: left;
+	width: 200px;
+}
+
+.div-calculate input[readonly="readonly"] {
+	margin-left: 0px !important;
+	/* margin-right: 5px; */
+}
+
+.table-insert tbody tr td.icon-crud {
+	vertical-align: middle;
+	font-size: 18px;
+}
+.table-insert tbody tr td.icon-crud i {
+	color: red;
+}
+
+.decide-form .ui-datepicker-trigger{
+	margin-top: -2px !important;
+}
+
+.decide-form .form-group{
+	margin-top: 5px !important;
+	margin-bottom: 0px !important;
+}
+
+#salDecideProcessForm div ul li input.error{
+	margin: 0px 0px 0px 0px !important;
+	border: solid 1px Red !important;
+	border-top-left-radius: 2px;
+	border-bottom-left-radius: 2px;
+}
+
+#salDecideProcessForm div ul li input.error{
+	margin: 0px 0px 0px 0px !important;
+	border: solid 1px Red !important;
+	border-top-left-radius: 2px;
+	border-bottom-left-radius: 2px;
+}
+
+.panel-body {
+  padding: 10px !important;
+}
+.switchlabel {
+	left: 60px;
+	position: relative;
+	top: -6px;
+	z-index: 100;
+	padding-top: 6px;
+}
+
+.margin-t30 {
+	z-index: 1;
+	position: absolute;
+}
+
+#wrapper-btn.active {
+	z-index: 1;
+	position: absolute;
+	left: 200px;
+}
+
+label.accountType {
+	margin-right: 8px;
+}
+
+.exex-sms-container{
+	margin-top: 12px !important;
+}
+

@@ -1,0 +1,721 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision: 1.0 $  $Date: 2014/06/02 $
+ * @author : Quang-Thien
+ */
+
+'use strict';
+
+/**
+ * 初期工場
+ */
+exexSMSApp.factory('CrmControlModel', [ 'BaseModel', function(BaseModel) {
+    var model = BaseModel.getInstance();
+    model.listL010016 = [];
+    model.listS020013 = [];
+    model.listS020015 = [];
+    model.listS020012 = [];
+    model.form = {
+            listInvoice: []
+    }
+    model.hidden= {
+        screenMode : 'NEW',
+        reportType: '',
+        fromScreen: '',
+        customerName: '',
+        custNameKana:'',
+        recordeType:'',
+        countryType:'',
+        releaseScope: '',
+        registStatus: '',
+        clientType : '',
+        releaseScopeName: '',
+        registStatusName: '',
+        clientTypeName : '',
+        releaseColor:'#FF5722',
+        registColor:'#FF5722',
+        clientColor : '#FF5722',
+        change: null,
+        isSubmited: false,
+        isUpdate: false,
+        page: 0,
+        totalPage: 0,
+        salesUserCd:'',
+        salesGroupCd:[],
+        createUserName:'',
+        lastUpdUserName:'',
+        lastUpdDate:'',
+        customFlag: '',
+        checkUnique:[],
+        createWarehouse : true,
+        exportName: 'CUSTOMER'
+    };
+    return model;
+} ]);
+
+/**
+ * 初期コントローラ
+ */
+exexSMSApp.controller('crmControlCtrl',['$rootScope', '$scope', '$timeout', '$cookies', 'RouteService', 'ServerService', 'DialogsService', 'CrmControlModel', 'Messages',
+        function($rootScope, $scope, $timeout, $cookies, RouteService, ServerService, DialogsService, CrmControlModel, Messages) {
+
+    $scope.templates = [
+        { name: 'BusinessCustomer', url:getContextPath() + '/BusinessCustomer'},
+        { name: 'IndividualCustomer', url:  getContextPath() + '/IndividualCustomer'}
+    ];
+    $scope.model = CrmControlModel;
+
+    var projectCustItemInfo = angular.fromJson(sessionStorage.getItem('projectCustItemInfo'));
+    if (!StringUtils.isEmpty(projectCustItemInfo)) {
+        $scope.model.hidden.page = projectCustItemInfo.curPage;
+        $scope.model.custType = projectCustItemInfo.custType;
+        if(!$scope.model.custType){
+            $scope.template = $scope.templates[0];
+        }else{
+            $scope.template = $scope.templates[1];
+        }
+        $scope.model.hidden.screenMode = 'EDIT';
+    }else{
+        var custType = false;
+        if(!StringUtils.isEmpty($cookies.get('custType'))){
+            custType = $cookies.get('custType') === 'false' ? false : true;
+        }
+        $scope.model.custType = custType;
+
+        var sessionLogin = angular.fromJson(sessionStorage.getItem("session"));
+        if(!StringUtils.isEmpty(sessionLogin.groupCd)){
+            $scope.model.hidden.salesGroupCd = [sessionLogin.groupCd];
+            $scope.model.hidden.salesUserCd = [sessionLogin.userCd];
+        }
+
+        if(!StringUtils.isEmpty(sessionLogin.customFlag)){
+            $scope.model.hidden.customFlag = CompanyUtil.getCustomFlag(3);
+        }
+
+        if(!custType){
+            $scope.template = $scope.templates[0];
+        }else{
+            $scope.template = $scope.templates[1];
+        }
+    }
+
+    /**
+     * 顧客タイプを変更
+     */
+    $scope.changeCustomerType = function(){
+        $timeout(function() {
+            $scope.$broadcast("customerTypeChange",{
+                mode : 'check'
+            });
+            if($scope.model.hidden.change){
+                var dlg = DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('S00023'));
+                dlg.result.then(function() {
+                    var custType = $scope.model.custType;
+                    var expireDate = new Date();
+                    expireDate.setDate(expireDate.getDate() + 30);
+                    document.cookie = 'custType=' + custType + '; expires=' + expireDate;
+                    if(!custType){
+                        $scope.template = $scope.templates[0];
+                    }else{
+                        $scope.template = $scope.templates[1];
+                    }
+                    $scope.$broadcast("customerTypeChange",{
+                        mode : 'clear'
+                    });
+                },function(btn){
+                    $scope.model.custType = !$scope.model.custType;
+                });
+            }else{
+                  var custType = $scope.model.custType;
+                  var expireDate = new Date();
+                  expireDate.setDate(expireDate.getDate() + 30);
+                  document.cookie = 'custType=' + custType + '; expires=' + expireDate;
+                  if(!custType){
+                      $scope.template = $scope.templates[0];
+                  }else{
+                      $scope.template = $scope.templates[1];
+                  }
+            }
+        }, 10);
+    };
+
+    /**
+     * 顧客を登録。
+     */
+    $scope.insert = function(formInvalid){
+        $scope.model.hidden.isSubmited = true;
+        $scope.model.hidden.formInvalid = formInvalid;
+        if (formInvalid) {
+            return;
+        }
+        for (var key in $scope.model.hidden.checkUnique) {
+            if ($scope.model.hidden.checkUnique[key]) {
+                return;
+            }
+        }
+        if(!$scope.model.custType){
+            $scope.$broadcast("insertBusinessCustomer");
+        }else{
+            $scope.$broadcast("insertIndividualCustomer");
+        }
+    };
+
+    /**ステータスを更新。*/
+    $scope.updateStatus = function(screenMode, isUpdate, fromScreen){
+        $scope.model.hidden.screenMode = screenMode;
+        $scope.model.hidden.isUpdate = isUpdate;
+        $scope.model.hidden.fromScreen = fromScreen;
+    }
+
+    /**公開範囲を更新。*/
+    $scope.$on('updateReleaseScope', function(ev, param){
+        $scope.model.hidden.releaseScope = param.releaseScope;
+        if(!StringUtils.isEmpty($scope.model.listS020013)){
+            angular.forEach($scope.model.listS020013, function(item, index){
+                if(param.releaseScope == item.code){
+                    $scope.model.hidden.releaseScopeName = item.codeName;
+                }
+            });
+        }
+        if($scope.model.hidden.releaseScope == '0'){
+            $scope.model.hidden.releaseColor= '#26A69A';
+        }else{
+            $scope.model.hidden.releaseColor= '#FF5722';
+        }
+    });
+
+    /**
+     *個人顧客を更新。
+     */
+    $scope.updateCustomer = function(formInvalid){
+        $scope.model.hidden.isSubmited = true;
+        $scope.model.hidden.formInvalid = formInvalid;
+        if(formInvalid){
+            return;
+        }
+        for (var key in $scope.model.hidden.checkUnique) {
+            if ($scope.model.hidden.checkUnique[key]) {
+                return;
+            }
+        }
+        if(!$scope.model.custType){
+            $scope.$broadcast("updateBusinessCustomer");
+        }else{
+            $scope.$broadcast("updateIndividualCustomer");
+        }
+    };
+
+    /**
+     *個人顧客を更新。
+     */
+    $scope.editCustomer = function(formInvalid){
+        $scope.model.hidden.isSubmited = true;
+        $scope.model.hidden.formInvalid = formInvalid;
+        $scope.$broadcast("editCustomer");
+    };
+
+    /**
+     *個人顧客を削除。
+     */
+    $scope.deleteCustomer = function(){
+        $scope.$broadcast("deleteCustomer");
+    };
+
+    /**
+     *顧客を削除。
+     */
+    $scope.cancelEditCustomer = function(){
+        $scope.$broadcast("cancelEditCustomer");
+    };
+
+    /**次のページ*/
+    $scope.nextPage = function(){
+        $scope.model.hidden.page = $scope.model.hidden.page + 1;
+        $scope.$broadcast("nextPage");
+    }
+
+    /**前のページ*/
+    $scope.previousPage = function(){
+        $scope.model.hidden.page = $scope.model.hidden.page - 1;
+        $scope.$broadcast("previousPage");
+    }
+
+    /**redirect to change list*/
+    $scope.changeList = function (){
+        var projectCustItemInfo = angular.fromJson(sessionStorage.getItem("projectCustItemInfo"));
+        projectCustItemInfo.custName = $scope.model.hidden.customerName;
+        sessionStorage.setItem("projectCustItemInfo", JSON.stringify(projectCustItemInfo));
+        sessionStorage.setItem("changeList", JSON.stringify($scope.model.hidden.page));
+        RouteService.gotoUrl('CrmChangeList');
+    };
+
+    /**アカウント一覧を開い*/
+    $scope.openListAccount = function() {
+        var options = {size: '500'};
+        var param = {};
+        DialogsService.showDialog('MstSubAccountList','mstSubAccountListCtrl', param, options);
+    };
+
+    $scope.$on($scope.model.hidden.exportName + "#exportReport", function(evt, param) {
+        $scope.exportReport(param);
+    });
+
+    $scope.exportReport = function(param){
+        if(param.code == '01'){
+            var regex = /^[ァ-ンｧ-ﾝﾞﾟ 　]*$/;
+            var exexHankakuFormat = ($scope.model.hidden.custNameKana && regex.test($scope.model.hidden.custNameKana)) ? true : false;
+            if(StringUtils.isEmpty($scope.model.hidden.controlCd)
+                && (StringUtils.isEmpty($scope.model.hidden.recordeType)
+                || StringUtils.isEmpty($scope.model.hidden.countryType)
+                || StringUtils.isEmpty($scope.model.hidden.custNameKana)
+                || $scope.model.hidden.custNameKana.length < 2)){
+                DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00327'));
+                return;
+            }
+            if(!StringUtils.isEmpty(param)){
+                var params = {
+                        reportName : param.codeName,
+                        reportCode : param.code,
+                        custCd : $scope.model.hidden.custCd,
+                        fromScreen : 'CrmControl'
+                }
+                var fileName = param.codeName + DateUtils.getYYYYMMDD(new Date())+'.xlsx';
+                ServerService.doDownload('/MstStockControl/exportReport',  params, 'application/vnd.ms-excel', fileName);
+            }
+        }
+
+        /**if code == 07 show ckeditor report*/
+        if(param.code == '07'){
+            showCustomReport(param.tempNo);
+        }
+    };
+
+    /**show ckeditor report*/
+    function showCustomReport(tempNoCustomer){
+
+        var param ={'invoiceType': '07', 'objSno': [$scope.model.hidden.custCd], 'tempNoCustomer': tempNoCustomer};
+        var options ={size: 1100};
+        DialogsService.showDialog('InvoiceTemplate/getCustomReportPage', 'CustomReportCtrl', param, options);
+    }
+
+    /**show dialog update release scope*/
+    $scope.showDialogUpdateReleaseScope = function(releaseScope){
+        if('0' != releaseScope){
+            var options = {size: '400'};
+            var data = {
+                custCd: $scope.model.hidden.custCd,
+                releaseScope: $scope.model.hidden.releaseScope,
+                listS020013: $scope.model.listS020013
+            }
+            DialogsService.showDialog('showUpdateReleaseScopeDialog','updateReleaseScopeDialogCtrl', data, options);
+        }
+    }
+
+    /**show dialog update client type*/
+    $scope.showDialogUpdateClientType = function(clientType){
+        if($scope.model.hidden.screenMode == 'EDIT'){
+            var options = {size: 'sm'};
+            var data = {
+                custCd: $scope.model.hidden.custCd,
+                clientType: $scope.model.hidden.clientType,
+                listS020015: $scope.model.listS020015
+            }
+            DialogsService.showDialog('showUpdateClientTypeDialog','updateClientTypeDialogCtrl', data, options)
+            .result.then(function(clientType) {
+                $scope.model.hidden.clientType = clientType;
+                if(!StringUtils.isEmpty($scope.model.listS020015)){
+                    angular.forEach($scope.model.listS020015, function(item, index){
+                        if(clientType == item.code){
+                            $scope.model.hidden.clientTypeName = item.codeName;
+                        }
+                    });
+                }
+                if($scope.model.hidden.clientType == '0'){
+                    $scope.model.hidden.clientColor= '#26A69A';
+                }else if ($scope.model.hidden.clientType == '1'){
+                    $scope.model.hidden.clientColor= '#FF5722';
+                } else {
+                    $scope.model.hidden.clientColor= '#3598DC';
+                }
+            });
+        }
+    }
+
+    $scope.showDialogUpdateRegistStatus = function(registStatus){
+        if($scope.model.hidden.screenMode == 'EDIT'){
+            var options = {size: 'sm'};
+            var data = {
+                custCd: $scope.model.hidden.custCd,
+                registStatus: $scope.model.hidden.registStatus,
+                listS020012: $scope.model.listS020012
+            }
+            DialogsService.showDialog('showUpdateRegistStatusDialog', 'updateRegistStatusDialogCtrl', data, options)
+            .result.then(function(registStatus) {
+                $scope.model.hidden.registStatus = registStatus;
+                if(!StringUtils.isEmpty($scope.model.listS020012)){
+                    angular.forEach($scope.model.listS020012, function(item, index){
+                        if(registStatus == item.code){
+                            $scope.model.hidden.registStatusName = item.codeName;
+                        }
+                    });
+                }
+                if($scope.model.hidden.registStatus == '0'){
+                    $scope.model.hidden.registColor= '#26A69A';
+                } else {
+                    $scope.model.hidden.registColor= '#FF5722';
+                }
+            });
+        }
+    }
+
+
+    $scope.redirect = function(value) {
+        var projectCustItemInfo = angular.fromJson(sessionStorage.getItem('projectCustItemInfo'));
+        projectCustItemInfo.custName = $scope.model.hidden.customerName;
+        sessionStorage.setItem("projectCustItemInfo", JSON.stringify(projectCustItemInfo));
+        var params = {
+            custCd : projectCustItemInfo.custCd,
+            custName : projectCustItemInfo.custName
+        };
+        switch (value) {
+            case 'SalesReportControl':
+                var param = {
+                    custCd : projectCustItemInfo.custCd,
+                    custName : projectCustItemInfo.custName,
+                    salesReportNo : "",
+                    screenMode: 'INSERT',
+                    scheduleStartYmd: new Date(),
+                    fromScreen : "CrmControl",
+                    currentDate : new Date(),
+                };
+                sessionStorage.removeItem("salesReport");
+                sessionStorage.removeItem("salesReportUrl");
+                sessionStorage.setItem("salesReportUrl", JSON.stringify(param));
+                var options = {size: 'lg'};
+                DialogsService.showDialog('SalesReportDialog','SalesReportControlCtrl', null, options).result.then(
+                    function (isClosed) {
+                        if(!isClosed){
+                            $scope.$broadcast("CrmControl#searchReportList");
+                        }
+                    }
+                );
+                break;
+            case 'SalesReportList':
+                var salesReportParamSearch = {
+                    custName : projectCustItemInfo.custName
+                };
+                sessionStorage.setItem("salesReportParamSearch", JSON.stringify(salesReportParamSearch));
+                sessionStorage.removeItem("salesReportSearch");
+                window.open("SalesReportList","_blank");
+                //RouteService.gotoUrl("SalesReportList");
+                break;
+            case 'TodoControl':
+                var param = {
+                    custCd : projectCustItemInfo.custCd,
+                    redirectUrl : "BusinessCustomerList",
+                    typeParam : 0
+                };
+                sessionStorage.setItem("todo", JSON.stringify(param));
+                RouteService.gotoUrl("TodoControl");
+                break;
+            case 'TodoList':
+                var params = {
+                    custName : projectCustItemInfo.custName,
+                };
+                sessionStorage.setItem("todoListParamSearch", JSON.stringify(params));
+                window.open("TodoList","_blank");
+                //RouteService.gotoUrl("TodoList");
+                break;
+            case 'SfaProjectControl':
+                var params = { screenMode : 'INSERT'};
+                var itemInfo = {
+                        custCd : projectCustItemInfo.custCd,
+                        custName : projectCustItemInfo.custName,
+                        custType : projectCustItemInfo.custType
+                };
+                sessionStorage.setItem("projectItemControl", JSON.stringify(params));
+                sessionStorage.setItem("projectCustItemInfo", JSON.stringify(itemInfo));
+                sessionStorage.removeItem("fromSalEXEX");
+                RouteService.gotoUrl('SfaProjectControl');
+            break;
+            case 'SfaProjectList':
+                var params = { screenMode : 'INSERT'};
+                var itemInfo = {
+                        custCd : projectCustItemInfo.custCd,
+                        custName : projectCustItemInfo.custName,
+                };
+                sessionStorage.setItem("projectItemControl", JSON.stringify(params));
+                sessionStorage.setItem("projectCustItemInfo", JSON.stringify(itemInfo));
+                sessionStorage.removeItem("fromSalEXEX");
+                sessionStorage.removeItem("sfaProjectListSession");
+                RouteService.gotoUrl('SfaProjectList');
+            break;
+            case 'SalEstimateControl':
+                sessionStorage.removeItem('salEstimate');
+                sessionStorage.removeItem('projectSno');
+                sessionStorage.setItem('customerInfo', JSON.stringify(params));
+                RouteService.gotoUrl('SalEstimateControl');
+                break;
+            case 'SalEstimateList':
+                sessionStorage.removeItem("customerInfo");
+                sessionStorage.removeItem("projectSno");
+                sessionStorage.removeItem("salEstimate");
+                sessionStorage.removeItem("processDetail");
+                sessionStorage.removeItem("fromSalEXEX");
+                sessionStorage.setItem("projectSno", JSON.stringify(params));
+                RouteService.gotoUrl('SalEstimateList');
+                break;
+            case 'SalRsvControl':
+                sessionStorage.removeItem("projectSno");
+                sessionStorage.removeItem("receiveItemInfo");
+                sessionStorage.setItem("customerInfo", JSON.stringify(params));
+                RouteService.gotoUrl("SalRsvControl");
+                break;
+            case 'SalRsvList':
+                sessionStorage.removeItem("customerInfo");
+                sessionStorage.removeItem("projectSno");
+                sessionStorage.removeItem("receiveItemInfo");
+                sessionStorage.removeItem("processDetail");
+                sessionStorage.removeItem("fromSalEXEX");
+                sessionStorage.setItem("projectSno", JSON.stringify(params));
+                RouteService.gotoUrl('SalRsvList');
+                break;
+            case 'SalDecideProcess':
+                sessionStorage.removeItem("projectSno");
+                sessionStorage.removeItem("salDecideProcess");
+                sessionStorage.setItem("customerInfo", JSON.stringify(params));
+                RouteService.gotoUrl('SalDecideProcess');
+                break;
+            case 'SalDemandList':
+                sessionStorage.removeItem("customerInfo");
+                sessionStorage.removeItem("salDecideProcess");
+                sessionStorage.removeItem("projectSno");
+                sessionStorage.removeItem("fromSalEXEX");
+                sessionStorage.setItem("projectSno", JSON.stringify(params));
+                RouteService.gotoUrl('SalDemandList');
+                break;
+            case 'CollationCandidateCustControl':
+                var options = {
+                    size: 'auto',
+                };
+                var data = {
+                        custCdList: [$scope.model.hidden.custCd],
+                        fromScreen: 'CrmControl'
+                }
+                DialogsService.showDialog('CollationCandidateCustControl','collationCandidateCustControlCtrl', data ,options);
+                break;
+            case 'SalesReportListForCustomer':
+                var data = {
+                    custCd: $scope.model.hidden.custCd
+                };
+                var options = {
+                    size: 'auto'
+                };
+                DialogsService.showDialog('SalesReportListForCustomer', 'SalesReportListForCustomerCtrl', data, options).result.then(
+                    function (isClosed) {
+                        if(isClosed){
+                            $scope.$broadcast("CrmControl#searchReportList");
+                        }
+                    });
+                break;
+            case 'SfaSubProjectControl':
+                sessionStorage.removeItem("projectItemControl");
+                sessionStorage.removeItem("projectCustItemInfo");
+                sessionStorage.removeItem("salesReportParamSearch");
+                sessionStorage.removeItem("fromSalEXEX");
+                var params = {
+                    custCd : projectCustItemInfo.custCd,
+                    custName : $scope.model.hidden.controlCd + " " + projectCustItemInfo.custName
+                };
+                sessionStorage.setItem("projectItemControl", JSON.stringify(params));
+                RouteService.gotoUrl("SfaSubProjectControl");
+                break;
+            case 'SfaSubProjectList':
+                var params = {
+                    custCd : projectCustItemInfo.custCd,
+                    custName : projectCustItemInfo.custName
+                };
+                sessionStorage.removeItem("mainProject");
+                sessionStorage.setItem("custItemInfo", JSON.stringify(params));
+                RouteService.gotoUrl('SfaSubProjectList');
+                break;
+        }
+    };
+
+    $scope.searchReportList = function(page, custCd){
+        var params = {
+            custCdList : [$scope.$parent.model.hidden.custCd],
+            page : page,
+            pageSize : $scope.model.form.paginationForReport.pageSize
+        }
+        $scope.model.form.listReport = [];
+        ServerService.doPost('SalesReportList/getListReport', params).then(
+            function(okResult) {
+                var error = okResult.data.failed;
+                if(!StringUtils.isEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                } else {
+                    $scope.model.form.listReport = okResult.data.listReport;
+                    $scope.model.form.paginationForReport = okResult.data.paginationInfo;
+                }
+            }
+        );
+    };
+
+//    $scope.gotoSfaProjectList = function(){
+//        RouteService.gotoUrl('SfaProjectList');
+//    }
+}]);
+
+exexSMSApp.controller('updateReleaseScopeDialogCtrl',['$rootScope','$scope','$uibModalInstance', 'ServerService', 'DialogsService', 'data',
+                                                      function($rootScope, $scope,  $uibModalInstance, ServerService, DialogsService, data){
+    $scope.model = data;
+    //-- Methods --//
+    $scope.update = function(){
+        if('0' == $scope.model.releaseScope.toString()){
+            DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('S00004'))
+            .result.then(function(btn){
+                $scope.updateReleaseScope();
+            })
+        }else{
+            $scope.updateReleaseScope();
+        }
+    }; // end done
+
+    $scope.no = function(){
+        $uibModalInstance.dismiss('close');
+    }; // end close
+
+    /**公開範囲を変更*/
+    $scope.updateReleaseScope = function(){
+        var param = {
+            custCd: $scope.model.custCd,
+            releaseScope: $scope.model.releaseScope.toString()
+        }
+        ServerService.doPost('CrmControl/updateReleaseScope', param).then(
+        function(result) {
+            var error =  result.data.failed;
+            var warning =  result.data.warning;
+            if(!StringUtils.isEmpty(error)){
+                DialogsService.showError(Messages.getMessage('system.error'), error);
+                return;
+            }else if(!StringUtils.isEmpty(warning)){
+                DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                return;
+            }else{
+                $rootScope.$broadcast("updateReleaseScope", {releaseScope: $scope.model.releaseScope.toString()});
+                $uibModalInstance.close();
+            }
+        });
+    }
+}]);
+
+exexSMSApp.controller('updateClientTypeDialogCtrl',['$scope','$uibModalInstance', 'ServerService', 'DialogsService', 'Messages', 'data',
+                                                      function($scope,  $uibModalInstance, ServerService, DialogsService, Messages, data){
+    $scope.model = data;
+
+    $scope.getInit = function() {
+        $scope.model.currentClientType = angular.copy(data.clientType);
+    }
+    $scope.getInit();
+
+    //-- Methods --//
+    $scope.update = function(){
+        $scope.checkForChangeClientType($scope.model.currentClientType);
+    }; // end done
+
+    $scope.no = function(){
+        $uibModalInstance.dismiss();
+    }; // end close
+
+    /**公開範囲を変更*/
+    $scope.checkForChangeClientType = function(currentClientType){
+        if(currentClientType == '0'){
+            if($scope.model.clientType == '0'){
+                $uibModalInstance.dismiss();
+            } else if ($scope.model.clientType == '1'){
+                $scope.checkRelationDataOfCustomer($scope.model.custCd);
+            } else if ($scope.model.clientType == '2'){
+                $uibModalInstance.close($scope.model.clientType);
+            }
+        } else if(currentClientType == '1'){
+            if($scope.model.clientType == '0'){
+                $scope.checkRelationDataOfStockAddress($scope.model.custCd);
+            } else if ($scope.model.clientType == '1'){
+                $uibModalInstance.dismiss();
+            } else if ($scope.model.clientType == '2'){
+                $uibModalInstance.close($scope.model.clientType);
+            }
+        } else if(currentClientType == '2'){
+            if($scope.model.clientType == '0'){
+                $scope.checkRelationDataOfStockAddress($scope.model.custCd);
+            } else if ($scope.model.clientType == '1'){
+                $scope.checkRelationDataOfCustomer($scope.model.custCd);
+            } else if ($scope.model.clientType == '2'){
+                $uibModalInstance.dismiss();
+            }
+        }
+    }
+
+    $scope.checkRelationDataOfCustomer = function(custCd){
+        ServerService.doPost('CrmControl/checkRelationDataOfCustomer', custCd).then(
+            function(okResult) {
+                var error =  okResult.data.failed;
+                var warning =  okResult.data.warning;
+                if(!StringUtils.isEmpty(warning)){
+                    DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                }else if(!StringUtils.isEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                }else{
+                    if(okResult.data.hasDataCustomer){
+                        DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00334'));
+                    } else {
+                        $uibModalInstance.close($scope.model.clientType);
+                    }
+                }
+            }
+        );
+    }
+
+    $scope.checkRelationDataOfStockAddress = function(custCd){
+        ServerService.doPost('CrmControl/checkRelationDataOfStockAddress', custCd).then(
+            function(okResult) {
+                var error =  okResult.data.failed;
+                var warning =  okResult.data.warning;
+                if(!StringUtils.isEmpty(warning)){
+                    DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                }else if(!StringUtils.isEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                }else{
+                    if(okResult.data.hasDataStockAddress){
+                        DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00335'));
+                    } else {
+                        $uibModalInstance.close($scope.model.clientType);
+                    }
+                }
+            }
+        );
+    }
+}]);
+
+
+exexSMSApp.controller('updateRegistStatusDialogCtrl',['$scope','$uibModalInstance', 'ServerService', 'DialogsService', 'Messages', 'data',
+                                                function($scope,  $uibModalInstance, ServerService, DialogsService, Messages, data){
+    $scope.getInit = function() {
+        $scope.model = angular.copy(data);
+    }
+    $scope.getInit();
+
+    $scope.save = function(registStatus){
+        $uibModalInstance.close(registStatus);
+    };
+
+    $scope.no = function(){
+        $uibModalInstance.dismiss();
+    };
+}]);
+

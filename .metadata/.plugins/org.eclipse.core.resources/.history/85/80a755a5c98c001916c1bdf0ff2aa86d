@@ -1,0 +1,142 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision:  $  $Date:  $
+ * @author : huy-du
+ */
+'use strict';
+/**
+ * Table :
+ */
+exexSMSApp.service('SalesReportControlService', ['$q', 'ServerService',function ($q, serverService) {
+    var _self = this;
+
+    /**初期*/
+    _self.initData = function(param) {
+        var deferred = $q.defer();
+        serverService
+            .doPost('SalesReportControl/getSalesReport', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    /**登録*/
+    _self.createData = function(param) {
+        var deferred = $q.defer();
+        serverService
+            .doPost('SalesReportControl/createData', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    /**顧客を変更*/
+    _self.onChangeCustomer = function(param) {
+        var deferred = $q.defer();
+        serverService
+            .doPost('SalesReportControl/onChangeCustomer', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    /**顧客を登録*/
+    _self.createNewCustomer = function(param) {
+        var deferred = $q.defer();
+        serverService
+            .doPost('SalesReportControl/createNewCustomer', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    /**データをチェック。*/
+    _self.checkData = function(param) {
+        var deferred = $q.defer();
+        serverService
+            .doPost('SalesReportControl/checkData', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+        return deferred.promise;
+    };
+
+    /**更新*/
+    _self.updateData = function(param) {
+        var deferred = $q.defer();
+        serverService
+            .doPost('SalesReportControl/updateData', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    /**削除*/
+    _self.deleteData = function(param) {
+        var deferred = $q.defer();
+        serverService
+            .doPost('SalesReportControl/deleteData', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    _self.searchListSalesReportNo = function(param) {
+        var deferred = $q.defer();
+        serverService
+            .doPost('SalesReportControl/searchListSalesReportNo', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+}]);

@@ -1,0 +1,255 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision: $ $Date: $
+ */
+
+'use strict';
+
+exexSMSApp.factory('LoginModel', function(BaseModel, $rootScope) {
+    // モデルのベースをBaseModelとする。
+    var model = BaseModel.getInstance();
+
+    // サーバーと連携する画面項目の定義
+    model.form = {
+        mailAddress : '',
+        password : ''
+    };
+
+    model.hidden = {
+        guidelines : 'EXEX販売管理システム_簡単操作ガイド.pdf',
+        operationDescription : '画面基本説明.zip',
+        notice : '',
+        isSubmited: false,
+        isLogin: false
+    };
+
+    /*
+     * 画面項目を初期化する。
+     */
+//    model.setup = function(model) {
+//        // メッセージクラスを取得し、sessionStorageに保管する。
+//        Messages.setMessage(model != undefined ? model.msgList : '');
+//    };
+
+    /*
+     * Modelをsubmitする処理
+     */
+    model.submit = function(action, callback) {
+        // バリデートに成功した場合のみsubmitする
+        if (this.validate()) {
+            this.submitModel(action, this.form, function(data) {
+                callback(data);
+            });
+            return;
+        }
+    };
+    return model;
+});
+
+exexSMSApp.controller('LoginController',
+        ['$scope', '$rootScope', 'LoginModel', 'LoginService', 'DialogsService','RouteService', 'Messages', '$translate',
+        function($scope, $rootScope, LoginModel, LoginService, DialogsService, RouteService, Messages, $translate) {
+    /*
+     * 初期表示 <pre> 対応するJSPのng-init属性経由でcallされる </pre>
+     */
+
+    $scope.init = function(model) {
+        //Set page language
+        if($translate.proposedLanguage() == 'vi'){
+            $translate.use('vi');
+        }else {
+            $translate.use('ja');
+        }
+
+        // Model(画面項目)の初期化
+        $scope.model = LoginModel;
+        // $scope.model.setup(model);
+        sessionStorage.removeItem("loginSubAccount");
+        sessionStorage.removeItem('companyInfo');
+        $scope.getInit();
+    };
+
+    $scope.getInit = function() {
+        var param = {};
+        LoginService
+            .initData(param)
+            .then(
+                function(result) {
+                    $scope.model.hidden.notice = result.data.notice;
+                    if(!StringUtils.isEmpty(result.data.holidays)){
+                        sessionStorage.setItem('holidays', JSON.stringify(result.data.holidays));
+                    }
+            });
+    };
+
+    $scope.downloadGuidelines = function() {
+        var params = {
+            ticket : 'PDF'
+        };
+        Utils.postToUrl("/Login/downloadGuidelines", params);
+    };
+
+    $scope.downloadOperationDescription = function() {
+        var params = {
+            ticket : 'ZIP'
+        };
+        Utils.postToUrl("/Login/downloadGuidelines", params);
+    };
+
+ // login action
+    $scope.submit = function(formInvalid) {
+        $scope.model.hidden.isSubmited = true;
+        $scope.model.hidden.isLogin = true;
+        if (formInvalid) {
+            $scope.model.hidden.isLogin = false;
+            return;
+        }
+        LoginService.login($scope.model.form).then(
+            function(okResult) {
+                $scope.getFreeLabel();
+
+                var warning = okResult.data.warning;
+                var companyCd = okResult.data.companyCd;
+                if (!StringUtils.isEmpty(okResult.data.failed)) {
+                    DialogsService.showError(Messages.getMessage('system.error'), okResult.data.failed);
+                    $scope.model.hidden.isLogin = false;
+                    return;
+                } else if (!StringUtils.isEmpty(warning)) {
+                    warning = warning.replace('&lt;', '<');
+                    warning = warning.replace('&gt;', '>');
+                    DialogsService.showWarning(Messages.getMessage('check.error'), warning)
+                    .result.then(function(param) {
+                        $('input[name="mailAddress"]').focus();
+                    });
+                    $scope.model.hidden.isLogin = false;
+                    return;
+                } else if (!StringUtils.isEmpty(companyCd)) {
+                    $scope.model.form.dataSourceType = companyCd;
+                    return;
+                } else {
+                    $scope.model.hidden.isLogin = true;
+                    sessionStorage.setItem("session",angular.toJson(okResult.data.loginSession));
+                    if (StringUtils.isEmpty(okResult.data.loginSession.lastLoginDate)) {
+                        if (okResult.data.loginSession.userCd == '00001') {
+                            RouteService.gotoUrl("ExExContract");
+                            return;
+                        }
+                    }
+                    if (!StringUtils.isEmpty(okResult.data.listGroupLogin)) {
+                        var param = {
+                            listGroupLogin : okResult.data.listGroupLogin
+                        };
+                        DialogsService.showDialog('LoginGroupModal','groupSelectedCtrl', param, null)
+                        .result.then(function(param) {
+                            var loginGroup = {
+                                mailAddress : $scope.model.form.mailAddress,
+                                password : $scope.model.form.password,
+                                groupCd : param.groupCd,
+                                groupName : param.groupName,
+                                groupType: param.groupType,
+                            };
+                            $scope.selectGroupLogin(loginGroup);
+                        });
+                        return;
+                    }
+                    if(!StringUtils.isEmpty(okResult.data.loginSession.pageAfterLoginUrl)){
+                        RouteService.gotoUrl(okResult.data.loginSession.pageAfterLoginUrl);
+                    }else{
+                        RouteService.gotoUrl("PtlTodoList");
+                    }
+                }
+            },
+            function(errResult){
+                $scope.model.hidden.isLogin = false;
+            }
+        );
+    };
+
+    $scope.selectGroupLogin = function(params, formInvalid) {
+        $scope.model.hidden.isSubmited = true;
+        if (formInvalid) {
+            $scope.model.hidden.isSubmited = false;
+            return;
+        }
+        LoginService
+            .selectGroupLogin(params)
+            .then(
+                function(okResult) {
+                    if (!StringUtils.isEmpty(okResult.data.warning)) {
+                        $scope.model.hidden.isLogin = false;
+                        sessionStorage.removeItem("session");
+                    } else {
+                        var session = angular.fromJson(sessionStorage.getItem("session"));
+                        session.groupCd = params.groupCd;
+                        sessionStorage.removeItem("session");
+                        sessionStorage.setItem("session", angular.toJson(session));
+                        if(!StringUtils.isEmpty(session.pageAfterLoginUrl)){
+                            RouteService.gotoUrl(session.pageAfterLoginUrl);
+                        }else{
+                            RouteService.gotoUrl("PtlTodoList");
+                        }
+                    }
+                },
+                function(errResult){
+                    $scope.model.hidden.isLogin = false;
+                }
+            );
+    };
+
+    // redirect to reset password page
+    $scope.resetPassword = function() {
+        RouteService.gotoUrl("PwdReset");
+    };
+    $scope.exExSendMail = function() {
+        RouteService.gotoUrl("ExExSendMail");
+    };
+
+    $scope.getFreeLabel = function() {
+        LoginService.getFreeLabel({}).then(
+            function(result) {
+                if(!StringUtils.isEmpty(result.data.freeDto)){
+                    var freeLabel = {};
+                    angular.forEach(result.data.freeDto, function (item, i) {
+                        freeLabel[item.labelKey] = item.labelValue;
+                    })
+                    sessionStorage.setItem('freeLabel', JSON.stringify(freeLabel));
+                }
+            }
+        );
+    };
+}]);
+
+exexSMSApp.directive('passEnter', function () {
+    return {
+        link: function (scope, element, attrs) {
+            element.bind("keydown",function(e){
+                if (e.keyCode == 13) {
+                    angular.element('#btnSubmit').click();
+                }
+            });
+        }
+    }
+});
+
+exexSMSApp.controller('groupSelectedCtrl', function($scope, $uibModalInstance, data, LoginModel) {
+
+    $scope.modelLogin = LoginModel;
+    $scope.listGroupLogin = data.listGroupLogin;
+    $scope.groupCd = '';
+
+    $scope.ok = function() {
+        $uibModalInstance.close($scope.groupCdSelect);
+    };
+
+    $scope.cancel = function() {
+        $scope.modelLogin.hidden.isLogin = false;
+        $uibModalInstance.dismiss('cancel');
+    };
+
+    $scope.onChangeGroup = function(groupCd) {
+        $scope.groupCdSelect = groupCd;
+    };
+});

@@ -1,0 +1,84 @@
+<%@ tag pageEncoding="utf-8"%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
+<%@ taglib prefix="sms"  tagdir="/WEB-INF/tags"%>
+
+<c:set var="baseUrl">
+  <c:url value="/resources"></c:url>
+</c:set>
+
+  <!-- SCRIPT -->
+  <sms:EXEXScript src="js/vendors.js"></sms:EXEXScript>
+
+  <!-- Temp Script -->
+  <%-- <sms:EXEXCss src="assets/jquery.powertip-1.2.0/css/jquery.powertip-red.css"></sms:EXEXCss>
+  <sms:EXEXScript src="assets/jquery.powertip-1.2.0/jquery.powertip.js"></sms:EXEXScript>
+  <sms:EXEXScript src="assets/jquery-validation-1.12.0/js/jquery.validate.js"></sms:EXEXScript>
+  <sms:EXEXScript src="assets/jquery-validation-1.12.0/js/additional-methods.js"></sms:EXEXScript>
+  <sms:EXEXScript src="assets/jquery-validation-1.12.0/localization/messages_ja.js"></sms:EXEXScript> --%>
+  <!-- End Temp Script -->
+
+  <sms:EXEXScript src="js/common/metronic.js"></sms:EXEXScript>
+  <sms:EXEXScript src="js/common/layout.js"></sms:EXEXScript>
+  <sms:EXEXScript src="js/common/quick-sidebar.js"></sms:EXEXScript>
+
+  <!--  chart -->
+  <sms:EXEXScript src="assets/d3/d3.min.js"></sms:EXEXScript>
+  <sms:EXEXScript src="assets/c3-0.4.10/c3.js"></sms:EXEXScript>
+  <sms:EXEXScript src="assets/c3-angular/c3js-directive.js"></sms:EXEXScript>
+  <sms:EXEXScript src="assets/chartjs/Chart.js"></sms:EXEXScript>
+  <sms:EXEXScript src="assets/chartjs/angular-chart.js"></sms:EXEXScript>
+
+  <sms:EXEXScript src="assets/angular-file-saver/angular-file-saver.js"></sms:EXEXScript>
+  <sms:EXEXScript src="assets/angular-file-saver/angular-file-saver.bundle.js"></sms:EXEXScript>
+  <sms:EXEXScript src="assets/angular-file-saver/Blob.js"></sms:EXEXScript>
+
+  <sms:EXEXScript src="assets/datetime-picker/js/datetime-picker.js"></sms:EXEXScript>
+  <sms:EXEXScript src="assets/datetime-picker/js/angular-locale_ja-jp.js"></sms:EXEXScript>
+
+  <!--  end chart -->
+
+  <!-- ckeditor -->
+  <sms:EXEXScript src="assets/ckeditor/ckeditor.js"/>
+  <sms:EXEXScript src="assets/ckeditor/angular-ckeditor.js"/>
+ <%--  <sms:EXEXScript src="assets/ckeditor/ng-ckeditor.min.js"/> --%>
+
+  <sms:EXEXScript src="assets/ui-calendar/src/calendar.js"></sms:EXEXScript>
+  <sms:EXEXScript src="assets/angular-ui/sortable.js"></sms:EXEXScript>
+  <sms:EXEXScript src="assets/Sortable/Sortable.js"></sms:EXEXScript>
+  <sms:EXEXScript src="assets/Sortable/ng-sortable.js"></sms:EXEXScript>
+  <sms:EXEXScript src="assets/jstree/jstree.js"></sms:EXEXScript>
+  <sms:EXEXScript src="assets/jstree/ngJsTree.js"></sms:EXEXScript>
+  <sms:EXEXScript src="assets/ng-infinite-scroll/ng-infinite-scroll.js"></sms:EXEXScript>
+  <sms:EXEXScript src="assets/bootstrap-timepicker/js/bootstrap-timepicker.js"></sms:EXEXScript>
+  <sms:EXEXScript src="assets/colResizable/colResizable-1.6.js"></sms:EXEXScript>
+  <%-- <sms:EXEXScript src="assets/trackinglog/trackinglog.js"></sms:EXEXScript> --%>
+
+  <sms:EXEXScript src="js/common/app.js"></sms:EXEXScript>
+  <sms:EXEXScript src="js/common/sms-angularjs.js"></sms:EXEXScript>
+  <sms:EXEXScript src="js/common/sms-directive.js"></sms:EXEXScript>
+  <sms:EXEXScript src="js/common/sms-filter.js"></sms:EXEXScript>
+  <sms:EXEXScript src="js/common/sms-bootstrap-ui.js"></sms:EXEXScript>
+  <sms:EXEXScript src="js/common/sms-common.js"></sms:EXEXScript>
+  <sms:EXEXScript src="js/common/sms-javascript-ext.js"></sms:EXEXScript>
+  <sms:EXEXScript src="js/common/dialogs.js"></sms:EXEXScript>
+  <sms:EXEXScript src="js/common/daterangelocale.js"></sms:EXEXScript>
+  <sms:EXEXScript src="js/common/exexTable.js"></sms:EXEXScript>
+  <sms:EXEXScript src="js/common/pagination.js"></sms:EXEXScript>
+  <sms:EXEXScript src="js/common/header.js"></sms:EXEXScript>
+  <sms:EXEXScript src="js/common/LeftSidebar.js"></sms:EXEXScript>
+  <sms:EXEXScript src="js/common/RightSidebar.js"></sms:EXEXScript>
+  <sms:EXEXScript src="js/common/tozenkaku.js"></sms:EXEXScript>
+  <sms:EXEXScript src="js/common/tohankaku.js"></sms:EXEXScript>
+
+  <!--   custom dialog -->
+  <sms:EXEXScript src="js/sms/customdialog/CustomConfirmDialog.js"></sms:EXEXScript>
+
+  <script>
+      jQuery(document).ready(function() {
+          EXEXMaterial.init();
+          EXEXLayout.init();
+          EXEXQuickSidebar.init();
+      });
+  </script>
+
+<jsp:doBody />

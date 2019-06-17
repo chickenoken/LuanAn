@@ -1,0 +1,247 @@
+/*!
+ * jQuery Cookie Plugin v1.4.1
+ * https://github.com/carhartl/jquery-cookie
+ *
+ * Copyright 2006, 2014 Klaus Hartl
+ * Released under the MIT license
+ */
+(function (factory) {
+    if (typeof define === 'function' && define.amd) {
+        // AMD (Register as an anonymous module)
+        define(['jquery'], factory);
+    } else if (typeof exports === 'object') {
+        // Node/CommonJS
+        module.exports = factory(require('jquery'));
+    } else {
+        // Browser globals
+        factory(jQuery);
+    }
+}(function ($) {
+
+    var pluses = /\+/g;
+
+    function encode(s) {
+        return config.raw ? s : encodeURIComponent(s);
+    }
+
+    function decode(s) {
+        return config.raw ? s : decodeURIComponent(s);
+    }
+
+    function stringifyCookieValue(value) {
+        return encode(config.json ? JSON.stringify(value) : String(value));
+    }
+
+    function parseCookieValue(s) {
+        if (s.indexOf('"') === 0) {
+            // This is a quoted cookie as according to RFC2068, unescape...
+            s = s.slice(1, -1).replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+        }
+        try {
+            // Replace server-side written pluses with spaces.
+            // If we can't decode the cookie, ignore it, it's unusable.
+            // If we can't parse the cookie, ignore it, it's unusable.
+            s = decodeURIComponent(s.replace(pluses, ' '));
+            return config.json ? JSON.parse(s) : s;
+        } catch(e) {}
+    }
+
+    function read(s, converter) {
+        var value = config.raw ? s : parseCookieValue(s);
+        return $.isFunction(converter) ? converter(value) : value;
+    }
+
+    var config = $.cookie = function (key, value, options) {
+        // Write
+        if (arguments.length > 1 && !$.isFunction(value)) {
+            options = $.extend({}, config.defaults, options);
+
+            if (typeof options.expires === 'number') {
+                var days = options.expires, t = options.expires = new Date();
+                t.setMilliseconds(t.getMilliseconds() + days * 864e+5);
+            }
+
+            return (document.cookie = [
+                encode(key), '=', stringifyCookieValue(value),
+                options.expires ? '; expires=' + options.expires.toUTCString() : '', // use expires attribute, max-age is not supported by IE
+                options.path    ? '; path=' + options.path : '',
+                options.domain  ? '; domain=' + options.domain : '',
+                options.secure  ? '; secure' : ''
+            ].join(''));
+        }
+
+        // Read
+        var result = key ? undefined : {},
+            // To prevent the for loop in the first place assign an empty array
+            // in case there are no cookies at all. Also prevents odd result when
+            // calling $.cookie().
+            cookies = document.cookie ? document.cookie.split('; ') : [],
+            i = 0,
+            l = cookies.length;
+
+        for (; i < l; i++) {
+            var parts = cookies[i].split('='),
+                name = decode(parts.shift()),
+                cookie = parts.join('=');
+            if (key === name) {
+                // If second argument (value) is a function it's a converter...
+                result = read(cookie, value);
+                break;
+            }
+            // Prevent storing a cookie that we couldn't decode.
+            if (!key && (cookie = read(cookie)) !== undefined) {
+                result[name] = cookie;
+            }
+        }
+        return result;
+    };
+
+    config.defaults = {};
+
+    $.removeCookie = function (key, options) {
+        // Must not alter options, thus extending a fresh object...
+        $.cookie(key, '', $.extend({}, options, { expires: -1 }));
+        return !$.cookie(key);
+    };
+
+}));
+
+//Tracking log
+$(document).ready(function() {
+    //
+    var e = {
+        companyCd : "0071",
+        trackingLog : "",
+        category : "",
+        visitDuration : "",
+        clientUuid : "",
+        pageUrl : "",
+        pageTitle : "",
+        method : "",
+        url : "https://sms.exex-pcs.com/exe/collect?",
+        startTime : new Date().getTime(),
+        endTime : ""
+    }
+
+    //tracking
+    var t = {
+        getInit : function(){
+            e.pageUrl = $(location).attr('href');
+            e.pageTitle = $(document).attr('title');
+            console.log("%cURL: " + "%c"+ e.pageUrl, 'font-weight:bold;color: #303F9F','font-style:italic;color: red');
+            console.log("%cTITLE: " + "%c"+ e.pageTitle, 'font-weight:bold;color: #303F9F','font-style:italic;color: #9C27B0');
+            t.getParam();
+        },
+
+        getUrlParameter: function(sParam) {
+            var sPageURL = decodeURIComponent(window.location.search.substring(1)), sURLVariables = sPageURL.split('&'), sParameterName, i;
+            for (i = 0; i < sURLVariables.length; i++) {
+                sParameterName = sURLVariables[i].split('=');
+                if (sParameterName[0] === sParam) {
+                    return sParameterName[1] === undefined ? true : sParameterName[1];
+                }
+            }
+        },
+
+        getCookiesParameter : function(sParam) {
+            var sPageURL = $.cookie('tracking'), sURLVariables = sPageURL.split('&'), sParameterName, i;
+            for (i = 0; i < sURLVariables.length; i++) {
+                sParameterName = sURLVariables[i].split('=');
+                if (sParameterName[0] === sParam) {
+                    return sParameterName[1] === undefined ? true : sParameterName[1];
+                }
+            }
+        },
+
+        getParam : function (){
+            if(!u.isEmpty(t.getUrlParameter('tl'))){
+                e.trackingLog = t.getUrlParameter('tl');
+            }else{
+                if (!u.isEmpty($.cookie('tracking'))){
+                    e.trackingLog = t.getCookiesParameter('tl');
+                }else{
+                    return false;
+                }
+            }
+            e.category = t.getUrlParameter('tCate');
+            e.clientUuid = t.getUrlParameter('tClientUuid');
+            t.createCookie();
+        },
+
+        createCookie : function(){
+            e.clientUuid = t.generateUUID();
+            var url = t.createUrl(e.clientUuid);
+            t.doPost(url);
+            $.cookie("tracking", url);
+        },
+
+        createUrl : function (clientUuid){
+            var url = e.url;
+            url += "&cp="+ e.companyCd + "&tl="+ e.trackingLog
+                + "&tCate=" + (!u.isEmpty(e.category) ? e.category : 1)
+                + "&tPageTitle="+ window.btoa(unescape(encodeURIComponent(e.pageTitle)))
+                + "&tPageUrl="+ window.btoa(unescape(encodeURIComponent(e.pageUrl)))
+                + "&tClientUuid="+ e.clientUuid;
+            return url + "&tMethod=insert";
+        },
+
+        doPost : function(url){
+            $.ajax({
+                url : url,
+                type : "get",
+                crossDomain: true,
+                dataType: 'jsonp',
+                contentType: 'application/x-www-form-urlencoded;charset=UTF-8',
+                success : function (result){}
+            });
+            console.log("%cPOST: " + "%c" + url, 'font-weight:bold;color: #303F9F','color: #33a451');
+            e.url = url;
+        },
+
+        generateUUID : function() {
+            var d = new Date().getTime();
+            if(window.performance && typeof window.performance.now === "function"){
+                d += performance.now();
+            }
+            var uuid = 'xxxxxxxx-xxxx-xxxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                var r = (d + Math.random()*16)%16 | 0;
+                d = Math.floor(d/16);
+                return (c=='x' ? r : (r&0x3|0x8)).toString(16);
+            });
+            return uuid;
+        },
+
+        endSession: function() {
+            e.endTime = new Date().getTime();
+            e.visitDuration = Math.round((e.endTime - e.startTime)/1000);
+            e.url += "&tVisitDuration=" + e.visitDuration + "&tMethod=update";
+            t.doPost(e.url);
+            return;
+        }
+    }
+
+    //utils
+    var u = {
+        isEmpty : function(value) {
+            if (value === null || value === '' || value === undefined || typeof value === 'undefined') {
+                return true;
+            }
+            return false;
+        }
+    }
+
+    var validNavigation = true;
+    window.onbeforeunload = function() {
+      if (validNavigation) {
+         t.endSession();
+      }
+    }
+
+    $(document).bind('keypress', function(e) {
+        if (e.keyCode == 116){
+          return;
+        }
+    });
+
+    t.getInit();
+});

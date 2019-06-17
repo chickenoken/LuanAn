@@ -1,0 +1,433 @@
+@CHARSET "UTF-8";
+
+#table-search tr th {
+  background-color: #398FD3;
+  color: #FFF;
+  height: 35px;
+  vertical-align: middle;
+  border-bottom: 1px solid #DDD;
+}
+
+#table-search tr th a {
+  color: #FFF !important;
+  text-decoration: none;
+}
+
+#table-search tr th span {
+  float: right !important;
+}
+
+.table-tblchange tr td {
+  padding: 2px 2px 2px 2px !important;
+}
+
+.modal-footer-message {
+  padding: 9px 20px 10px;
+  text-align: right;
+  border-top: 1px solid #e5e5e5;
+}
+
+.portlet {
+  margin-bottom: 60px;
+}
+
+div#uniform-customerType {
+  display: none !important;
+}
+
+.div-hover:hover {
+  background: #f9f9f9;
+  cursor: pointer;
+}
+
+th a:-webkit-any-link {
+  color: white;
+}
+
+th a[href] {
+  color: white;
+}
+
+th a i {
+  float: right;
+}
+
+#buttonHref {
+  margin-top: 5px;
+  font-size: 11px;
+  padding: 6px 12px 6px 12px;
+}
+
+.mobile {
+  padding: 0;
+}
+
+.comma {
+  visibility: visible;
+  margin-top: 9px;
+  margin-left: 4px;
+  margin-right: 3px;
+}
+
+.label-mobile {
+  padding: 6px 2px 7px 0px;
+}
+
+.label-padding {
+  padding: 26px 10px 26px 0px !important;
+}
+
+.mobile.col-md-3 {
+  width: 27%;
+}
+
+.modal-400 {
+  width: 400px;
+}
+
+.modal-600 {
+  width: 600px;
+}
+
+#disable-text {
+  border-radius: 0px;
+  border: none;
+  border-bottom: solid 1px Gray;
+  background-color: #fff;
+  padding-top: 7px;
+  width: 100%;
+  white-space: nowrap;
+  overflow-x: hidden;
+  overflow-y: hidden;
+  cursor: default;
+}
+
+div#table-tblchange.scrollbar-custom {
+  height: 118px !important;
+  overflow-y: auto;
+}
+
+#customerForm #disable-text:hover {
+  border-color: #4fc3f7;
+}
+
+#customerForm #disable-text::-webkit-scrollbar {
+  height: 0px;
+}
+
+#customerForm .scrollbar-custom::-webkit-scrollbar, #customerForm textarea::-webkit-scrollbar
+  {
+  width: 7px;
+}
+
+#customerForm textarea::-webkit-scrollbar-thumb, #customerForm .scrollbar-custom::-webkit-scrollbar-thumb
+  {
+  background-color: rgba(0, 0, 0, 0.4);
+}
+
+#customerForm textarea::-webkit-scrollbar-track, #customerForm .scrollbar-custom::-webkit-scrollbar-track
+  {
+  background: #FFFFFF;
+}
+
+#customerForm .slimScrollDiv {
+  height: 118px !important;
+}
+
+#search-customer .select2-container {
+  width: calc(100% - 34px) !important;
+  width: -webkit-calc(100% - 34px) !important;
+}
+#search-customer.view-mode .select2-container {
+  width: 100% !important;
+}
+
+#search-customer-1 .select2-container {
+  width: calc(248px - 34px) !important;
+  width: -webkit-calc(248px - 34px) !important;
+}
+#search-customer-1.view-mode .select2-container {
+  width: 248px !important;
+}
+
+table#table-change-result tbody tr td input {
+  background: inherit;
+}
+
+@media ( max-width : 992px) {
+  .exex-form .form-group, .exex-form-mst .form-group {
+    margin-bottom: 0px;
+  }
+  .form-horizontal .control-label {
+    padding-top: 7px;
+    margin-bottom: 0;
+    text-align: right;
+  }
+  .buttons {
+    margin-left: -7px;
+    padding: 5px 13px 5px 13px;
+    ;
+  }
+  button#buttonHref.blue {
+    margin-left: 5px;
+  }
+  .portlet {
+    margin-bottom: 0px;
+  }
+  .mobile.col-md-3 {
+    width: 100%;
+  }
+  .btn-mobile {
+    margin-top: 3px;
+  }
+  .comma {
+    visibility: hidden;
+    margin-top: -18px;
+  }
+  .label-mobile {
+    padding: 43px 0px 43px 0px !important;
+  }
+  #collapseLabel a:after {
+    font-family: 'Glyphicons Halflings';
+    content: "\e113";
+    color: #398FD3;
+  }
+  #collapseLabel a.collapsed:after {
+    content: "\e114";
+  }
+}
+
+.modal-dialog.w-action-control, .modal-dialog.w-owner-control {
+  width: 830px;
+}
+
+.modal-dialog.w-site-control {
+  width: 1300px;
+}
+
+.modal-dialog.w-dept-control {
+  width: 790px;
+}
+
+.modal-dialog.w-change-control {
+  width: 400px;
+}
+
+.modal-dialog.w-bill-control {
+  width: 800px;
+}
+
+.modal-dialog.w-warehouse-control {
+  width: 860px;
+}
+
+.modal-dialog.w-user-control {
+  width: 1300px;
+  min-width: 600px;
+}
+
+@media ( max-width : 768px), ( max-width : 830px),( max-width : 1280px)  {
+   .modal-dialog.w-user-control {
+    width: 650px;
+  }
+}
+
+@media ( max-width : 768px) {
+  .modal-dialog.w-action-control, .modal-dialog.w-owner-control,
+    .modal-dialog.w-dept-control, .modal-dialog.w-bill-control,
+    .modal-dialog.w-warehouse-control{
+    width: 80%;
+  }
+  .modal-dialog.w-site-control {
+    width: 70%;
+  }
+  .modal-dialog {
+    margin: 30px auto;
+  }
+  .w-sm {
+    width: 300px;
+  }
+  .modal-dialog.w-change-control {
+    width: 350px;
+  }
+}
+
+@media ( max-width : 425px) {
+  .modal-dialog.w-action-control, .modal-dialog.w-owner-control,
+    .modal-dialog.w-site-control, .modal-dialog.w-dept-control,
+    .modal-dialog.w-change-control, .modal-dialog.w-bill-control,
+    .modal-dialog.w-warehouse-control, .modal-dialog.w-user-control{
+    width: 95%;
+  }
+  .modal-dialog {
+    margin: 30px auto;
+  }
+  .w-sm {
+    width: 300px;
+  }
+}
+
+.table {
+  margin-bottom: 0;
+}
+
+#crm-dept-table tr th, #crm-site-table tr th, #crm-owner-table tr th,
+  #crm-action-table tr th {
+  background-color: #87CEEB;
+  color: #FFF;
+  text-align: right;
+  vertical-align: middle;
+  border-bottom: 1px solid #FFF;
+}
+
+#crm-dept-table tr td, #crm-site-table tr td, #crm-owner-table tr td,
+  #crm-action-table tr td {
+  vertical-align: middle;
+}
+
+#crm-dept-table tr th.th-last, #crm-site-table tr th.th-last,
+  #crm-owner-table tr th.th-last, #crm-action-table tr th.th-last {
+  border-bottom: 1px solid #DDD;
+}
+
+#tableOwnerList thead tr th {
+  background-color: #af8c38;
+  color: #FFF;
+}
+
+#tableActionList tr th a {
+    color: #FFF!important;
+    text-decoration: none;
+}
+
+#customerForm .scrollbar-custom:hover {
+  transition-duration: .5s;
+  border-color: #4fc3f7 !important;
+  -webkit-box-shadow: 0px 4px 2px -2px #cccccc;
+  box-shadow: 0px 2px 8px 2px rgba(204, 204, 204, 0.8);
+}
+
+.form-group div ul.dropdown-menu {
+  max-height: 170px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  font-size: 14px;
+  background-color: #FFF;
+  border-radius: 0px !important;
+  border: 1px solid #4fc3f7 !important;
+  -webkit-box-shadow: 0px 4px 2px -2px #cccccc;
+  box-shadow: 0px 2px 8px 2px rgba(204, 204, 204, 0.8);
+  width: 96%;
+  margin-top: -1px
+}
+
+.form-group div ul.dropdown-menu li>a:hover, .dropdown-menu .active>a,
+  .dropdown-menu .active>a:hover {
+  background-color: #3598dc;
+  color: #fff;
+}
+
+#search-deliveryplace .form-group div ul.dropdown-menu li>div:hover,
+#search-deliveryplace .dropdown-menu .active>div,
+#search-deliveryplace .dropdown-menu .active>div:hover {
+  background-color: #3598dc;
+  color: #fff;
+  cursor: pointer;
+}
+
+.dropdown-menu:not(.datetime-picker-dropdown) li>div {
+  padding: 8px 14px;
+}
+
+.div-in-table {
+  display: flex;
+}
+
+.row-break {
+  word-break: break-all;
+  width: calc(100% - 50px);
+  width: -webkit-calc(100% - 50px);
+}
+
+#wrap-line-input {
+  max-height: 40px;
+  overflow: auto;
+}
+/*** LABEL ***/
+.exex-text-align {
+  text-align: right;
+}
+/*** END LABEL ***/
+
+/*** RESPONSIVE ***/
+@media only screen and (max-width: 1024px) {
+  .exex-form .form-group, .exex-form-mst .form-group {
+    margin-bottom: 0px;
+  }
+  .form-horizontal .control-label {
+    padding-top: 7px;
+    margin-bottom: 0;
+    text-align: right;
+  }
+  #collapseLabel a:after {
+    font-family: 'Glyphicons Halflings';
+    content: "\e113";
+    color: #398FD3;
+  }
+  #collapseLabel a.collapsed:after {
+    content: "\e114";
+  }
+  .buttons {
+    margin-left: -7px;
+    padding: 0px 25px 5px 25px;
+  }
+}
+
+@media only screen and (max-width: 993px) {
+  .col-md-1, .col-md-10, .col-md-11, .col-md-12, .col-md-2, .col-md-3,
+    .col-md-4, .col-md-5, .col-md-6, .col-md-7, .col-md-8, .col-md-9 {
+    padding-right: 0px;
+    padding-left: 0px;
+  }
+  .exex-text-align {
+    text-align: start !important;
+  }
+  #daterange.input-group {
+    padding-left: 0px !important;
+    padding-right: 0px !important;
+  }
+  #exportCsv span.select2.select2-container {
+    width: 131px !important;
+  }
+}
+
+@media only screen and (min-width: 992px) {
+  .col-3 {
+    width: 29.166666665%;
+    float: left;
+  }
+}
+/*** END RESPONSIVE ***/
+.popover {
+  font-family: inherit;
+}
+
+#crmOwnerControl ul.dropdown-menu {
+  max-height: 170px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  font-size: 14px;
+  background-color: #FFF;
+  border-radius: 0px !important;
+  border: 1px solid #4fc3f7 !important;
+  -webkit-box-shadow: 0px 4px 2px -2px #cccccc;
+  box-shadow: 0px 2px 8px 2px rgba(204, 204, 204, 0.8);
+  width: 247px;
+  margin-top: -1px
+}
+
+div#tableBody,div#tableUser,div#tableGroup {
+    width: 410px;
+    max-height: 246px;
+    overflow-y: auto;
+}

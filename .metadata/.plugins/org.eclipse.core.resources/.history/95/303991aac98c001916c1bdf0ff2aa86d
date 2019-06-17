@@ -1,0 +1,96 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision:  $  $Date:  $
+ * @author : minh-dao
+ */
+'use strict';
+
+exexSMSApp.factory('ImportPaymentDataModel', [ 'BaseModel', function(BaseModel) {
+
+    var model = BaseModel.getInstance();
+    model.form = {
+        data : { },
+        fileInfo : {
+            fileName: '',
+            fileData: '',
+            fileSize: '',
+            fileType: ''
+        }
+    }
+
+    model.hidden = {
+        isImported : false
+    };
+    return model;
+}]);
+
+exexSMSApp.controller('ImportPaymentDataCtrl',
+        ['$scope', '$filter', 'ImportPaymentDataModel','Messages', 'ServerService', 'DialogsService',
+         function($scope, $filter, ImportPaymentDataModel, Messages, ServerService, DialogsService) {
+
+    $scope.model = ImportPaymentDataModel;
+
+    $scope.importData = function(fileInfo) {
+        if(!StringUtils.isEmpty(fileInfo.fileData)){
+            $scope.model.hidden.isImported = false;
+            var params = {
+                fileData : fileInfo.fileData
+            };
+            ServerService.doPost('ImportPaymentData/importData', params).then(
+                function(okResult) {
+                    if (!StringUtils.isEmpty(okResult.data.errorFile)){
+                        var paramFile = {
+                            fileData : okResult.data.errorFile,
+                        };
+                        var current = $filter('date')(new Date(), "yyyy/MM/dd");
+                        var fileName = "ERROR_";
+                        ServerService.doDownload('/ImportPaymentData/downloadFileError', paramFile, 'application/vnd.ms-excel', fileName + current + '.xlsx');
+                    } else {
+                        $scope.model.hidden.isImported = true;
+                        $scope.model.form.data = okResult.data.dataImport;
+                    }
+                }
+            );
+        }
+        $scope.model.hidden.dataImport = "";
+        $('input[name="import"]').wrap('<form>').parent('form').trigger('reset');
+        $('input[name="import"]').unwrap();
+    }
+
+    $scope.checkAll = function(){
+        angular.forEach($scope.model.form.data.listData, function (row, i) {
+            row.isChecked = $scope.model.hidden.selectedAll;
+        });
+    };
+
+    $scope.insertData = function() {
+        var params = angular.copy($scope.model.form.data);
+        var listData = [];
+        angular.forEach(params.listData, function (row, i) {
+            if(row.isChecked) {
+                listData.push(row);
+            }
+            delete row.isChecked;
+        });
+        params.listData = listData;
+        ServerService.doPost('ImportPaymentData/insert', params).then(
+            function(okResult) {
+                var error = okResult.data.failed;
+                var success = okResult.data.success;
+                if(!StringUtils.isEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                }else{
+                    DialogsService.showNotify(Messages.getMessage('title.info'), success)
+                    .result.then(function(btn){
+                        //
+                    });
+                }
+            }
+        );
+    }
+
+}]);

@@ -1,0 +1,374 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision:  $  $Date:  $
+ * @author : huy-du
+ */
+'use strict';
+
+exexSMSApp.factory('SalesAnalyticsChartDialogModel', [ 'BaseModel', '$rootScope', function(BaseModel, $rootScope) {
+
+    var model = BaseModel.getInstance();
+    return model;
+}]);
+
+exexSMSApp.controller('SalesAnalyticsChartCtrl',
+        ['$rootScope', '$scope', '$uibModalInstance', '$filter', 'data', 'DialogsService','SalesAnalyticsChartDialogModel','Messages',
+         function($rootScope, $scope, $uibModalInstance, $filter,data, DialogsService, SalesAnalyticsChartDialogModel, Messages) {
+
+    $scope.model = SalesAnalyticsChartDialogModel;
+    $scope.model.type = data.type;
+    $scope.model.mode = data.mode;
+    $scope.model.status = data.status;
+    $scope.model.axisLabel = '';
+    $scope.model.listHeader = data.listHeader;
+    if(!ValidateUtil.isValidTextEmpty(data.mode)){
+        $scope.model.mode = data.mode;
+    }else{
+        $scope.model.mode = 'SALES';
+    }
+
+    if($scope.model.type == 'LINE'){
+        $scope.model.objectList = data.listObject;
+        $scope.model.numberLine = data.lengthObject;
+        $scope.model.viewLine = data.value;
+    }else if($scope.model.type  == 'BAR'){
+        $scope.model.object = data;
+    }else if($scope.model.type  == 'PIE'){
+        $scope.model.objectList = data.listObject;
+        $scope.model.title = data.title;
+    }else if($scope.model.type  == 'COMBINATION'){
+        $scope.model.objectList = data.listObject;
+        $scope.model.title = data.title;
+    }
+
+    if($scope.model.type  != 'PIE'){
+        setTimeout(function(){
+            $('.modal-dialog.w-900').removeClass('w-900').addClass('modal-dialog-custom');
+        }, 10);
+    }else{
+        setTimeout(function(){
+            $('.modal-dialog.w-700').removeClass('w-700').addClass('modal-dialog-pie');
+        }, 10);
+    }
+
+
+    /***/
+   $scope.loadChartData = function(objectList,listHeader, numberLine, viewLine){
+       $scope.model.axisLabel = Messages.getMessage('common.chart.label.045');
+       if(viewLine != 9999 && !ValidateUtil.isValidTextEmpty(objectList)){
+           $scope.listData = [];
+           var list = listHeader;
+           var listValue = null;
+           var length = list.length;
+           var item = null;
+           var str = '';
+           var dataColumnStr = "[";
+           for(var i = 0; i < length; i++){
+               var str = '';
+               if($scope.model.status == 4 && !StringUtils.isEmpty(list[i])){
+                   list[i] = $filter('date')(new Date(list[i]), 'MM/dd');
+               }
+               str +=  "{\"x\":\" " + list[i] + '",';
+               for(var j = 1; j <= numberLine; j++){
+                     if(j === numberLine){
+                         listValue = objectList[j-1].listObject[0].listAnalytics[viewLine].listValue;
+                         str += "\"line"+(j)+"\":\" " + listValue[i]   +  '"';
+                     }else{
+                         listValue = objectList[j-1].listObject[0].listAnalytics[viewLine].listValue;
+                         str += "\"line"+(j)+"\":\" " + listValue[i]   +  '",';
+                     }
+               }
+               str += ' \}';
+               str = str.replace(/ /g,'');
+               item = JSON.parse(str);
+               $scope.listData.splice(i, 0, item);
+           }
+           for(var k = 1; k<= numberLine; k++){
+               if(k === numberLine){
+                   dataColumnStr += "{\"id\":\"line"+(k)+"\",";
+                   dataColumnStr += "\"type\":\"line\",\"name\":\" "+ objectList[k-1].objectName + "\",";
+                   dataColumnStr += "\"color\":\" "+ ChartUtil.getChartColor(k) + "\"}";
+               }else{
+                   dataColumnStr += "{\"id\":\"line"+(k)+"\",";
+                   dataColumnStr += "\"type\":\"line\",\"name\":\" "+ objectList[k-1].objectName + "\",";
+                   dataColumnStr += "\"color\":\" "+ ChartUtil.getChartColor(k) + "\"},";
+               }
+           }
+           dataColumnStr += ']';
+           $scope.datacolumns = JSON.parse(dataColumnStr);
+           $scope.datax = {"id" : "x"};
+       }else{
+           $scope.datacolumns = [];
+           $scope.listData = [];
+       }
+   };
+
+   /**show chart bar*/
+   $scope.showChartBar = function(object, index){
+       $scope.model.axisLabel = Messages.getMessage('common.chart.label.045');
+       $scope.listData = [];
+       var list = object.listObject;
+       var listHeader = $scope.model.listHeader;
+       $scope.colors = "#03A9F4,#ef5530,#25C158,#FFEB3B,#FF9800,#7B1FA2,#546E7A,#00897B,#9E9E9E,#009688";
+       var length = list.length;
+       var item = null;
+       var groupColumn = '';
+       var y2 = '';
+       var str = '[';
+       var dataColumnStr = "[";
+       var i = 0;
+       var headerLength = listHeader.length;
+       var listSum = [];
+
+       for(; i< headerLength; i++){
+           if($scope.model.status == 4 && !StringUtils.isEmpty(listHeader[i])){
+               listHeader[i] = $filter('date')(new Date(listHeader[i]), 'MM/dd');
+           }
+           str += "{\"x\":\""+listHeader[i]+"\",";
+           var j = 0;
+           var objLength = list.length;
+           var sum = 0;
+           for(; j < objLength; j++){
+               var value = list[j].listAnalytics[index].listValue;
+               var val = parseFloat(value[i]);
+               sum += val;
+           }
+           listSum.push(sum);
+           j = 0;
+           for(; j < objLength; j++){
+               var value = list[j].listAnalytics[index].listValue;
+               var val = parseFloat(value[i]);
+               var percent = 0;
+               if(sum > 0){
+                   percent = (val*100)/sum;
+               }
+               str += "\"line" + (j+1) + "\":" + percent  +  ',';
+           }
+           str += "\"sum\":" + sum  +  '},';
+       }
+
+       /**set value for bar sum*/
+       var sumLabel = Messages.getMessage('common.chart.label.048');
+       str += "{\"x\":\"" + sumLabel + "\",";
+       var j = 0;
+       var total = 0;
+       for(; j < objLength; j++){
+           var val = parseFloat(list[j].listAnalytics[index].sum);
+           total += val;
+       }
+       j = 0;
+       for(; j < objLength; j++){
+           var val = parseFloat(list[j].listAnalytics[index].sum);
+           var sum = total != 0 ? (val*100)/total : 0;
+           str += "\"line" + (j+1) + "\":" + sum  +  ',';
+
+           /**create data column for chart*/
+           if(j === objLength -1){
+               dataColumnStr += "{\"id\":\"line"+(j+1)+"\",";
+               dataColumnStr += "\"type\":\"bar\",\"name\":\""+ list[j].objectName + "\",";
+               dataColumnStr += "\"color\":\" "+ ChartUtil.getChartColor(j) + "\"}";
+               groupColumn += "line" + (j+1);
+           }else{
+               dataColumnStr += "{\"id\":\"line"+(j+1)+"\",";
+               dataColumnStr += "\"type\":\"bar\",\"name\":\""+ list[j].objectName + "\",";
+               dataColumnStr += "\"color\":\" "+ ChartUtil.getChartColor(j) + "\"},";
+               groupColumn += "line" + (j+1) + ',';
+           }
+       }
+       str += "\"sum\":" + total  +  '}]';
+       str = str.replace(/ /g,'');
+       dataColumnStr += ']';
+       item = JSON.parse(str);
+       $scope.listData = angular.copy(item);
+       $scope.datacolumns = JSON.parse(dataColumnStr);
+       $scope.datacolumns.push({"id" : "sum","type" : "line","name" : sumLabel, "color" : ChartUtil.getChartColor(j)});
+       $scope.groupColumn = groupColumn;
+       $scope.datax = {"id" : "x"};
+   };
+
+   /**show chart Combination*/
+   $scope.showChartCombination = function(type){
+       var salesTitle = "";
+       var initialTitle = "";
+       var sumItemTitle = "";
+       $scope.model.axisLabel = Messages.getMessage('common.chart.label.045');
+       $scope.listData = [];
+       var list = $scope.model.objectList;
+       var listHeader = $scope.model.listHeader;
+       $scope.colors = "#03A9F4,#ef5530,#25C158,#FFEB3B,#FF9800,#7B1FA2,#546E7A,#00897B,#9E9E9E,#009688";
+       var length = list.length;
+       var item = null;
+       var groupColumn = '';
+       var groupColumnSum = '';
+       var groupLine = '';
+       var y2 = '';
+       var str = '[';
+       var dataColumnStr = "[";
+       var i = 0;
+       var headerLength = listHeader.length;
+       var listSum = [];
+       if(StringUtils.isEmpty(type) || type == 'sum'){
+           salesTitle = Messages.getMessage('common.chart.label.052');
+           initialTitle = Messages.getMessage('common.chart.label.053');
+       }else if (type == 'item'){
+           salesTitle = Messages.getMessage('common.chart.label.054');
+           initialTitle = Messages.getMessage('common.chart.label.055');
+           sumItemTitle = angular.element("[for='stockItemSum']").text().trim();
+       }
+
+       for(; i< headerLength; i++){
+           if($scope.model.status == 4 && !StringUtils.isEmpty(listHeader[i])){
+               listHeader[i] = $filter('date')(new Date(listHeader[i]), 'MM/dd');
+           }
+           str += "{\"x\":\""+listHeader[i]+"\",";
+           var j = 0;
+           var objLength = list.length;
+           for(; j < objLength; j++){
+               var sumInitial = list[j].listObject[0].listAnalytics[0].listValue[i];
+               var sumPrice = 0, sumItemSum = 0;
+               if(StringUtils.isEmpty(type) || type == 'sum'){
+                   sumPrice = list[j].listObject[0].listAnalytics[1].listValue[i];
+               }else if (type == 'item'){
+                   sumPrice = list[j].listObject[0].listAnalytics[3].listValue[i];
+                   sumItemSum = list[j].listObject[0].listAnalytics[6].listValue[i];
+               }
+               if(j === objLength -1){
+                   if(i == headerLength - 1){
+                       if (type == 'item'){
+                           str += "\"colsum" + (j+1) + "\":" + sumItemSum  + ',';
+                       }
+                       str += "\"col" + (j+1) + "\":" + sumPrice  + ',';
+                       str += "\"line"+ (j+1) + "\":" + sumInitial  + '}';
+                   }else{
+                       if (type == 'item'){
+                           str += "\"colsum" + (j+1) + "\":" + sumItemSum  + ',';
+                       }
+                       str += "\"col" + (j+1) + "\":" + sumPrice  + ',';
+                       str += "\"line"+ (j+1) + "\":" + sumInitial  + '},';
+                   }
+               }else{
+                   if (type == 'item'){
+                       str += "\"colsum" + (j+1) + "\":" + sumItemSum  +  ',';
+                   }
+                   str += "\"col" + (j+1) + "\":" + sumPrice  +  ',';
+                   str += "\"line"+ (j+1) + "\":" + sumInitial  +  ',';
+               }
+           }
+       }
+       str += ']';
+       str = str.replace(/ /g,'');
+       item = JSON.parse(str);
+       $scope.listData = angular.copy(item);
+
+       var j = 0;
+       for(; j < objLength; j++){
+           /**create data column for chart*/
+           dataColumnStr += "{\"id\":\"col"+(j+1)+"\",";
+           dataColumnStr += "\"type\":\"bar\",\"name\":\""+ list[j].objectName + salesTitle +"\",";
+           dataColumnStr += "\"color\":\" "+ ChartUtil.getChartColor(j) + "\"},";
+           groupColumn += "col" + (j+1) + ',';
+
+           if (type == 'item'){
+               dataColumnStr += "{\"id\":\"colsum"+(j+1)+"\",";
+               dataColumnStr += "\"type\":\"bar\",\"name\":\""+ list[j].objectName + sumItemTitle +"\",";
+               dataColumnStr += "\"color\":\" "+ ChartUtil.getRandomColor() + "\"},";
+               groupColumnSum += "colsum" + (j+1) + ',';
+           }
+       }
+
+       var j = 0;
+       for(; j < objLength; j++){
+           /**create data column for chart*/
+           if(j === objLength -1){
+               dataColumnStr += "{\"id\":\"line"+(j+1)+"\",";
+               dataColumnStr += "\"type\":\"line\",\"name\":\""+ list[j].objectName + initialTitle +"\",";
+               dataColumnStr += "\"color\":\" "+ ChartUtil.getChartColor(j + objLength) + "\"}";
+               groupLine += "line" + (j+1) + ',';
+           }else{
+               dataColumnStr += "{\"id\":\"line"+(j+1)+"\",";
+               dataColumnStr += "\"type\":\"line\",\"name\":\""+ list[j].objectName + initialTitle + "\",";
+               dataColumnStr += "\"color\":\" "+ ChartUtil.getChartColor(j + objLength) + "\"},";
+               groupLine += "line" + (j+1) + ',';
+           }
+       }
+       dataColumnStr += ']';
+       $scope.datacolumns = JSON.parse(dataColumnStr);
+       $scope.groupColumn = groupColumn;
+       $scope.groupColumnSum = groupColumnSum;
+       $scope.groupLine = groupLine;
+       $scope.datax = {"id" : "x"};
+   };
+
+   /**
+    * ショーチャート
+    * @author thuan
+    */
+   $scope.showChartPie = function(objectList, type){
+       $scope.listData = [];
+       var list = objectList;
+       $scope.colors = "#03A9F4,#ef5530,#25C158,#FFEB3B,#FF9800,#7B1FA2,#546E7A,#00897B,#9E9E9E,#009688";
+       var length = list.length;
+       var item = null;
+       var str = "{\"x\":\" " + 'AAAAAAAAAA' + '",';
+       var dataColumnStr = "[";
+       for(var i = 0; i < length; i++){
+           var value = list[i].listObject[0].listAnalytics[type].listValue[data.index];
+           if(i === length -1){
+               str += "\"num"+(i+1)+"\":\" " + value  +  '"';
+               dataColumnStr += "{\"id\":\"num"+(i+1)+"\",";
+               dataColumnStr += "\"type\":\"pie\",\"name\":\" "+ list[i].objectName + "\",";
+               dataColumnStr += "\"color\":\" "+ ChartUtil.getChartColor(i) + "\"}";
+           }else{
+               str += "\"num"+(i+1)+"\":\" " + value  +  '",';
+               dataColumnStr += "{\"id\":\"num"+(i+1)+"\",";
+               dataColumnStr += "\"type\":\"pie\",\"name\":\" "+ list[i].objectName + "\",";
+               dataColumnStr += "\"color\":\" "+ ChartUtil.getChartColor(i) + "\"},";
+           }
+       }
+       str += ' \} ';
+       str = str.replace(/ /g,'');
+       dataColumnStr += ']';
+       item = JSON.parse(str);
+       $scope.listData.splice($scope.listData.length, 0, item);
+       $scope.datacolumns = JSON.parse(dataColumnStr);
+       $scope.datax = {"id" : "x"};
+   };
+
+   if($scope.model.type == 'LINE'){
+       $scope.model.viewLine = 0;
+       $scope.loadChartData($scope.model.objectList,$scope.model.listHeader, $scope.model.numberLine, $scope.model.viewLine);
+   }else if($scope.model.type  == 'BAR'){
+       $scope.model.viewLine = 0;
+       $scope.showChartBar($scope.model.object, 0);
+   }else if($scope.model.type  == 'PIE'){
+       $scope.model.viewLine = 0;
+       $scope.showChartPie($scope.model.objectList, 0);
+   }else if($scope.model.type  == 'COMBINATION'){
+       $scope.model.viewLine = 6;
+       $scope.showChartCombination('sum');
+   }
+
+
+    $scope.close = function(){
+        $uibModalInstance.dismiss();
+    };
+
+    $scope.changeChartData = function(value){
+        $scope.model.viewLine = value;
+        if($scope.model.viewLine == 4){
+            $scope.model.axisLabel = Messages.getMessage('common.chart.label.046');
+        }else {
+            $scope.model.axisLabel = Messages.getMessage('common.chart.label.045');;
+        }
+        if($scope.model.type == 'LINE'){
+            $scope.loadChartData($scope.model.objectList,$scope.model.listHeader, $scope.model.numberLine, value);
+        }else if($scope.model.type == 'BAR'){
+            $scope.showChartBar($scope.model.object, value);
+        }else if($scope.model.type == 'PIE'){
+            $scope.showChartPie($scope.model.objectList, value);
+        }
+    };
+}]);

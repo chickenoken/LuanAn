@@ -1,0 +1,61 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision:  $  $Date:  $
+ * @author : huy-du
+ */
+'use strict';
+/**
+ * Table :
+ */
+exexSMSApp.service('SalesReportListService', ['$q', 'ServerService',function ($q, ServerService) {
+    var _self = this;
+
+    /**初期*/
+    _self.initData = function(param) {
+        var deferred = $q.defer();
+        ServerService
+            .doPost('SalesReportList/getInit', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    /**検索。*/
+    _self.search = function(param) {
+        var deferred = $q.defer();
+        ServerService
+            .doPost('SalesReportList/searchSalesReport', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+        return deferred.promise;
+    };
+
+    /**データをチェック。*/
+    _self.checkData = function(param) {
+        var deferred = $q.defer();
+        ServerService
+            .doPost('SalesReportList/checkData', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+        return deferred.promise;
+    };
+}]);

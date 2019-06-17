@@ -1,0 +1,92 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision:  $  $Date:  $
+ */
+
+'use strict';
+
+exexSMSApp.factory('SfaSubProjectExportModel', [ 'BaseModel', function(BaseModel) {
+
+    var model = BaseModel.getInstance();
+
+    model.form = {
+            dialog : {
+                destinationType  : '',
+                productName : '',
+                clientPostNo : '',
+                clientAddress1: '',
+                clientAddress2 : '',
+                clientTel : '',
+                clientName : '',
+                shipingStoreCode1 : '',
+                shipingStoreCode2 : '',
+                clientCode : '',
+                remark : ''
+            }
+      };
+
+    model.hidden = {
+        selectCode : '',
+        isDownload : false
+    };
+
+    return model;
+}]);
+
+exexSMSApp.controller('sfaSubProjectExportCtrl',
+                ['$scope', '$uibModalInstance', 'SfaSubProjectExportModel', 'data', '$cookies', 'DialogsService', 'Messages', 'ServerService',
+         function($scope, $uibModalInstance, SfaSubProjectExportModel, data, $cookies, DialogsService, Messages, ServerService){
+
+    $scope.model = SfaSubProjectExportModel;
+    $scope.model.hidden.selectCode = data.outputNo;
+
+    $scope.initData = function(){
+        var cookies = angular.fromJson($cookies.get("SfaSubProjectExport"));
+        if(!StringUtils.isEmpty(cookies)){
+            $scope.model.form.dialog = cookies;
+        }
+    };
+
+    $scope.close = function() {
+        $uibModalInstance.dismiss('close');
+    };
+
+    $scope.yes = function(param, formInvalid){
+        $scope.model.hidden.isDownload = true;
+        if(formInvalid){
+            return;
+        }
+        var cookies = angular.toJson(param);
+        $cookies.put("SfaSubProjectExport", cookies);
+        param.selectCode = $scope.model.hidden.selectCode;
+        $uibModalInstance.close(param);
+    };
+
+    $scope.checkPostNumber = function(postNo){
+        if(StringUtils.isEmpty(postNo)){
+            DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00207'));
+            return true;
+        }
+        ServerService.doPost('SfaSubProjectExport/checkPostNumber', postNo).then(
+            function(okResult) {
+                var warning = okResult.data.warning;
+                var error = okResult.data.failed;
+                if(!StringUtils.isEmpty(warning)){
+                    DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                    return;
+                }else if(!StringUtils.isEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                }else{
+                    $scope.model.form.dialog.clientAddress1 = okResult.data.address;
+                }
+            });
+    }
+
+    $scope.initData();
+
+}]);
+

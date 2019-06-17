@@ -1,0 +1,326 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision: $  $Date: $
+ * @author tan-duc
+ */
+
+exexSMSApp.factory('TrackingOwnerListModel', [ 'BaseModel', function(BaseModel) {
+
+    var model = BaseModel.getInstance();
+    model.form = {
+        search : {
+            custName : '',
+            clientType : '',
+            siteName : '',
+            deptName : '',
+            ownerName : '',
+            userCd : '',
+            mailSubject : '',
+            actionCount : '1',
+            lastAccessDatetimeFrom : '',
+            lastAccessDatetimeTo : ''
+        },
+        paginationInfo : {
+            page: 0,
+            pageSize: 20,
+            totalPage: 0,
+            totalRecord: 0,
+            from: 0,
+            to: 0
+        },
+        listUserName : [],
+        listS020015 : [],
+        listSearch: []
+    };
+    model.hidden = {
+        screenMode : '',
+        isDisabled : true
+    };
+    return model;
+} ]);
+
+exexSMSApp.controller('trackingOwnerListCtrl',[
+    '$scope', 'RouteService', 'DialogsService', 'TrackingOwnerListModel', 'HeaderModel', 'Messages', 'ServerService',
+        function($scope, RouteService, DialogsService, TrackingOwnerListModel, HeaderModel, Messages, ServerService) {
+
+    $scope.model = TrackingOwnerListModel;
+    $scope.modelHeader = HeaderModel;
+    $scope.openedDetail = [];
+
+    $scope.init = function(){
+        ServerService.doPost('TrackingOwnerList/getInit', {}).then(
+            function(okResult) {
+                if(!StringUtils.isEmpty(okResult.data.failed)){
+                    DialogsService.showError(Messages.getMessage('system.error'), okResult.data.failed);
+                    return;
+                }else if(!StringUtils.isEmpty(okResult.data.warning)){
+                    DialogsService.showWarning(Messages.getMessage('check.error'), okResult.data.warning);
+                    return;
+                }
+
+                $scope.model.form.listS020015 = okResult.data.listS020015;
+                $scope.model.form.listUserName = okResult.data.listUserName;
+
+                var sessionSearch = angular.fromJson(sessionStorage.getItem("trackingOwnerListSession"));
+                if(!StringUtils.isEmpty(sessionSearch)){
+                    $scope.model.form.search = angular.copy(sessionSearch);
+                }
+                $scope.search($scope.model.form.search, false);
+            }
+        );
+    };
+
+    $scope.search = function(params, isSearch){
+        if (isSearch) {
+            params.page = 1;
+        }
+        params.pageSize = $scope.model.form.paginationInfo.pageSize;
+        params.lastAccessDatetimeFrom = !StringUtils.isEmpty(params.lastAccessDatetimeFrom) ? new Date(params.lastAccessDatetimeFrom) : null;
+        params.lastAccessDatetimeTo =  !StringUtils.isEmpty(params.lastAccessDatetimeTo) ? new Date(params.lastAccessDatetimeTo) : null;
+        sessionStorage.setItem("trackingOwnerListSession", JSON.stringify(params));
+        ServerService.doPost('TrackingOwnerList/search', params).then(
+            function(okResult) {
+                if(!StringUtils.isEmpty(okResult.data.failed)){
+                    DialogsService.showError(Messages.getMessage('system.error'), okResult.data.failed);
+                    return;
+                }else if(!StringUtils.isEmpty(okResult.data.warning)){
+                    DialogsService.showWarning(Messages.getMessage('check.error'), okResult.data.warning);
+                    return;
+                }
+                $scope.model.form.listSearch = okResult.data.listSearch;
+                $scope.model.form.listS020015 = okResult.data.listS020015;
+                $scope.model.form.listUserName = okResult.data.listUserName;
+                $scope.model.form.paginationInfo = okResult.data.paginationInfo;
+
+                // set ColResizable for column of table
+                setTimeout(function(){
+                    $scope.setColResizable();
+                });
+            }
+        );
+    };
+
+    $scope.doSearch = function (page) {
+        var params = angular.copy($scope.model.form.search);
+        params.page = page;
+        $scope.search(params, false);
+    }
+
+    $scope.init();
+
+    $scope.searchReportList = function(row){
+        var params = {
+            custCd : row.custCd,
+            ownerCd : row.ownerCd
+        };
+        $scope.model.form.listReport = [];
+        ServerService.doPost('OwnerCardList/searchReport', params).then(
+            function(okResult) {
+                if(!StringUtils.isEmpty(okResult.data.failed)){
+                    DialogsService.showError(Messages.getMessage('system.error'), okResult.data.failed);
+                    return;
+                }else if(!StringUtils.isEmpty(okResult.data.warning)){
+                    DialogsService.showWarning(Messages.getMessage('check.error'), okResult.data.warning);
+                    return;
+                }
+                $scope.model.form.listReport = okResult.data.listReport;
+            }
+        );
+    };
+
+    $scope.gotoAccess = function(param){
+        var params = {
+            ownerName : param.ownerName,
+            custName : param.custName,
+            clientType : param.clientType
+        };
+        sessionStorage.setItem("trackingAccessListSession", JSON.stringify(params));
+        RouteService.gotoUrl('TrackingAccessList');
+    };
+
+    $scope.checkNum = function(){
+        if($scope.model.form.search.actionCount == undefined ||
+                (!StringUtils.isEmpty($scope.model.form.search.actionCount)
+                && !$.isNumeric($scope.model.form.search.actionCount))){
+            $scope.model.form.search.actionCount = '';
+            $('input[name=actionCount]').val('');
+        }
+    };
+
+    $scope.redirect = function(value, param) {
+        switch (value) {
+            case 'SalesReportControl':
+                var params = {
+                    custCd : param.custCd,
+                    custName : param.custName,
+                    ownerCd: param.ownerCd,
+                    ownerName: param.ownerName,
+                    salesReportNo : "",
+                    fromOwnerCardList : true,
+                    isDisabled : false,
+                    screenMode: 'INSERT',
+                };
+                sessionStorage.removeItem("salesReport");
+                sessionStorage.removeItem("salesReportUrl");
+                sessionStorage.setItem("salesReportUrl", JSON.stringify(params));
+                var options = {size: 'lg'};
+                DialogsService.showDialog('SalesReportDialog','SalesReportControlCtrl', null,options).result.then(
+                function(isClosed){
+                    if(!isClosed){
+                        $scope.searchReportList(params);
+                    }
+                });
+            break;
+            case 'SalesReportList':
+                var salesReportParamSearch = {
+                    custName : param.custName,
+                    custOwnerName : param.ownerName
+                };
+                sessionStorage.setItem("salesReportParamSearch", JSON.stringify(salesReportParamSearch));
+                sessionStorage.removeItem("projectCustItemInfo");
+                sessionStorage.removeItem("salesReportSearch");
+                window.open("SalesReportList","_blank");
+                //RouteService.gotoUrl("SalesReportList");
+            break;
+            case 'TodoControl':
+                var params = {
+                    custCd : param.custCd,
+                    custName : param.custName,
+                    ownerCd : param.ownerCd,
+                    ownerName : param.ownerName,
+                    position : param.position,
+                    siteCd : param.siteCd,
+                    siteName : param.siteName,
+                    postNo : param.postNo,
+                    address1 : param.address1,
+                    address2 : param.address2,
+                    mailAddress : param.mailAddress,
+                    deptCd : param.deptCd,
+                    deptName : param.deptName,
+                    telephoneNo : param.telephoneNo,
+                    fromScreen : 'TrackingOwnerList',
+                    typeParam : 1
+                };
+                sessionStorage.removeItem("todo");
+                sessionStorage.setItem("todo", JSON.stringify(params));
+                RouteService.gotoUrl("TodoControl");
+            break;
+            case 'TodoList':
+                var params = {
+                    ownerName: param.ownerName,
+                    custName: param.custName
+                };
+                sessionStorage.setItem("todoListParamSearch", JSON.stringify(params));
+                window.open("TodoList","_blank");
+                //RouteService.gotoUrl("TodoList");
+            break;
+        }
+    };
+
+    $scope.insertTodo = function(params){
+        ServerService.doPost('TrackingOwnerList/search', params).then(
+            function(okResult) {
+                if(!StringUtils.isEmpty(okResult.data.failed)){
+                    DialogsService.showError(Messages.getMessage('system.error'), okResult.data.failed);
+                    return;
+                }else if(!StringUtils.isEmpty(okResult.data.warning)){
+                    DialogsService.showWarning(Messages.getMessage('check.error'), okResult.data.warning);
+                    return;
+                }
+                var listTmp = angular.copy(okResult.data.listSearch);
+                var listData = [];
+                angular.forEach(listTmp , function(item,i) {
+                    var itemTmp = {
+                        status : '1',
+                        custCd : item.custCd,
+                        custName : item.custName,
+                        ownerCd : item.ownerCd,
+                        ownerName : item.ownerName,
+                        position : item.position,
+                        siteCd : item.siteCd,
+                        siteName : item.siteName,
+                        postNo : item.postNo,
+                        address1 : item.address1,
+                        address2 : item.address2,
+                        mailAddress : item.mailAddress,
+                        deptCd : item.deptCd,
+                        deptName : item.deptName,
+                        telephoneNo : item.telephoneNo
+                    };
+                    listData.push(itemTmp);
+                })
+                var params = {
+                    listData : listData,
+                    fromScreen : 'TrackingOwnerList',
+                    typeParam : 2
+                }
+                sessionStorage.removeItem("todo");
+                sessionStorage.setItem("todo", JSON.stringify(params));
+                RouteService.gotoUrl("TodoControl");
+            }
+        );
+    };
+
+    $scope.goToSalesReportDetails = function(row, index){
+        var todoDetail = row.custName;
+        if(!StringUtils.isEmpty(row.siteName)){
+            todoDetail += " / " + row.siteName;
+        }
+        if(!StringUtils.isEmpty(row.deptName)){
+            todoDetail += " / " + row.deptName;
+        }
+        if(!StringUtils.isEmpty(row.position)){
+            todoDetail += " / " + row.position;
+        }
+        var salesReport = {
+            salesReportNo : row.salesReportNo,
+            isDisabled : false,
+            screenMode: 'UPDATE'
+        };
+        sessionStorage.setItem("salesReport", JSON.stringify(salesReport));
+        sessionStorage.removeItem("salesReportUrl");
+        var options = {size: 'lg'};
+        DialogsService.showDialog('SalesReportDialog','SalesReportControlCtrl', null,options).result.then(
+        function (isClosed) {
+            if(!isClosed){
+                $scope.searchReportList(row);
+            }
+        });
+    };
+
+    /**show/hide popover by index*/
+    $scope.show = function(index) {
+        var length = $scope.model.form.listSearch.length;
+        for(var i = 0; i < length; i++){
+            if(i == index){
+                $scope.model.form.listSearch[i].opened = true;
+            }else{
+                $scope.model.form.listSearch[i].opened = false;
+            }
+        }
+    };
+
+    // set colResizable
+    $scope.setColResizable = function(){
+        // remove JCLRgrips if having
+        $('.JCLRgrips').remove();
+
+        // parentId : table header id : tblTodoCustomerList
+        // childId : child table id : table accordion ( 'parent table id + Child + index' )
+        angular.element("table[id^='tableTrackingOwnerList']").colResizable({
+            liveDrag: true,
+            postbackSafe: true,
+            useLocalStorage: true,
+            onDrag: syncTableWidth,
+            parentId: 'tableTrackingOwnerList',
+            childId:'tableTrackingOwnerListChild'
+        });
+        // prevent resize column on child table
+        $('.panel-title .JCLRgrips .JCLRgrip .JColResizer').on('mousemove', function(event) {
+            return false;
+        });
+    }
+}]);

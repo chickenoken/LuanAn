@@ -1,0 +1,175 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision: 1.0 $  $Date:  $
+ * @author quang-tung
+ */
+
+exexSMSApp.factory('InventoryListModel', [ 'BaseModel', function(BaseModel) {
+
+    var model = BaseModel.getInstance();
+
+    model.form = {
+            search :{
+                inventoryStartTimeFrom : '',
+                inventoryStartTimeTo : '',
+                inventorySno : '',
+                controlCd : '',
+                inventoryEndTimeFrom : '',
+                inventoryEndTimeTo : '',
+                inventoryType : '',
+                progressStatus : '',
+                searchWarehouseNo : '',
+                searchWarehouseGroupCd : '',
+                searchWarehouseUserCd : '',
+                searchItemCategory1 : '',
+                searchItemCategory2 : '',
+                searchItemCategory3 : '',
+                searchItemName : '',
+                searchItemCd : ''
+            },
+            listI000001 : [],
+            listI000002 : [],
+            listCate01 : [],
+            listCate02 : [],
+            listCate03 : [],
+            listMstGroup : [],
+            listMstUser : []
+    };
+    return model;
+} ]);
+
+exexSMSApp.controller('inventoryListCtrl',
+        ['$scope', '$filter', '$timeout', 'InventoryListModel', 'DialogsService', 'RouteService', 'InventoryService', 'Messages',
+         function($scope, $filter, $timeout, InventoryListModel,  DialogsService, RouteService, InventoryService, Messages){
+
+    $scope.model = InventoryListModel;
+
+    /**初期*/
+    $scope.init = function(){
+        $scope.model.form.search.inventoryStartTimeFrom = $filter('date')(DateUtils.getPreviousMonth(), "yyyy/MM/dd");
+        $scope.model.form.search.inventoryStartTimeTo = $filter('date')(DateUtils.getCurrentDate(), "yyyy/MM/dd");
+        InventoryService.initData(null)
+        .then(
+            function(result) {
+                if(!ValidateUtil.isValidTextEmpty(result.data)){
+                    $scope.model.form.listI000001 = result.data.listI000001;
+                    $scope.model.form.listI000002 = result.data.listI000002;
+                    $scope.model.form.listCate01 = result.data.listCate01;
+                    $scope.model.form.listCate02 = result.data.listCate02;
+                    $scope.model.form.listCate03 = result.data.listCate03;
+                    $scope.model.form.listMstGroup = result.data.listMstGroup;
+                    $scope.model.form.listMstUser = result.data.listMstUser;
+                    $timeout(function() {
+                        $scope.search($scope.model.form.search);
+                    }, 100);
+                }
+            }
+        );
+    };
+
+    /**検索。*/
+    $scope.search = function(param) {
+        var params = {
+                inventoryStartTimeFrom :  !ValidateUtil.isValidTextEmpty(param.inventoryStartTimeFrom) ? new Date(param.inventoryStartTimeFrom) : "",
+                inventoryStartTimeTo :  !ValidateUtil.isValidTextEmpty(param.inventoryStartTimeTo) ? new Date(param.inventoryStartTimeTo) : "",
+                inventorySno : param.inventorySno,
+                controlCd : param.controlCd,
+                inventoryEndTimeFrom :  !ValidateUtil.isValidTextEmpty(param.inventoryEndTimeFrom) ? new Date(param.inventoryEndTimeFrom) : "",
+                inventoryEndTimeTo :  !ValidateUtil.isValidTextEmpty(param.inventoryEndTimeTo) ? new Date(param.inventoryEndTimeTo) : "",
+                inventoryType : param.inventoryType,
+                progressStatus : param.progressStatus,
+                searchWarehouseNo : param.searchWarehouseNo,
+                searchWarehouseGroupCd : param.searchWarehouseGroupCd,
+                searchWarehouseUserCd : param.searchWarehouseUserCd,
+                searchItemCategory1 : param.searchItemCategory1,
+                searchItemCategory2 : param.searchItemCategory2,
+                searchItemCategory3 : param.searchItemCategory3,
+                searchItemName : param.searchItemName,
+                searchItemCd : param.searchItemCd
+        };
+        InventoryService.search(params)
+        .then(
+            function(result) {
+                if(!ValidateUtil.isValidTextEmpty(result.data)){
+                    $scope.model.form.listInventory = result.data.listInventory;
+                    // Table Paging
+                    $scope.model.currentPage = 1; //current page
+                    $scope.model.entryLimit = 20; //max no of items to display in a page
+                    $scope.model.number = 20;
+                    var length = $scope.model.form.listInventory.length;
+                    $scope.model.filteredItems = length; //Initially for no filter
+                    $scope.model.totalItems = length;
+                    if(length > 0){
+                        $scope.model.beginValFilter = 1;
+                    }else{
+                        $scope.model.beginValFilter = 0;
+                    }
+                    $scope.setPage = function(pageNo) {
+                        $scope.currentPage = pageNo;
+                    };
+                    $scope.model.filter = function() {
+                        $timeout(function() {
+                            $scope.model.filteredItems = length;
+                            if(length > 0){
+                                $scope.model.beginValFilter = 1;
+                            }else{
+                                $scope.model.beginValFilter = 0;
+                            }
+                        }, 10);
+                    };
+                    // End Table Paging
+
+                    // add colresizable to table
+                    setTimeout(function(){
+                        $scope.setColResizable();
+                    });
+                }
+            }
+        );
+    };
+
+    $scope.init();
+
+    /***/
+    $scope.goToItemDetails = function(param){
+        var params = {inventorySno : param.inventorySno,
+                    recodeNo : param.recodeNo};
+        InventoryService.isExistData(params)
+        .then(
+            function(result) {
+                if(!ValidateUtil.isValidTextEmpty(result.data)){
+                    var warning = result.data.warning;
+                    if(!ValidateUtil.isValidTextEmpty(warning)){
+                        DialogsService.showWarning(Messages.getMessage('check.error'), warning).result.then(function(btn){
+                            $scope.search($scope.model.form.search);
+                        })
+                    }else{
+                        sessionStorage.setItem("inventory", JSON.stringify(params));
+                        RouteService.gotoUrl('InventoryExcution');
+                    }
+                }
+            }
+        );
+    };
+
+    $scope.createInventory = function() {
+        sessionStorage.removeItem('inventory');
+        RouteService.gotoUrl('InventoryPrepare');
+    };
+
+    // set colResizable
+    $scope.setColResizable = function(){
+        // remove JCLRgrips if having
+        $('.JCLRgrips').remove();
+
+        angular.element('#tableInventoryList').colResizable({
+            liveDrag: true,
+            postbackSafe: true,
+            useLocalStorage: true
+        });
+    }
+
+}]);

@@ -1,0 +1,12 @@
+package org.planning.net.dao;
+
+import org.seasar.doma.Dao;
+import org.seasar.doma.Select;
+
+@Dao
+@InjectConfig
+public interface testDoma {
+
+    @Select
+    String testDoma(String test);
+}

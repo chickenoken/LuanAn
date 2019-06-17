@@ -1,0 +1,78 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision:  $  $Date:  $
+ * @author quang-thien
+ */
+'use strict';
+exexSMSApp.factory('CrmListModel', [ 'BaseModel', function(BaseModel) {
+    var model = BaseModel.getInstance();
+    return model;
+} ]);
+
+exexSMSApp.controller('crmListCtrl', ['$cookies', '$scope', '$timeout', '$window','CrmListModel','BusinessCustomerListModel', 'IndividualCustomerListModel',
+                                      function($cookies, $scope, $timeout, $window, CrmListModel, BusinessCustomerListModel, IndividualCustomerListModel){
+
+    $scope.model = CrmListModel;
+    $scope.templates = [{
+                            name: 'BusinessCustomerList',
+                            url:getContextPath() + '/BusinessCustomerList'
+                        },
+                        {
+                            name: 'IndividualCustomerList',
+                            url:  getContextPath() + '/IndividualCustomerList'
+                        }];
+
+    $scope.setCookieCustType = function(custType) {
+        var expireDate = new Date();
+        expireDate.setDate(expireDate.getDate() + 30);
+        document.cookie = 'custType=' + custType + '; expires=' + expireDate;
+    }
+
+    $scope.model.custType = false;
+    $scope.template = $scope.templates[0];
+    var custType = false;
+    if(!StringUtils.isEmpty($cookies.get('custType'))){
+        custType = $cookies.get('custType') === 'false' ? false : true;
+    }
+    $scope.model.custType = custType;
+    $scope.setCookieCustType($scope.model.custType);
+
+    if(!custType){
+        $scope.template = $scope.templates[0];
+    }else{
+        $scope.template = $scope.templates[1];
+    }
+
+    /**
+    * 顧客タイプを変更
+    */
+    $scope.changeCustomerType = function(){
+        BusinessCustomerListModel.hidden.tablePlus = 0;
+        IndividualCustomerListModel.hidden.tablePlus = 0;
+        var custType = $scope.model.custType;
+        $scope.setCookieCustType(custType);
+        if(!custType){
+            $scope.template = $scope.templates[0];
+        }else{
+            $scope.template = $scope.templates[1];
+        }
+        $timeout(function() {
+            $scope.autoCollapse();
+        },100);
+    };
+
+    $scope.autoCollapse = function (){
+        var bodySize =  $window.innerWidth;
+        if (bodySize<992){
+            angular.element(document.querySelectorAll('#collapse')).removeClass("in");
+            angular.element(document.querySelectorAll('#collapseIcon')).addClass("collapsed");
+        }else{
+            angular.element(document.querySelectorAll('#collapse')).addClass("in");
+            angular.element(document.querySelectorAll('#collapseIcon')).removeClass("collapsed");
+        }
+    };
+}]);
+

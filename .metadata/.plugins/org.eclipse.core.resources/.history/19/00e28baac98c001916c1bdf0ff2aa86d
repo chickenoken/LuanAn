@@ -1,0 +1,83 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision: 1.0 $ $Date: 2018/05/15 $
+ * @author Minh Thuan
+ */
+
+
+'use strict';
+
+exexSMSApp.factory('ExportDataModel', [ 'BaseModel', function(BaseModel) {
+    var model = BaseModel.getInstance();
+    model.form = {
+        listCompany: [],
+        listInvoice: []
+    };
+    return model;
+}]);
+
+exexSMSApp.controller('exportDataCtrl', ['$rootScope', '$scope', 'DialogsService', 'RouteService', 'ExportDataModel', 'Messages', 'ServerService', 'HeaderModel',
+    function ($rootScope, $scope, DialogsService, RouteService, ExportDataModel, Messages, ServerService, HeaderModel) {
+
+        $scope.model = ExportDataModel;
+        $scope.modelHeader = HeaderModel;
+
+        $scope.getInit = function(){
+            $scope.model.form.listCompany = [];
+            $scope.model.form.listInvoice = [];
+            if(($scope.$parent.model.hidden.exportName == 'EXEX01' && $scope.modelHeader.ctmTempl.check01L020001.ckFlag) ||
+               ($scope.$parent.model.hidden.exportName == 'EXEX02' && $scope.modelHeader.ctmTempl.check02L020001.ckFlag) ||
+               ($scope.$parent.model.hidden.exportName == 'EXEX03' && $scope.modelHeader.ctmTempl.check03L020001.ckFlag) ||
+               ($scope.$parent.model.hidden.exportName == 'SALRPTLIST' && $scope.modelHeader.ctmTempl.check04L020001.ckFlag)||
+               ($scope.$parent.model.hidden.exportName == 'EXEX06' && $scope.modelHeader.ctmTempl.check05L020001.ckFlag) ||
+               ($scope.$parent.model.hidden.exportName == 'EXEX07' && $scope.modelHeader.ctmTempl.check06L020001.ckFlag) ||
+               ($scope.$parent.model.hidden.exportName == 'CUSTOMER' && $scope.modelHeader.ctmTempl.check07L020001.ckFlag) ||
+               ($scope.$parent.model.hidden.exportName == 'STOCK_TRANSFER' && $scope.modelHeader.ctmTempl.check08L020001.ckFlag) ||
+               ($scope.$parent.model.hidden.exportName == 'PROJECT' && $scope.modelHeader.ctmTempl.check09L020001.ckFlag)){
+                $scope.model.form.listInvoice = $scope.$parent.model.form.listInvoice;
+            }
+            switch($scope.$parent.model.hidden.exportName){
+                case 'CUSTOMER':
+                    $scope.model.form.listCompany = $scope.$parent.model.listL010016;
+                    break;
+                case 'EXEX02'://RECEIVE
+                    break;
+                case 'EXEX03'://SALES
+                    break;
+                case 'STOCK_TRANSFER':
+                    break;
+                case 'RECEIVE_RESERVATION':
+                    $scope.model.form.listCompany = $scope.$parent.model.form.listExport;
+                    break;
+                case 'PROJECT':
+                    $scope.model.form.listCompany = $scope.$parent.model.form.listL030001;
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        $scope.exportData = function(param){
+            if($scope.$parent.model.hidden.isApprove){
+                $rootScope.$broadcast("PtlList#exportReport", param);
+            }else{
+                $rootScope.$broadcast($scope.$parent.model.hidden.exportName + "#exportReport", param);
+            }
+        }
+
+        $scope.downloadReport = function(type){
+
+            if($scope.$parent.model.hidden.isApprove){
+                $rootScope.$broadcast("PtlList#downloadReport", type);
+            }else{
+                $rootScope.$broadcast($scope.$parent.model.hidden.exportName + "#downloadReport", type);
+            }
+        }
+
+        $scope.getInit();
+
+    }
+]);

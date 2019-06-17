@@ -1,0 +1,158 @@
+@CHARSET "UTF-8";
+#pagination-top ul.pagination-small {
+    margin-bottom: 0px;
+}
+
+/* Table*/
+table.table {
+    margin-bottom: 0px;
+    font-size: 14px;
+}
+
+#table-search thead tr th {
+    background-color: #3598DC;
+    color: #FFF;
+    vertical-align: middle;
+    border-bottom: 1px solid #DDD;
+}
+
+a:-webkit-any-link {
+    text-decoration: blink !important;
+}
+
+th a:-webkit-any-link {
+    color: white;
+}
+
+th a[href] {
+    color: white;
+}
+
+th a i {
+    float: right;
+}
+
+.table .btn {
+    margin-right: 0px;
+}
+
+.even {
+    background: #f9f9f9 !important;
+}
+
+.odd {
+    background: #FFFFFF !important;
+}
+
+.evens {
+    background: rgb(187, 218, 216) !important;
+}
+
+.odds {
+    background: #d5e4ef !important;
+}
+
+.label-inner-table {
+    margin-bottom: 0px;
+    width: 70px;
+    font-weight: bold;
+}
+
+label.label-inner-table::after {
+  content: ":";
+}
+
+.panel-group {
+    margin-bottom: 0px;
+}
+
+.panel-group div div.panel-heading {
+    padding: 0px 0px;
+}
+
+.panel {
+    box-shadow: none;
+}
+
+.panel-group .panel-heading+.panel-collapse>.panel-body {
+    padding: 0;
+    border-top: 0px solid;
+    border-bottom: 1px solid #DDDDDD;
+    border-left: 1px solid #DDDDDD;
+    border-right: 1px solid #DDDDDD;
+}
+
+.panel-group .panel+.panel {
+    margin-top: -1px;
+}
+
+.div-in-table{
+  display : flex;
+}
+.row-break {
+  word-break: break-all;
+  width: calc(100% - 100px);
+  width: -webkit-calc(100% - 100px);
+}
+
+/*** LABEL ***/
+.exex-text-align {
+  text-align: right;
+}
+/*** END LABEL ***/
+
+@media only screen and (max-width: 468px) {
+    .table .btn {
+        margin-right: 0px;
+        margin-top: 5px;
+    }
+}
+
+@media only screen and (max-width: 993px) {
+  .col-md-1, .col-md-10, .col-md-11, .col-md-12, .col-md-2, .col-md-3,
+  .col-md-4, .col-md-5, .col-md-6, .col-md-7, .col-md-8, .col-md-9 {
+    padding-right: 0px;
+    padding-left: 0px;
+  }
+
+  .exex-text-align {
+    text-align: start !important;
+  }
+
+  #daterange.input-group {
+    padding-left: 0px !important;
+    padding-right: 0px !important;
+  }
+}
+@media only screen and (max-width: 1024px) {
+  .exex-form .form-group, .exex-form-mst .form-group {
+    margin-bottom: 0px;
+  }
+  .form-horizontal .control-label {
+    padding-top: 7px;
+    margin-bottom: 0;
+    text-align: right;
+  }
+  #collapseLabel a:after {
+    font-family: 'Glyphicons Halflings';
+    content: "\e113";
+    color: #398FD3;
+  }
+  #collapseLabel a.collapsed:after {
+    content: "\e114";
+  }
+  .buttons {
+    margin-left: -7px;
+    padding: 0px 25px 5px 25px;
+  }
+}
+
+#ptlApproveListForm .slimScrollDiv{
+  height: auto !important;
+  max-height: 185px !important;
+}
+
+.saleReseive-table.scrollbar-custom-1 {
+    max-height: 185px !important;
+    height: auto !important;
+}

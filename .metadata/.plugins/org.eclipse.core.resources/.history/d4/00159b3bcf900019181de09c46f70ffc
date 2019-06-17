@@ -1,0 +1,28 @@
+
+var app = angular.module("myApp", []);
+
+app.factory('quanLyNhanVienModel',[ function(){
+    var model = [];
+
+    model.form = {
+       login : {
+           taiKhoan : '',
+           matKhau : ''
+       }
+    }
+
+    model.hidden = {
+        isShow : false
+    }
+
+    return model;
+}]);
+
+app.controller("quanLyNhanVienCtrl",  ['$scope', '$http', '$filter','$rootScope','quanLyNhanVienModel',
+    function($scope, $http, $filter, $rootScope, quanLyNhanVienModel){
+
+    $scope.model = quanLyNhanVienModel;
+
+
+
+}]);

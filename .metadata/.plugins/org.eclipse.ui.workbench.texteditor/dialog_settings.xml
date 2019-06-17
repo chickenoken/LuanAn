@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<section name="Workbench">
+	<section name="org.eclipse.ui.texteditor.FindReplaceDialog">
+		<item value="false" key="isRegEx"/>
+		<item value="org.apache.poi" key="selection"/>
+		<item value="false" key="casesensitive"/>
+		<item value="false" key="incremental"/>
+		<item value="true" key="wrap"/>
+		<item value="false" key="wholeword"/>
+		<list key="findhistory">
+			<item value="page-breadcrumbs"/>
+			<item value="org.apache.poi"/>
+			<item value="mysql-connector-java"/>
+			<item value="sqljdbc4"/>
+			<item value="&lt;!-- https://mvnrepository.com/artifact/com.microsoft.sqlserver/sqljdbc4 --&gt;"/>
+			<item value="taglibs"/>
+			<item value="jstl"/>
+			<item value="tomcat-embed-jasper"/>
+			<item value="addResourceHandlers"/>
+			<item value="slf4j"/>
+			<item value="slf4j-api"/>
+			<item value="dispatcher"/>
+			<item value="gson"/>
+			<item value="LocalTransactionDataSource"/>
+			<item value="getJdbcLogger"/>
+		</list>
+		<list key="replacehistory">
+		</list>
+	</section>
+	<section name="org.eclipse.ui.texteditor.FindReplaceDialog_dialogBounds">
+		<item value="284" key="DIALOG_WIDTH"/>
+		<item value="1|Segoe UI|9.0|0|WINDOWS|1|-12|0|0|0|400|0|0|0|1|0|0|0|0|Segoe UI" key="DIALOG_FONT_NAME"/>
+		<item value="337" key="DIALOG_HEIGHT"/>
+		<item value="245" key="DIALOG_X_ORIGIN"/>
+		<item value="399" key="DIALOG_Y_ORIGIN"/>
+	</section>
+</section>

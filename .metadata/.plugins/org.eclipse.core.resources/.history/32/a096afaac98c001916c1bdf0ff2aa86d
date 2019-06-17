@@ -1,0 +1,70 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision: 1.0 $  $Date: 2014/06/18 $
+ * @author chi-cuong
+ */
+
+exexSMSApp.factory('SalDemandOutputItemDialogModel', [ 'BaseModel', '$rootScope', function(BaseModel, $rootScope) {
+
+    var model = BaseModel.getInstance();
+    model.form = {
+        itemEdit:{
+            billSno : '',
+            billaddressName :'',
+        },
+         listSearchDialog : []
+    };
+
+    return model;
+
+}]);
+exexSMSApp.controller('salDemandOutputItemDialogCtrl',
+        ['$scope', 'ServerService', '$uibModalInstance' , 'SalDemandOutputItemDialogModel', 'DialogsService', 'data',
+         function($scope, ServerService, $uibModalInstance , SalDemandOutputItemDialogModel, DialogsService, data){
+
+    $scope.model = SalDemandOutputItemDialogModel;
+
+    $scope.getInit = function(){
+        $scope.model.form.itemEdit = data;
+        ServerService.doPost('SalDemandOutputItemDialog/getInit', data.billSno).then(
+            function(okResult) {
+                var error =  okResult.data.failed;
+                var warning =  okResult.data.warning;
+                if(!StringUtils.isEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                }else{
+                    $scope.model.form.listResult = okResult.data.listResult;
+                }
+            }
+        );
+    };
+
+    $scope.getInit();
+
+    $scope.download = function(){
+        var options = {size: '500'};
+        DialogsService.showDialog('DemandOutputExportDialog','DemandOutputExportDialogCtrl', {},options).result.then(
+            function(param){
+                var nameExport = ($scope.model.form.itemEdit.billType == '1') ? "請求一覧(締め)" : "請求書(都度)";
+                var fileName = nameExport + '_' + DateUtils.getYYYYMMDD(new Date());
+                var params = {
+                    issueDate: param.issueDate,
+                    issueSalesOffice: param.issueSalesOffice,
+                    outputDivision: param.outputDivision,
+                    remark: param.remark,
+                    billType :  $scope.model.form.itemEdit.billType,
+                    listBillSno : [$scope.model.form.itemEdit.billSno]
+                }
+                ServerService.doDownload('/SalDemandOutput/downloadSalOutputExcel', params, "application/vnd.ms-excel", fileName + ".xlsx");
+        });
+    };
+
+    $scope.close = function() {
+        $uibModalInstance.dismiss('close');
+    };
+
+}]);

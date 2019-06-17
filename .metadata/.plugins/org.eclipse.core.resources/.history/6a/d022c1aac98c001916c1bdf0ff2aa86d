@@ -1,0 +1,280 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision: $  $Date: $
+ * @author tan-duc
+ */
+
+exexSMSApp.factory('TrackingAccessListModel', [ 'BaseModel', function(BaseModel) {
+
+    var model = BaseModel.getInstance();
+
+    model.form = {
+        search : {
+            fromDate : '',
+            toDate:'',
+            custName : '',
+            clientType : '',
+            ownerName : '',
+            userCd : '',
+            mailSubject : '',
+            pageTitle : '',
+            visitDuration : ''
+        },
+        listUserName : [],
+        listS020015 : [],
+        listSearch: []
+    };
+
+    model.hidden = {
+        screenMode : '',
+        checkAll : false,
+        checkAllCurrentPage : false,
+        checkIndex : [],
+        selectedTrackNo : []
+    };
+
+    return model;
+} ]);
+
+
+exexSMSApp.controller('trackingAccessListCtrl',
+        ['$scope', '$filter', 'RouteService', 'DialogsService', 'TrackingAccessListModel', 'HeaderModel', 'Messages', 'ServerService',
+        function($scope, $filter, RouteService, DialogsService, TrackingAccessListModel, HeaderModel, Messages, ServerService){
+
+    $scope.model = TrackingAccessListModel;
+    $scope.modelHeader = HeaderModel;
+
+    $scope.init = function(){
+        ServerService.doPost('TrackingAccessList/getInit', {}).then(
+            function(okResult) {
+                if(!StringUtils.isEmpty(okResult.data.failed)){
+                    DialogsService.showError(Messages.getMessage('system.error'), okResult.data.failed);
+                    return;
+                }else if(!StringUtils.isEmpty(okResult.data.warning)){
+                    DialogsService.showWarning(Messages.getMessage('check.error'), okResult.data.warning);
+                    return;
+                } else {
+                    // set selected=fasle for all checkbox
+                    $scope.model.hidden.checkAll = false;
+                    $scope.model.hidden.checkIndex = [];
+                    $scope.model.hidden.selectedTrackNo = [];
+                    $scope.model.form.listS020015 = okResult.data.listS020015;
+                    $scope.model.form.listUserName = okResult.data.listUserName;
+
+                    var sessionSearch = angular.fromJson(sessionStorage.getItem("trackingAccessListSession"));
+                    if(!StringUtils.isEmpty(sessionSearch)){
+                        $scope.model.currentPage = sessionSearch.currentPage;
+                        delete sessionSearch.currentPage;
+                        $scope.model.form.search = angular.copy(sessionSearch);
+                        $scope.model.form.search.fromDate = !StringUtils.isEmpty(sessionSearch.fromDate) ? $filter('date')(sessionSearch.fromDate, "yyyy/MM/dd") : null;
+                        $scope.model.form.search.toDate = !StringUtils.isEmpty(sessionSearch.toDate) ? $filter('date')(sessionSearch.toDate, "yyyy/MM/dd") : null;
+                    }
+                    $scope.search($scope.model.form.search, $scope.model.currentPage);
+                }
+            }
+        );
+
+        // add colresizable to table
+        setTimeout(function(){
+            $scope.setColResizable();
+        });
+    };
+    $scope.init();
+
+    $scope.search = function(params, page){
+
+        sessionStorage.setItem("trackingAccessListSession", JSON.stringify(params));
+        ServerService.doPost('TrackingAccessList/search', params).then(
+            function(okResult) {
+                if(!StringUtils.isEmpty(okResult.data.failed)){
+                    DialogsService.showError(Messages.getMessage('system.error'), okResult.data.failed);
+                    return;
+                }else if(!StringUtils.isEmpty(okResult.data.warning)){
+                    DialogsService.showWarning(Messages.getMessage('check.error'), okResult.data.warning);
+                    return;
+                }
+                $scope.model.form.listSearch = okResult.data.listSearch;
+                // set selected=fasle for all checkbox
+                $scope.model.hidden.checkAll = false;
+                $scope.model.hidden.checkIndex = [];
+                $scope.model.hidden.selectedTrackNo = [];
+                for(var i = 0; i < $scope.model.form.listSearch.length; i++){
+                    $scope.model.hidden.checkIndex.push(false);
+                    $scope.model.hidden.selectedTrackNo.push($scope.model.form.listSearch[i].trackingNo);
+                }
+
+                // Table Paging
+                $scope.model.currentPage = !StringUtils.isEmpty(page) ? page : 1; //current page
+                $scope.model.entryLimit = 20; //max no of items to display in a page
+                $scope.model.number = 20;
+                $scope.model.filteredItems = $scope.model.form.listSearch.length; //Initially for no filter
+                $scope.model.totalItems = $scope.model.form.listSearch.length;
+                // End Table Paging
+
+                // add colresizable to table
+                setTimeout(function(){
+                    $scope.setColResizable();
+                });
+            }
+        );
+    };
+
+    $scope.checkAll = function(){
+        $scope.model.hidden.selectedAll = $scope.model.hidden.checkAll;
+        var length = $scope.model.form.listSearch.length;
+        $scope.model.hidden.checkIndex = [];
+        for(var i = 0; i < length; i++){
+            $scope.model.hidden.checkIndex.push($scope.model.hidden.checkAll);
+        }
+    };
+
+    $scope.chooseLine = function(index, row){
+        if(!$scope.model.hidden.checkIndex[index]){
+            $scope.model.hidden.checkAll = false;
+            return;
+        }
+        var start = ($scope.model.currentPage - 1) * $scope.model.entryLimit;
+        var lengthCurrent = start + $scope.model.entryLimit;
+        for(var j = start; j < lengthCurrent; j++ ){
+            if(!$scope.model.hidden.checkIndex[j]){
+                $scope.model.hidden.checkAll = false;
+                break;
+            }
+            $scope.model.hidden.checkAll = true;
+        }
+        if($scope.model.hidden.checkAll) return;
+        var length = $scope.model.form.listSearch.length;
+        for(var i = 0; i < length; i++){
+            if(!$scope.model.hidden.checkIndex[i]){
+                $scope.model.hidden.checkAll = false;
+                break;
+            }
+            $scope.model.hidden.checkAll = true;
+        }
+    }
+
+    $scope.$watch('model.currentPage', function(newVal, oldVal) {
+
+        if(!StringUtils.isEmpty(newVal)) {
+            var sessionSearch = SessionUtils.prepareSession(sessionStorage.getItem("trackingAccessListSession"));
+            sessionSearch.currentPage = newVal;
+            sessionStorage.setItem("trackingAccessListSession", JSON.stringify(sessionSearch));
+        }
+
+        var start = ($scope.model.currentPage - 1) * $scope.model.entryLimit;
+        var lengthCurrent = start + $scope.model.entryLimit;
+        for(var j = start; j < lengthCurrent; j++ ){
+            if(!$scope.model.hidden.checkIndex[j] && (j < $scope.model.form.listSearch.length)){
+                $scope.model.hidden.checkAll = false;
+                break;
+            }
+            $scope.model.hidden.checkAll = true;
+        }
+    });
+
+    $scope.gotoInfo = function(params){
+        var projectCustItemInfo = {
+            custCd:params.custCd,
+            custName:params.custName,
+            custType: params.custType,
+            curPage : 1,
+            redirectUrl : 'TrackingAccessList',
+            countCustomer: null,
+            searchParam: null
+        };
+        sessionStorage.setItem("projectCustItemInfo", JSON.stringify(projectCustItemInfo));
+        RouteService.gotoUrl('CrmControl');
+    };
+
+    $scope.gotoMail = function(mailCd){
+        if(StringUtils.isEmpty(mailCd) || mailCd == null){
+            return;
+        }
+        var param = {'mailCd': mailCd};
+        ServerService.doPost('MailList/isExistData', param).then(
+            function(okResult) {
+                if(!StringUtils.isEmpty(okResult.data.failed)){
+                    DialogsService.showError(Messages.getMessage('system.error'), okResult.data.failed);
+                    return;
+                }else if(!StringUtils.isEmpty(okResult.data.warning)){
+                    var dlg = DialogsService.showWarning(Messages.getMessage('check.error'), okResult.data.warning);
+                    dlg.result.then(function() {
+                        $scope.search($scope.model.form.search);
+                    });
+                }else{
+                    var mailListDetail = {
+                        mailCd :  mailCd,
+                        screenMode : 'VIEW',
+                        isDisabled : true,
+                        redirectUrl : 'TrackingAccessList'
+                    };
+                    sessionStorage.removeItem("mailCreateDetail");
+                    sessionStorage.setItem("mailListDetail", JSON.stringify(mailListDetail));
+                    RouteService.gotoUrl('MailRegistration');
+                }
+            }
+        );
+    };
+
+    $scope.deleteSelected = function(){
+        var length = $scope.model.form.listSearch.length;
+        $scope.model.hidden.selectedTrackNo = [];
+        for(var i = 0; i < length; i++){
+            if($scope.model.hidden.checkIndex[i]){
+                $scope.model.hidden.selectedTrackNo.push($scope.model.form.listSearch[i].trackingNo);
+            }
+        }
+        if($scope.model.hidden.selectedTrackNo.length == 0){
+            DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00261'));
+            return;
+        }
+        var param = {'selectedTrackNo': $scope.model.hidden.selectedTrackNo};
+        var dlg = DialogsService.showConfirm(Messages.getMessage('title.confirm'),Messages.getMessage('S00005'));
+        dlg.result.then(function(btn){
+            ServerService.doPost('TrackingAccessList/deleteTracking', param)
+            .then(
+                function(okResult) {
+                    if(!StringUtils.isEmpty(okResult.data.failed)){
+                        DialogsService.showError(Messages.getMessage('system.error'), okResult.data.failed);
+                        return;
+                    }else if(!StringUtils.isEmpty(okResult.data.warning)){
+                        DialogsService.showWarning(Messages.getMessage('check.error'), okResult.data.warning)
+                        .result.then(function() {
+                            $scope.search($scope.model.form.search);
+                        });
+                    }else{
+                        DialogsService.showNotify(Messages.getMessage('title.info'), okResult.data.success)
+                        .result.then(function() {
+                            $scope.search($scope.model.form.search);
+                        });
+                    }
+                }
+            );
+        });
+    };
+
+    $scope.checkNum = function(){
+        if($scope.model.form.search.visitDuration == undefined ||
+                (!StringUtils.isEmpty($scope.model.form.search.visitDuration)
+                && !$.isNumeric($scope.model.form.search.visitDuration))){
+            $scope.model.form.search.visitDuration = '';
+            $('input[name=visitDuration]').val('');
+        }
+    };
+
+    // set colResizable
+    $scope.setColResizable = function(){
+        // remove JCLRgrips if having
+        $('.JCLRgrips').remove();
+
+        angular.element('#tableTrackingAccessList').colResizable({
+            liveDrag: true,
+            postbackSafe: true,
+            useLocalStorage: true
+        });
+    };
+
+}]);

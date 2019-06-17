@@ -1,0 +1,154 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision:  $  $Date:  $
+ * @author : huy-du
+ */
+'use strict';
+/**
+ * Table :
+ */
+exexSMSApp.service('MstWarehouseService', ['$q', 'ServerService',function ($q, serverService) {
+    var _self = this;
+
+
+    _self.init = function(param) {
+        var deferred = $q.defer();
+        serverService
+            .doPost('MstWarehouseList/getInit', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+
+    _self.search = function(param) {
+        var deferred = $q.defer();
+        serverService
+            .doPost('MstWarehouseList/search', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    _self.getWarehouse = function(param) {
+        var deferred = $q.defer();
+        serverService
+            .doPost('MstWarehouseControl/getWarehouseDetail', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    _self.checkData = function(param) {
+        var deferred = $q.defer();
+        serverService
+            .doPost('MstWarehouseList/checkData', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    _self.initData = function(param) {
+        var deferred = $q.defer();
+        serverService
+            .doPost('MstWarehouseControl/getInit', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    _self.insertData = function(param) {
+        var deferred = $q.defer();
+        serverService
+            .doPost('MstWarehouseControl/insert', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    /**更新*/
+    _self.updateData = function(param) {
+        var deferred = $q.defer();
+        serverService
+            .doPost('MstWarehouseControl/update', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    _self.deleteData = function(param) {
+        var deferred = $q.defer();
+        serverService
+            .doPost('MstWarehouseControl/delete', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+
+    _self.checkPostNumber = function(param) {
+        var deferred = $q.defer();
+        serverService
+            .doPost('MstWarehouseControl/checkPostNumber', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+}]);

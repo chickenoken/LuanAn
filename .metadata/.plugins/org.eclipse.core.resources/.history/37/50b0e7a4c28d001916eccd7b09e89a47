@@ -1,0 +1,417 @@
+/**
+ * @license Copyright (c) 2003-2017, CKSource - Frederico Knabben. All rights reserved.
+ * For licensing, see LICENSE.md or http://ckeditor.com/license
+ */
+@media (max-width: 900px) {
+  .global-is-mobile-hidden {
+    display: none !important;
+  }
+}
+article,
+aside,
+details,
+figcaption,
+figure,
+footer,
+header,
+hgroup,
+main,
+menu,
+nav,
+section {
+  display: block;
+}
+/* body,
+html {
+  margin: 0;
+  padding: 0;
+  font: 16px / 1.8 Arial, 'Helvetica Neue', Helvetica, sans-serif;
+  font-weight: 300;
+  color: #575757;
+} */
+
+body.document-editor {
+    /* width: 90%; */
+    min-height: 21cm;
+    padding: 1cm 1cm 1cm 1cm;
+    margin: 0.5cm auto;
+    border: 1px #D3D3D3 solid;
+    border-radius: 0px;
+    background: white;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+}
+
+body.document-editor, body.document-editor td, body.document-editor th {
+    font-size: 15px;
+}
+
+body.document-editor table>tbody>tr>td{
+    padding: 2px;
+    line-height: 1.42857143;
+    vertical-align: top;
+    border-top: 1px solid #777;
+}
+
+body.document-editor table>tbody>tr>td.td-sum{
+	border-top: none;
+	border-bottom:none;
+}
+
+body.document-editor h1 {
+    margin-bottom:1cm;
+}
+
+#dataList, #dataDetailList {
+	list-style-type: none;
+	margin: 0 !important;
+	padding: 0;
+}
+#dataList li , #dataDetailList li{
+	background: #FAFAFA;
+	margin-bottom: 1px;
+	height: 56px;
+	line-height: 56px;
+	cursor: pointer;
+	color: #777777
+}
+#dataList li:nth-child(2n), #dataDetailList li:nth-child(2n) {
+	background: #F3F3F3;
+}
+#dataList li:hover, #dataDetailList li:hover {
+	background: #FFFDE3;
+	border-left: 5px solid #DCDAC1;
+	margin-left: -5px;
+}
+.item {
+	padding: 0 10px;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	position: relative;
+}
+.item .u-photo {
+	display: inline-block;
+	vertical-align: middle;
+	margin-right: 10px;
+}
+
+.item .p-1{
+	max-height: 0px;
+    top: -12px;
+    position: absolute;
+    left: 35px;
+    color: darkcyan;
+}
+
+.item .p-2{
+	max-height: 0px;
+    top: 12px;
+    position: absolute;
+    left: 35px;
+    font-size: 13px;
+}
+
+.document-editor  .h-card{
+	background: #FFFDE3 !important;
+	padding: 2px 1px;
+	border: 1px dashed #ccc;
+	font-size: 13px;
+}
+
+.document-editor .h-card:focus{
+	background-color: yellow;
+	padding: 3px 6px;
+	border: 1px dashed #ccc;
+}
+
+.document-editor  {
+	border: 1px solid #FFFFFF;
+	padding: 0 20px;
+	background: #fff;
+	position: relative;
+}
+.document-editor  .h-card .p-result {
+	font-style: italic;
+}
+.document-editor  .h-card .p-result::before,
+.document-editor  .h-card .p-result::after {
+	font-style: normal;
+}
+.document-editor  .h-card .p-result::before {
+	font-size: 18px;
+    font-weight: 700;
+}
+
+.document-editor  .h-card .p-param::before {
+	font-size: 18px;
+    font-weight: 700;
+}
+.document-editor  .h-card .p-result::after {
+}
+.document-editor  h1 {
+	text-align: center;
+}
+.document-editor  hr {
+	border-style: dotted;
+	border-color: #DCDCDC;
+	border-width: 1px 0 0;
+}
+
+.document-editor div .row-detail{
+	border-top: 1px dotted #DDDDDD;
+	border-left: 1px dotted #DDDDDD;
+	border-right: 1px dotted #DDDDDD;
+}
+
+.document-editor p {
+    margin: 0px !important;;
+}
+
+#content.document-editor {
+    min-height: 21cm;
+    padding: 1cm 1cm 1cm 1cm;
+    margin: 0.5cm auto;
+    border: 1px #D3D3D3 solid;
+    border-radius: 0px;
+    background: white;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+}
+
+/*bootrap */
+
+.col-md-6 {
+   	width: 50%;
+}
+
+.col-md-12 {
+   	width: 100%;
+}
+
+.col-md-1, .col-md-10, .col-md-11, .col-md-12, .col-md-2, .col-md-3, .col-md-4, .col-md-5, .col-md-6, .col-md-7, .col-md-8, .col-md-9 {
+    float: left;
+}
+
+/**A3 page size*/
+.page-size-A3-portrait{
+	width: 297mm !important;
+  	height: 419mm !important;
+}
+
+.page-size-A3-landscape{
+	width: 420mm !important;
+  	height: 296mm !important;
+}
+
+/**A4 page size*/
+.page-size-A4-portrait{
+	width: 210mm !important;
+  	height: 296mm !important;
+
+}
+
+.page-size-A4-landscape{
+	width: 297mm !important;
+  	height: 209mm !important;
+}
+
+/**A5 page size*/
+.page-size-A5-portrait{
+	width: 148mm !important;
+  	height: 209mm !important;
+}
+
+.page-size-A5-landscape{
+	width: 210mm !important;
+  	height: 147mm !important;
+}
+.cke_dialog_ui_input_select{
+	display: table !important;
+}
+
+.cke_editable
+{
+	font-size: 13px;
+	line-height: 1.6;
+
+	/* Fix for missing scrollbars with RTL texts. (#10488) */
+	word-wrap: break-word;
+}
+
+blockquote
+{
+	font-style: italic;
+	font-family: Georgia, Times, "Times New Roman", serif;
+	padding: 2px 0;
+	border-style: solid;
+	border-color: #ccc;
+	border-width: 0;
+}
+
+.cke_contents_ltr blockquote
+{
+	padding-left: 20px;
+	padding-right: 8px;
+	border-left-width: 5px;
+}
+
+.cke_contents_rtl blockquote
+{
+	padding-left: 8px;
+	padding-right: 20px;
+	border-right-width: 5px;
+}
+
+a
+{
+	color: #0782C1;
+}
+
+ol,ul,dl
+{
+	/* IE7: reset rtl list margin. (#7334) */
+	*margin-right: 0px;
+	/* preserved spaces for list items with text direction other than the list. (#6249,#8049)*/
+	padding: 0 40px;
+}
+
+h1,h2,h3,h4,h5,h6
+{
+	font-weight: normal;
+	line-height: 1.2;
+}
+
+hr
+{
+	border: 0px;
+	border-top: 1px solid #ccc;
+}
+
+img.right
+{
+	border: 1px solid #ccc;
+	float: right;
+	margin-left: 15px;
+	padding: 5px;
+}
+
+img.left
+{
+	border: 1px solid #ccc;
+	float: left;
+	margin-right: 15px;
+	padding: 5px;
+}
+
+pre
+{
+	white-space: pre-wrap; /* CSS 2.1 */
+	word-wrap: break-word; /* IE7 */
+	-moz-tab-size: 4;
+	tab-size: 4;
+}
+
+.marker
+{
+	background-color: Yellow;
+}
+
+span[lang]
+{
+	font-style: italic;
+}
+
+figure
+{
+	text-align: center;
+	border: solid 1px #ccc;
+	border-radius: 2px;
+	background: rgba(0,0,0,0.05);
+	padding: 10px;
+	margin: 10px 20px;
+	display: inline-block;
+}
+
+figure > figcaption
+{
+	text-align: center;
+	display: block; /* For IE8 */
+}
+
+/* Widget Styles */
+.code-featured
+{
+	border: 5px solid red;
+}
+
+.math-featured
+{
+	padding: 20px;
+	box-shadow: 0 0 2px rgba(200, 0, 0, 1);
+	background-color: rgba(255, 0, 0, 0.05);
+	margin: 10px;
+}
+
+.image-clean
+{
+	border: 0;
+	background: none;
+	padding: 0;
+}
+
+.image-clean > figcaption
+{
+	font-size: .9em;
+	text-align: right;
+}
+
+.image-grayscale
+{
+	background-color: white;
+	color: #666;
+}
+
+.image-grayscale img, img.image-grayscale
+{
+	filter: grayscale(100%);
+}
+
+.embed-240p
+{
+	max-width: 426px;
+	max-height: 240px;
+	margin:0 auto;
+}
+
+.embed-360p
+{
+	max-width: 640px;
+	max-height: 360px;
+	margin:0 auto;
+}
+
+.embed-480p
+{
+	max-width: 854px;
+	max-height: 480px;
+	margin:0 auto;
+}
+
+.embed-720p
+{
+	max-width: 1280px;
+	max-height: 720px;
+	margin:0 auto;
+}
+
+.embed-1080p
+{
+	max-width: 1920px;
+	max-height: 1080px;
+	margin:0 auto;
+}
+
+.cust-type-view{
+    font-size: 17px;
+    border-bottom: 1px solid;
+    margin-left: 20px;
+}

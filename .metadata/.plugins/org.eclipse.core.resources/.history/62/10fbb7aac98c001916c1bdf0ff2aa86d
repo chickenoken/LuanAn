@@ -1,0 +1,165 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision:  $  $Date:  $
+ * @author quang-tung
+ */
+
+'use strict';
+
+exexSMSApp.factory('SearchWarehouseModel', [ 'BaseModel', function(BaseModel) {
+
+    var model = BaseModel.getInstance();
+
+    model.form = {
+            search : {
+                warehouseName : '',
+                address : '',
+                groupCd : '',
+                userCd : ''
+            },
+            listGroup:[],
+            listGrouo:[],
+            listWarehouse: [],
+            //TODO common pagination info
+            paginationInfo : {
+               page: 0,
+               pageSize: 5,
+               totalPage: 0,
+               totalRecord: 0,
+               from: 0,
+               to: 0
+            }
+    };
+
+    model.hidden = {};
+
+    return model;
+}]);
+exexSMSApp.service('SearchWarehouseService', ['$q', 'ServerService',function ($q, ServerService) {
+    var self = this;
+
+    self.getInit = function(param) {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('/SearchWarehouse/getInit', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    self.search = function(param) {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('/SearchWarehouse/search', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+}]);
+
+exexSMSApp.controller('searchWarehouseCtrl',
+        ['$scope', '$uibModalInstance', 'SearchWarehouseModel', 'SearchWarehouseService', 'DialogsService', 'Messages',
+         function($scope, $uibModalInstance, SearchWarehouseModel, SearchWarehouseService, DialogsService, Messages){
+
+    $scope.model = SearchWarehouseModel;
+
+    $scope.getInit = function(){
+        $scope.model.form.search.warehouseName = '';
+        $scope.model.form.search.address = '';
+        $scope.model.form.search.groupCd = '';
+        $scope.model.form.search.userCd = '';
+        var param = {};
+        SearchWarehouseService
+        .getInit(param)
+        .then(function(result) {
+                var error = result.failed;
+                if(!ValidateUtil.isValidTextEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                }
+                $scope.model.form.listGroup = result.data.listGroup;
+                $scope.model.form.listUser = result.data.listUser;
+            });
+    };
+
+    $scope.search = function(param){
+        $scope.doSearch(1,param);
+    };
+
+    $scope.doSearch = function(page,param){
+        var params = {
+             warehouseName : param.warehouseName,
+             address : param.address,
+             groupCd : param.groupCd,
+             userCd : param.userCd,
+             page : page,
+             pageSize : $scope.model.form.paginationInfo.pageSize
+         };
+        SearchWarehouseService
+        .search(params)
+        .then(function(result) {
+             var error = result.data.failed;
+             var warning = result.data.warning;
+             if(!ValidateUtil.isValidTextEmpty(error)){
+                 DialogsService.showError(Messages.getMessage('system.error'), error);
+                 return;
+             }
+             else if(!ValidateUtil.isValidTextEmpty(warning)){
+                 DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                 return;
+             }else{
+                 $scope.model.form.paginationInfo = result.data.paginationInfo;
+                 $scope.model.form.listWarehouse = result.data.listWarehouse;
+                 $scope.model.filteredItems = $scope.model.form.listWarehouse.length;
+                 $scope.model.totalItems = $scope.model.form.listWarehouse.length;
+             }
+         });
+    };
+
+    $scope.init = function(){
+        setTimeout(function() {
+            $scope.getInit();
+        }, 10);
+        var params = {
+                warehouseName : '',
+                address : '',
+                groupCd : '',
+                userCd : '',
+                page : 1,
+                pageSize :$scope.model.form.paginationInfo.pageSize
+        };
+        $scope.search(params);
+    };
+    $scope.init();
+
+    $scope.close = function() {
+        $uibModalInstance.dismiss('close');
+    };
+
+    $scope.getWarehouse = function(item) {
+      if(!item.activeFlag){
+          return;
+      }
+      sessionStorage.setItem('warehouseNo',JSON.stringify({warehouseNo : item.warehouseNo, warehouseName : item.warehouseName}));
+      $uibModalInstance.dismiss('close');
+    };
+
+}]);
+

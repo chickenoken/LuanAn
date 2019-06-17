@@ -1,0 +1,375 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ * @author SystemEXE Quang-Thien
+ * @version $Revision:  $  $Date:  $
+ */
+
+'use strict';
+
+var appConfig = {
+    DEBUG: true,
+    BASE_API: ''
+};
+
+var CONSTANT = {
+        DATA_SIZE : 5*1024*1024*1024,
+        FILE_SIZE : 5*1024*1024,
+        ICON_SIZE : 100*1024,
+        LOGO_SIZE : 1024*1024,
+        PAGE_SIZE : 20
+}
+
+var exexSMSApp = angular.module('exexSMSApp', [
+    'ngSanitize',
+    'ngAnimate',
+    'ngMessages',
+    'ngCookies',
+    'ui.router',
+    'ngStorage',
+    'pascalprecht.translate',
+    'ui.bootstrap',
+    'dialogs.main',
+    'ui.calendar',
+    'gridshore.c3js.chart',
+    'ui.sortable',
+    'ng-sortable',
+    'chart.js',
+    'ngFileSaver',
+    'ui.bootstrap.datetimepicker',
+    'ngJsTree',
+    'infinite-scroll',
+    'ckeditor'
+]);
+
+exexSMSApp.config(['dialogsProvider','$translateProvider','$animateProvider', '$compileProvider',
+                      function(dialogsProvider, $translateProvider, $animateProvider, $compileProvider){
+
+    $animateProvider.classNameFilter(/^(?:(?!ng-animate-disabled).)-(?:(?!help-block).)*$/);
+    $compileProvider.debugInfoEnabled(false);
+
+    dialogsProvider.useBackdrop('static');
+    dialogsProvider.useEscClose(false);
+    dialogsProvider.useCopy(false);
+
+    // Register a loader for the static files
+    // So, the module will search missing translation tables under the specified urls.
+    // Those urls are [prefix][langKey][suffix].
+    $translateProvider.useStaticFilesLoader({
+      prefix: 'resources/l10n/',
+      suffix: '.json'
+    });
+    // Tell the module what language to use by default
+    $translateProvider.preferredLanguage('ja');
+    // Tell the module to store the language in the local storage
+    $translateProvider.useLocalStorage();
+
+}]);
+
+exexSMSApp.config(['$httpProvider', function ($httpProvider) {
+    $httpProvider.defaults.headers.common['X-CSRF-TOKEN'] = $('meta[name=_csrf]').attr('content');
+    $httpProvider.defaults.headers.common['X-CSRF-HEADER'] = $('meta[name=_csrf_header]').attr('content');
+
+    //Set intercepter for http
+    $httpProvider.defaults.headers.common["X-Requested-With"] = 'XMLHttpRequest';
+    $httpProvider.interceptors.push('HttpResponseInterceptor');
+}]);
+
+exexSMSApp.service('RouteService', ['$state', function ($state) {
+
+    /**
+     * Go to state
+     * @param  {String} stateName
+     * @return {None}
+     */
+    this.goState = function(stateName) {
+        $state.go(stateName);
+    };
+
+    /**
+     * Go to another url
+     * @param  {String} url
+     * @return {None}
+     */
+    this.gotoUrl = function(url) {
+        window.location.href = getContextPath() + '/' +url;
+    };
+
+//    /**
+//     * Go to another url
+//     * @param  {String} url
+//     * @param  {String} session storage remove
+//     * @return {None}
+//     */
+//    this.gotoUrlRM = function(url, ...rmStorage) {
+//        if(!StringUtils.isEmpty(rmStorage) && rmStorage.length > 0){
+//            for(var i = 0; i < rmStorage.length; i++){
+//                sessionStorage.removeItem(rmStorage[i]);
+//            }
+//        }
+//        window.location.href = getContextPath() + '/' +url;
+//    };
+
+}]);
+
+exexSMSApp.service('DialogsService', ['$http', '$log', '$q','dialogs',
+                                        function($http, $log, $q, dialogs) {
+
+    /**
+     * Show warning message
+     * @param  {[type]} title
+     * @param  {[type]} msg
+     * @param  {[type]} opts
+     * @return {[type]}
+     */
+    this.showWarning = function(title, msg, opts) {
+        return dialogs.warn(title, msg, opts);
+    };
+
+    /**
+     * Show error message
+     * @param  {[type]} title
+     * @param  {[type]} msg
+     * @param  {[type]} opts
+     * @return {[type]}
+     */
+    this.showError = function(title, msg, opts) {
+        return dialogs.error(title, msg, opts);
+    };
+
+    /**
+     * Show confirm message
+     * @param  {[type]} msg
+     * @return {[type]}
+     */
+    this.showConfirm = function(title, msg, opts) {
+        return dialogs.confirm(title, msg, opts);
+    };
+
+    /**
+     * Show warning message
+     * @param  {[type]} title
+     * @param  {[type]} msg
+     * @param  {[type]} opts
+     * @return {[type]}
+     */
+    this.showNotify = function(title, msg, opts) {
+        return dialogs.notify(title, msg, opts);
+    };
+
+    /**
+     * Show dialog message
+     * @param  {[type]} url
+     * @param  {[type]} ctrlr
+     * @param  {[type]} data
+     * @param  {[type]} opts
+     * @param  {[type]} ctrlAs
+     * @return {[type]}
+     */
+    this.showDialog = function(url, ctrlr, data, opts, ctrlAs) {
+        return dialogs.create(url, ctrlr, data, opts, ctrlAs);
+    };
+}]);
+
+exexSMSApp.factory('HttpResponseInterceptor', ['$q',function($q) {
+    return {
+      'responseError': function(reject) {
+          // do something on error
+          if (reject.status == 403 || reject.status == 401) {
+              window.location = getContextPath() + "/Login";
+              }
+              return $q.reject(reject);
+          }
+      };
+}]);
+
+exexSMSApp.service('Messages', ['$translate', '$filter', '$q',
+                       function($translate, $filter, $q){
+    this.getMessage = function(key, params){
+        //var defer = $q.defer();
+        var msg, one, two, three = null;
+//        $translate(key, {one:1, two : 2, three : 3}).then(function(message){
+//            msg = message;
+//        });
+        msg = $filter('translate')(key);
+        $translate.refresh();
+
+        if (!params) {
+            return msg;
+        }
+        var _params = params.split(',');
+        for (var i = 0; i < _params.length; i++) {
+            var _param = $filter('translate')(_params[i]);
+            msg = msg.replace(/\{[0-9]+\}/, _param ? _param : _params[i]);
+        }
+
+        return msg;
+    }
+}])
+
+exexSMSApp.service('ServerService', ['$rootScope', '$http', '$log', '$q', '$timeout', 'DialogsService','FileSaver','Blob', 'Messages',
+                             function($rootScope, $http, $log, $q, $timeout, DialogsService, FileSaver, Blob, Messages) {
+
+    /**
+     * Post to server
+     * @param  {[type]} action [description]
+     * @param  {[type]} params [description]
+     * @return {[type]}        [description]
+     */
+    this.doPost = function(action, params) {
+        $rootScope.setLoading(true);
+        var deferred = $q.defer();
+
+        var url = getContextPath() + '/'  + action;
+        var httpParams = {
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name=_csrf]').attr("content")
+            },
+            method: 'POST',
+            url: url,
+            data: angular.copy(params)
+        };
+        httpParams.actionStartDate = new Date();
+        if (appConfig.DEBUG) {
+            $log.debug(DateUtils.getNowString() + ' [ACTION   START] : ' + httpParams.url);
+            $log.debug('PARAM: ('+action+')', angular.toJson(params));
+        }
+
+        $http(httpParams).success(function(data, status, headers, config) {
+            if (appConfig.DEBUG) {
+                var actionEndDate = new Date();
+                $log.debug(DateUtils.getNowString() + ' [ACTION   END  ] : ' + config.url + ' [' + (actionEndDate - config.actionStartDate) + 'ms]');
+                $log.debug('RESULT: ' , angular.copy(data));
+                //$log.debug('RESULT: ' , angular.toJson(angular.copy(data)));
+            }
+
+            if (appConfig.DEBUG) {
+                var callbackStartDate = new Date();
+                $log.debug(DateUtils.getNowString() + ' [CALLBACK START] : ' + config.url);
+            }
+
+            deferred.resolve({
+                data: data,
+                status: status,
+                headers: headers,
+                config: config
+            });
+
+            if (appConfig.DEBUG) {
+                var callbackEndDate = new Date();
+                $log.debug(DateUtils.getNowString() + ' [CALLBACK END  ] : ' + config.url + ' [' + (callbackEndDate - callbackStartDate) + 'ms]');
+            }
+        }).error(function(data, status, headers, config) {
+
+            console.log(data);
+            if (appConfig.DEBUG) {
+                var actionEndDate = new Date();
+                $log.debug(DateUtils.getNowString() + ' [ACTION   ERROR] : ' + config.url + ' [' + (actionEndDate - config.actionStartDate) + 'ms]');
+            }
+
+            if (status === 500 ) {
+                DialogsService.showError(Messages.getMessage('system.error'), data.errMsg);
+            } else if (status === 422) {
+                DialogsService.showWarning(Messages.getMessage('check.error'), data.errMsg);
+            } else{
+                DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage(data.errMsg));
+            }
+
+            deferred.reject({
+                data: data,
+                status: status,
+                headers: headers,
+                config: config
+            });
+
+            $log.error(config.url, data);
+        });
+        $rootScope.setLoading(false);
+        $rootScope.$broadcast('UserOperated');
+        return deferred.promise;
+    };
+
+    /**
+     * function for download
+     */
+    this.doDownload = function(action, params, type, fileName) {
+        var location = getContextPath() + action;
+
+        if (appConfig.DEBUG) {
+            $log.debug(DateUtils.getNowString() + ' [ACTION   START] : ' + location);
+            $log.debug('PARAM: ('+action+')', angular.toJson(params));
+        }
+
+        var FileType = {
+                'EXCEL' : {
+                    contentType : 'application/vnd.ms-excel',
+                    fileExtention : '.xlsx'
+                },
+                'CSV' : {
+                    contentType : 'application/CSV',
+                    fileExtention : '.csv'
+                },
+                'PDF' : {
+                    contentType : 'application/pdf',
+                    fileExtention : '.pdf'
+                },
+                'ZIP' : {
+                    contentType : 'application/zip',
+                    fileExtention : '.zip'
+                }
+        }
+
+        $rootScope.setLoading(true);
+        var actionStartDate = new Date();
+        $http.post(location, params, {
+            responseType: 'arraybuffer',
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name=_csrf]').attr("content")
+            }
+        })
+        .success(function(data, status, headers, config){
+            if(status == '204'){
+                DialogsService.showError(Messages.getMessage('system.error'), data.errMsg);
+            }else{
+                if (appConfig.DEBUG) {
+                    var actionEndDate = new Date();
+                    $log.debug(DateUtils.getNowString() + ' [ACTION   END  ] : ' + config.url + ' [' + (actionEndDate - actionStartDate) + 'ms]');
+                    $log.debug('RESULT: ' , angular.copy(data));
+                }
+
+                if (appConfig.DEBUG) {
+                    var callbackStartDate = new Date();
+                    $log.debug(DateUtils.getNowString() + ' [CALLBACK START] : ' + config.url);
+                }
+                var blob = new Blob([data], {type: type});
+                $timeout(FileSaver.saveAs.bind(FileSaver, blob, fileName), 100);
+            }
+            $rootScope.setLoading(false);
+        })
+        .error(function(data, status){
+            DialogsService.showError(Messages.getMessage('system.error'), data.errMsg);
+        });
+    };
+
+}]);
+
+
+exexSMSApp.controller('ImgPopupCtrl',['$scope', '$uibModalInstance', 'ServerService', 'data'
+                                      ,function($scope, $uibModalInstance, ServerService, data){
+
+    $scope.init = function(param) {
+        ServerService.doPost('ImgPopup/initData', param).then(
+            function(okResult) {
+                console.log(okResult.data);
+                $scope.itemImage = okResult.data.img;
+            }
+        );
+    };
+
+    $scope.init(data);
+
+    $scope.close = function(){
+        $uibModalInstance.dismiss('no');
+    };
+}]);

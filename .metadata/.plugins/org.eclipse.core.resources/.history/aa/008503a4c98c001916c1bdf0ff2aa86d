@@ -1,0 +1,633 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision: $ $Date: $
+ */
+
+'use strict';
+
+exexSMSApp.factory('ProjectProcessRequestModel', [ 'BaseModel', function(BaseModel) {
+
+    var model = BaseModel.getInstance();
+    model.form = {
+            info : {
+                name : '',
+                companyCd : '',
+                groupCd : [],
+                approvedUserCd : '',
+                applyMessage : '',
+                workNo : '',
+                processData : '',
+                recodeNo : '',
+                documentStatus : '',
+                projectSno : ''
+            },
+            listApproverUser : [],
+            listMstGroup : [],
+            buttonActive : false,
+            mode : ''
+    };
+    model.treeConfig = {
+        core : {
+            multiple : true,
+            animation: true,
+            error : function(error) {
+                console.log('treeCtrl: error from js tree - ' + angular.toJson(error));
+            },
+            check_callback : true,
+            worker : true
+        },
+        types : {
+            'default' : {
+                icon : 'fa fa-users'
+            },
+            star : {
+                icon : 'glyphicon glyphicon-star'
+            },
+            cloud : {
+                icon : 'glyphicon glyphicon-cloud'
+            }
+        },
+        version : 1,
+        plugins : ["types","search"]
+    };
+    model.treeGroup = {
+        treeData : [],
+        treeConfig : angular.copy(model.treeConfig),
+        treeInstance : ''
+    };
+    model.treeApproveGroup = {
+        treeData : [],
+        treeConfig : angular.copy(model.treeConfig),
+        treeInstance : ''
+    };
+    model.treeApproveRoute = {
+        treeData : [],
+        treeConfig : angular.copy(model.treeConfig),
+        treeInstance : ''
+    };
+    model.hidden = {
+        listGroupSelect : [],
+        tabIndex : ''
+    }
+    return model;
+}]);
+
+exexSMSApp.service('ProjectProcessRequestService', ['$q', 'ServerService',function ($q, ServerService) {
+    var _self = this;
+
+    _self.initData = function(param){
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('ProjectProcessRequest/getInit', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    _self.insert = function(param) {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('ProjectProcessRequest/insert', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    _self.update = function(param) {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('ProjectProcessRequest/update', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    _self.insertGroup = function(param) {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('ProjectProcessRequest/insertGroup', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    _self.updateGroup = function(param) {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('ProjectProcessRequest/updateGroup', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+}]);
+
+exexSMSApp.controller('ProjectProcessRequestCtrl',
+        ['$rootScope', '$scope', '$timeout', '$uibModalInstance', 'ProjectProcessRequestModel', 'data', 'ProjectProcessRequestService','DialogsService', 'ServerService', 'Messages',
+         function($rootScope, $scope, $timeout, $uibModalInstance, ProjectProcessRequestModel, data, ProjectProcessRequestService, DialogsService, ServerService, Messages) {
+
+    $scope.model = ProjectProcessRequestModel;
+
+    /**
+     * 初期表示
+     */
+    $scope.getInit = function() {
+        $scope.model.form.listApproverUser = [];
+        $scope.model.form.listUser = [];
+        $scope.model.form.buttonActive = false;
+        var param = '';
+        ProjectProcessRequestService.initData(param).then(
+            function(result) {
+                var warning = result.data.warning;
+                if(!ValidateUtil.isValidTextEmpty(warning)){
+                    DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                    return;
+                }
+                $scope.model.form.listMstGroup = result.data.listMstGroup;
+                $scope.model.form.info.companyCd = result.data.companyCd;
+
+                var json = result.data.listMstGroup;
+                var jsonApprove = result.data.listGroupApprove;
+                var jsonApproveRoute = result.data.listApproveRoute;
+                $scope.convertGroupTreeData(json, $scope.model.treeGroup);
+                $scope.convertGroupTreeData(jsonApprove, $scope.model.treeApproveGroup);
+                $scope.convertGroupTreeData(jsonApproveRoute, $scope.model.treeApproveRoute);
+                $timeout(function() {
+                    $scope.model.treeGroup.treeInstance.jstree(true).settings.core.data = $scope.model.treeGroup.treeData;
+                    $scope.model.treeApproveGroup.treeInstance.jstree(true).settings.core.data = $scope.model.treeApproveGroup.treeData;
+                    $scope.model.treeApproveRoute.treeInstance.jstree(true).settings.core.data = $scope.model.treeApproveRoute.treeData;
+                    $scope.model.treeGroup.treeInstance.jstree(true).refresh();
+                    $scope.model.treeApproveGroup.treeInstance.jstree(true).refresh();
+                    $scope.model.treeApproveRoute.treeInstance.jstree(true).refresh();
+                }, 100);
+            }
+        );
+    };
+
+    $scope.convertGroupTreeData = function(json, treeModel){
+        if(!ValidateUtil.isValidTextEmpty(json)){
+            json = JSON.parse(JSON.stringify(json).split('"groupCd":').join('"id":'));
+            json = JSON.parse(JSON.stringify(json).split('"groupName":').join('"text":'));
+            json = JSON.parse(JSON.stringify(json).split('"parentCd":').join('"parent":'));
+            angular.forEach(json, function(item, i){
+                if(item.id == '$'){
+                    item.state = { opened : true, disabled: true };
+                }
+                if(item.oldFlag){
+                    item.parent = '$old';
+                }
+                if(item.id == '$old'){
+                    item.state = { disabled: true };
+                }
+            })
+            treeModel.treeData = json;
+        }else{
+            treeModel.treeData = null;
+        }
+    }
+    /**
+     * init model
+     */
+    $scope.init = function(){
+        var sessionLogin = angular.fromJson(sessionStorage.getItem("session"));
+        if(!StringUtils.isEmpty(sessionLogin.groupCd)){
+            $scope.model.form.info.groupCd = [sessionLogin.groupCd]
+        }else{
+            $scope.model.form.info.groupCd = [];
+        }
+        if(data.group) {
+            var groupProcess = data.groupProcessData[0];
+            $scope.model.form.info.name = groupProcess.processData.processName;
+            $scope.model.form.info.projectSno = groupProcess.projectSno
+            $scope.model.form.info.recodeNo = groupProcess.recodeNo;
+            // $scope.model.form.info.workNo = data.workNo;
+            // set apply workNo = projectSno when use project process
+            $scope.model.form.info.workNo = groupProcess.projectSno;
+            $scope.model.form.info.applyNo = groupProcess.processData.workflowApplyNo;
+            $scope.model.form.info.documentStatus = groupProcess.documentStatus;
+            $scope.model.form.info.tmpDocumentStatus = groupProcess.processData.tmpDocumentStatus;
+            $scope.model.form.info.applyMessage = groupProcess.processData.applyMessage;
+            if(ValidateUtil.isValidTextEmpty(groupProcess.processData.workflowApplyNo)){
+                $scope.model.form.mode = 'insert';
+            }else if(!ValidateUtil.isValidTextEmpty(groupProcess.processData.workflowApplyNo)){
+                $scope.model.form.mode = 'update';
+            }
+        } else {
+            $scope.model.form.info.name = data.processData.processName;
+            $scope.model.form.info.projectSno = data.projectSno
+            $scope.model.form.info.processData = data.processData;
+            $scope.model.form.info.recodeNo = data.recodeNo;
+            // $scope.model.form.info.workNo = data.workNo;
+            // set apply workNo = projectSno when use project process
+            $scope.model.form.info.workNo = data.projectSno;
+            $scope.model.form.info.applyNo = data.processData.workflowApplyNo;
+            $scope.model.form.info.documentStatus = data.documentStatus;
+            $scope.model.form.info.tmpDocumentStatus = data.processData.tmpDocumentStatus;
+            $scope.model.form.info.applyMessage = data.processData.applyMessage;
+            if(ValidateUtil.isValidTextEmpty(data.processData.workflowApplyNo)){
+                $scope.model.form.mode = 'insert';
+            }else if(!ValidateUtil.isValidTextEmpty(data.processData.workflowApplyNo)){
+                $scope.model.form.mode = 'update';
+            }
+        }
+
+        $scope.getInit();
+    };
+
+    $scope.selectUserByGroupList = function(groupCdList) {
+        var param = {
+            groupCdList : groupCdList,
+            userSelectedList : []
+        };
+        if($scope.model.form.listApproverUser.length != 0){
+            angular.forEach($scope.model.form.listApproverUser, function(item, i){
+                if(item.userGroupFlag == '0'){
+                    param.userSelectedList.push(item.approvedUserCd);
+                }
+            })
+        }
+        ServerService.doPost('PtlRequest/selectUserByGroupList', param).then(
+            function(okResult) {
+                var error = okResult.data.failed;
+                if(!ValidateUtil.isValidTextEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                }
+                 $scope.model.form.listUser = okResult.data.listUser;
+            }
+        );
+    };
+
+    $scope.selectUser = function(row, index){
+        $scope.model.form.listUser.splice(index, 1);
+        $scope.model.form.listApproverUser.push(row);
+
+        // show insert / update button when have approve user
+        if($scope.model.form.listApproverUser.length > 0){
+            $scope.model.form.buttonActive = true;
+        }
+    }
+
+
+    $scope.addAllUser = function(){
+        angular.forEach($scope.model.form.listUser, function(item,index){
+            var itemPust = $scope.model.form.listUser[index];
+            $scope.model.form.listApproverUser.push(itemPust);
+        });
+        $scope.model.form.listUser = [];
+
+        // show insert / update button when have approve user
+        if($scope.model.form.listApproverUser.length > 0){
+            $scope.model.form.buttonActive = true;
+        }
+    };
+
+    $scope.sortableConfig = {
+        group: 'requestUser',
+        onEnd: function (evt){
+            if($scope.model.form.listApproverUser.length != 0){
+                $scope.model.form.buttonActive = true;
+            }else{
+                $scope.model.form.buttonActive = false;
+            }
+        }
+    };
+
+    $scope.selectNode = function(node, selected){
+        selected.node.state.disabled = true;
+        var item = {
+            approvedUserCd : selected.node.id,
+            userName : selected.node.text,
+            userGroupFlag : '1'
+        };
+        $scope.model.form.listApproverUser.push(item);
+        $scope.model.treeGroup.treeInstance.jstree(true).redraw_node(selected.node.id);
+
+        $scope.activeApprove();
+    };
+
+    $scope.selectApproveNode = function(node, selected){
+        selected.node.state.disabled = true;
+        var item = {
+            approvedUserCd : selected.node.id,
+            userName : selected.node.text,
+            userGroupFlag : '1',
+            groupType: 'APPROVE_GROUP'
+        };
+        $scope.model.form.listApproverUser.push(item);
+        $scope.model.treeApproveGroup.treeInstance.jstree(true).redraw_node(selected.node.id);
+
+        $scope.activeApprove();
+    };
+
+    $scope.selectApproveRouteNode = function(node, selected) {
+        var groupCd = selected.node.id;
+        ServerService.doPost('PtlRequest/getApproveRouteList', groupCd).then(
+            function(okResult) {
+                var error = okResult.data.failed;
+                if(!ValidateUtil.isValidTextEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                } else {
+                    for (var i = 0; i < okResult.data.listUser.length; i++) {
+                        var data = okResult.data.listUser[i];
+                        var isSelected = false;
+                        for (var j = 0; j < $scope.model.form.listApproverUser.length; j++) {
+                            var user = $scope.model.form.listApproverUser[j];
+                            if(user.approvedUserCd == data.userCd) {
+                                isSelected = true;
+                                break;
+                            }
+                        }
+                        if(!isSelected) {
+                            var item = {
+                                approvedUserCd : data.userCd,
+                                userName : data.userName,
+                                userGroupFlag : data.userGroupFlag,
+                                groupType: 'APPROVE_ROUTE'
+                            };
+                            $scope.model.form.listApproverUser.push(item);
+                        }
+                    }
+                }
+                $scope.activeApprove();
+            }
+        );
+    };
+
+    ////Event JSTree
+    $scope.searchNode = function(){
+        var to = false;
+        if(to){
+            clearTimeout(to);
+        }
+        to = setTimeout(function () {
+            var v = $('#searchGroup').val();
+            $scope.model.treeGroup.treeInstance.jstree(true).search(v);
+        }, 250);
+    }
+
+    $scope.searchApproveNode = function(){
+        var to = false;
+        if(to){
+            clearTimeout(to);
+        }
+        to = setTimeout(function () {
+            var v = $('#searchApproveGroup').val();
+            $scope.model.treeApproveGroup.treeInstance.jstree(true).search(v);
+        }, 250);
+    }
+
+    $scope.searchApproveRouteNode = function(){
+        var to = false;
+        if(to){
+            clearTimeout(to);
+        }
+        to = setTimeout(function () {
+            var v = $('#searchApproveRoute').val();
+            $scope.model.treeApproveRoute.treeInstance.jstree(true).search(v);
+        }, 250);
+    };
+
+    $scope.removeItem = function(row, index){
+        if(row.userGroupFlag == '0'&& row.groupType != 'APPROVE_ROUTE'){
+            var list = $scope.model.form.listApproverUser.splice(index, 1);
+            $scope.model.form.listUser.push(list[0]);
+        } else if (row.userGroupFlag == '1' && row.groupType != 'APPROVE_GROUP'){
+            $scope.model.form.listApproverUser.splice(index, 1);
+            $scope.model.treeGroup.treeInstance.jstree(true).get_node(row.approvedUserCd).state.disabled = false;
+            $scope.model.treeGroup.treeInstance.jstree(true).redraw_node(row.approvedUserCd);
+        } else if (row.userGroupFlag == '1' && row.groupType == 'APPROVE_GROUP'){
+            $scope.model.form.listApproverUser.splice(index, 1);
+            $scope.model.treeApproveGroup.treeInstance.jstree(true).get_node(row.approvedUserCd).state.disabled = false;
+            $scope.model.treeApproveGroup.treeInstance.jstree(true).redraw_node(row.approvedUserCd);
+        }
+
+        // hide insert / update button when have no approve user
+        $scope.activeApprove();
+    }
+
+    $scope.changeGroup = function(listSelect){
+        $scope.selectUserByGroupList(listSelect);
+    };
+
+    $scope.changeTab = function(index) {
+        if(index == 0) {
+            $scope.changeGroup($scope.model.form.info.groupCd);
+        }
+        $scope.model.hidden.tabIndex = index;
+    }
+
+    $scope.activeApprove = function(){
+        if($scope.model.form.listApproverUser.length <= 0){
+            $scope.model.form.buttonActive = false;
+        }else{
+            $scope.model.form.buttonActive = true;
+        }
+    }
+
+    /**
+     * 初期表示
+     */
+    $scope.init();
+
+    $scope.close = function() {
+        $uibModalInstance.dismiss('close');
+    };
+
+    /**
+     * 申請テーブルのデータを作成します。
+     * 申請明細テーブルのデータを作成します。
+     */
+    $scope.insert = function() {
+        //$scope.processing('insert');
+        if($scope.model.form.listApproverUser.length > 100){
+            DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00166'))
+            return;
+        }
+        DialogsService.showDialog('PtlRequestWFDialog', 'PtlRequestWFDialogCtrl', null, null)
+            .result.then(function(isSendMail){
+                $uibModalInstance.dismiss('close');
+                if(data.group) {
+                    var param = $scope.convertParamGroup(isSendMail);
+                    ProjectProcessRequestService.insertGroup(param).then(
+                        function(result) {
+                            $rootScope.$broadcast("Header#initData");
+                            $rootScope.$broadcast("PJMProcess#hasWF",{
+                                params : result.data
+                            });
+                        }
+                    );
+                } else {
+                    var param = $scope.convertParam(angular.copy($scope.model.form.info));
+                    param.isSendMail = isSendMail;
+                    ProjectProcessRequestService.insert(param).then(
+                        function(result) {
+                            $rootScope.$broadcast("Header#initData");
+                            $rootScope.$broadcast("PJMProcess#hasWF",{
+                                params : result.data
+                            });
+                        }
+                    );
+                }
+            }
+        );
+    };
+
+    /**
+     * 申請テーブルのデータを作成します。
+     * 申請明細テーブルのデータを作成します。
+     */
+    $scope.update = function() {
+        //$scope.processing('update');
+        if($scope.model.form.listApproverUser.length > 100){
+            DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00166'))
+            return;
+        }
+
+        DialogsService.showDialog('PtlRequestWFDialog', 'PtlRequestWFDialogCtrl', null, null)
+            .result.then(function(isSendMail){
+                $uibModalInstance.dismiss('close');
+                if(data.group) {
+                    var param = $scope.convertParamGroup(isSendMail);
+                    ProjectProcessRequestService.updateGroup(param).then(
+                        function(result) {
+                            $rootScope.$broadcast("Header#initData");
+                            $rootScope.$broadcast("PJMProcess#hasWF",{
+                                params : result.data
+                            });
+                        }
+                    );
+                } else {
+                    var param = $scope.convertParam(angular.copy($scope.model.form.info));
+                    param.isSendMail = isSendMail;
+                    ProjectProcessRequestService.update(param).then(
+                        function(result) {
+                            $rootScope.$broadcast("Header#initData");
+                            $rootScope.$broadcast("PJMProcess#hasWF",{
+                                params : result.data
+                            });
+                        }
+                    );
+                }
+            }
+        );
+    };
+
+    $scope.convertDetailProcessData = function(detailProcessData) {
+        angular.forEach(detailProcessData, function(item, i){
+            // check box
+            if('04'== item.controlType && item.listSgtDataSource.length > 0){
+                if(!StringUtils.isEmpty(item.listDataSource)){
+                    var inputValue = "";
+                    angular.forEach(item.listSgtDataSource, function(data, k){
+                        if(!StringUtils.isEmpty(item.inputValue) && item.inputValue[k] == "1"){
+                            inputValue += data.code+",";
+                        }
+                    });
+                    if(!StringUtils.isEmpty(inputValue)){
+                        var trim = inputValue.replace(/(^,)|(,$)/g, "");
+                        item.inputValue = trim;
+                    }else{
+                        item.inputValue = null;
+                    }
+                }
+            }
+            // address
+            if('09'== item.controlType){
+                var postNo = {
+                        'postNo1': item.postNo1,
+                        'postNo2': item.postNo2,
+                        'address1': item.address1,
+                        'address2': item.address2
+                }
+                item.inputValue = JSON.stringify(postNo);
+                if(StringUtils.isEmpty(item.postNo1) && StringUtils.isEmpty(item.postNo2)
+                        && StringUtils.isEmpty(item.address1) && StringUtils.isEmpty(item.address2)) {
+                    item.inputValue = '';
+                }
+            }
+            // multiple select box
+            if(('11'== item.controlType || 'MST_GROUP_LIST'== item.controlType || 'MST_USER_LIST'== item.controlType)
+                    && !StringUtils.isEmpty(item.inputValue)){
+                item.inputValue = item.inputValue.toString();
+            }
+        });
+        return angular.copy(JSON.stringify(detailProcessData));
+    };
+
+    $scope.convertParamGroup = function (isSendMail) {
+        var listTmp = [];
+        var groupProcessData = angular.copy(data.groupProcessData);
+        for (var i = 0; i < groupProcessData.length; i++) {
+            var param = angular.copy($scope.model.form.info);
+            var process = groupProcessData[i];
+            param.detailProcessData = $scope.convertDetailProcessData(process.processData.listDetailProcess);
+            if($scope.model.form.listApproverUser.length != 0){
+                param.approvedUserCd = JSON.stringify($scope.model.form.listApproverUser);
+            };
+            param.isSendMail = isSendMail;
+            param.businessCd = process.processData.businessCd;
+            param.processNo = process.processData.processNo;
+            param.name = data.processGroupName;
+
+            delete param.processData;
+            delete param.groupCd;
+            listTmp.push(param);
+        };
+        return listTmp;
+    };
+
+    $scope.convertParam = function(param){
+        param.businessCd = param.processData.businessCd;
+        param.processNo = param.processData.processNo;
+
+        param.detailProcessData = $scope.convertDetailProcessData(angular.copy(param.processData.listDetailProcess));
+        if($scope.model.form.listApproverUser.length != 0){
+            param.approvedUserCd = JSON.stringify($scope.model.form.listApproverUser);
+        };
+        delete param.processData;
+        delete param.groupCd;
+
+        return param;
+    };
+
+}]);

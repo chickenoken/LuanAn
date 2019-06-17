@@ -1,0 +1,19 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision:  $  $Date:  $
+ *
+ * Table : 顧客マスタ「MST_CUSTMER」
+ *
+ */
+
+'use strict';
+
+var crmRefer = angular.module('crmRefer', [ 'commonModule', 'smsApp' ]);
+
+crmRefer.controller('crmReferCtrl', function( $scope) {
+
+});
+

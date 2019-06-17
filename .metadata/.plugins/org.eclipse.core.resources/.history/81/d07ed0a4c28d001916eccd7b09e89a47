@@ -1,0 +1,20 @@
+@CHARSET "UTF-8";
+#table-crud tr th {
+  width: 150px;
+  background-color: #87CEEB;
+  color: #FFF;
+  height: 45px;
+  vertical-align: middle;
+  border-bottom: 1px solid #FFF;
+}
+
+#table-crud tr td {
+  vertical-align: middle;
+}
+
+.table-tax-fixed{
+    width: 320px !important;
+    max-height: 440px !important;
+    overflow-y: auto;
+    overflow-x: hidden;
+}

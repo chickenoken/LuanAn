@@ -1,0 +1,310 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ * @author quang-tung
+ * @version $Revision:  $  $Date:  $
+ */
+'use strict';
+
+exexSMSApp.factory('AccountsPayableListModel', [ 'BaseModel', function(BaseModel) {
+
+    var model = BaseModel.getInstance();
+    model.form = {
+        search : {
+            payCloseDate : '',
+            stockaddressName : '',
+            stockaddressNo : [],
+            isHaveNoTransaction : true,
+            searchOrderKey : [],
+            searchOrderSort: '',
+            exportExcel : ''
+        },
+        paginationInfo : {
+            page: 0,
+            pageSize: 20,
+            totalPage: 0,
+            totalRecord: 0,
+            from: 0,
+            to: 0
+        },
+        listL010024 : []
+    };
+
+    model.hidden = {
+        isSubmitted : false,
+        listParamSearch : [
+            {id: 1, model: 'payCloseDate', name: angular.element('#payCloseDateLabel').text()},
+            {id: 2, model: 'stockaddressName', name: angular.element('#stockaddressNameLabel').text()},
+            {id: 3, model: 'stockaddressNo', name: angular.element('#stockaddressNoLabel').text()}
+        ],
+        searchOrderKey : [
+            {id: 1, model: 'stockaddressName', name: angular.element('#stockaddressNameLabel').text()},
+            {id: 2, model: 'stockaddressNo', name: angular.element('#stockaddressNoLabel').text()},
+            {id: 3, model: 'lastTimeLeftPrice', name: angular.element('#lastTimeLeftPriceLabel').text()},
+            {id: 4, model: 'thisTimeStockPrice', name: angular.element('#thisTimeStockPriceLabel').text()},
+            {id: 5, model: 'thisTimeClaimPrice', name: angular.element('#thisTimeClaimPriceLabel').text()},
+            {id: 6, model: 'thisTimeSpendPrice', name: angular.element('#thisTimeSpendPriceLabel').text()},
+            {id: 7, model: 'thisTimeLeftPrice', name: angular.element('#thisTimeLeftPriceLabel').text()}
+        ],
+        searchOrderSort : [
+            {id: 1, model: 'desc', name: angular.element('#descLabel').text()},
+            {id: 2, model: 'asc', name: angular.element('#ascLabel').text()}
+        ],
+        listDataStockaddressAjax : []
+    };
+
+    return model;
+}]);
+
+/**
+ * 支払一覧画面コントローラー
+ */
+exexSMSApp.controller('AccountsPayableListCtrl',
+        ['$scope', '$filter', 'DialogsService', 'RouteService', 'AccountsPayableListModel', 'Messages', 'ServerService',
+         function($scope, $filter, DialogsService, RouteService, AccountsPayableListModel, Messages, ServerService) {
+
+    $scope.model = AccountsPayableListModel;
+
+    $scope.newListParamSearch = function(){
+        $scope.model.hidden.listTmp = angular.copy($scope.model.hidden.listParamSearch);
+        for (var i = 0; i < $scope.model.hidden.listSearch.length; i++) {
+            var item = $scope.model.hidden.listSearch[i];
+            var removeIndex = $scope.model.hidden.listTmp.map(function(items) { return items.model; }).indexOf(item.model);
+            if (item.model == 'payCloseDate') {
+                $scope.model.hidden.listTmp.splice(removeIndex, 1);
+            } else if (item.model == 'stockaddressName') {
+                $scope.model.hidden.listTmp.splice(removeIndex, 1);
+            } else if (item.model == 'stockaddressNo') {
+                $scope.model.hidden.listTmp.splice(removeIndex, 1);
+            }
+        }
+    }
+
+    $scope.prepareListParamSearch = function (){
+        var listParamSearch = $scope.model.hidden.listParamSearch;
+        var sessionLogin = angular.fromJson(sessionStorage.getItem("session"));
+        var sessionSearch = angular.fromJson(sessionStorage.getItem("accountsPayableListSearch"));
+        for (var i = 0; i < $scope.model.hidden.listSearch.length; i++) {
+            var item = $scope.model.hidden.listSearch[i];
+            item.listDetailParam = angular.copy($scope.model.hidden.listTmp);
+            if (item.model == 'payCloseDate') {
+                item.listDetailParam.push(listParamSearch[0]);
+                if((!StringUtils.isEmpty(sessionSearch) && sessionSearch.payCloseDate === undefined)){
+                    $scope.model.form.search.payCloseDate = DateUtils.getCurrentDate();
+                }
+            } else if (item.model == 'stockaddressName') {
+                item.listDetailParam.push(listParamSearch[1]);
+            } else if (item.model == 'stockaddressNo') {
+                item.listDetailParam.push(listParamSearch[2]);
+            }
+        }
+    }
+
+    $scope.prepareSessionSearch = function(session){
+        var listSearch = [];
+        for(var key in session){
+            var item = {}
+            if (key == 'payCloseDate') {
+                $scope.model.form.search.payCloseDate = session[key];
+                item.model = key
+            } else if (key == 'stockaddressName') {
+                $scope.model.form.search.stockaddressName = session[key];
+                item.model = key;
+            } else if (key == 'stockaddressNo') {
+                $scope.model.form.search.stockaddressNo = session[key];
+                item.model = key;
+            }
+            if(!StringUtils.isEmpty(item.model)){
+                listSearch.push(item);
+            }
+        }
+        $scope.model.hidden.listSearch = listSearch;
+        $scope.newListParamSearch();
+        $scope.prepareListParamSearch();
+    }
+
+    $scope.convertParamsSearch = function(param, page){
+        var params = {
+            isHaveNoTransaction: param.isHaveNoTransaction,
+            searchOrderKey : param.searchOrderKey,//List<Integer>
+            searchOrderSort : param.searchOrderSort,//ASC or DESC
+            page : page,
+            pageSize : $scope.model.form.paginationInfo.pageSize,
+            listDataStockaddressAjax : $scope.model.hidden.listDataStockaddressAjax
+        };
+        for (var i = 0; i < $scope.model.hidden.listSearch.length; i++) {
+            var item = $scope.model.hidden.listSearch[i];
+            if (item.model == 'payCloseDate') {
+                params.payCloseDate = !StringUtils.isEmpty(param.payCloseDate) ? new Date(param.payCloseDate) : null;
+            } else if (item.model == 'stockaddressName') {
+                params.stockaddressName = !StringUtils.isEmpty(param.stockaddressName) ? param.stockaddressName : null;
+            } else if (item.model == 'stockaddressNo') {
+                params.stockaddressNo = (!StringUtils.isEmpty(param.stockaddressNo) && param.stockaddressNo.length > 0) ?
+                        param.stockaddressNo : null;
+            }
+        }
+        return params;
+    };
+
+    $scope.changeListParamSearch = function (){
+        $scope.newListParamSearch();
+        $scope.prepareListParamSearch();
+    }
+
+    $scope.newRowParamSearch = function(){
+        $scope.newListParamSearch();
+        var tmp = ""
+        var param = {
+                model : $scope.model.hidden.listTmp[0].model,
+                listDetailParam : $scope.model.hidden.listTmp
+        };
+        $scope.model.hidden.listSearch.push(param);
+        for (var i = 0; i < param.listDetailParam.length; i++) {
+            var tmp = $scope.model.hidden.listTmp[i];
+            if(param.model == tmp.model){
+                param.listDetailParam.splice(i, 1);
+            }
+        }
+        $scope.prepareListParamSearch();
+    }
+
+    $scope.init = function(model) {
+        $scope.getInit();
+    };
+
+    $scope.getInit = function(){
+        ServerService.doPost('AccountsPayableList/getInit', null).then(
+            function(okResult) {
+                var warning = okResult.data.warning;
+                var error = okResult.data.failed;
+                if(!StringUtils.isEmpty(warning)){
+                    DialogsService.showWarning(Messages.getMessage('check.error'),warning);
+                    return;
+                }else if(!StringUtils.isEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'),error);
+                    return;
+                }else{
+                    $scope.model.form.listL010024 = okResult.data.listL010024;
+                    var sessionSearch = angular.fromJson(sessionStorage.getItem("accountsPayableListSearch"));
+                    if(!StringUtils.isEmpty(sessionSearch)){
+                        $scope.prepareSessionSearch(sessionSearch);
+                        $scope.model.form.search = angular.copy(sessionSearch);
+                        $scope.doSearch(sessionSearch.page, sessionSearch);
+                    } else {
+                        $scope.model.form.search.searchOrderKey = [1];
+                        //Create default search condition
+                        $scope.createDefaultSearchCondition();
+                        $scope.search(1);
+                    }
+                }
+            }
+        )
+    };
+
+    /**remove when click x button*/
+    $scope.removeItem = function(index) {
+        $scope.model.hidden.listSearch.splice(index, 1);
+        $scope.newListParamSearch();
+        $scope.prepareListParamSearch();
+    };
+
+    $scope.createDefaultSearchCondition = function() {
+        var defaultCondition = {
+            payCloseDate: DateUtils.getCurrentDate(),
+            stockaddressNo: []
+        };
+        $scope.prepareSessionSearch(defaultCondition);
+    }
+
+    $scope.convertDataStockaddress = function(param){
+        var list = [];
+        var listTmp = $("select[id='stockaddressAjax']").select2('data');
+        if(!StringUtils.isEmpty(listTmp)){
+            for (var i = 0; i < listTmp.length; i++) {
+                list.push({
+                    no : listTmp[i].id,
+                    name : listTmp[i].text
+                });
+            };
+        }
+        param.listDataStockaddressAjax = list;
+        $scope.model.hidden.listDataStockaddressAjax = list;
+    };
+
+    $scope.init();
+
+    $scope.search = function(page){
+        $scope.doSearch(page);
+    };
+
+    $scope.doSearch = function(page, session) {
+        var params = $scope.convertParamsSearch($scope.model.form.search, page);
+        params.listDataStockaddressAjax = [];
+        if(StringUtils.isEmpty(session)){
+            if(!StringUtils.isEmpty($scope.model.form.search.stockaddressNo) && $scope.model.form.search.stockaddressNo.length > 0){
+                $scope.convertDataStockaddress(params);
+            }
+        }else {
+            if(!StringUtils.isEmpty(session.stockaddressNo) && session.stockaddressNo.length > 0){
+                $scope.model.hidden.listDataStockaddressAjax = session.listDataStockaddressAjax;
+                params.listDataStockaddressAjax = session.listDataStockaddressAjax;
+            }
+        }
+        var searchOrderKey = params.searchOrderKey;
+        sessionStorage.setItem("accountsPayableListSearch", JSON.stringify(params));
+        delete params.listDataStockaddressAjax;
+        if(!StringUtils.isEmpty(params.payCloseDate)){
+            ServerService.doPost('AccountsPayableList/search', params).then(
+                function(okResult) {
+                    $scope.model.form.search.searchOrderKey = angular.copy(searchOrderKey);
+                    var warning = okResult.data.warning;
+                    var error = okResult.data.failed;
+                    if(!StringUtils.isEmpty(warning)){
+                        DialogsService.showWarning(Messages.getMessage('check.error'),warning);
+                        return;
+                    }else if(!StringUtils.isEmpty(error)){
+                        DialogsService.showError(Messages.getMessage('system.error'),error);
+                        return;
+                    }else{
+                        $scope.model.form.accountsPayableList = okResult.data.resultList;
+                        $scope.model.form.paginationInfo = okResult.data.paginationInfo;
+                    }
+
+                    // add colresizable to table
+                    setTimeout(function(){
+                        $scope.setColResizable();
+                    });
+                }
+            );
+        } else {
+            return DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W10098',angular.element('#payCloseDateLabel').text()));
+        }
+    };
+
+    $scope.exportExcel = function(param) {
+        if(!StringUtils.isEmpty(param.payCloseDate)){
+            if(!StringUtils.isEmpty(param.exportExcel)){
+                var params = $scope.convertParamsSearch(param, 0);
+                delete params.listDataStockaddressAjax;
+                params.pageSize = 0;
+                var title = Messages.getMessage("common.excel.file.name.accountspayable");
+                var fileName = title + '_' + DateUtils.getYYYYMMDD(new Date());
+                ServerService.doDownload('/AccountsPayableList/exportExcel', params, 'application/vnd.ms-excel', fileName + '.xlsx');
+            }
+        } else {
+            return DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W10098',angular.element('#payCloseDateLabel').text()));
+        }
+    };
+
+    // set colResizable
+    $scope.setColResizable = function(){
+        // remove JCLRgrips if having
+        $('.JCLRgrips').remove();
+         angular.element('#tableAccountsPayableList').colResizable({
+            liveDrag: true,
+            postbackSafe: true,
+            useLocalStorage: true
+        });
+    }
+}]);

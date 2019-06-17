@@ -1,0 +1,44 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ * @author SystemEXE Quang-Thien
+ * @version $Revision:  $  $Date:  $
+ */
+
+var daterangelocale = {
+        'en' :{
+            'applyLabel': 'Apply',
+            'cancelLabel': 'Cancel',
+            'fromLabel': 'From',
+            'toLabel': 'To',
+            'weekLabel': 'W',
+            'customRangeLabel': 'Custom Range',
+            'daysOfWeek': ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+            'monthNames': ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+            'firstDay' : 1
+        },
+        'ja' :{
+            'applyLabel': '適用',
+            'cancelLabel': 'クリア',
+            'fromLabel': 'From',
+            'toLabel': 'To',
+            'weekLabel': '週',
+            'customRangeLabel': 'Custom Range',
+            'daysOfWeek': ["日", "月", "火", "水", "木", "金", "土"],
+            'monthNames': ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"],
+            'firstDay' : 1
+        },
+        'vi' :{
+            'applyLabel': 'Chọn',
+            'cancelLabel': 'Hủy',
+            'fromLabel': 'Từ',
+            'toLabel': 'Đến',
+            'weekLabel': 'T',
+            'customRangeLabel': 'Custom Range',
+            'daysOfWeek': ["CN", "T2", "T3", "T4", "T5", "T6", "T7"],
+            'monthNames': ["Th1", "Th2", "Th3", "Th4", "Th5", "Th6", "Th7", "Th8", "Th9", "Th10", "Th11", "Th12"],
+            'firstDay' : 1
+        }
+}
+

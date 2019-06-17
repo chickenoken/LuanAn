@@ -1,0 +1,559 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision: 1.0 $  $Date: 2014/06/25 $
+ * @author quang-thien
+ */
+
+'use strict';
+
+exexSMSApp.factory('MstGroupControlModel', [ 'BaseModel', function(BaseModel) {
+    // モデルのベースをBaseModelとする。
+    var model = BaseModel.getInstance();
+    // サーバーと連携する画面項目の定義R
+    model.form = {
+        groupEdit: {
+            groupCd : '',
+            parentCd: '',
+            groupName : '',
+            groupType : '',
+            telephone :  '',
+            selectedUserDetail: '',
+            userList : '',
+            tel1: '',
+            tel2: '',
+            tel3: '',
+            fax : '',
+            fax1:'',
+            fax2:'',
+            fax3:'',
+            remark:'',
+            version:''
+        },
+        listUser : []
+    };
+    model.listM020001 = [];
+    model.treeData =[];
+    model.listParentGroup = [];
+    model.userGroupList =[];
+    model.listUserTmp = [];
+    model.listAllUser = [];
+    model.hidden = {
+        isApproveGroup: false,
+        isSubmited: false,
+        buttonActive : false,
+        includeGroupUser : false,
+        screenMode : 'INSERT'
+    };
+    model.treeConfig = {
+        core : {
+            multiple : true,
+            animation: true,
+            error : function(error) {
+            },
+            check_callback : true,
+            worker : true
+        },
+        types : {
+            'default' : {
+                icon : 'fa fa-users'
+            },
+            star : {
+                icon : 'glyphicon glyphicon-star'
+            },
+            cloud : {
+                icon : 'glyphicon glyphicon-cloud'
+            }
+        },
+        version : 1,
+        plugins : ["types","search"]
+    };
+    model.searchGroup = '';
+
+    return model;
+} ]);
+
+exexSMSApp.controller('mstGroupControlDialogCtrl',
+        ['$timeout','$filter','$scope', 'MstGroupControlModel','Messages', 'ServerService','DialogsService',
+         function($timeout, $filter, $scope, MstGroupControlModel, Messages, ServerService,DialogsService){
+
+    $scope.model = MstGroupControlModel;
+
+    var to = false;
+    $scope.init = function(){
+        setTimeout(function(){
+            $scope.groupLabel = angular.element('#groupNameTmpLabel').text();
+        },0);
+        $scope.model.form.groupEdit.groupType = sessionStorage.getItem("groupType");
+        $scope.model.hidden.isSubmited = false;
+        $scope.getInit();
+        $scope.loadPage(null,0);
+    };
+
+    $scope.loadPage = function(data,init){
+        delete $scope.model.listUserTmp;
+            var groupDetail = {
+                groupCd : data,
+                includeGroupUser : $scope.model.hidden.includeGroupUser,
+                groupType: $scope.model.form.groupEdit.groupType
+            };
+            ServerService.doPost('MstGroupControl/getGroupDetail', groupDetail).then(
+                function(okResult) {
+                    var json = okResult.data.groupListGroupTypeMax;
+                    $scope.model.form.listM020001 = okResult.data.listM020001;
+                    $scope.model.form.listParentGroup = okResult.data.listParent;
+                    $scope.model.form.userGroupList =  okResult.data.userGroupList;
+                    $scope.model.form.listUser =  okResult.data.userList;
+                    if(!ValidateUtil.isValidTextEmpty($scope.model.form.userGroupList)){
+                        $scope.model.listAllUser =  $scope.model.form.listUser.concat($scope.model.form.userGroupList);
+                    }else{
+                        $scope.model.listAllUser =  $scope.model.form.listUser;
+                    }
+                    if(!ValidateUtil.isValidTextEmpty($scope.model.form.userGroupList)){
+                        $scope.model.hidden.buttonActive = true;
+                    }else{
+                        $scope.model.form.userGroupList = [];
+                        $scope.model.hidden.buttonActive = false;
+                    }
+                    if(!ValidateUtil.isValidTextEmpty(json)){
+                        json = JSON.parse(JSON.stringify(json).split('"groupCd":').join('"id":'));
+                        json = JSON.parse(JSON.stringify(json).split('"groupName":').join('"text":'));
+                        json = JSON.parse(JSON.stringify(json).split('"parentCd":').join('"parent":'));
+                        angular.forEach(json, function(item, i){
+                            if(item.id == '$'){
+                                item.state = { opened : true, disabled: true};
+                            }
+                            if(item.oldFlag){
+                                item.parent = '$old';
+                            }
+
+                            if(item.id == '$old'){
+                                item.state = { disabled: true};
+                            }
+                        })
+                        $scope.model.treeData = json;
+                    }else{
+                        $scope.model.treeData = null;
+                    }
+                    if(init == 0){
+                        $scope.model.treeInstance.jstree(true).settings.core.data = $scope.model.treeData;
+                        $scope.model.treeInstance.jstree(true).refresh();
+                    }
+
+                    if(!ValidateUtil.isValidTextEmpty(okResult.data.groupDetail)) {
+                        $scope.model.form.groupEdit.parentCd = okResult.data.groupDetail.parentCd;
+                        $scope.model.form.groupEdit =  okResult.data.groupDetail;
+                        if(!ValidateUtil.isValidTextEmpty($scope.model.form.groupEdit.telephone)) {
+                            var tempTelephone = okResult.data.groupDetail.telephone.split("-");
+                            $scope.model.form.groupEdit.tel1 = tempTelephone[0];
+                            $scope.model.form.groupEdit.tel2 = tempTelephone[1];
+                            $scope.model.form.groupEdit.tel3 = tempTelephone[2];
+                        }
+                        $scope.model.form.groupEdit.fax =  okResult.data.groupDetail.fax;
+                        if(!ValidateUtil.isValidTextEmpty($scope.model.form.groupEdit.fax)) {
+                            var tempFax = okResult.data.groupDetail.fax.split("-");
+                            $scope.model.form.groupEdit.fax1 = tempFax[0];
+                            $scope.model.form.groupEdit.fax2 = tempFax[1];
+                            $scope.model.form.groupEdit.fax3 = tempFax[2];
+                        }
+                    }
+//                    if (ValidateUtil.isValidTextEmpty(data)) {
+//                        $scope.resetForm();
+//                     }
+                    setTimeout(function(){
+                        $scope.groupLabel = angular.element('#groupNameTmpLabel').text();
+                        $scope.labelTelephone = $("#phoneNumber").html();
+                    },0);
+
+                    setTimeout(function() {
+                        $("#remark[data-inputmask]").inputmask();
+                    }, 100);
+                },
+                function(errResult){
+                });
+    };
+
+    $scope.resetForm = function(){
+        $scope.model.hidden.screenMode = '';
+        $scope.nodeId = ''
+        $scope.model.searchGroup = '';
+        $scope.model.form.groupEdit.searchUser = '';
+        $scope.model.form.groupEdit.groupCd = '';
+        $scope.model.form.groupEdit.parentCd = '';
+        $scope.model.form.groupEdit.groupName = '';
+        $scope.model.form.groupEdit.groupType = '';
+        $scope.model.form.groupEdit.tel1 = '';
+        $scope.model.form.groupEdit.tel2 = '';
+        $scope.model.form.groupEdit.tel3 = '';
+        $scope.model.form.groupEdit.fax1 = '';
+        $scope.model.form.groupEdit.fax2 = '';
+        $scope.model.form.groupEdit.fax3 = '';
+        $scope.model.form.groupEdit.remark = '';
+        $scope.model.form.groupEdit.positionNo = '';
+        $scope.model.form.groupEdit.validDateFrom = '';
+        $scope.model.form.groupEdit.validDateTo = '';
+        $scope.model.form.userGroupList = [];
+        $scope.model.form.listParentGroup = [];
+        $scope.model.hidden.isSubmited = false;
+    }
+
+    $scope.selectNode = function(node, selected) {
+        $scope.model.hidden.screenMode = 'UPDATE';
+        $scope.model.hidden.includeGroupUser = false;
+        $scope.nodeId = selected.node.id;
+        $scope.loadPage($scope.nodeId,1);
+    }
+
+    // Check this Ellipsis
+    $scope.isEllipsisActive = function (e) {
+         return (e.offsetWidth < e.scrollWidth);
+    }
+
+    $scope.hoverNode = function(node, selected) {
+        if(selected.node.id.indexOf('$') == -1){
+            var idNode =  "#" + selected.node.id + "_anchor";
+            $(idNode).each(function(i) {
+                if ($scope.isEllipsisActive(this)) {
+                    $(this).attr("title", $(this).text());
+                }
+            });
+        }
+    }
+
+    $scope.register = function (){
+        $scope.nodeId = '0';
+        $scope.model.form.groupEdit.searchUser = '';
+        $scope.model.form.groupEdit.groupCd = '';
+        $scope.model.form.groupEdit.parentCd = '';
+        $scope.model.form.groupEdit.groupName = '';
+        $scope.model.form.groupEdit.groupType = '';
+        $scope.model.form.groupEdit.tel1 = '';
+        $scope.model.form.groupEdit.tel2 = '';
+        $scope.model.form.groupEdit.tel3 = '';
+        $scope.model.form.groupEdit.fax1 = '';
+        $scope.model.form.groupEdit.fax2 = '';
+        $scope.model.form.groupEdit.fax3 = '';
+        $scope.model.form.groupEdit.remark = '';
+        $scope.model.form.groupEdit.positionNo = '';
+        $scope.model.form.groupEdit.validDateFrom = '';
+        $scope.model.form.groupEdit.validDateTo = '';
+        $scope.model.form.userGroupList = [];
+        $scope.model.form.listParentGroup = [];
+        $scope.model.hidden.isSubmited = false;
+        $scope.model.hidden.screenMode = 'INSERT';
+        $scope.refreshUserList(false);
+    }
+
+    $scope.getInit = function(){
+        ServerService.doPost('MstGroupControl/getInit', {}).then(
+            function(okResult) {
+                var error = okResult.data.failed;
+                var warning = okResult.data.warning;
+                if(!ValidateUtil.isValidTextEmpty(error)){
+                     DialogsService.showError(Messages.getMessage('system.error'),error);
+                     return;
+                } else if(!ValidateUtil.isValidTextEmpty(warning)){
+                    DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                    return;
+                }
+            },
+            function(errResult){
+            });
+    };
+
+    $scope.deleteLogicGroup = function(param) {
+        var params = {
+            groupCd : param.groupCd,
+            userGroupList : $scope.model.form.userGroupList,
+        };
+        DialogsService.showConfirm(Messages.getMessage('title.confirm'),Messages.getMessage('S00005'))
+        .result.then(function(btn){
+            ServerService.doPost('MstGroupControl/deleteLogicGroup', params).then(
+                function(okResult) {
+                    if(!ValidateUtil.isValidTextEmpty(okResult.data.failed)){
+                         DialogsService.showError(Messages.getMessage('system.error'), error);
+                         return;
+                    } else if (!ValidateUtil.isValidTextEmpty(okResult.data.warning)) {
+                        DialogsService.showWarning(Messages.getMessage('check.error'), okResult.data.warning);
+                        return;
+                    } else {
+                        DialogsService.showNotify(Messages.getMessage('title.info'), okResult.data.success);
+                        $scope.model.treeInstance.jstree(true).delete_node(param.groupCd);
+                        $scope.model.hidden.screenMode = 'INSERT';
+                        $scope.resetForm();
+                        $scope.refreshUserList(false);
+
+                    }
+                },
+                function(errResult){}
+            );
+        });
+    };
+
+    $scope.addGroup = function(param,formInvalid) {
+        $scope.model.hidden.isSubmited = true;
+        if (formInvalid) {
+            return;
+        }
+
+        if(ValidateUtil.isValidTextEmpty(param.parentCd) || param.parentCd == '$'){
+            param.parentCd = null;
+        }
+
+        var params = {
+            groupName : param.groupName,
+            parentCd : param.parentCd,
+            telephone: param.tel1 + "-" + param.tel2 + "-" + param.tel3,
+            fax: param.fax1 + "-" + param.fax2 + "-" +param.fax3,
+            groupType : param.groupType,
+            userGroupList : $scope.model.form.userGroupList,
+            newUserGroupList : [],
+            positionNo : param.positionNo,
+            validDateFrom : !StringUtils.isEmpty(param.validDateFrom) ? new Date(param.validDateFrom) : null,
+            validDateTo : !StringUtils.isEmpty(param.validDateTo) ? new Date(param.validDateTo) : null,
+            remark: param.remark,
+        };
+        if($scope.checkTelephone(param)){
+            return;
+        }
+        if($scope.checkFax(param)){
+            return;
+        }
+        if(ValidateUtil.isValidTextEmpty(param.tel1) && ValidateUtil.isValidTextEmpty(param.tel2) &&
+                ValidateUtil.isValidTextEmpty(param.tel3)){
+            params.telephone = '';
+        }
+        if(ValidateUtil.isValidTextEmpty(param.fax1) && ValidateUtil.isValidTextEmpty(param.fax2) &&
+                ValidateUtil.isValidTextEmpty(param.fax3)){
+            params.fax = '';
+        }
+        if($scope.model.form.userGroupList.length > 0){
+            $scope.model.form.userGroupList.forEach(function(item, key) {
+                params.newUserGroupList.push(item.userCd);
+            });
+        }
+
+        // when screen = approve group screen, setting groupType = 'APPROVE_GROUP'
+        if (ValidateUtil.isValidTextEmpty(params.groupType) && sessionStorage.getItem("groupType") == 'APPROVE_GROUP'){
+            params.groupType = 'APPROVE_GROUP';
+        }
+
+        if(!ValidateUtil.isValidTextEmpty(params.groupType)){
+            DialogsService.showConfirm(Messages.getMessage('title.confirm'),Messages.getMessage('S00003'))
+            .result.then(function(btn){
+                ServerService.doPost('MstGroupControl/addGroup', params).then(
+                    function(okResult) {
+                        if(!ValidateUtil.isValidTextEmpty(okResult.data.error)){
+                             DialogsService.showError(Messages.getMessage('system.error'), okResult.data.failed);
+                             return;
+                        }
+                        if (!ValidateUtil.isValidTextEmpty(okResult.data.warning)) {
+                            DialogsService.showWarning(Messages.getMessage('check.error'), okResult.data.warning);
+                            return;
+                        } else {
+                            DialogsService.showNotify(Messages.getMessage('title.info'), okResult.data.success)
+                            .result.then(function(btn){
+                                $scope.model.form.groupEdit.groupCd = okResult.data.groupCd;
+                                $scope.model.form.groupEdit.version = 1;
+                                $scope.model.hidden.screenMode = 'UPDATE';
+
+                                var newGroup =  {
+                                    id : okResult.data.groupCd,
+                                    text : param.groupName
+                                }
+                                //Check valid date to
+                                var groupId = "$";
+                                if(!StringUtils.isEmpty(param.validDateTo) && param.validDateTo < DateUtils.getDateForString(new Date())){
+                                    groupId = "$old"
+                                }
+                                //Get parent cd
+                                var parentCd = !StringUtils.isEmpty(param.parentCd) ? param.parentCd : groupId;
+                                //Add group mới vào treeview
+                                $scope.model.treeInstance.jstree(true).create_node(parentCd, newGroup);
+                                $scope.model.searchGroup = param.groupName;
+                                $scope.searchNode();
+                                $scope.model.treeInstance.jstree(true).select_node($scope.model.form.groupEdit.groupCd);
+                            })
+                        }
+                    }
+                );
+            });
+        }else{
+            DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00203'));
+            return;
+        }
+    };
+
+    $scope.checked = function(index, param){
+        angular.forEach($scope.model.form.userGroupList, function(item, i){
+            if(index != i && param.position == '2'){
+                if($scope.model.form.userGroupList[i].position == '2'){
+                    $scope.model.form.userGroupList[i].position = '0';
+                }
+            }
+        })
+    };
+
+    $scope.updateGroup = function(param,formInvalid) {
+        $scope.model.hidden.isSubmited = true;
+        if (formInvalid) {
+            return;
+        }
+        if(param.parentCd == '$'){
+            param.parentCd = null;
+        }
+        var params = {
+            groupCd : $scope.model.form.groupEdit.groupCd,
+            groupName : param.groupName,
+            telephone: param.tel1 + "-" + param.tel2 + "-" + param.tel3,
+            fax: param.fax1 + "-" + param.fax2 + "-" +param.fax3,
+            groupType : param.groupType,
+            parentCd : param.parentCd,
+            positionNo : param.positionNo,
+            remark: param.remark,
+            validDateFrom : !StringUtils.isEmpty(param.validDateFrom) ? new Date(param.validDateFrom) : null,
+            validDateTo : !StringUtils.isEmpty(param.validDateTo) ? new Date(param.validDateTo) : null,
+            version : $scope.model.form.groupEdit.version,
+            userGroupList : $scope.model.form.userGroupList,
+            newUserGroupList : [],
+        };
+        if($scope.checkTelephone(param)){
+            return;
+        }
+        if($scope.checkFax(param)){
+            return;
+        }
+        if(ValidateUtil.isValidTextEmpty(param.tel1) && ValidateUtil.isValidTextEmpty(param.tel2) &&
+                ValidateUtil.isValidTextEmpty(param.tel3)){
+            params.telephone = '';
+        }
+        if(ValidateUtil.isValidTextEmpty(param.fax1) && ValidateUtil.isValidTextEmpty(param.fax2) &&
+                ValidateUtil.isValidTextEmpty(param.fax3)){
+            params.fax = '';
+        }
+        if($scope.model.form.userGroupList.length > 0){
+            $scope.model.form.userGroupList.forEach(function(item) {
+                params.newUserGroupList.push(item.userCd);
+            });
+        }
+        if(!ValidateUtil.isValidTextEmpty(params.groupType)){
+            DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('S00004'))
+            .result.then(function(btn){
+                ServerService.doPost('MstGroupControl/updateGroup', params).then(
+                    function(okResult) {
+                        if(!ValidateUtil.isValidTextEmpty(okResult.data.failed)){
+                             DialogsService.showError(Messages.getMessage('system.error'), okResult.data.failed);
+                             return;
+                        } else if(!ValidateUtil.isValidTextEmpty(okResult.data.warning)){
+                            DialogsService.showWarning(Messages.getMessage('check.error'), okResult.data.warning.replaceAll("#","<br>"));
+                            return;
+                        } else {
+
+                            $scope.model.form.groupEdit.version = okResult.data.version;
+                            $scope.loadPage($scope.model.form.groupEdit.groupCd, 0);
+                            DialogsService.showNotify(Messages.getMessage('title.info'), okResult.data.success).result.then(function(btn){
+                                $timeout(function(){
+                                    $scope.model.searchGroup = param.groupName;
+                                    $scope.searchNode();
+                                    $scope.model.treeInstance.jstree(true).select_node($scope.model.form.groupEdit.groupCd);
+                                },500);
+                            })
+                        }
+                    }
+                );
+            });
+        }else{
+            DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00203'));
+        }
+    };
+
+    $scope.checkFax = function (param) {
+        if(!ValidateUtil.isValidTextEmpty(param.fax1) || !ValidateUtil.isValidTextEmpty(param.fax2) || !ValidateUtil.isValidTextEmpty(param.fax3)){
+            if(ValidateUtil.isValidTextEmpty(param.fax1) || ValidateUtil.isValidTextEmpty(param.fax2) || ValidateUtil.isValidTextEmpty(param.fax3)){
+                var errorFax = Messages.getMessage('W00131');
+                DialogsService.showWarning(Messages.getMessage('check.error'), errorFax);
+                return true;
+            }
+        }
+        return false;
+    };
+
+    $scope.checkTelephone = function (param) {
+        if(!ValidateUtil.isValidTextEmpty(param.tel1) || !ValidateUtil.isValidTextEmpty(param.tel2) || !ValidateUtil.isValidTextEmpty(param.tel3)){
+            if(ValidateUtil.isValidTextEmpty(param.tel1) || ValidateUtil.isValidTextEmpty(param.tel2) || ValidateUtil.isValidTextEmpty(param.tel3)){
+                var errorTelephone = Messages.getMessage('W00130');
+                DialogsService.showWarning(Messages.getMessage('check.error'), errorTelephone);
+                return true;
+            }
+        }
+        return false;
+    };
+
+    $scope.sortableConfig = {
+        group: 'requestUser',
+        onEnd: function (evt){
+            if(!ValidateUtil.isValidTextEmpty($scope.model.form.userGroupList)){
+                $scope.model.form.buttonActive = true;
+            }else{
+                $scope.model.form.buttonActive = false;
+            }
+        }
+    };
+
+    $scope.changeM020001 = function(){
+        var param = {
+                selectedGroupType : $scope.model.form.groupEdit.groupType
+        };
+        ServerService.doPost('MstGroupControl/changeM020001', param).then(
+            function(okResult) {
+                $scope.model.form.listParentGroup = okResult.data.listParentGroup;
+            }
+        );
+    }
+
+   $scope.searchUser = function(query){
+        $scope.model.form.listUser = $filter("filter")($scope.model.listAllUser, query);
+        if(!ValidateUtil.isValidTextEmpty($scope.model.form.userGroupList)){
+            for(var i=0;i<$scope.model.form.userGroupList.length;i++){
+                for(var j = 0;j<$scope.model.form.listUser.length;j++){
+                    if($scope.model.form.userGroupList[i].userCd == $scope.model.form.listUser[j].userCd){
+                        $scope.model.form.listUser.splice(j, 1);
+                    }
+                }
+            }
+        }
+      }
+
+   $scope.refreshUserList = function(includeGroupUser){
+       $scope.model.form.groupEdit.searchUser = null;
+
+       // setting includeGroupUser = true when screen = approveGroupControl
+       if (sessionStorage.getItem("groupType") == 'APPROVE_GROUP'){
+           includeGroupUser = true;
+       }
+       var param = {
+               groupCd : null,
+               includeGroupUser : includeGroupUser
+       };
+       ServerService.doPost('MstGroupControl/getUserList', param).then(
+           function(okResult) {
+               $scope.model.form.listUser =  okResult.data.userList;
+               $scope.model.listAllUser = okResult.data.userList;
+               $scope.searchUser();
+        });
+    }
+    ////Event JSTree
+    $scope.searchNode = function(){
+        if(to){
+            clearTimeout(to);
+        }
+        to = setTimeout(function () {
+            var v = $('#searchGroup').val();
+            $('#tree').jstree(true).search(v);
+        }, 250);
+    }
+
+    $scope.init();
+}]);

@@ -1,0 +1,233 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+
+/**
+ * @version $Revision: 1.0 $ $Date:  $
+ * @author quang-tung
+ */
+
+'use strict';
+exexSMSApp.factory('QuickStartModel', [ 'BaseModel', '$rootScope', function(BaseModel, $rootScope) {
+
+    var model = BaseModel.getInstance();
+    model.form = {
+        custType : false,
+        projectName : '',
+        custName : '',
+        businessCd: ''
+    };
+
+    model.hidden = {
+        screenMode : 'INSERT',
+        isSubmited : false
+    };
+
+    return model;
+}]);
+
+exexSMSApp.service('QuickStartService', ['$q', 'ServerService',function ($q, ServerService) {
+    var _self = this;
+
+    _self.initData = function(param) {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('QuickStart/getInit', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    _self.createData = function(param) {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('QuickStart/createData', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+}]);
+
+exexSMSApp.controller('quickStartCtrl',
+        ['$scope', '$cookies', 'QuickStartModel', 'HeaderModel', 'DialogsService', 'RouteService', 'QuickStartService', 'SfaProjectControlService','SfaProjectControlModel', 'Messages',
+         function($scope, $cookies, QuickStartModel, HeaderModel, DialogsService, RouteService, QuickStartService, SfaProjectControlService, SfaProjectControlModel, Messages){
+
+    $scope.model = QuickStartModel;
+    $scope.modelHeader = HeaderModel;
+    $scope.modelSfaProject = SfaProjectControlModel;
+
+    $scope.getInit = function() {
+        SfaProjectControlService.initData({}).then(
+            function(result) {
+                var error = result.data.failed;
+                if(!ValidateUtil.isValidTextEmpty(result.data.failed)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                }
+                $scope.model.form.listMstBusiness = result.data.listMstBusiness;
+            }
+        );
+    };
+
+    $scope.init = function() {
+        $scope.model.hidden.screenMode = 'INSERT';
+        var custType = false;
+        if(!StringUtils.isEmpty($cookies.get('custType'))){
+            custType = $cookies.get('custType') === 'false' ? false : true;
+        }
+        $scope.model.form.custType = custType;
+        $scope.getInit();
+    }
+    $scope.init();
+
+    /**
+     * 顧客タイプを変更
+     */
+     $scope.changeCustomerType = function(){
+         var custType = $scope.model.form.custType;
+         var expireDate = new Date();
+         expireDate.setDate(expireDate.getDate() + 30);
+         document.cookie = 'custType=' + custType + '; expires=' + expireDate;
+     };
+
+    $scope.getBusinessProcess = function(){
+        var param = {
+                businessCd : $scope.model.form.businessCd
+        };
+        SfaProjectControlService.initProjProcessSetting(param).then(
+            function(result) {
+                $scope.modelSfaProject.form.business.listProcessSetting = result.data.listProcessSetting.listProcessSetting;
+                $scope.modelSfaProject.form.business.listP010004 = result.data.listP010004;
+                $scope.modelSfaProject.form.business.listMstGroup = result.data.listMstGroup;
+                $scope.modelSfaProject.form.business.listUser = result.data.listUser;
+            }
+        );
+    };
+
+    $scope.openProcessSetting = function(){
+        var options = {
+            size: 'process'
+        };
+        DialogsService.showDialog('SfaProjectProcessSetting', 'sfaProjectProcessSettingCtrl', {},options).result.then(function(param) { });
+    };
+
+    $scope.convertParam = function(params){
+        var param = {
+            custType: params.custType,
+            projectName: params.projectName,
+            custName: params.custName,
+            businessCd: params.businessCd,
+            listProcessSetting: $scope.modelSfaProject.form.business.listProcessSetting
+        };
+
+        if(param.listProcessSetting.length > 0){
+            $scope.convertDataProcess(param);
+        } else{
+            param.listGroupProcessSetting = '';
+            param.listProcessSetting = '';
+        }
+
+        return param;
+    };
+
+    $scope.convertDataProcess = function(param){
+        var groupProcess = [];
+        var process = [];
+        angular.forEach(param.listProcessSetting, function(value, key){
+            if(!value.isDisabled){
+                if(!ValidateUtil.isValidTextEmpty(value.processGroupNo) && !ValidateUtil.isValidTextEmpty(value.processGroupName)){
+                    var tmp = {
+                        companyCd: value.companyCd,
+                        projectSno: value.projectSno,
+                        businessCd: value.businessCd,
+                        processGroupNo: value.processGroupNo,
+                        processGroupName: value.processGroupName,
+                        groupGroupCd: value.groupGroupCd,
+                        groupUserCd: value.groupUserCd,
+                        iconNo: value.iconNo
+                    };
+                    groupProcess.push(tmp);
+                }
+                angular.forEach(value.lstProjectGroupProcess, function(subValue, subKey){
+                    process.push(subValue);
+                });
+            }
+        });
+        param.listGroupProcessSetting = JSON.stringify(groupProcess);
+        param.listProcessSetting = JSON.stringify(process);
+    };
+
+    /**データを追加*/
+    $scope.createData = function(params, formInvalid){
+        $scope.model.hidden.isSubmited = true;
+        if (formInvalid) {
+            return;
+        };
+        var param = $scope.convertParam(params);
+        QuickStartService.createData(param).then(
+            function(result) {
+                var error =  result.data.failed;
+                var warning =  result.data.warning;
+                var success =  result.data.success;
+                if(!ValidateUtil.isValidTextEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                }else if(!ValidateUtil.isValidTextEmpty(warning)){
+                    DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                    return;
+                }else{
+                    DialogsService.showNotify(Messages.getMessage('title.info'), success)
+                    .result.then(function(btn){
+                       $scope.model.hidden.screenMode = 'VIEW';
+                       $scope.model.hidden.custCd = result.data.quickStart.custCd;
+                       $scope.model.hidden.custType = result.data.quickStart.custType;
+                       $scope.model.hidden.projectSno = result.data.quickStart.projectSno;
+                       $scope.model.hidden.billAddressNo = result.data.quickStart.billaddressNo;
+                   });
+                }
+            }
+        );
+    };
+
+    $scope.gotoCustomer = function(){
+        var param = {
+            custCd: $scope.model.hidden.custCd,
+            custName: $scope.model.form.custName,
+            custType: $scope.model.hidden.custType,
+            billAddressNo: $scope.model.hidden.billAddressNo
+        };
+        sessionStorage.setItem("projectCustItemInfo", JSON.stringify(param));
+        RouteService.gotoUrl('CrmControl');
+    };
+
+    $scope.gotoProjectControl = function(){
+        var passingParam = {
+            custCd :  $scope.model.hidden.custCd,
+            custName: $scope.model.form.custName,
+            projectSno :  $scope.model.hidden.projectSno,
+            projectName :  $scope.model.form.projectName,
+            screenMode : 'VIEW'
+        };
+        sessionStorage.setItem("projectItemControl", JSON.stringify(passingParam));
+        RouteService.gotoUrl('SfaProjectControl');
+    };
+
+    $scope.newQuickStart = function(){
+        RouteService.gotoUrl('QuickStart');
+    };
+
+}]);

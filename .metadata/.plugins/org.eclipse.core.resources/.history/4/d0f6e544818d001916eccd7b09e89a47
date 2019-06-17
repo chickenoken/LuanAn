@@ -1,0 +1,51 @@
+@CHARSET "UTF-8";
+
+#bargainControlForm .col-2 {
+  width: 12.5%;
+  float: left;
+}
+
+#bargainDetailForm .col-5 {
+  width: 37.5%;
+  float: left;
+}
+#bargainDetailForm .col-7 {
+  width: 62.5%;
+  float: left;
+}
+
+
+#bargainControlForm .col-10,
+#bargainDetailForm .col-10 {
+  position: relative;
+  width: 87.5%;
+  float: left;
+  padding-left: 10px;
+}
+
+#daterange .input-group[disabled="disabled"] {
+  width: 100% !important;
+}
+
+#parentForm span.select2-selection.select2-selection--multiple{
+  background: #FFFFFF;
+}
+#parentForm .select2-container--disabled span.select2-selection__clear {
+    display: none;
+}
+.error-message label{
+  font-size: 12px;
+}
+
+@media only screen and (max-width: 993px) {
+  #bargainControlForm .col-2, #bargainControlForm .col-10,
+  #bargainDetailForm .col-2, #bargainDetailForm .col-10 {
+    width: 100%;
+    padding-left: 0;
+    padding-right: 0;
+  }
+}
+
+#bargainDetailForm input[type="checkbox"][disabled] ~ label>.box {
+    opacity: 0;
+}

@@ -1,0 +1,38 @@
+<%-- Copyright(c) SystemEXE corp. All Rights Reserved. --%>
+<%-- $Id: $ --%>
+<%@ tag pageEncoding="utf-8"%>
+<%@ taglib prefix="spring" uri="http://www.springframework.org/tags"%>
+<%@ taglib prefix="sec" uri="http://www.springframework.org/security/tags"%>
+<%@ taglib prefix="sms"  tagdir="/WEB-INF/tags"%>
+
+<!-- BEGIN HEADER -->
+<%@include file="/WEB-INF/views/Header.jsp"%>
+<!-- END HEADER -->
+
+<!-- BEGIN SIDEBAR -->
+<!-- END SIDEBAR -->
+
+<div class="page-container" ng-cloak>
+
+  <!-- BEGIN SIDEBAR -->
+  <%@include file="/WEB-INF/views/com/LeftSidebar.jsp"%>
+  <!-- END SIDEBAR -->
+
+  <!-- BEGIN CONTENT -->
+  <div class="page-content-wrapper" exex-responsive>
+    <div class="page-content" ng-class="{'sub-account-view': modelHeader.login.currentUser.loginId}">
+      <!-- EXEX-SMS Content -->
+      <jsp:doBody />
+      <!-- End EXEX-SMS Content -->
+    </div>
+  </div>
+  <!-- END CONTENT -->
+
+</div>
+<!-- END CONTAINER -->
+
+<!-- BEGIN FOOTER -->
+<%@include file="/WEB-INF/views/Footer.jsp"%>
+<!-- END FOORTER -->
+
+<exex-loading></exex-loading>

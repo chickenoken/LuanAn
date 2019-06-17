@@ -1,0 +1,658 @@
+
+exexSMSApp.factory('InvoiceTemplateModel', [ 'BaseModel', '$rootScope', function(BaseModel, $rootScope) {
+    var model = BaseModel.getInstance();
+    model= {
+            form:{
+                companyCd: '',
+                version: 1,
+                invoiceType: '',
+                pageSize: 'page-size-A4-portrait',
+                tempNo: '',
+                tempName: '',
+                tempContent: '',
+                custType: false
+            },
+            listInvoiceType: [],
+            listInvoiceSize: [{code: 'page-size-A4-portrait', codeName: 'A4 Portrait'},
+                              {code: 'page-size-A4-landscape', codeName: 'A4 Landscape'},
+                              {code: 'page-size-A5-portrait', codeName: 'A5 Portrait'},
+                              {code: 'page-size-A5-landscape', codeName: 'A5 Landscape'},
+                              {code: 'page-size-A3-portrait', codeName: 'A3 Portrait'},
+                              {code: 'page-size-A3-landscape', codeName: 'A3 Landscape'},
+                              {code: 'page-size-B4-portrait', codeName: 'B4 Portrait'},
+                              {code: 'page-size-B4-landscape', codeName: 'B4 Landscape'},
+                              {code: 'page-size-B5-portrait', codeName: 'B5 Portrait'},
+                              {code: 'page-size-B5-landscape', codeName: 'B5 Landscape'}],
+
+            listInvoiceTemplateField: [],
+            listInvoiceDetailTemplateField: [],
+            listInvoiceData: [],
+            listData: [],
+            listDetailData: [],
+            listDatasource: [],
+            tableData: [],
+            content: '',
+            contentPrint: '',
+            hidden: {
+                isNew: true,
+                isEdit: false,
+                review: false,
+                estimateSno: '',
+                invoiceTypeName: '',
+                invoiceReviewName: ''
+            }
+    };
+    return model;
+
+}]);
+
+exexSMSApp.controller('InvoiceTemplateCtrl',
+        ['$rootScope', '$scope','$filter','$compile', '$sce', '$timeout','$parse', 'InvoiceTemplateModel', 'DialogsService','RouteService', 'InvoiceTemplateService', 'Messages',
+         function($rootScope, $scope, $filter, $compile, $sce, $timeout, $parse, invoiceTemplateModel,  DialogsService, RouteService, invoiceTemplateService, Messages){
+
+        $scope.model = invoiceTemplateModel;
+        $scope.model.hidden.isDisabled = false;
+        var sessionLogin = angular.fromJson(sessionStorage.getItem("session"));
+        var invoiceTemplate = angular.fromJson(sessionStorage.getItem("invoiceTemplateSession"));
+        if(!StringUtils.isEmpty(invoiceTemplate)){
+            $scope.model.form.pageSize = invoiceTemplate.pageSize;
+        }
+        /**初期*/
+        $scope.init = function(){
+            var invoiceTemplate = angular.fromJson(sessionStorage.getItem("invoiceTemplateSession"));
+            var param = {};
+            if(!StringUtils.isEmpty(invoiceTemplate)){
+                param.tempNo = invoiceTemplate.tempNo;
+                param.invoiceType = invoiceTemplate.invoiceType;
+                param.custType = invoiceTemplate.custType;
+                $scope.model.hidden.isNew = false;
+                $scope.model.hidden.isEdit = true;
+            }
+            invoiceTemplateService.initDetail(param).then(
+                function(result) {
+                    $scope.model.listInvoiceType = result.data.listInvoiceType;
+                    if(!StringUtils.isEmpty(result.data.invoiceTemplate)){
+                        $scope.model.form = result.data.invoiceTemplate;
+                        $scope.model.content = result.data.invoiceTemplate.tempContent;
+                        angular.forEach($scope.model.listInvoiceType, function(value, index){
+                            if($scope.model.form.invoiceType == value.code){
+                                $scope.model.hidden.invoiceTypeName = value.codeName;
+                                $scope.model.hidden.invoiceReviewName = value.codeName;
+                            }
+                        });
+
+                        if('07' == $scope.model.form.invoiceType || '09' == $scope.model.form.invoiceType){
+                            var length = result.data.listInvoiceTemplateField.length;
+                            if(!StringUtils.isEmpty(length)){
+                                var middle = length / 2;
+                                $scope.model.listInvoiceTemplateField = result.data.listInvoiceTemplateField.slice(0, middle);
+                                $scope.model.listInvoiceDetailTemplateField = result.data.listInvoiceTemplateField.slice(middle, length);
+                            }
+                        }else{
+                            $scope.model.listInvoiceTemplateField = result.data.listInvoiceTemplateField;
+                            $scope.model.listInvoiceDetailTemplateField = result.data.listInvoiceTemplateDetailField;
+                        }
+                    }
+                }
+            );
+        };
+
+        $scope.init();
+
+        /**テンプレートタイプを変更*/
+        $scope.onChangeTemplateType = function(invoiceType){
+
+            var custType =  $scope.model.form.custType;
+            angular.forEach($scope.model.listInvoiceType, function(value, index){
+                if(invoiceType == value.code){
+                    $scope.model.hidden.invoiceTypeName = value.codeName;
+                    $scope.model.hidden.invoiceReviewName = value.codeName;
+                }
+            });
+
+            /**get invoice data type within review tab*/
+            if($scope.model.hidden.review){
+                var param = {invoiceType: invoiceType, custType: custType};
+                invoiceTemplateService.initReview(param).then(
+                    function(result) {
+                        if(!StringUtils.isEmpty(result.data.failed)){
+                            DialogsService.showError(Messages.getMessage('system.error'), result.data.failed);
+                            return;
+                        }else if(!StringUtils.isEmpty(result.data.warning)){
+                            DialogsService.showWarning(Messages.getMessage('check.error'), result.data.warning);
+                            return;
+                        }else{
+                            $scope.model.listInvoiceData = result.data;
+                        }
+                    }
+                );
+            }
+
+            /**get content data type within template tab*/
+            if($scope.model.hidden.isEdit){
+                if(!StringUtils.isEmpty($scope.model.content)){
+                    var dlg = DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('W11014'));
+                    dlg.result.then(function(btn){
+                        changeTemplateType(invoiceType, custType);
+                    },function(btn){});
+                }else{
+                    changeTemplateType(invoiceType, custType);
+                }
+            }else{
+                changeTemplateType(invoiceType, custType);
+            }
+        }
+
+        /**テンプレートタイプを変更*/
+        function changeTemplateType(invoiceType, custType){
+            var param = {invoiceType: invoiceType, custType: custType};
+            invoiceTemplateService.changeInvoiceTemplate(param).then(
+                function(result) {
+                    if('07' == invoiceType || '09' == invoiceType){
+                        var length = result.data.listInvoiceTemplateField.length;
+                        if(!StringUtils.isEmpty(length)){
+                            var middle = length / 2;
+                            $scope.model.listInvoiceTemplateField = result.data.listInvoiceTemplateField.slice(0, middle);
+                            $scope.model.listInvoiceDetailTemplateField = result.data.listInvoiceTemplateField.slice(middle, length);
+                        }
+                    }else{
+                        $scope.model.listInvoiceTemplateField = result.data.listInvoiceTemplateField;
+                        $scope.model.listInvoiceDetailTemplateField = result.data.listInvoiceTemplateDetailField;
+                    }
+                    $scope.model.content = result.data.defaultTemplate;
+
+                }
+            );
+            $scope.reConfigCkEditor();
+        }
+
+        /**テンプレート+データ出力*/
+        $scope.onChangeData = function(objSno){
+
+            if(StringUtils.isEmpty(objSno)){
+               return false;
+            }
+
+            var recodeNo = null;
+            var custType = null;
+            angular.forEach($scope.model.listInvoiceData, function(val, index){
+                if(objSno == val.objSno){
+                    if(!StringUtils.isEmpty(val.recodeNo)){
+                        recodeNo = val.recodeNo;
+                    }
+                    if(!StringUtils.isEmpty(val.custType)){
+                        custType = val.custType;
+                    }
+                }
+            });
+
+            var listObjSno = [];
+            if($scope.model.form.invoiceType == '07' || $scope.model.form.invoiceType == '09'){
+                /**customer template need only custCd to get data*/
+                listObjSno.push(objSno);
+            } else {
+                /**other template need Sno_recodeNo to get data*/
+                listObjSno.push(objSno+'_'+recodeNo);
+            }
+            /**create parameter for get data for template*/
+            var param = {'tempNo': null, 'invoiceType': $scope.model.form.invoiceType, 'objSno': listObjSno};
+
+            /**set cust_type for customer data*/
+            if(!StringUtils.isEmpty(custType)){
+                param.custType = custType;
+            }else{
+                param.custType = false;
+            }
+
+            /**initial for html content*/
+            var view = $('#view');
+            view.empty();
+
+            /**call function for server*/
+            invoiceTemplateService.getInvoiceTemplateData(param).then(
+                function(result) {
+
+                    /**convert data for content ck*/
+                    var length = 0;
+                    $scope.listObj = [];
+                    if(!StringUtils.isEmpty(result.data.templateData)){
+                        if('07' != param.invoiceType && '09' != param.invoiceType){
+                        /**other template*/
+                            var i = 0;
+                            length = result.data.templateData.length;
+                            for(;i < length; i++){
+                                var data  = angular.copy(result.data.templateData[i]);
+                                var dataDetail  = result.data.templateDataDetail[i];
+                                var size = 0;
+                                angular.forEach(dataDetail, function(value, index){
+                                    if(size < value.listItem.length){
+                                        size = value.listItem.length;
+                                    }
+                                });
+                                var obj = {height: size*30, obj: data, listData: dataDetail};
+                                $scope.listObj.push(obj);
+                            }
+                        }else{
+                        /**cust template*/
+                            var obj = {height: 500, obj: result.data.templateData, listData: []};
+                            $scope.listObj.push(obj);
+                        }
+
+                        /**get and compile template content*/
+                        var template = angular.copy($scope.model.content);
+                        var content = $compile(template)($scope);
+                        $compile($('#content').html(content))($scope);
+
+                        if('07' != param.invoiceType && '09' != param.invoiceType){
+                            /**other template*/
+                            /**get detail data table for add data source*/
+                            var table = $('#content').find('table.item-detail-data-source');
+                            /**count number column for set colspan for group_name if has data*/
+                            if(table){
+                                if(!StringUtils.isEmpty(table[0])){
+                                    var top =  $(table[0]).parent().offset().top - $('#content').offset().top;
+                                    angular.forEach($scope.listObj, function(val, i){
+                                        val.height = val.height + top;
+                                    });
+                                }
+                                angular.forEach(table, function(value, index){
+                                    var colCount = 0;
+                                    $(value).find('tbody tr:first td').each(function () {
+                                        if ($(this).attr('colspan')) {
+                                            colCount += +$(this).attr('colspan');
+                                        } else {
+                                            colCount++;
+                                        }
+                                    });
+                                    var rows = $(value).find('tbody tr');
+                                    var numberRow = $(value).find('tbody tr').length;
+                                    /**add data source for ng-repeat-start of angular*/
+                                    if(numberRow >= 2){
+                                        var tdContent = $(rows[1]).html();
+                                        var groupFont = $(rows[1]).find('td:first span').attr("style");
+                                        $(rows[1]).remove();
+                                        var rowData = '<tr ng-repeat-start="item in data.listData track by $index" ' +
+                                        'ng-class="{'+'hidden'+' : !item.groupName && $first}"><td colspan="' + colCount + '">' +
+                                        '<span style="height: 25px;font-weight: bold;' + groupFont + '" ng-if="item.groupNo != \'999999999\' || !$first">' +
+                                        '<label>{{item.groupName}}&nbsp;</label></span></td></tr>' +
+                                        '<tr ng-repeat-end ng-repeat="row in item.listItem track by $index">' + tdContent + '</tr>'
+                                        $(value).find('tbody tr:first').after(rowData);
+                                        $compile($('#content').html())($scope);
+                                    }else if(numberRow == 1){
+                                        var tdContent = $(rows[0]).html();
+                                        var groupFont = $(rows[1]).find('td:first span').attr("style");
+                                        $(rows[0]).remove();
+                                        var rowData = '<tr ng-repeat-start="item in data.listData track by $index" ' +
+                                        'ng-class="{'+'hidden'+' : !item.groupName && $first}"><td colspan="' + colCount + '">' +
+                                        '<span style="height: 25px;font-weight: bold;' + groupFont + '" ng-if="item.groupNo != \'999999999\' || !$first">' +
+                                        '<label>{{item.groupName}}&nbsp;</label></span></td></tr>' +
+                                        '<tr ng-repeat-end ng-repeat="row in item.listItem track by $index">' + tdContent + '</tr>'
+                                        $(value).find('tbody tr:first').before(rowData);
+                                        $compile($('#content').html())($scope);
+                                    }
+                                });
+                            }
+                            /**compile data again*/
+                            $compile($('#content').html())($scope);
+                            /**map data into html page from 'exex-src' attribute
+                            * 1. search attribute data-src and get value in html string.
+                            * 2. append into html using expression of angular (ex: {{obj.estimateDate}})
+                            * */
+                            var span = $('#content').find('span.h-card');
+                            angular.forEach(span, function(value, index){
+                                var val = $(value).text();
+                                var dataSrc = $(value).attr('exex-src');
+                                $(value).empty();
+                                if(dataSrc && dataSrc.indexOf("{{obj.") == 0){
+                                    dataSrc = dataSrc.replace('{{','data.');
+                                    $(value).attr('ng-bind-html', dataSrc.replace('}}',''));
+                                    $(value).removeAttr('exex-src');
+                                }
+                                if(dataSrc && dataSrc.indexOf("{{row.") == 0){
+                                    dataSrc = dataSrc.replace('{{','');
+                                    $(value).attr('ng-bind-html', dataSrc.replace('}}',''));
+                                    $(value).removeAttr('exex-src');
+                                }
+                            });
+
+                            var htmlTxt = '<div style="min-height: {{data.height}}px;" ng-class="{\'p-t-50\':!$first, \'p-b-20\': $last}" class="row" ng-repeat="data in listObj track by $index">' +
+                                          $('#content').html() +
+                                          '<div style="page-break-after: always;"><span style="display: none;">&nbsp;</span></div>' +
+                                          '</div>';
+                            $compile($('#content').html(htmlTxt))($scope);
+                            $timeout(function(){
+                                $compile($scope.model.contentPrint = $('#content').html())($scope);
+                           },500);
+                        }else{
+                        /**cust or project template*/
+                            /**map data into html page from 'exex-src' attribute
+                             * 1. search attribute data-src and get value in html string.
+                             * 2. append into html using expression of angular (ex: {{obj.estimateDate}})
+                             * */
+                            var span = $('#content').find('span.h-card');
+                            angular.forEach(span, function(value, index){
+                                var val = $(value).text();
+                                var dataSrc = $(value).attr('exex-src');
+                                $(value).empty();
+                                if(dataSrc && dataSrc.indexOf("{{obj.") == 0){
+                                    dataSrc = dataSrc.replace('{{','');
+                                    $(value).attr('ng-bind-html', dataSrc.replace('}}',''));
+                                    $(value).removeAttr('exex-src');
+                                }
+                            });
+                            var htmlTxt = '<div ng-class="{\'p-t-50\':!$first, \'p-b-20\': $last}" class="row" ng-repeat="item in listObj track by $index">' +
+                                            '<div class="row" ng-repeat="obj in item.obj track by $index">' +
+                                                $('#content').html() +
+                                                '<div style="page-break-after: always;"><span style="display: none;">&nbsp;</span></div>' +
+                                            '</div>' +
+                                          '</div>';
+                            $compile($('#content').html(htmlTxt))($scope);
+                            $timeout(function(){
+                                $compile($scope.model.contentPrint = $('#content').html())($scope);
+                            },500);
+                        }
+                    }
+                }
+            );
+            $scope.reConfigCkEditor();
+        }
+
+        /**ページサイズを変更*/
+        $scope.onChangePageSize = function(pageSize){
+            var bodyEditor = $('iframe.cke_wysiwyg_frame').contents().find("#body-editor");
+            if(bodyEditor.hasClass('page-size-A4-portrait')){
+                bodyEditor.removeClass('page-size-A4-portrait');
+            }else if(bodyEditor.hasClass('page-size-A4-landscape')){
+                bodyEditor.removeClass('page-size-A4-landscape');
+            }else if(bodyEditor.hasClass('page-size-A3-portrait')){
+                bodyEditor.removeClass('page-size-A3-portrait');
+            }else if(bodyEditor.hasClass('page-size-A3-landscape')){
+                bodyEditor.removeClass('page-size-A3-landscape');
+            }else if(bodyEditor.hasClass('page-size-A5-portrait')){
+                bodyEditor.removeClass('page-size-A5-portrait');
+            }else if(bodyEditor.hasClass('page-size-A5-landscape')){
+                bodyEditor.removeClass('page-size-A5-landscape');
+            }else if(bodyEditor.hasClass('page-size-B4-portrait')){
+                bodyEditor.removeClass('page-size-B4-portrait');
+            }else if(bodyEditor.hasClass('page-size-B4-landscape')){
+                bodyEditor.removeClass('page-size-B4-landscape');
+            }else if(bodyEditor.hasClass('page-size-B5-portrait')){
+                bodyEditor.removeClass('page-size-B5-portrait');
+            }else if(bodyEditor.hasClass('page-size-B5-landscape')){
+                bodyEditor.removeClass('page-size-B5-landscape');
+            }
+            bodyEditor.addClass(pageSize);
+            $scope.reConfigCkEditor();
+        }
+
+        $scope.reConfigCkEditor = function(){
+            /**reconfig ck editor*/
+            if($scope.model.hidden.review){
+                CKEDITOR.instances.printEditor.config.bodyClass = 'document-editor ' + $scope.model.form.pageSize;
+            } else{
+                CKEDITOR.instances.editEditor.config.bodyClass = 'document-editor ' + $scope.model.form.pageSize;
+            }
+        }
+
+        /**save button click*/
+        $scope.save = function(){
+            if (StringUtils.isEmpty($scope.model.form.tempName)) {
+                DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W11016'));
+                return;
+            }
+
+            if (StringUtils.isEmpty($scope.model.form.invoiceType)) {
+                DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W11017'));
+                return;
+            }
+
+            if($scope.model.hidden.isNew){
+                var dlg = DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('S00003'));
+                dlg.result.then(function(btn){
+                    var param = angular.copy($scope.model.form);
+                    param.tempContent = angular.copy($scope.model.content);
+                    if(param.invoiceType != '07'){
+                        param.custType = null;
+                    }else{
+                        param.custType = $scope.model.form.custType;
+                    }
+                    delete param.invoiceSize;
+                    invoiceTemplateService.saveTemplate(param).then(
+                        function(result) {
+                            if(!StringUtils.isEmpty(result.data.failed)){
+                                DialogsService.showError(Messages.getMessage('system.error'), result.data.failed);
+                                return;
+                            }else if(!StringUtils.isEmpty(result.data.warning)){
+                                DialogsService.showWarning(Messages.getMessage('check.error'), result.data.warning);
+                                return;
+                            }else{
+                                var dlg = DialogsService.showNotify(Messages.getMessage('title.info'), result.data.success);
+                                dlg.result.then(function(btn){
+                                    param.tempNo = result.data.tempNo;
+                                    $scope.model.hidden.isNew = false;
+                                    $scope.model.hidden.isEdit = true;
+                                    sessionStorage.setItem("invoiceTemplateSession", JSON.stringify(param));
+                                    $scope.init();
+                               });
+                            }
+                        }
+                    );
+                },function(btn){
+                    $scope.model.form.business.isConfirm = false;
+                });
+            }else if($scope.model.hidden.isEdit){
+                var dlg = DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('S00004'));
+                dlg.result.then(function(btn){
+                    var param = angular.copy($scope.model.form);
+                    param.tempContent = angular.copy($scope.model.content);
+                    if(param.invoiceType != '07'){
+                        param.custType = null;
+                    } else {
+                        // doi ung custType tu server tra ve bi bien thanh chu so '1'
+                        param.custType = param.custType == '1' ? true : false;
+                    }
+                    delete param.invoiceSize;
+                    invoiceTemplateService.updateTemplate(param).then(
+                        function(result) {
+                            if(!StringUtils.isEmpty(result.data.failed)){
+                                DialogsService.showError(Messages.getMessage('system.error'), result.data.failed);
+                                return;
+                            }else if(!StringUtils.isEmpty(result.data.warning)){
+                                DialogsService.showWarning(Messages.getMessage('check.error'), result.data.warning);
+                                return;
+                            }else{
+                                var dlg = DialogsService.showNotify(Messages.getMessage('title.info'), result.data.success);
+                                dlg.result.then(function(btn){
+                                    sessionStorage.setItem("invoiceTemplateSession", JSON.stringify(param));
+                                    $scope.init();
+                               });
+                            }
+                        }
+                    );
+                },function(btn){
+                    $scope.model.form.business.isConfirm = false;
+                });
+            }
+        }
+
+        /**save button click*/
+        $scope.deleteTemplate = function(){
+            var dlg = DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('S00005'));
+            dlg.result.then(function(btn){
+                var param = angular.copy($scope.model.form);
+                param.tempContent = angular.copy($scope.model.content);
+                delete param.invoiceSize;
+                invoiceTemplateService.deleteTemplate(param).then(
+                    function(result) {
+                        if(!StringUtils.isEmpty(result.data.failed)){
+                            DialogsService.showError(Messages.getMessage('system.error'), result.data.failed);
+                            return;
+                        }else if(!StringUtils.isEmpty(result.data.warning)){
+                            DialogsService.showWarning(Messages.getMessage('check.error'), result.data.warning);
+                            return;
+                        }else{
+                            var dlg = DialogsService.showNotify(Messages.getMessage('title.info'), result.data.success);
+                            dlg.result.then(function(btn){
+                                sessionStorage.removeItem("invoiceTemplateSession");
+                                RouteService.gotoUrl("InvoiceTemplateList");
+                           });
+                        }
+                    }
+                );
+            },function(btn){ });
+        }
+
+        /**テンプレート一覧戻る*/
+        $scope.back = function(){
+            sessionStorage.removeItem("invoiceTemplateSession");
+            $scope.model.hidden.review = false;
+            RouteService.gotoUrl('InvoiceTemplateList');
+        }
+
+
+        /**テンプレート*/
+        $scope.template = function(){
+            /**reconfig ck editor*/
+            $scope.model.hidden.review = false;
+            $scope.reConfigCkEditor();
+        }
+
+        /**テンプレートプレビュー*/
+        $scope.review = function(invoiceType){
+            if(!StringUtils.isEmpty($scope.model.listInvoiceType) && $scope.model.listInvoiceType.length > 0){
+                angular.forEach($scope.model.listInvoiceType, function(val, key){
+                    if(invoiceType == val.code){
+                        $scope.model.hidden.invoiceReviewName = val.codeName;
+                    }
+                });
+                var custType = $scope.model.form.custType;
+                var param = {invoiceType: invoiceType, custType: custType};
+                invoiceTemplateService.initReview(param).then(
+                    function(result) {
+                        if(!StringUtils.isEmpty(result.data.failed)){
+                            DialogsService.showError(Messages.getMessage('system.error'), result.data.failed);
+                            return;
+                        }else if(!StringUtils.isEmpty(result.data.warning)){
+                            DialogsService.showWarning(Messages.getMessage('check.error'), result.data.warning);
+                            return;
+                        }else{
+                            $scope.model.listInvoiceData = result.data;
+                            $scope.model.hidden.review = true;
+                        }
+                    }
+                );
+            }
+        }
+
+        /**change customer type, only effect when use customer invoice*/
+        $scope.changeCustomerType =  function(){
+            $scope.onChangeTemplateType('07');
+        }
+
+/**=======================CKEDITOR CONFIG=======================================================================*/
+        /**config for editor sessionLogin.locale*/
+        $scope.editorOptions = {
+                language: sessionLogin.locale,
+                height: 800,
+                toolbar:[
+                            { name: 'document', items: [ 'Source' ] },
+                            { name: 'clipboard', items: [ 'Cut', 'Copy', 'Paste', 'PasteText', '-', 'Undo', 'Redo' ] },
+                            { name: 'styles', items: [ 'Styles', 'Format', 'Font', 'FontSize' ] },
+                            { name: 'colors', items: [ 'TextColor', 'BGColor' ] },
+                            '/',
+                            { name: 'basicstyles', items: [ 'Bold', 'Italic', 'Underline', 'Strike', 'Subscript', 'Superscript' ] },
+                            { name: 'paragraph', items: [ 'NumberedList', 'BulletedList', '-', 'Outdent', 'Indent', 'Blockquote', '-', 'JustifyLeft', 'JustifyCenter', 'JustifyRight', 'JustifyBlock', '-', 'BidiLtr', 'BidiRtl' ] },
+                            { name: 'insert', items: [ 'Image', 'Table', 'HorizontalRule', 'Smiley', 'SpecialChar', 'PageBreak' ] },
+                            { name: 'lineheight', items: ['lineheight'] },
+                        ],
+                bodyId: 'body-editor',
+                bodyClass: 'document-editor ' + $scope.model.form.pageSize,
+                width: 'auto',
+                extraPlugins: 'hcard,justify,tableresize,lineutils,tabletools,colordialog,font,tableselection,lineheight,image2,tableselection,codemirror',
+                removePlugins: 'print,image',
+                contentsCss: [getContextPath() + '/resources/assets/ckeditor/contents.css', getContextPath() + '/resources/assets/ckeditor/mystyles.css'],
+                toolbarCanCollapse : true,
+                allowedContent: true,
+                readOnly: true,
+                font_names: 'ＭＳ Ｐゴシック;ＭＳ Ｐ明朝;ＭＳ ゴシック;ＭＳ 明朝;Arial/Arial, Helvetica, sans-serif;Comic Sans MS/Comic Sans MS, cursive;Courier New/Courier New, Courier, monospace;Georgia/Georgia, serif;Lucida Sans Unicode/Lucida Sans Unicode, Lucida Grande, sans-serif;Tahoma/Tahoma, Geneva, sans-serif;Times New Roman/Times New Roman, Times, serif;Trebuchet MS/Trebuchet MS, Helvetica, sans-serif;Verdana/Verdana, Geneva, sans-serif',
+                font_defaultLabel: 'ＭＳ Ｐ明朝',
+                fontSize_defaultLabel: '14',
+                image_previewText:' ',
+                enterMode: 2, //CK_EDITOR.ENTER_BR
+        };
+
+        /**config for view and print */
+        $scope.viewPrintOptions = {
+                language: sessionLogin.locale,
+                height: 800,
+                toolbar:[{items: ['Preview','Print']}],
+                bodyId: 'body-editor',
+                bodyClass: 'document-editor ' + $scope.model.form.pageSize,
+                width: 'auto',
+                extraPlugins: 'print,justify,lineutils,font',
+                removePlugins: 'tableselection,pagebreak',
+                contentsCss: [getContextPath() + '/resources/assets/ckeditor/contents.css', getContextPath() + '/resources/assets/ckeditor/mystylesPrint.css'],
+                toolbarCanCollapse : true,
+                allowedContent: true,
+                readOnly: true,
+                font_names: 'ＭＳ Ｐゴシック;ＭＳ Ｐ明朝;ＭＳ ゴシック;ＭＳ 明朝;Arial/Arial, Helvetica, sans-serif;Comic Sans MS/Comic Sans MS, cursive;Courier New/Courier New, Courier, monospace;Georgia/Georgia, serif;Lucida Sans Unicode/Lucida Sans Unicode, Lucida Grande, sans-serif;Tahoma/Tahoma, Geneva, sans-serif;Times New Roman/Times New Roman, Times, serif;Trebuchet MS/Trebuchet MS, Helvetica, sans-serif;Verdana/Verdana, Geneva, sans-serif',
+                font_defaultLabel: 'ＭＳ Ｐ明朝',
+                fontSize_defaultLabel: '14',
+        };
+
+        /**create drag drop parameter for ckeditor*/
+        CKEDITOR.disableAutoInline = true;
+        CKEDITOR.on( 'instanceReady', function() {
+            CKEDITOR.document.getById( 'dataList' ).on( 'dragstart', function( evt ) {
+                var target = evt.data.getTarget().getAscendant( 'div', true );
+                CKEDITOR.plugins.clipboard.initDragDataTransfer( evt );
+                var dataTransfer = evt.data.dataTransfer;
+                dataTransfer.setData( 'item', $scope.model.listInvoiceTemplateField[ target.data( 'item' ) ] );
+                dataTransfer.setData( 'text/html', target.getText() );
+            } );
+
+            CKEDITOR.document.getById( 'dataDetailList' ).on( 'dragstart', function( evt ) {
+                var target = evt.data.getTarget().getAscendant( 'div', true );
+                CKEDITOR.plugins.clipboard.initDragDataTransfer( evt );
+                var dataTransfer = evt.data.dataTransfer;
+                dataTransfer.setData( 'item-detail', $scope.model.listInvoiceDetailTemplateField[ target.data( 'item-detail' ) ] );
+                dataTransfer.setData( 'text/html', target.getText() );
+            } );
+        } );
+
+        // Implements a simple widget that represents contact details (see http://microformats.org/wiki/h-card).
+        CKEDITOR.plugins.add( 'hcard', {
+            requires: 'widget',
+            init: function( editor ) {
+                editor.widgets.add( 'hcard', {
+                    allowedContent: 'span(!h-card); a[href](!u-email,!p-name); span(!p-tel)',
+                    requiredContent: 'span(h-card)',
+                    pathName: 'hcard',
+                    upcast: function( el ) {
+                        return el.name == 'span' && el.hasClass( 'h-card' );
+                    }
+                } );
+
+                editor.addFeature( editor.widgets.registered.hcard );
+                editor.on( 'paste', function( evt ) {
+                    var data = evt.data.dataTransfer.getData( 'item' );
+                    if ( !data ) {
+                        var dataDetail = evt.data.dataTransfer.getData( 'item-detail' );
+                        if ( !dataDetail ) {
+                            return;
+                        }else{
+                            evt.data.dataValue =
+                                '<span class="h-card" exex-src=' + dataDetail.dataSource + '>' +
+                                    '<span class="p-param">' + dataDetail.param + '</span>' +
+                                '</span>';
+                        }
+                    }else{
+                        evt.data.dataValue =
+                            '<span class="h-card" exex-src=' + data.dataSource + '>' +
+                                '<span class="p-result">' + data.param + '</span>' +
+                            '</span>';
+                    }
+                } );
+            }
+        } );
+}]);

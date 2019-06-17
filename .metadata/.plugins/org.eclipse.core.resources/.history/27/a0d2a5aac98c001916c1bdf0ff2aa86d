@@ -1,0 +1,777 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision: 1.0 $  $Date: $
+ * @author : quang-tung
+ */
+
+
+'use strict';
+
+exexSMSApp.factory('MstWarehouseControlModel', [ 'BaseModel', function(BaseModel) {
+    var model = BaseModel.getInstance();
+    model.form = {
+        warehouse :{
+            usagePeriodFrom : '',
+            usagePeriodTo : '',
+            warehouseName : '',
+            warehouseNameKana:'',
+            postNo : '',
+            address1 : '',
+            address2 : '',
+            telephoneNo : '',
+            faxNo: '',
+            remark :'',
+            activeFlag: true,
+            custCd : '',
+            custName : '',
+            version: ''
+        }
+    };
+    model.listUser = [];
+    model.listGroup = [];
+    model.listLeft = [];
+    model.listRight = [];
+    model.listLeftTmp = [];
+    model.listLeftTmp1 = [];
+    model.listRightTmp = [];
+    model.listRightTmp1 = [];
+    model.hidden = {
+        telephoneNo1 : '',
+        telephoneNo2 : '',
+        telephoneNo3 : '',
+        faxNo1 :'',
+        faxNo2 :'',
+        faxNo3 :'',
+        isSubmited : false,
+        requireSelect: false
+    };
+    return model;
+} ]);
+
+exexSMSApp.controller('mstWarehouseControlCtrl',
+        ['$rootScope', '$scope', '$uibModalInstance', 'DialogsService', 'MstWarehouseControlModel', 'data', 'MstWarehouseService', 'Messages',
+         function($rootScope, $scope, $uibModalInstance, DialogsService, MstWarehouseControlModel, data , MstWarehouseService, Messages) {
+
+    $scope.model = MstWarehouseControlModel;
+
+    $scope.init = function(){
+        $scope.model.hidden.isSubmited = false
+        $scope.model.listLeftTmp = [];
+        $scope.model.listLeftTmp1 = [];
+        $scope.model.listRightTmp = [];
+        $scope.model.listRightTmp1 = [];
+        $scope.getInit();
+    };
+
+    $scope.getInit = function() {
+        var param = {};
+        MstWarehouseService.initData(param).then(function(result) {
+            var error = result.data.failed;
+            if(!ValidateUtil.isValidTextEmpty(error)){
+                DialogsService.showError(Messages.getMessage('system.error'), error);
+                return;
+            }else{
+                $scope.model.listGroup =  result.data.listGroup;
+                $scope.model.listUser =  result.data.listUser;
+                if(!ValidateUtil.isValidTextEmpty(data.warehouse)){
+                    $scope.inquiry(data.warehouse.warehouseNo);
+                }else{
+                    $scope.resetForm();
+                    var itemGroup = {
+                        groupCd : '',
+                        shipmentRole : false,
+                        arrivalRole : false,
+                        inventoryRole : false,
+                        checkRole : false,
+                        rowCode: false
+                    };
+                    $scope.model.listLeft.push(itemGroup);
+                    var itemUser = {
+                        userCd : '',
+                        shipmentRole : false,
+                        arrivalRole : false,
+                        inventoryRole : false,
+                        checkRole : false,
+                        rowCode: false
+                    };
+                    $scope.model.listRight.push(itemUser);
+                }
+            }
+        });
+    };
+
+    $scope.resetForm = function(){
+        $scope.model.listLeft = [];
+        $scope.model.listRight = [];
+        $scope.model.form.warehouse.custCd = '';
+        $scope.model.form.warehouse.custName = '';
+        $scope.model.form.warehouse.usagePeriodFrom = '';
+        $scope.model.form.warehouse.usagePeriodTo = '';
+        $scope.model.form.warehouse.warehouseName = '';
+        $scope.model.form.warehouse.warehouseNameKana= '';
+        $scope.model.form.warehouse.postNo = '';
+        $scope.model.form.warehouse.address1 = '';
+        $scope.model.form.warehouse.address2 = '';
+        $scope.model.form.warehouse.telephoneNo = '';
+        $scope.model.form.warehouse.faxNo = '';
+        $scope.model.form.warehouse.remark = '';
+        $scope.model.form.warehouse.activeFlag = true;
+        $scope.model.hidden.warehouseNo = '';
+        $scope.model.hidden.telephoneNo1 = '';
+        $scope.model.hidden.telephoneNo2 = '';
+        $scope.model.hidden.telephoneNo3 = '';
+        $scope.model.hidden.faxNo1 = '';
+        $scope.model.hidden.faxNo2 = '';
+        $scope.model.hidden.faxNo3 = '';
+    }
+
+    $scope.inquiry = function(warehouseNo){
+        var param = {warehouseNo : warehouseNo};
+        MstWarehouseService.getWarehouse(param).then(function(result) {
+            var warning = result.data.warning;
+            var error = result.data.failed;
+            var success = result.data.success;
+            if(!ValidateUtil.isValidTextEmpty(warning)){
+                DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                return;
+            }else if(!ValidateUtil.isValidTextEmpty(error)){
+                DialogsService.showError(Messages.getMessage('system.error'), error);
+                return;
+            }else{
+                if(!ValidateUtil.isValidTextEmpty(result.data.detail)){
+                    $scope.model.form.warehouse = angular.copy(result.data.detail);
+                    $scope.model.listLeft = result.data.listLeft;
+                    $scope.model.listRight = result.data.listRight;
+                    for (var i = 0; i < $scope.model.listLeft.length; i++) {
+                        $scope.model.listLeftTmp1.push("");
+                        var item = $scope.model.listLeft[i].userGroupCd;
+                        $scope.model.listLeftTmp.push(item);
+                    }
+                    for (var i = 0; i < $scope.model.listRight.length; i++) {
+                        $scope.model.listRightTmp1.push("");
+                        var item = $scope.model.listRight[i].userGroupCd;
+                        $scope.model.listRightTmp.push(item);
+                    }
+                    $scope.model.hidden.warehouseNo = result.data.detail.warehouseNo;
+                    if(!ValidateUtil.isValidTextEmpty($scope.model.form.warehouse.telephoneNo)) {
+                        var tempTelephone = $scope.model.form.warehouse.telephoneNo.split("-");
+                        $scope.model.hidden.telephoneNo1 = tempTelephone[0];
+                        $scope.model.hidden.telephoneNo2 = tempTelephone[1];
+                        $scope.model.hidden.telephoneNo3 = tempTelephone[2];
+                    } else{
+                        $scope.model.hidden.telephoneNo1 = "";
+                        $scope.model.hidden.telephoneNo2 = "";
+                        $scope.model.hidden.telephoneNo3 = "";
+                    }
+                    if(!ValidateUtil.isValidTextEmpty($scope.model.form.warehouse.faxNo)) {
+                        var tempFax = $scope.model.form.warehouse.faxNo.split("-");
+                        $scope.model.hidden.faxNo1 = tempFax[0];
+                        $scope.model.hidden.faxNo2 = tempFax[1];
+                        $scope.model.hidden.faxNo3 = tempFax[2];
+                    } else{
+                        $scope.model.hidden.faxNo1 = "";
+                        $scope.model.hidden.faxNo2 = "";
+                        $scope.model.hidden.faxNo3 = "";
+                    }
+                    var itemGroup = {
+                        groupCd : '',
+                        shipmentRole : false,
+                        arrivalRole : false,
+                        inventoryRole : false,
+                        checkRole : false,
+                        rowCode: false
+                    };
+                    $scope.model.listLeft.push(itemGroup);
+                    var itemUser = {
+                        userCd : '',
+                        shipmentRole : false,
+                        arrivalRole : false,
+                        inventoryRole : false,
+                        checkRole : false,
+                        rowCode: false
+                    };
+                    $scope.model.listRight.push(itemUser);
+                }
+            }
+        });
+    };
+
+    $scope.close = function() {
+        $scope.resetForm();
+        $uibModalInstance.dismiss('close');
+    };
+
+    $scope.insertWarehouse = function(param, formInvalid) {
+        $scope.model.hidden.isSubmited = true;
+        var error = false;
+        var checked = false;
+        if (formInvalid) {
+            return;
+        }else{
+            $scope.model.listLeftData = angular.copy($scope.model.listLeft);
+            $scope.model.listRightData = angular.copy($scope.model.listRight);
+            var valueArr = $scope.model.listLeftTmp1.map(function(item){
+                return item;
+            });
+            var valueArr1 = $scope.model.listRightTmp1.map(function(item){
+                return item;
+            });
+            var isDuplicateLeft = valueArr.some(function(item, idx){
+                if(!ValidateUtil.isValidTextEmpty(item)) {
+                    return valueArr.indexOf(item) != idx
+                }
+            });
+            var isDuplicateRight = valueArr1.some(function(item, idx){
+                if(!ValidateUtil.isValidTextEmpty(item)) {
+                    return valueArr1.indexOf(item) != idx
+                }
+            });
+            if(isDuplicateLeft || isDuplicateRight){
+                return;
+            }
+            for (var i = 0; i < $scope.model.listLeftTmp1.length; i++) {
+                var item = $scope.model.listLeftTmp1[i];
+                if($scope.model.listLeftTmp.indexOf(item) > -1){
+                    if(ValidateUtil.isValidTextEmpty(item)){
+                        $scope.model.listLeft[i].rowCode = false;
+                    }else{
+                        error = true;
+                        $scope.model.listLeft[i].rowCode = true;
+                    }
+                }else{
+                    $scope.model.listLeft[i].rowCode = false;
+                    if(!ValidateUtil.isValidTextEmpty($scope.model.listLeftTmp[i])){
+                        $scope.model.listLeftData[i].userGroupCd = $scope.model.listLeftTmp[i];
+                    }
+                }
+            };
+
+            for (var i = 0; i < $scope.model.listRightTmp1.length; i++) {
+                var item = $scope.model.listRightTmp1[i];
+                if($scope.model.listRightTmp.indexOf(item) > -1){
+                    if(ValidateUtil.isValidTextEmpty(item)){
+                        $scope.model.listRight[i].rowCode = false;
+                    }else{
+                        error = true;
+                        $scope.model.listRight[i].rowCode = true;
+                    }
+                }else{
+                    $scope.model.listRight[i].rowCode = false;
+                    if(!ValidateUtil.isValidTextEmpty($scope.model.listRightTmp[i])){
+                        $scope.model.listRightData[i].userGroupCd = $scope.model.listRightTmp[i];
+                    }
+                }
+            }
+            if($scope.model.listLeftData.length > 0){
+                for (var i = 0; i < $scope.model.listLeftData.length - 1; i++) {
+                    var item = $scope.model.listLeftData[i];
+                    if(item.checkRole){
+                        checked = true;
+                    }else{
+                        checked = false;
+                    }
+                }
+            }
+
+            if($scope.model.listRightData.length > 0){
+                for (var i = 0; i < $scope.model.listRightData.length - 1; i++) {
+                    var item = $scope.model.listRightData[i];
+                    if(item.checkRole){
+                        checked = true;
+                    }else{
+                        checked = false;
+                    }
+                }
+            }
+        }
+
+        if(error || checked){
+            return;
+        }
+
+        DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('S00003')).result.then(function(btn){
+            $scope.model.listLeftData.splice($scope.model.listLeftData.length-1, 1);
+            $scope.model.listRightData.splice($scope.model.listRightData.length-1, 1);
+            var params = {
+                usagePeriodFrom : !StringUtils.isEmpty(param.usagePeriodFrom) ? new Date(param.usagePeriodFrom) : null,
+                usagePeriodTo :  !StringUtils.isEmpty(param.usagePeriodTo) ? new Date(param.usagePeriodTo) : null,
+                warehouseName : param.warehouseName,
+                warehouseNameKana: param.warehouseNameKana,
+                controlCd: param.controlCd,
+                postNo : param.postNo,
+                address1 : param.address1,
+                address2 : param.address2,
+                telephoneNo : $scope.model.hidden.telephoneNo1 + "-" + $scope.model.hidden.telephoneNo2 + "-" + $scope.model.hidden.telephoneNo3,
+                faxNo: $scope.model.hidden.faxNo1 + "-" + $scope.model.hidden.faxNo2 + "-" + $scope.model.hidden.faxNo3,
+                remark :param.remark,
+                activeFlag : param.activeFlag,
+                custCd : param.custCd,
+                listLeft: JSON.stringify($scope.model.listLeftData),
+                listRight: JSON.stringify($scope.model.listRightData)
+            };
+            if($scope.checkTelephone($scope.model.hidden)){
+                return;
+            }
+            if($scope.checkFax($scope.model.hidden)){
+                return;
+            }
+            if(ValidateUtil.isValidTextEmpty($scope.model.hidden.telephoneNo1)
+            && ValidateUtil.isValidTextEmpty($scope.model.hidden.telephoneNo2)
+            && ValidateUtil.isValidTextEmpty($scope.model.hidden.telephoneNo3)){
+                params.telephoneNo = '';
+            }
+            if(ValidateUtil.isValidTextEmpty($scope.model.hidden.faxNo1)
+            && ValidateUtil.isValidTextEmpty($scope.model.hidden.faxNo2)
+            && ValidateUtil.isValidTextEmpty($scope.model.hidden.faxNo3)){
+                params.faxNo = '';
+            }
+            MstWarehouseService.insertData(params).then(
+                function(result) {
+                    var warning = result.data.warning;
+                    var error = result.data.failed;
+                    var success = result.data.success;
+                    if(!ValidateUtil.isValidTextEmpty(warning)){
+                        DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                        return;
+                    }else if(!ValidateUtil.isValidTextEmpty(error)){
+                        DialogsService.showError(Messages.getMessage('system.error'), error);
+                        return;
+                    }else{
+                        DialogsService.showNotify(Messages.getMessage('title.info'), success).result.then(function(btn){
+                            $scope.getWarehouseList();
+                            $scope.close();
+                            $scope.model.hidden.warehouseNo = result.data.warehouseNo;
+                        });
+                    }
+                }
+            );
+        });
+    };
+
+    $scope.updateWarehouse = function(param,formInvalid) {
+        $scope.model.hidden.isSubmited = true;
+        var errorL = false;
+        var errorR = false;
+        var checkedL = false;
+        var checkedR = false;
+        if (formInvalid) {
+            return;
+        }else{
+            $scope.model.listLeftData = angular.copy($scope.model.listLeft);
+            $scope.model.listRightData = angular.copy($scope.model.listRight);
+            var valueArr = $scope.model.listLeftTmp1.map(function(item){
+                return item;
+            });
+            var valueArr1 = $scope.model.listRightTmp1.map(function(item){
+                return item;
+            });
+            var isDuplicateLeft = valueArr.some(function(item, idx){
+                if(!ValidateUtil.isValidTextEmpty(item)) {
+                    return valueArr.indexOf(item) != idx
+                }
+            });
+            var isDuplicateRight = valueArr1.some(function(item, idx){
+                if(!ValidateUtil.isValidTextEmpty(item)) {
+                    return valueArr1.indexOf(item) != idx
+                }
+            });
+            if(isDuplicateLeft || isDuplicateRight){
+                return;
+            }
+            for (var i = 0; i < $scope.model.listLeftTmp1.length; i++) {
+                var item = $scope.model.listLeftTmp1[i];
+                if($scope.model.listLeftTmp.indexOf(item) > -1){
+                    if(ValidateUtil.isValidTextEmpty(item)){
+                        $scope.model.listLeft[i].rowCode = false;
+                    }else{
+                        errorL = true;
+                        $scope.model.listLeft[i].rowCode = true;
+                    }
+                }else{
+                    $scope.model.listLeft[i].rowCode = false;
+                    if(!ValidateUtil.isValidTextEmpty($scope.model.listLeftTmp[i])){
+                        $scope.model.listLeftData[i].userGroupCd = $scope.model.listLeftTmp[i];
+                    }
+                }
+            };
+
+            for (var i = 0; i < $scope.model.listRightTmp1.length; i++) {
+                var item = $scope.model.listRightTmp1[i];
+                if($scope.model.listRightTmp.indexOf(item) > -1){
+                    if(ValidateUtil.isValidTextEmpty(item)){
+                        $scope.model.listRight[i].rowCode = false;
+                    }else{
+                        errorR = true;
+                        $scope.model.listRight[i].rowCode = true;
+                    }
+                }else{
+                    $scope.model.listRight[i].rowCode = false;
+                    if(!ValidateUtil.isValidTextEmpty($scope.model.listRightTmp[i])){
+                        $scope.model.listRightData[i].userGroupCd = $scope.model.listRightTmp[i];
+                    }
+                }
+            }
+            if($scope.model.listLeftData.length > 0){
+                for (var i = 0; i < $scope.model.listLeftData.length - 1; i++) {
+                    var item = $scope.model.listLeftData[i];
+                    if(item.checkRole){
+                        checkedL = true;
+                    }else{
+                        checkedL = false;
+                    }
+                }
+            }
+
+            if($scope.model.listRightData.length > 0){
+                for (var i = 0; i < $scope.model.listRightData.length - 1; i++) {
+                    var item = $scope.model.listRightData[i];
+                    if(item.checkRole){
+                        checkedR = true;
+                    }else{
+                        checkedR = false;
+                    }
+                }
+            }
+        }
+
+        if(errorL || checkedL || errorR || checkedR ){
+            return;
+        }
+        DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('S00004')).result.then(function(btn){
+            $scope.model.listLeftData.splice($scope.model.listLeftData.length-1, 1);
+            $scope.model.listRightData.splice($scope.model.listRightData.length-1, 1);
+            var params = {
+                usagePeriodFrom : !StringUtils.isEmpty(param.usagePeriodFrom) ? new Date(param.usagePeriodFrom) : null,
+                usagePeriodTo :  !StringUtils.isEmpty(param.usagePeriodTo) ? new Date(param.usagePeriodTo) : null,
+                warehouseNo: param.warehouseNo,
+                warehouseName : param.warehouseName,
+                warehouseNameKana: param.warehouseNameKana,
+                controlCd: param.controlCd,
+                postNo : param.postNo,
+                address1 : param.address1,
+                address2 : param.address2,
+                telephoneNo : $scope.model.hidden.telephoneNo1 + "-" + $scope.model.hidden.telephoneNo2 + "-" + $scope.model.hidden.telephoneNo3,
+                faxNo: $scope.model.hidden.faxNo1 + "-" + $scope.model.hidden.faxNo2 + "-" + $scope.model.hidden.faxNo3,
+                remark :param.remark,
+                activeFlag : param.activeFlag,
+                custCd : param.custCd,
+                version : param.version,
+                listLeft: JSON.stringify($scope.model.listLeftData),
+                listRight: JSON.stringify($scope.model.listRightData)
+
+            };
+            if($scope.checkTelephone($scope.model.hidden)){
+                return;
+            }
+            if($scope.checkFax($scope.model.hidden)){
+                return;
+            }
+            if(ValidateUtil.isValidTextEmpty($scope.model.hidden.telephoneNo1)
+            && ValidateUtil.isValidTextEmpty($scope.model.hidden.telephoneNo2)
+            && ValidateUtil.isValidTextEmpty($scope.model.hidden.telephoneNo3)){
+                params.telephoneNo = '';
+            }
+            if(ValidateUtil.isValidTextEmpty($scope.model.hidden.faxNo1)
+            && ValidateUtil.isValidTextEmpty($scope.model.hidden.faxNo2)
+            && ValidateUtil.isValidTextEmpty($scope.model.hidden.faxNo3)){
+                params.faxNo = '';
+            }
+            MstWarehouseService.updateData(params).then(
+                function(result) {
+                    var warning = result.data.warning;
+                    var error = result.data.failed;
+                    var success = result.data.success;
+                    if(!ValidateUtil.isValidTextEmpty(warning)){
+                        DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                        return;
+                    }else if(!ValidateUtil.isValidTextEmpty(error)){
+                        DialogsService.showError(Messages.getMessage('system.error'), error);
+                        return;
+                    }else{
+                        DialogsService.showNotify(Messages.getMessage('title.info'), success).result.then(function(btn){
+                            $scope.getWarehouseList();
+                            $scope.close();
+                            $scope.model.hidden.warehouseNo = result.data.warehouseNo;
+                        });
+                    }
+                });
+            }
+        );
+    };
+
+    $scope.deleteWarehouse = function(param) {
+        var params = {
+            warehouseNo : param.warehouseNo
+        };
+        DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('S00005')).result.then(function(btn){
+            MstWarehouseService.deleteData(params).then(
+                function(result) {
+                    var warning = result.data.warning;
+                    var error = result.data.failed;
+                    var success = result.data.success;
+                    if(!ValidateUtil.isValidTextEmpty(warning)){
+                        DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                        return;
+                    }else if(!ValidateUtil.isValidTextEmpty(error)){
+                        DialogsService.showError(Messages.getMessage('system.error'), error);
+                        return;
+                    }else{
+                        DialogsService.showNotify(Messages.getMessage('title.info'), success).result.then(function(btn){
+                            $scope.getWarehouseList();
+                            $scope.close();
+                        });
+                    }
+                });
+            });
+        };
+
+    /**
+     * 住所検索
+     */
+    $scope.checkPostNumber = function(postNo){
+        if(ValidateUtil.isValidTextEmpty(postNo)){
+            DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00207'));
+            return true;
+        }
+        if(ValidateUtil.isValidPostNo(postNo)){
+            DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00018'));
+            return true;
+        }
+        var params = {'postNo':postNo};
+        MstWarehouseService.checkPostNumber(params).then(
+            function(result) {
+            var warning = result.data.warning;
+            var error = result.data.failed;
+            if(!ValidateUtil.isValidTextEmpty(warning)){
+                DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                return;
+            }else if(!ValidateUtil.isValidTextEmpty(error)){
+                DialogsService.showError(Messages.getMessage('system.error'), error);
+                return;
+            }else{
+                $scope.model.form.warehouse.address1 = result.data.address;
+            }
+        });
+    };
+
+    $scope.$watch('model.hidden.telephoneNo1', function(newVal, oldVal) {
+        if (!ValidateUtil.isValidTextEmpty(newVal)) {
+            if ($scope.model.hidden.telephoneNo1.length == 5) {
+                $('input[name=telephoneNo2]').focus();
+            }
+        }
+    });
+    $scope.$watch('model.hidden.telephoneNo2', function(newVal, oldVal) {
+        if (!ValidateUtil.isValidTextEmpty(newVal)) {
+            if ($scope.model.hidden.telephoneNo2.length == 4) {
+                $('input[name=telephoneNo3]').focus();
+            }
+        }
+    });
+
+    $scope.$watch('model.hidden.faxNo1', function(newVal, oldVal) {
+        if (!ValidateUtil.isValidTextEmpty(newVal)) {
+            if ($scope.model.hidden.faxNo1.length == 5) {
+                $('input[name=faxNo2]').focus();
+            }
+        }
+    });
+
+    $scope.$watch('model.hidden.faxNo2', function(newVal, oldVal) {
+        if (!ValidateUtil.isValidTextEmpty(newVal)) {
+            if ($scope.model.hidden.faxNo2.length == 4) {
+                $('input[name=faxNo3]').focus();
+            }
+        }
+    });
+
+    $scope.checkTelephone = function (param) {
+        if(!ValidateUtil.isValidTextEmpty(param.telephoneNo1) || !ValidateUtil.isValidTextEmpty(param.telephoneNo2) || !ValidateUtil.isValidTextEmpty(param.telephoneNo3)){
+            if(ValidateUtil.isValidTextEmpty(param.telephoneNo1) || ValidateUtil.isValidTextEmpty(param.telephoneNo2) || ValidateUtil.isValidTextEmpty(param.telephoneNo3)){
+                DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00130'));
+                return true;
+            }
+        }
+    };
+
+    $scope.checkFax = function (param) {
+        if(!ValidateUtil.isValidTextEmpty(param.faxNo1) || !ValidateUtil.isValidTextEmpty(param.faxNo2) || !ValidateUtil.isValidTextEmpty(param.faxNo3)){
+            if(ValidateUtil.isValidTextEmpty(param.faxNo1) || ValidateUtil.isValidTextEmpty(param.faxNo2) || ValidateUtil.isValidTextEmpty(param.faxNo3)){
+                DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00131'));
+                return true;
+            }
+        }
+    };
+
+    $scope.getWarehouseList = function(){
+        var params = {
+            warehouseName :'' ,
+            warehouseType : '',
+            custName : '',
+            controlCd : '',
+            telephoneNo : '',
+            address : ''
+        };
+        $rootScope.$broadcast("MstWarehouseList#getWarehouseList",params);
+     };
+
+     $scope.addRow = function(value){
+         if(value == 'group'){
+             var item = {
+                     groupCd : '',
+                     shipmentRole : false,
+                     arrivalRole : false,
+                     inventoryRole : false,
+                     checkRole : false,
+                     rowCode: false
+             };
+             var length = $scope.model.listLeft.length;
+             $scope.model.listLeft[length-1].checkRole = true;
+             $scope.model.listLeft.push(item);
+             $('#tableGroup').animate({scrollTop:$('#tableGroup1').height()}, 'slow');
+         }else{
+             var item = {
+                     userCd : '',
+                     shipmentRole : false,
+                     arrivalRole : false,
+                     inventoryRole : false,
+                     checkRole : false,
+                     rowCode: false
+             };
+             var length = $scope.model.listRight.length;
+             $scope.model.listRight[length-1].checkRole = true;
+             $scope.model.listRight.push(item);
+             $('#tableUser').animate({scrollTop:$('#tableUser1').height()}, 'slow');
+         }
+     }
+
+     $scope.removeItem = function(index, value) {
+         if(value == 'group'){
+             var lastRow = $scope.model.listLeft.length - 1;
+             if(!lastRow == 0){
+                 $scope.model.listLeft.splice(index, 1);
+                 $scope.model.listLeftTmp.splice(index, 1);
+                 $scope.model.listLeftTmp1.splice(index, 1);
+             }
+         }else{
+             var lastRow = $scope.model.listRight.length - 1;
+             if(!lastRow == 0){
+                 $scope.model.listRight.splice(index, 1);
+                 $scope.model.listRightTmp.splice(index, 1);
+                 $scope.model.listRightTmp1.splice(index, 1);
+             }
+         }
+
+     }
+
+     $scope.onChangeUser = function(index, row){
+         var lastRow = $scope.model.listRight.length - 1;
+         if(lastRow == index){
+             $scope.addRow('');
+         }
+         $scope.onChangeRole(row);
+//         $scope.model.hidden.isSubmited = false;
+         row.showCode = false;
+         if(!ValidateUtil.isValidTextEmpty(row.userGroupCd)){
+             if($scope.model.listRightTmp.indexOf(row.userGroupCd) > -1){
+                 $scope.model.listRightTmp[index] = '';
+                 $scope.model.listRightTmp1[index] = row.userGroupCd;
+                 row.rowCode = true;
+             }else{
+                 $scope.model.listRightTmp[index] = row.userGroupCd;
+                 $scope.model.listRightTmp1[index] = '';
+                 row.rowCode = false;
+             }
+         }else{
+             $scope.model.listRightTmp[index] = '';
+             $scope.model.listRightTmp1[index] = '';
+             row.rowCode = false;
+         }
+     }
+
+     $scope.onChangeGroup = function(index, row){
+         var lastRow = $scope.model.listLeft.length - 1;
+         if(lastRow == index){
+             $scope.addRow('group');
+         }
+         $scope.onChangeRole(row);
+//         $scope.model.hidden.isSubmited = false;
+         row.showCode = false;
+         if(!ValidateUtil.isValidTextEmpty(row.userGroupCd)){
+             if($scope.model.listLeftTmp.indexOf(row.userGroupCd) > -1){
+                 $scope.model.listLeftTmp[index] = '';
+                 $scope.model.listLeftTmp1[index] = row.userGroupCd;
+                 row.rowCode = true;
+             }else{
+                 $scope.model.listLeftTmp[index] = row.userGroupCd;
+                 $scope.model.listLeftTmp1[index] = '';
+                 row.rowCode = false;
+             }
+         }else{
+             $scope.model.listLeftTmp[index] = '';
+             $scope.model.listLeftTmp1[index] = '';
+             row.rowCode = false;
+         }
+     }
+
+     $scope.onChangeRole = function(row){
+         if(!row.shipmentRole && !row.arrivalRole && !row.inventoryRole && !ValidateUtil.isValidTextEmpty(row.userGroupCd)){
+             row.checkRole = true;
+         }else{
+             row.requireSelect = true;
+             row.checkRole = false;
+         }
+     }
+
+     $scope.removeAllItem = function(value){
+         if(value == 'group'){
+                 $scope.model.listLeft = [];
+                 $scope.model.listLeftTmp = [];
+                 $scope.model.listLeftTmp1 = [];
+                 var item = {
+                         groupCd : '',
+                         shipmentRole : false,
+                         arrivalRole : false,
+                         inventoryRole : false,
+                         checkRole : false,
+                         rowCode: false
+                 };
+                 $scope.model.listLeft.push(item);
+         }else{
+                 $scope.model.listRight = [];
+                 $scope.model.listRightTmp = [];
+                 $scope.model.listRightTmp1 = [];
+                 var item = {
+                         userCd : '',
+                         shipmentRole : false,
+                         arrivalRole : false,
+                         inventoryRole : false,
+                         checkRole : false,
+                         rowCode: false
+                 };
+                 $scope.model.listRight.push(item);
+         }
+     }
+
+     $scope.openDialog = function(data, result) {
+         var options = {
+             size: 'auto',
+         };
+         switch (result) {
+             case 'searchCustomer':
+                 DialogsService.showDialog('SearchCustomer', 'searchCustomerCtrl', 'data', options)
+                 .result.then(function(param) {}, function(){
+                     var searchCustomer = angular.fromJson(sessionStorage.getItem("searchCustomer"));
+                     sessionStorage.removeItem("searchCustomer");
+                     if(!ValidateUtil.isValidTextEmpty(searchCustomer)){
+                         $scope.model.form.warehouse.custCd = searchCustomer.custCd;
+                         $scope.model.form.warehouse.custName = searchCustomer.custName;
+                     }
+                 });
+                 break;
+         };
+     };
+}]);

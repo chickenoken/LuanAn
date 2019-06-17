@@ -1,0 +1,185 @@
+<%@ tag pageEncoding="utf-8"%>
+<%@ taglib prefix="spring" uri="http://www.springframework.org/tags"%>
+<%@ taglib prefix="sms" tagdir="/WEB-INF/tags"%>
+<%@ attribute name="title" required="true"%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
+
+<c:set var="baseUrl">
+    <c:url value="/resources"></c:url>
+</c:set>
+
+<head>
+ <meta charset="utf-8" />
+
+  <!--
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Cache-Control" content="no-cache">
+  <meta http-equiv="Expires" content="Sat, 01 Dec 2001 00:00:00 GMT">
+  -->
+
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta http-equiv="Content-Type" content="text/html;charset=Utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta http-equiv="Content-Script-Type" content="text/javascript" />
+  <meta name="_csrf" content="${_csrf.token}"/>
+  <meta name="_csrf_header" content="${_csrf.headerName}"/>
+  <link rel="shortcut icon" type="image/png" href="${baseUrl }/img/favicon.ico" />
+  <title>
+    <spring:message code='common.title'></spring:message>:<spring:message code='${title}'></spring:message>
+  </title>
+
+  <%-- <sms:Css src="assets/bootstrap-3.1.1/css/bootstrap-custom.css"></sms:Css> --%>
+  <sms:Css src="assets/jquery.powertip-1.2.0/css/jquery.powertip-red.css"/>
+  <sms:Css src="assets/jquery-ui-1.10.4/css/datePicker/jquery-ui-1.10.4-custom.css"></sms:Css>
+  <sms:Css src="assets/exex-custom/css/exex_extention-1.0.css"></sms:Css>
+  <sms:Css src="assets/exex-custom/css/widths.css"></sms:Css>
+
+  <%-- <sms:Css src="assets/bootstrap-datetimepicker/bootstrap-datetimepicker.css"></sms:Css> --%>
+  <sms:Css src="assets/chosen_v1.1.0/chosen.css"></sms:Css>
+  <%-- <sms:Css src="assets/daterangepicker/daterangepicker-bs3.css"></sms:Css> --%>
+
+  <sms:Css src="css/com/sms-bootstrap.css"></sms:Css>
+  <sms:Css src="css/com/facemark-ico.css"></sms:Css>
+
+  <!-- SCRIPT -->
+  <script src="resources/js/vendors.js"></script>
+
+
+
+  <sms:Script src="assets/jquery-ui-1.10.4/js/i18n/datepicker-ja.js"></sms:Script>
+
+  <sms:Script src="assets/jquery.powertip-1.2.0/jquery.powertip.js"></sms:Script>
+
+  <sms:Script src="assets/jquery-validation-1.12.0/js/jquery.validate.js"></sms:Script>
+  <sms:Script src="assets/jquery-validation-1.12.0/localization/messages_ja.js"></sms:Script>
+  <sms:Script src="assets/jquery-validation-1.12.0/js/additional-methods.js"></sms:Script>
+
+  <%-- <sms:Script src="assets/exex-custom/js/jquery.filter_input.js"></sms:Script> --%>
+  <%-- <sms:Script src="assets/exex-custom/js/jquery.inputmask.bundle.js"></sms:Script> --%>
+  <%-- <sms:Script src="assets/exex-custom/js/jquery.mask.input.js"></sms:Script> --%>
+
+  <%-- <sms:Script src="assets/bootstrap-datetimepicker/bootstrap-datetimepicker.js"></sms:Script>
+  <sms:Script src="assets/bootstrap-datetimepicker/bootstrap-datetimepicker.ja.js"></sms:Script> --%>
+
+  <sms:Script src="assets/angular-ui/sortable.js"></sms:Script>
+
+  <sms:Script src="assets/chosen_v1.1.0/chosen.jquery.js"></sms:Script>
+
+  <%-- <sms:Script src="assets/daterangepicker/daterangepicker.js"></sms:Script>
+  <sms:Script src="assets/daterangepicker/moment.js"></sms:Script> --%>
+
+  <sms:Script src="assets/jquery-slimscroll/jquery.slimscroll.js"></sms:Script>
+
+  <sms:Script src="js/sms/com/sms-angularjs.js"></sms:Script>
+  <sms:Script src="js/sms/com/sms-bootstrap-angularjs.js"></sms:Script>
+  <sms:Script src="js/sms/com/sms-bootstrap-ui.js"></sms:Script>
+  <sms:Script src="js/sms/com/sms-common.js"></sms:Script>
+  <sms:Script src="js/common/sms-javascript-ext.js"></sms:Script>
+  <sms:Script src="js/sms/com/header.js"></sms:Script>
+  <%-- <sms:Script src="js/sms/com/navigation.js"></sms:Script> --%>
+
+  <%-- <sms:Script src="js/sms/com/dialogs.js"></sms:Script> --%>
+  <script src="resources/js/common/dialogs.js"></script>
+  <sms:Script src="js/sms/com/exexTable.js"></sms:Script>
+  <sms:Script src="js/sms/com/pagination.js"></sms:Script>
+  <sms:Script src="js/sms/pwd/password.js"></sms:Script>
+  <sms:Script src="js/com/common.js"></sms:Script>
+
+  <sms:Css src="assets/perfect-scrollbar/perfect-scrollbar.css"></sms:Css>
+  <sms:Script src="assets/perfect-scrollbar/perfect-scrollbar.js"></sms:Script>
+  <sms:Script src="assets/exex-custom/js/css_browser_selector.js"/>
+
+  <%-- <sms:Css src="assets/bootstrap-3.1.1/css/bootstrap-switch.css"/>
+  <sms:Script src="assets/bootstrap-3.1.1/js/bootstrap-switch.js"/> --%>
+
+  <!-- new -->
+  <link href="resources/css/vendors.css" rel="stylesheet">
+  <link href="resources/css/layout/materialize-icon.css" rel="stylesheet">
+  <link href="resources/css/layout/components-md.css" rel="stylesheet" id="style_components"/>
+  <link href="resources/css/layout/plugins-md.css" rel="stylesheet"/>
+  <link href="resources/css/layout/exexlayout.css" rel="stylesheet"/>
+  <link href="resources/css/layout/blue.css" rel="stylesheet" id="style_color"/>
+  <link href="resources/css/layout/my-styles.css" rel="stylesheet">
+
+  <script src="resources/js/common/app.js"></script>
+  <script src="resources/js/common/header.js"></script>
+  <script src="resources/js/common/LeftSidebar.js"></script>
+  <script src="resources/js/common/RightSidebar.js"></script>
+  <script src="resources/js/common/metronic.js"></script>
+  <script src="resources/js/common/layout.js"></script>
+  <script src="resources/js/common/quick-sidebar.js"></script>
+
+  <script src="resources/js/common/prism.js"></script>
+  <script src="resources/js/common/pushpin.js"></script>
+  <script src="resources/js/common/init.js"></script>
+
+  <script>
+      jQuery(document).ready(function() {
+          EXEXMaterial.init();
+          EXEXLayout.init();
+          EXEXQuickSidebar.init();
+      });
+  </script>
+
+  <script type="text/javascript">
+    //<![CDATA[
+    var language = "<spring:message code='common.language' />";
+    var customer_emptyText = '<spring:message code="common.customer-search" />';
+    //]]>
+    var getContextPath = function() {
+        return '${pageContext.request.contextPath}';
+    };
+  </script>
+  <script>
+    function setMaxheight(){
+        var affixEle = $(">div", ".slimScrollDiv").first(),
+            scheduleScrollDiv = $(">div", ".scheduleScrollDiv").first(),
+            schedule  = $(">div.sc_main_box", ".sc_wrapper").first(), //sc_main_box
+            schedule1  = $(">div.sc_data", ".sc_wrapper").first(), //sc_main_box
+            scheduleTable  = $(">div.schedule-table-scroll", ".table-search-sort-paging").first(), //sc_main_box
+            winHeight = $(window).height() - 136;
+        //height-item-container appear when viewMode's estimate control is Update,Delete,..
+        if($("#height-item-container").height() != null){
+            winHeight = winHeight - ($("#height-item-container").height() + 5);
+        }
+        //height-button-contanier appear when view have button add
+        if($("#height-button-contanier").height() != null){
+            winHeight = winHeight + $("#height-button-contanier").height();
+        }
+        //height-customer-contanier appear when view customer
+        if($("#height-customer-contanier").height() != null){
+            winHeight = winHeight - ($("#height-customer-contanier").height() + 17);
+        }
+        if($("#height-button-control").height() != null){
+            winHeight = winHeight - $("#height-button-control").height();
+        }
+        //ScheduleList
+        schedule.css({
+            'max-height' : winHeight - 170 + "px"
+        });
+        schedule1.css({
+            'max-height' : winHeight - 170 + "px"
+        });
+        scheduleTable.css({
+            'max-height' : winHeight - 185 + "px",
+            'height' : winHeight - 185 + "px"
+        });
+        scheduleScrollDiv.css({
+            'max-height' : winHeight + "px",
+            'height' : winHeight + "px"
+        });
+        affixEle.css({
+            'max-height' : winHeight + "px"
+        });
+    }
+    $(function(){
+        setMaxheight();
+        $(window).resize(function(){
+            setMaxheight();
+        });
+    });
+  </script>
+
+  <jsp:doBody />
+
+</head>

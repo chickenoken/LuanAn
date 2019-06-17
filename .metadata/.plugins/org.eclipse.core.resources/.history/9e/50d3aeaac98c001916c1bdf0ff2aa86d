@@ -1,0 +1,212 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ * SalDecideProcessService
+ *
+ * @author Quang-Thien
+ *
+ * @version $Revision:  $  $Date:  $
+ */
+'use strict';
+
+exexSMSApp.service('SalDecideProcessService', ['$q', 'ServerService',function ($q, ServerService) {
+    var _self = this;
+
+    _self.initData = function(param) {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('SalDecideProcess/getInit', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    _self.getTaxRate = function(param) {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('SalDetailsControl/getTaxRate', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    _self.checkWorkFlow = function(param) {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('SalCommon/checkWorkFlow', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    _self.insert = function(param) {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('SalDecideProcess/insert', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    _self.update = function(param) {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('SalDecideProcess/update', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    _self.sdelete = function(param) {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('SalDecideProcess/delete', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    _self.checkDataForReport = function(param) {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('SalDecideProcess/checkDataForReport', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    _self.checkData = function(param) {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('SalDecideProcess/checkData', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    _self.inquiry = function(param) {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('SalDecideProcess/inquiry', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    _self.onChangeCustomer = function(param) {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('SalDecideProcess/onChangeCustomer', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    _self.getListSalesUser = function(param) {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('SalDecideProcess/getListSalesUser', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    _self.loadSalCommonData = function(param) {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('SalCommon/loadSalCommonData', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    _self.doDownload = function(param) {
+        return ServerService.doDownload('/SalDecideProcess/downloadSalDecideProcess',  param, 'application/pdf', "SALES08_PDF.pdf");
+    };
+
+}]);

@@ -1,0 +1,601 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision: 1.0 $  $Date: 2014/06/06 $
+ * @author : huy-du
+ */
+
+/**
+ * Table : 仕入先マスタ「MST_STOCKADDRESS」
+ */
+
+'use strict';
+
+exexSMSApp.factory('SalPayControlModel', [ 'BaseModel', function(BaseModel) {
+
+    var model = BaseModel.getInstance();
+
+    model.form = {
+        itemDetail :{
+            spendFixedDateFrom: '',
+            spendFixedDateTo: '',
+            companyCd : '',
+            spendNo : '',
+            bankCd : '',
+            bankAccountName : '',
+            spendType : '',
+            spendDate : '',
+            spendPrice : 0,
+            fee : '',
+            stockaddressNo : '',
+            address1 : '',
+            address2 : '',
+            stockaddressName:'',
+            spendTypeName:'',
+            remark:''
+        },
+        listT010001: [],
+        listStockaddress:[],
+        listSpend: [],
+        listMstBank : [],
+        listReport:[],
+    };
+
+    model.hidden = {
+            redirectUrl : 'SalPayList',
+            add : true,
+            edit : false,
+            detail : false,
+            isSpendList : false,
+            isDisabled : false,
+            flgValidation : "0",
+            isSubmited: false,
+            selectAll : false,
+            paymentCertFlag: "0",
+    };
+
+    return model;
+} ]);
+
+exexSMSApp.controller('salPayControlCtrl',
+        ['$scope', '$filter', 'RouteService', 'SalPayControlModel', 'DialogsService', 'Messages', 'ServerService',
+         function($scope, $filter, RouteService, SalPayControlModel, DialogsService, Messages,ServerService) {
+
+    $scope.model = SalPayControlModel;
+
+    $scope.getInit = function(){
+        var param = angular.fromJson(sessionStorage.getItem("passingSalPayItem"));
+        var params = {};
+        if(!ValidateUtil.isValidTextEmpty(param)){
+            $scope.model.hidden.redirectUrl = param.redirectUrl;
+            params = {
+                spendNo : param.spendNo,
+                stockaddressNo : param.stockaddressNo
+            };
+        }
+
+        ServerService.doPost('SalPayControl/getInit', params).then(
+            function(okResult) {
+                if(!ValidateUtil.isValidTextEmpty(okResult.data.failed)){
+                    DialogsService.showError(Messages.getMessage('system.error'),
+                            okResult.data.failed);
+                }else if(!ValidateUtil.isValidTextEmpty(okResult.data.warning)){
+                    DialogsService.showWarning(Messages.getMessage('check.error'),
+                            okResult.data.warning);
+                }else{
+                    if(!ValidateUtil.isValidTextEmpty(okResult.data.spendDetail)){
+                        $scope.model.form.itemDetail.companyCd = okResult.data.spendDetail.companyCd;
+                        $scope.model.form.itemDetail.spendNo = okResult.data.spendDetail.spendNo;
+                        $scope.model.form.itemDetail.bankCd = okResult.data.spendDetail.bankCd;
+                        $scope.model.form.itemDetail.bankAccountName = okResult.data.spendDetail.bankAccountName;
+                        $scope.model.form.itemDetail.spendDate = okResult.data.spendDetail.spendDate;
+                        $scope.model.form.itemDetail.spendPrice = okResult.data.spendDetail.spendPrice;
+                        $scope.model.form.itemDetail.fee = okResult.data.spendDetail.fee;
+                        $scope.model.form.itemDetail.remark = okResult.data.spendDetail.remark;
+                        $scope.model.form.itemDetail.address1 = okResult.data.spendDetail.address1;
+                        $scope.model.form.itemDetail.address2 = okResult.data.spendDetail.address2;
+                        $scope.model.form.itemDetail.stockaddressNo = okResult.data.spendDetail.stockaddressNo;
+                        $scope.model.form.itemDetail.stockaddressName = okResult.data.spendDetail.stockaddressName;
+                        $scope.model.form.itemDetail.spendType = okResult.data.spendDetail.spendType;
+                        $scope.model.form.itemDetail.spendTypeName = okResult.data.spendDetail.spendTypeName;
+                        $scope.model.form.itemDetail.paymentNo = okResult.data.spendDetail.paymentNo;
+                        $scope.model.hidden.add = param.add;
+                        $scope.model.hidden.edit = param.edit;
+                        $scope.model.hidden.detail = param.detail;
+                        $scope.model.hidden.list = param.list;
+                        if(!ValidateUtil.isValidTextEmpty(okResult.data.listSpend) && okResult.data.listSpend.length > 0){
+                            $scope.model.form.listSpend = okResult.data.listSpend;
+                            $scope.model.hidden.isSpendList = true;
+                        }
+                        $scope.model.hidden.isDisabled = true;
+                    }else{
+                        var salPayControl = angular.fromJson(sessionStorage.getItem("salPayControl"));
+                        if(!ValidateUtil.isValidTextEmpty(salPayControl)){
+                            $scope.model.form.itemDetail.stockaddressName = salPayControl.stockaddressName;
+                            $scope.model.form.itemDetail.stockaddressNo = salPayControl.stockaddressNo;
+                            $scope.model.form.itemDetail.spendFixedDateFrom = salPayControl.spendFixedDateFrom;
+                            $scope.model.form.itemDetail.spendFixedDateTo = salPayControl.spendFixedDateTo;
+                            $scope.model.form.itemDetail.bankCd = salPayControl.bankCd;
+                            $scope.showSpendList(true);
+                        }
+                        $scope.model.hidden.add = true;
+                        $scope.model.hidden.edit = false;
+                        $scope.model.hidden.detail = false;
+                        $scope.model.hidden.backdetail = true;
+                    }
+                    $scope.model.form.listT010001 = okResult.data.listT010001;
+                    $scope.model.form.listMstBank = okResult.data.listMstBank;
+                    //$scope.model.form.itemDetail.spendNo = okResult.data.spendNo;
+                }
+                $scope.model.hidden.paymentCertFlag = CompanyUtil.getCustomFlag(1);
+            }
+        );
+    };
+
+    $scope.init = function(model){
+        $scope.getInit();
+    };
+    $scope.init();
+
+    $scope.getStockaddressDetail = function(){
+        if(!ValidateUtil.isValidTextEmpty($scope.model.form.itemDetail.stockaddressNo)){
+            var param = {
+                    stockaddressNo : $scope.model.form.itemDetail.stockaddressNo,
+                    spendNo : $scope.model.form.itemDetail.spendNo
+            };
+            ServerService.doPost('SalPayControl/getStockaddressDetail', param).then(
+                function(okResult) {
+                    if(!ValidateUtil.isValidTextEmpty(okResult.data.failed)){
+                        DialogsService.showError(Messages.getMessage('system.error'),
+                                okResult.data.failed);
+                    }else if(!ValidateUtil.isValidTextEmpty(okResult.data.warning)){
+                        DialogsService.showWarning(Messages.getMessage('check.error'),
+                                okResult.data.warning);
+                    }else{
+                        //$scope.model.form.listSpend = result.listSpend;
+                        $scope.model.hidden.isSpendList = false;
+                        if(!ValidateUtil.isValidTextEmpty(okResult.data.stockaddressDetail.stockaddressDetail)){
+                            var stockaddressDetail = okResult.data.stockaddressDetail.stockaddressDetail.split("#");
+                            $scope.model.form.itemDetail.stockaddressNo = stockaddressDetail[0];
+                            $scope.model.form.itemDetail.address1 = stockaddressDetail[1];
+                            $scope.model.form.itemDetail.address2 = stockaddressDetail[2];
+                            $scope.model.form.itemDetail.stockaddressName = stockaddressDetail[3];
+                            $scope.model.form.itemDetail.bankCd = stockaddressDetail[4];
+                        }
+                    }
+                }
+            );
+        }else{
+            $scope.model.form.itemDetail.address1 = "";
+            $scope.model.form.itemDetail.address2 = "";
+            $scope.model.form.listSpend = [];
+            $scope.model.hidden.isSpendList = false;
+            $scope.model.hidden.isDisabled = false;
+        }
+    };
+
+    $scope.showSpendList = function (isSpendList){
+        $scope.model.hidden.flgValidation = "1";
+
+        if(!ValidateUtil.isValidTextEmpty($scope.model.form.itemDetail.stockaddressNo)){
+//            if($scope.model.hidden.isSpendList == false){
+                var param = {
+                        stockaddressNo : $scope.model.form.itemDetail.stockaddressNo,
+                        spendNo : $scope.model.form.itemDetail.spendNo,
+                        spendFixedDateFrom : $scope.model.form.itemDetail.spendFixedDateFrom,
+                        spendFixedDateTo : $scope.model.form.itemDetail.spendFixedDateTo
+                };
+                ServerService.doPost('SalPayControl/getListSpend', param).then(
+                    function(okResult) {
+                        if(!ValidateUtil.isValidTextEmpty(okResult.data.failed)){
+                            DialogsService.showError(Messages.getMessage('system.error'),
+                                    okResult.data.failed);
+                        }else if(!ValidateUtil.isValidTextEmpty(okResult.data.warning)){
+                            DialogsService.showWarning(Messages.getMessage('check.error'),
+                                    okResult.data.warning);
+                        }else{
+                            $scope.model.form.listSpend = okResult.data.listSpend;
+                            if($scope.model.form.listSpend.length != 0){
+                                if($scope.model.hidden.isSpendList != isSpendList){
+                                    $scope.model.hidden.isSpendList = isSpendList;
+                                }
+                            } else {
+                                $scope.model.form.itemDetail.stockaddressNo = '';
+                                $scope.model.form.itemDetail.address1 = "";
+                                $scope.model.form.itemDetail.address2 = "";
+                                $scope.model.hidden.isDisabled = false;
+                                DialogsService.showWarning(Messages.getMessage('check.error'),
+                                      Messages.getMessage('W00196'));
+                            }
+                        }
+                    }
+                );
+//            }else{
+//                $scope.model.hidden.isSpendList = false;
+//                $scope.model.hidden.isDisabled = false;
+//            }
+        }else{
+            DialogsService.showWarning(Messages.getMessage('check.error'),
+                    Messages.getMessage('W00093'));
+        }
+    };
+
+    $scope.changeEditMode = function (isSpendList){
+        var params = {'spendNo' : $scope.model.form.itemDetail.spendNo};
+        ServerService.doPost('SalPayControl/isExistData', params).then(
+            function(okResult) {
+               var error =  okResult.data.failed;
+               var warning =  okResult.data.warning;
+               if(!ValidateUtil.isValidTextEmpty(error)){
+                   DialogsService.showError(Messages.getMessage('system.error'), error);
+                   return;
+               }
+               else if(!ValidateUtil.isValidTextEmpty(warning)){
+                   var dlg = DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                   dlg.result.then(function() {
+                       RouteService.gotoUrl('SalPayList');
+                   });
+                   return;
+               }else{
+                   $scope.model.hidden.add = false;
+                   $scope.model.hidden.detail = false;
+                   $scope.model.hidden.edit = true;
+                   $scope.model.hidden.backdetail = true;
+                   //$scope.model.hidden.isSpendList = false;
+//                   if($scope.model.form.listSpend.length == 0){
+                       $scope.model.hidden.isDisabled = false;
+//                   }
+               }
+            }
+        );
+
+    };
+
+    $scope.convertParam = function(param,spendList){
+        var bankCd = null;
+        if(!ValidateUtil.isValidTextEmpty(param.bankCd)){
+            bankCd = param.bankCd;
+        }
+        var params = {
+                companyCd : param.companyCd,
+                spendNo : param.spendNo,
+                bankCd : bankCd,
+                spendType : param.spendType,
+                spendDate : new Date(param.spendDate),
+                spendPrice : StringUtils.isEmpty(param.spendPrice) ? 0 : param.spendPrice,
+                fee : ValidateUtil.isValidTextEmpty(param.fee) ? null : param.fee,
+                stockaddressNo : param.stockaddressNo,
+                address1 : param.address1,
+                address2 : param.address2,
+                stockaddressName : param.stockaddressName,
+                spendTypeName : param.spendTypeName,
+                remark : param.remark,
+                spendDelete : []
+        };
+
+        var total = 0;
+
+        var spendPrice = 0;
+        var fee = 0;
+        if(!ValidateUtil.isValidTextEmpty(param.spendPrice)){
+            spendPrice = param.spendPrice;
+        }
+        if(!ValidateUtil.isValidTextEmpty(param.fee)){
+            fee = param.fee;
+        }
+        total = parseInt(spendPrice) + parseInt(fee);
+
+        var sumSpendList = 0;
+        if($scope.model.hidden.isSpendList == true){
+            var index=0;
+            spendList.forEach(function(obj) {
+                //if(!ValidateUtil.isValidTextEmpty(obj.spendPrice) && obj.spendPrice != 0){
+                if(!ValidateUtil.isValidTextEmpty(obj.spendPrice)){
+                    sumSpendList += parseInt(obj.spendPrice);
+                }
+                obj.companyCd = param.companyCd;
+                obj.stockaddressNo = param.stockaddressNo;
+                obj.stockPrice = 0;
+                params.spendDelete.splice(index,0,obj);
+                //}
+                index++;
+            });
+        }
+        params.isSpendList = $scope.model.hidden.isSpendList;
+        params.total = total;
+        params.sumSpendList = sumSpendList;
+        return params;
+    };
+
+
+    $scope.saveSpend = function(param,spendList,formInvalid){
+        $scope.model.hidden.flgValidation = "0";
+        $scope.model.hidden.isSubmited = true;
+        if (formInvalid) {
+            return;
+        }
+//        if( $scope.model.hidden.isSpendList == true && !$scope.model.validateDetail()) {
+//            return;
+//        }
+        var params = $scope.convertParam(param,spendList);
+
+//        if(parseInt(params.total) == 0){
+//            DialogsService.showWarning(Messages.getMessage('check.error'),
+//                    Messages.getMessage('W00160'), {size: '380'});
+//            return;
+//        }
+
+        if(((parseInt(params.total) != parseInt(params.sumSpendList)) && (parseInt(params.sumSpendList) != 0)
+                || (parseInt(params.total) != parseInt(params.sumSpendList)) && (parseInt(params.sumSpendList) == 0)
+            ) && $scope.model.hidden.isSpendList == true){
+            DialogsService.showWarning(Messages.getMessage('check.error'),
+                    Messages.getMessage('W00102'), {size: '380'});
+        }else{
+            var dlg = DialogsService.showConfirm(Messages.getMessage('title.confirm'),
+                    Messages.getMessage('S00003'));
+            dlg.result.then(function(btn){
+//                if(params.sumSpendList == 0){
+//                    params.spendDelete = [];
+//                }
+                ServerService.doPost('SalPayControl/addSpend', params).then(
+                    function(okResult) {
+                        if(!ValidateUtil.isValidTextEmpty(okResult.data.success)){
+                            sessionStorage.removeItem("passingSalPayItem");
+                            var dlg = DialogsService.showNotify(Messages.getMessage('title.info'),okResult.data.success);
+                            dlg.result.then(function(btn){
+                                var salPay = {
+                                    'spendNo' : okResult.data.spendNo,
+                                    'stockaddressNo' : $scope.model.form.itemDetail.stockaddressNo,
+                                    'add' : false,
+                                    'detail' : true,
+                                    'edit' : false
+                                };
+                                sessionStorage.setItem("passingSalPayItem", JSON.stringify(salPay));
+                                RouteService.gotoUrl('SalPayControl');
+                            });
+                        } else {
+                            if(!ValidateUtil.isValidTextEmpty(okResult.data.failed)){
+                                DialogsService.showError(Messages.getMessage('system.error'),
+                                        okResult.data.failed);
+                            }else{
+                                DialogsService.showWarning(Messages.getMessage('check.error'),
+                                        okResult.data.warning);
+                            }
+                        }
+                    }
+                );
+            });
+        }
+    };
+
+    $scope.updatePayment = function(param,spendList,formInvalid){
+        $scope.model.hidden.isSubmited = true;
+        if (formInvalid) {
+            return;
+        }
+//        if( $scope.model.hidden.isSpendList == true && !$scope.model.validateDetail()) {
+//            return;
+//        }
+        var params = $scope.convertParam(param,spendList);
+
+//        if(parseInt(params.total) == 0){
+//            DialogsService.showWarning(Messages.getMessage('check.error'),
+//                    Messages.getMessage('W00160'), {size: '380'});
+//            return;
+//        }
+
+        var paramCheck = {'spendNo' : $scope.model.form.itemDetail.spendNo};
+        ServerService.doPost('SalPayControl/isExistData', paramCheck).then(
+            function(okResult) {
+               var error =  okResult.data.failed;
+               var warning =  okResult.data.warning;
+               if(!ValidateUtil.isValidTextEmpty(error)){
+                   DialogsService.showError(Messages.getMessage('system.error'), error);
+                   return;
+               }
+               else if(!ValidateUtil.isValidTextEmpty(warning)){
+                   var dlg = DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                   dlg.result.then(function() {
+                       RouteService.gotoUrl('SalPayList');
+                   });
+                   return;
+               }else{
+                   if(((parseInt(params.total) != parseInt(params.sumSpendList)) && (parseInt(params.sumSpendList) != 0)
+                           || (parseInt(params.total) != parseInt(params.sumSpendList)) && (parseInt(params.sumSpendList) == 0)
+                       ) && $scope.model.hidden.isSpendList == true){
+                       DialogsService.showWarning(Messages.getMessage('check.error'),
+                               Messages.getMessage('W00102'), {size: '380'});
+                   }else{
+                       var dlg = DialogsService.showConfirm(Messages.getMessage('title.confirm'),
+                               Messages.getMessage('S00004'));
+                       dlg.result.then(function(btn){
+//                           if(params.sumSpendList == 0){
+//                               params.spendDelete = [];
+//                           }
+                           ServerService.doPost('SalPayControl/updateSpend', params).then(
+                               function(okResult) {
+                                   if(!ValidateUtil.isValidTextEmpty(okResult.data.success)){
+                                       sessionStorage.removeItem("passingParamOrderItem");
+                                       var dlg = DialogsService.showNotify(Messages.getMessage('title.info'),okResult.data.success);
+                                       dlg.result.then(function(btn){
+                                           var salPay = {
+                                               'spendNo' : param.spendNo,
+                                               'stockaddressNo' : $scope.model.form.itemDetail.stockaddressNo,
+                                               'add' : false,
+                                               'detail' : true,
+                                               'edit' : false,
+                                               'list' : true,
+                                               'redirectUrl': 'SalPayList'
+                                           };
+                                           sessionStorage.setItem("passingSalPayItem", JSON.stringify(salPay));
+                                           RouteService.gotoUrl('SalPayControl');
+                                       });
+                                   } else {
+                                       if(!ValidateUtil.isValidTextEmpty(okResult.data.failed)){
+                                           DialogsService.showError(Messages.getMessage('system.error'),
+                                                   okResult.data.failed);
+                                       }else{
+                                           DialogsService.showWarning(Messages.getMessage('check.error'),
+                                                   okResult.data.warning);
+                                       }
+                                   }
+                               }
+                           );
+                       });
+                   }
+               }
+            }
+        );
+    };
+
+    $scope.deletePayment = function(param,spendList){
+        var params = {
+                spendNo : param.spendNo,
+                stockaddressNo : ValidateUtil.isValidTextEmpty(param.stockaddressNo) ? null : param.stockaddressNo
+        };
+        ServerService.doPost('SalPayControl/isExistData', params).then(
+            function(okResult) {
+               if(!ValidateUtil.isValidTextEmpty(okResult.data.failed)){
+                   DialogsService.showError(Messages.getMessage('system.error'), okResult.data.failed);
+                   return;
+               } else if(!ValidateUtil.isValidTextEmpty(okResult.data.warning)){
+                   var dlg = DialogsService.showWarning(Messages.getMessage('check.error'), okResult.data.warning);
+                   dlg.result.then(function() {
+                       RouteService.gotoUrl('SalPayList');
+                   });
+                   return;
+               }else{
+                   var dlg = DialogsService.showConfirm(Messages.getMessage('title.confirm'),
+                           Messages.getMessage('S00005'));
+                   dlg.result.then(function(btn){
+                       $scope.doDelete(params);
+                   });
+               }
+            }
+        );
+    };
+
+    $scope.doDelete = function(params){
+        ServerService.doPost('SalPayControl/deleteSpend', params).then(
+            function(okResult) {
+                if(!ValidateUtil.isValidTextEmpty(okResult.data.success)){
+                    sessionStorage.removeItem("passingSalPayItem");
+                    var dlg = DialogsService.showNotify(Messages.getMessage('title.info'),
+                            okResult.data.success);
+                    dlg.result.then(function(btn){
+                        RouteService.gotoUrl('SalPayList');
+                    });
+                } else {
+                    if(!ValidateUtil.isValidTextEmpty(okResult.data.failed)){
+                        DialogsService.showError(Messages.getMessage('system.error'),
+                                okResult.data.failed);
+                    }else{
+                        DialogsService.showWarning(Messages.getMessage('check.error'),
+                                okResult.data.warning);
+                    }
+                }
+            }
+        );
+    };
+
+    $scope.gotoUrl = function(){
+        RouteService.gotoUrl($scope.model.hidden.redirectUrl);
+    };
+
+    $scope.backSalOrderControl= function(param){
+        $scope.getInit();
+        $scope.model.hidden.add = false;
+        $scope.model.hidden.detail = true;
+        $scope.model.hidden.edit = false;
+        $scope.model.hidden.isSpendList = false;
+        $scope.model.hidden.backdetail = false;
+    };
+
+    $scope.newWin = function(){
+        sessionStorage.removeItem("salPayControl");
+        sessionStorage.removeItem("passingSalPayItem");
+        RouteService.gotoUrl('SalPayControl');
+    };
+
+    $scope.changePrice = function(row){
+       // khoi: delete because bug
+       // var leftPrice = row.claimPrice - row.spendPrice;
+       // row.leftPrice = isNaN(leftPrice) ? '' : leftPrice;
+    }
+
+    $scope.downloadReport = function() {
+        var options = {
+            size: '650',
+        };
+        var listSpend = [];
+        angular.forEach($scope.model.form.listSpend, function(item, i){
+            if(item.isSelected){
+                listSpend.push(item.stockSno);
+            }
+        });
+        var param ={
+                listSpend: listSpend,
+                spendNo: $scope.model.form.itemDetail.spendNo,
+                stockaddressNo: $scope.model.form.itemDetail.stockaddressNo,
+                paymentNo: $scope.model.form.itemDetail.paymentNo,
+        }
+        DialogsService.showDialog('SpendReportControl', 'spendReportCtrl', param, options);
+    };// end launch
+
+    $scope.checkAll = function(){
+        angular.forEach($scope.model.form.listSpend, function(item, i){
+            item.isSelected = $scope.model.hidden.selectAll;
+        });
+        if($scope.model.hidden.selectAll){
+            $scope.model.form.listReport = $scope.model.form.listSpend;
+        }else{
+            $scope.model.form.listReport = [];
+        }
+    }
+
+    $scope.setCheckAll = function(){
+        $scope.model.hidden.selectAll = true;
+        $scope.model.form.listReport = [];
+        angular.forEach($scope.model.form.listSpend, function(item, i){
+            if(!item.isSelected){
+                $scope.model.hidden.selectAll = false;
+            }else{
+                $scope.model.form.listReport.push(item);
+            }
+        });
+    }
+
+    $scope.getPaymentNo = function(){
+        var param = angular.fromJson(sessionStorage.getItem("passingSalPayItem"));
+        var params = {};
+        if(!ValidateUtil.isValidTextEmpty(param)){
+            $scope.model.hidden.redirectUrl = param.redirectUrl;
+            params = {
+                spendNo : param.spendNo,
+                stockaddressNo : param.stockaddressNo
+            };
+        }
+
+        ServerService.doPost('SalPayControl/getInit', params).then(
+            function(okResult) {
+                if(!ValidateUtil.isValidTextEmpty(okResult.data.failed)){
+                    DialogsService.showError(Messages.getMessage('system.error'),
+                            okResult.data.failed);
+                }else if(!ValidateUtil.isValidTextEmpty(okResult.data.warning)){
+                    DialogsService.showWarning(Messages.getMessage('check.error'),
+                            okResult.data.warning);
+                }else{
+                    if(!ValidateUtil.isValidTextEmpty(okResult.data.spendDetail)){
+                        $scope.model.form.itemDetail.paymentNo = okResult.data.spendDetail.paymentNo;
+                    }
+                }
+            }
+        );
+    }
+
+    $scope.$on("SalPayControl#search", function(evt) {
+        $scope.getPaymentNo();
+    });
+}]);

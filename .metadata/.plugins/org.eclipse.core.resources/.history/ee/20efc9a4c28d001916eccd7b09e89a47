@@ -1,0 +1,15 @@
+@CHARSET "UTF-8";
+
+.form-inline  .form-group{
+  margin-top: 5px;
+}
+
+.form-inline  .ui-datepicker-trigger{
+ margin-top: -2px !important;
+}
+.exex-page-contents .container-fluid{
+  padding-left: 0px !important;
+}
+.exex-page-contents .table-search-sort-paging{
+  padding-left: 0px !important;
+}

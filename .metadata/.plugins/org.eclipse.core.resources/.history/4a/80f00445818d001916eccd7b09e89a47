@@ -1,0 +1,7 @@
+#tableProject tr th.exex10, td.exex10 {
+    border-bottom: 1px solid #ddd !important;
+}
+
+.btn-icon{
+    padding: 6px;
+}

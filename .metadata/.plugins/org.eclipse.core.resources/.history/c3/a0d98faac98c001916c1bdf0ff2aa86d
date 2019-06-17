@@ -1,0 +1,185 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision:  $  $Date:  $
+ * @author : Quang-Thien
+ */
+'use strict';
+/**
+ * Table :
+ */
+exexSMSApp.factory('ExExContinueModel', [ 'BaseModel', function(BaseModel) {
+
+    var model = BaseModel.getInstance();
+    model.form = {
+        exExContinue:{
+            paymentMethod :'',
+            paymentMethodName : '',
+            paymentCourse:'',
+            paymentCourseTmp : '',
+            agreeTerms:false,
+            registUserCount:'',
+            license : '',
+            serviceType : '',
+            serviceTypeName:'',
+            payment : '',
+            userPrice : ''
+        },
+        listM060001:[],
+        listM060002:[],
+        listM060003:[]
+    };
+    model.hidden = {
+            flgView : false,
+            termsOfService : '',
+            registUserCountTmp : '',
+            license : 0,
+            amount : 0
+    };
+
+return model;
+
+}]);
+exexSMSApp.controller('exExContinueCtrl',
+        ['$scope', 'DialogsService', '$window', 'ServerService', 'ExExContinueModel', 'Messages',
+         function($scope, DialogsService, $window, ServerService, ExExContinueModel, Messages){
+
+    $scope.model=ExExContinueModel;
+
+    $scope.init = function(){
+        $scope.getInit();
+    };
+
+    $scope.getInit = function(){
+        ServerService
+        .doPost('ExExContinue/getInit', {})
+        .then(
+                function(okResult) {
+                    var error = okResult.data.failed;
+                    if(!ValidateUtil.isValidTextEmpty(error)){
+                         DialogsService.showError(Messages.getMessage('system.error'),error);
+                         return;
+                    }
+                    $scope.model.form.listM060001 = okResult.data.listM060001;
+                    $scope.model.form.listM060003 = okResult.data.listM060003;
+                    angular.forEach($scope.model.form.listM060003, function(value, key){
+                        if(value.code === '0'){
+                            $scope.model.form.listM060003[key].isDisabled = true;
+                        }else{
+                            $scope.model.form.listM060003[key].isDisabled = false;
+                        }
+                    });
+
+                    $scope.model.form.exExContinue.paymentMethod = $scope.model.form.listM060001[0].code;
+                    $scope.model.form.exExContinue.paymentMethodName = $scope.model.form.listM060001[0].codeName;
+                    $scope.model.form.exExContinue.license = okResult.data.license;
+                    //$scope.model.form.exExContinue.serviceType = $scope.model.form.listM060003[1].code;
+                    //$scope.model.form.exExContinue.serviceTypeName = $scope.model.form.listM060003[1].codeName;
+                    $scope.model.form.exExContinue.registUserCount = okResult.data.registUserCount;
+                    $scope.model.hidden.registUserCountTmp = okResult.data.numberUser;
+                    $scope.model.hidden.termsOfService = okResult.data.termsOfService;
+                    $scope.model.hidden.license = okResult.data.license;
+                    $scope.model.form.exExContinue.serviceType = okResult.data.license;
+                    $scope.model.hidden.amount = okResult.data.amount;
+                    $scope.model.form.exExContinue.userPrice = okResult.data.amount;
+                },
+                function(errResult){});
+    };
+
+    $scope.convertParams = function(param){
+        var paymentMethodName = '';
+        angular.forEach($scope.model.form.listM060001, function(item,i){
+            if(item.code == param.paymentMethod.toString()){
+                paymentMethodName = item.codeName;
+            }
+        });
+        var params = {
+                agreeTerms : !ValidateUtil.isValidTextEmpty(param.agreeTerms) ? param.agreeTerms : '',
+                paymentCourse : !ValidateUtil.isValidTextEmpty(param.paymentCourse) ? param.paymentCourse : "",
+                paymentMethod : !ValidateUtil.isValidTextEmpty(param.paymentMethod) ? param.paymentMethod.toString() : "",
+                paymentCourseTmp : param.paymentCourseTmp,
+                paymentMethodName : paymentMethodName,
+                registUserCount : param.registUserCount,
+                license : param.serviceType,
+                serviceType : param.serviceType,
+                payment : param.payment,
+                userPrice : param.userPrice
+        };
+        return params;
+    };
+
+    /**
+     * 登録。
+     */
+    $scope.doPayment = function() {
+        var params = $scope.convertParams($scope.model.form.exExContinue);
+        ServerService
+        .doPost('ExExContinue/doPayment', params)
+        .then(
+                function(okResult) {
+                    var success = okResult.data.success;
+                    var warning = okResult.data.warning;
+                    var error = okResult.data.failed;
+                    if(!ValidateUtil.isValidTextEmpty(warning)){
+                        DialogsService.showWarning(Messages.getMessage('check.error'),warning,{size: '310'});
+                    }else if(!ValidateUtil.isValidTextEmpty(error)){
+                        DialogsService.showError(Messages.getMessage('system.error'),error);
+                    }else{
+                        var dlg = DialogsService.showNotify(Messages.getMessage('title.info'),
+                                success);
+                        dlg.result.then(function(btn){
+                            $window.location = "ExExContract";
+                        });
+                    }
+                },
+                function(errResult){});
+    };
+
+    $scope.selectServiceType = function() {
+        var params = {
+                serviceType : $scope.model.form.exExContinue.serviceType
+        };
+        ServerService
+        .doPost('ExExContinue/selectServiceType', params)
+        .then(
+                function(okResult) {
+                    $scope.model.hidden.amount = okResult.data.amount;
+                    $scope.model.form.exExContinue.userPrice = okResult.data.amount;
+                },
+                function(errResult){});
+    };
+
+    $scope.checkPayment = function(){
+
+        if(ValidateUtil.isValidTextEmpty($scope.model.form.exExContinue.paymentCourse)){
+            DialogsService.showWarning(Messages.getMessage('check.error'),
+                    Messages.getMessage('W00195'));
+            return;
+        }
+
+        if(!ValidateUtil.isValidTextEmpty($scope.model.hidden.registUserCountTmp)){
+            if(parseInt($scope.model.hidden.registUserCountTmp) > parseInt($scope.model.form.exExContinue.registUserCount)){
+                DialogsService.showWarning(Messages.getMessage('check.error'),
+                        Messages.getMessage('W00209'));
+                return;
+            }
+        }
+
+        $scope.model.form.exExContinue.paymentCourseTmp = $scope.model.form.exExContinue.paymentCourse.toString() + 'ヶ月分一括払い';
+        var payment = parseFloat($scope.model.form.exExContinue.registUserCount) *
+                                 parseFloat($scope.model.hidden.amount) *
+                                 parseFloat($scope.model.form.exExContinue.paymentCourse.toString());
+        $scope.model.form.exExContinue.payment = payment;
+        $scope.model.hidden.flgView = true;
+    };
+
+    $scope.backPayment = function(){
+        $scope.model.hidden.flgView = false;
+    };
+
+    $scope.backExExContract = function(){
+        $window.location = "ExExContract";
+    };
+}]);

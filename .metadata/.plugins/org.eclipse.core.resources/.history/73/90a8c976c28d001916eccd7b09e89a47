@@ -1,0 +1,41 @@
+@CHARSET "UTF-8";
+ .btn-area {
+    color: white;
+    background-color: #666666;
+    border-color: #666666;
+    padding: 10px 0px 7px 16px;
+    border-radius: 3px 3px 3px 3px;
+}
+
+#table-continue{
+  border: 1px solid #000000 !important;
+}
+
+#table-continue tr td{
+  border: 1px solid #000000 !important;
+  vertical-align: middle;
+}
+
+#table-continue tr th {
+  width: 150px;
+  background-color: #DCE6F2;
+  color: #000;
+  height: 45px;
+  vertical-align: middle;
+  border: 1px solid #000 !important;
+  text-align: left;
+}
+
+.text-decoration{
+  text-decoration: underline;
+}
+
+#transfer-table{
+  border: 1px solid #00A2E8;
+}
+#transfer-table tr td{
+  padding: 4px;
+}
+   .full-width {
+  width: 100% !important;
+}

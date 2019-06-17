@@ -1,0 +1,752 @@
+'use strict';
+
+exexSMSApp.factory('ScheduleListModel', [ 'BaseModel', '$filter',
+                                                        function(BaseModel, $filter) {
+
+    var model = BaseModel.getInstance();
+    model.form = {
+        search : {
+            userName : '',
+            groupCd : [],
+            displayPeriod : '0',
+            scheduleStartDate : '',
+            scheduleEndDate : ''
+        },
+        listS020005 : [],
+        listMstGroup : [],
+        listSchedule : [],
+    };
+
+    model.hidden = {
+        isDaySearch : true,
+        listHeader : [],
+        isDisabled : false,
+        showCalendar : false,
+        scheduleStartDate: '',
+        scheduleEndDate: '',
+        showView: true,
+        resource: {},
+        listGroupSelect : []
+    };
+
+    return model;
+}]);
+
+exexSMSApp.controller('scheduleListCtrl',
+        ['$scope', '$compile', '$window', '$filter', '$timeout', 'ScheduleListModel', 'uiCalendarConfig', 'Messages', 'ServerService', 'DialogsService',
+         function($scope, $compile, $window, $filter, $timeout, ScheduleListModel , uiCalendarConfig, Messages, ServerService, DialogsService) {
+
+    $scope.model = ScheduleListModel;
+
+    $scope.$on("ScheduleList#getEvents", function(evt, param) {
+        $scope.search();
+    });
+
+    $scope.init = function(){
+        $scope.getInit();
+        if(locale == 'ja'){
+            $scope.model.hidden.resource = {
+                    titleMonth: 'YYYY年M月',
+                    titleWeek: 'YYYY年M月 D日',
+                    titleDate: 'YYYY年M月D日'
+            };
+        }else{
+            $scope.model.hidden.resource = {
+                    titleMonth: 'MMM, YYYY',
+                    titleWeek: 'D MMM, YYYY',
+                    titleDate: 'ddd, DD MMM, YYYY'
+            };
+        }
+        var appWindow = angular.element($window);
+        appWindow.bind('resize', function () {
+            $timeout(function() {
+                angular.element('.sc_data').css('height', angular.element('.sc_main_box').css('height'));
+            });
+        });
+    };
+
+    $scope.getInit = function(){
+        sessionStorage.removeItem("scheduleInfo");
+        var sessionLogin = angular.fromJson(sessionStorage.getItem("session"));
+        if(!ValidateUtil.isValidTextEmpty(sessionLogin)){
+            $scope.model.form.search.groupCd = !ValidateUtil.isValidTextEmpty(sessionLogin.groupCd) ?
+                    [sessionLogin.groupCd] : [];
+        }
+        $scope.model.form.search.scheduleStartDate = DateUtils.getCurrentDate();
+        $scope.model.form.search.scheduleEndDate = $scope.model.form.search.scheduleStartDate;
+        var scheduleSearchInfo = angular.fromJson(sessionStorage.getItem("scheduleSearchInfo"));
+        if(!ValidateUtil.isValidTextEmpty(scheduleSearchInfo)){
+            $scope.model.form.search.userName = scheduleSearchInfo.userName;
+            $scope.model.form.search.groupCd = scheduleSearchInfo.groupCd;
+            $scope.model.form.search.displayPeriod = scheduleSearchInfo.displayPeriod;
+            $scope.model.form.search.scheduleStartDate = scheduleSearchInfo.scheduleStartDate;
+            $scope.model.form.search.scheduleEndDate = scheduleSearchInfo.scheduleEndDate;
+            if($scope.model.form.search.displayPeriod === '1' || $scope.model.form.search.displayPeriod === 1){
+                $scope.model.hidden.isDaySearch = false;
+                $scope.model.form.search.scheduleEndDate = DateUtils.getAddDayFromDate($scope.model.form.search.scheduleStartDate,6);
+            }else{
+                $scope.model.form.search.scheduleEndDate = $scope.model.form.search.scheduleStartDate;
+                $scope.model.hidden.isDaySearch = true;
+            }
+        }
+        var groupCd = $scope.model.form.search.groupCd;
+        var param = {
+                userName : $scope.model.form.search.userName,
+                groupCd : groupCd.length > 0 ? groupCd : [],
+                displayPeriod : $scope.model.form.search.displayPeriod.toString(),
+                scheduleStartDate : new Date($scope.model.form.search.scheduleStartDate),
+                scheduleEndDate : new Date($scope.model.form.search.scheduleEndDate)
+        };
+        ServerService.doPost('ScheduleList/getInit', param).then(
+            function(okResult) {
+                var error = okResult.data.failed;
+                if(!ValidateUtil.isValidTextEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                }
+                if($scope.model.form.search.displayPeriod.toString() === '1'
+                    || $scope.model.form.search.displayPeriod.toString() === 1){
+                    $scope.addDataHeader();
+                    okResult.data.dayList = okResult.data.weekList;
+                }
+                $scope.model.form.listMstGroup = okResult.data.listMstGroupType;
+                $scope.model.form.listS020005 = okResult.data.listS020005;
+                $scope.isDisabledToday();
+                $scope.model.form.listSchedule = okResult.data.dayList;
+            }
+        );
+    };
+
+    $scope.isDisabledToday = function(){
+        if(new Date($filter('date')(DateUtils.getCurrentDate(), "yyyy/MM/dd")).getTime()
+                == new Date($filter('date')($scope.model.form.search.scheduleStartDate, "yyyy/MM/dd")).getTime()){
+            $scope.model.hidden.isDisabled = true;
+        }else{
+            $scope.model.hidden.isDisabled = false;
+        }
+        return $scope.model.hidden.isDisabled;
+    };
+
+    $scope.search = function(){
+        $scope.model.hidden.showCalendar = false;
+        if(ValidateUtil.isValidTextEmpty($scope.model.form.search.displayPeriod)){
+            return;
+        }
+        if($scope.model.form.search.displayPeriod.toString() === '1'
+            || $scope.model.form.search.displayPeriod.toString() === 1){
+            $scope.model.hidden.isDaySearch = false;
+            $scope.model.form.search.scheduleEndDate = DateUtils.getAddDayFromDate($scope.model.form.search.scheduleStartDate,6);
+        }else{
+            $scope.model.form.search.scheduleEndDate = $scope.model.form.search.scheduleStartDate;
+            $scope.model.hidden.isDaySearch = true;
+        }
+        var groupCd = $scope.model.form.search.groupCd;
+        var param = {
+            userName : $scope.model.form.search.userName,
+            groupCd : groupCd.length > 0 ? groupCd : null,
+            displayPeriod : $scope.model.form.search.displayPeriod.toString(),
+            scheduleStartDate : new Date($scope.model.form.search.scheduleStartDate),
+            scheduleEndDate : new Date($scope.model.form.search.scheduleEndDate)
+        };
+        sessionStorage.setItem("scheduleSearchInfo", JSON.stringify(param));
+        ServerService.doPost('ScheduleList/search', param).then(
+            function(okResult) {
+                if($scope.model.form.search.displayPeriod.toString() === '1'
+                    || $scope.model.form.search.displayPeriod.toString() === 1){
+                    $scope.addDataHeader();
+                    okResult.data.dayList = okResult.data.weekList;
+                    console.log(okResult.data.weekList);
+                }
+                $scope.isDisabledToday();
+                $scope.model.form.listSchedule = okResult.data.dayList;
+                if($window.innerWidth < 992){
+                    $scope.getEvents($scope.model.form.listSchedule[0].schedule[0]);
+                }
+            }
+        );
+    };
+
+    $scope.addDataHeader = function(){
+        $scope.model.hidden.listHeader = [];
+        var daysOfWeek = {
+                ja: { daysShort : ["（日）", "（月）", "（火）", "（水）", "（木）", "（金）", "（土）"] },
+                en: { daysShort : [" (Sun)", " (Mon)", " (Tue)", " (Wed)", " (Thu)", " (Fri)", " (Sat)", " (Sun)"] },
+                vi: { daysShort : [" (CN)"," (T2)"," (T3)"," (T4)"," (T5)"," (T6)"," (T7)"] }
+        };
+        for(var i = 0;i<7;i++ ){
+            var currentDate = new Date();
+            var date = DateUtils.getAddDayFromDate($scope.model.form.search.scheduleStartDate,i);
+            var day = date.getDay();
+            var item = {
+                    date : date,
+                    dayName : daysOfWeek[locale].daysShort[day],
+                    day : day,
+                    classCurrentDate : (currentDate.getYear() === date.getYear()
+                            && currentDate.getMonth() === date.getMonth()
+                            && currentDate.getDate() === date.getDate())
+            };
+            $scope.model.hidden.listHeader.push(item);
+        }
+    };
+
+    $scope.prevDay = function(){
+        $scope.model.form.search.scheduleStartDate = DateUtils.getAddDayFromDate($scope.model.form.search.scheduleStartDate,-1);
+        $scope.search();
+    };
+
+    $scope.currentDay = function(){
+        $scope.model.form.search.scheduleStartDate = DateUtils.getCurrentDate();
+        $scope.search();
+    };
+
+    $scope.nextDay = function(){
+        $scope.model.form.search.scheduleStartDate = DateUtils.getAddDayFromDate($scope.model.form.search.scheduleStartDate,1);
+        $scope.search();
+    };
+
+    $scope.convertDataDay = function(data, date){
+        var tmp = [];
+        var length = data.length;
+        var time = new Date(date).getTime();
+
+        for(var i =0; i < length; i++){
+            var item = data[i];
+            var startTime = new Date(item.scheduleStartYmd).getTime();
+            var endTime = new Date(item.scheduleEndYmd).getTime();
+            var codeName = '';
+            if(!ValidateUtil.isValidTextEmpty(item.codeName)){
+                codeName =  item.codeName + ':';
+            }
+            var textFormmat = '';
+            if(startTime === time && endTime === time){
+                textFormmat = item.scheduleStartHm + Messages.getMessage('common.comma.001') + item.scheduleEndHm;
+            }else if(startTime < time && endTime > time){
+                textFormmat = Messages.getMessage('common.comma.001');
+            }else if(startTime < time && endTime === time){
+                textFormmat = Messages.getMessage('common.comma.001') + item.scheduleEndHm;
+            }else if(startTime === time && endTime > time){
+                textFormmat = item.scheduleStartHm + Messages.getMessage('common.comma.001');
+            }
+
+            var itemTmp = {
+                    scheduleCd : item.scheduleCd,
+                    title : codeName + item.scheduleName,
+                    textFormmat : textFormmat
+            };
+            tmp.push(itemTmp);
+        }
+        return tmp;
+
+    };
+
+    $scope.convertData = function(){
+        var tmp = [];
+        angular.forEach($scope.model.form.listMonth, function(item,i){
+            var codeName = !ValidateUtil.isValidTextEmpty(item.codeName) ? (item.codeName + ':') : '';
+            // Check all day events.
+            var newEndDate = item.scheduleEndYmd;
+            var newEndTime = item.scheduleEndHm;
+            var startDate = new Date(item.scheduleStartYmd).getTime();
+            var endDate = new Date(item.scheduleEndYmd).getTime();
+            var title = codeName + item.scheduleName;
+
+            // khoi: create new endDate, endTime when schedule is allDay
+            // example: endDate = 2017/12/20
+            //          newEndDate = 2017/12/21
+            //          newEndTime = 00:00
+            // for showing event on fullCalendar mode month
+            // fuuCalendar bug: it cannot show event which have startTime = 00:00, endTime = 23:59 in one day
+            if(item.allDay == true){
+                var newEndDate = (moment(item.scheduleEndYmd).add(1, 'day')).format("YYYY/MM/DD");
+                newEndTime = "00:00";
+            }
+
+            if(item.allDay == true){
+                if(item.scheduleStartYmd != item.scheduleEndYmd &&
+                        !StringUtils.isEmpty(item.scheduleStartHm)){
+                    title = item.scheduleStartHm + ' ' + title;
+                }
+            }else{
+                title = item.scheduleStartHm + ' ' + title;
+            }
+            var itemTmp = {
+                    scheduleCd : item.scheduleCd,
+                    userCd : item.userCd,
+                    title : title,
+                    start : new Date(item.scheduleStartYmd + ' ' + item.scheduleStartHm),
+                    end : new Date(newEndDate + ' ' + newEndTime),
+                    backgroundColor : item.scheduleColor,
+                    borderColor : item.scheduleColor,
+                    allDay: item.allDay,
+                    salesReportNo: item.salesReportNo
+            };
+            tmp.push(itemTmp);
+        });
+        return tmp;
+    };
+
+    /**
+     * get events when click next, prev, today
+     */
+    $scope.getEvents = function(item){
+        $scope.model.form.userName = item.title;
+        if($scope.model.hidden.showView) {
+            $scope.model.hidden.showCalendar = true;
+        }
+        var param = {userCd: item.userCd};
+        ServerService
+            .doPost('ScheduleList/getEvents', param)
+            .then(
+                    function(okResult) {
+                        //TODO cho nay
+                        $scope.model.form.listMonth = okResult.data.listEvents;
+                        console.log(okResult.data.listEvents);
+
+                        uiCalendarConfig.calendars['calendar'].fullCalendar( 'gotoDate', new Date($scope.model.form.search.scheduleStartDate));
+                        angular.element('.calendar').fullCalendar('refetchEvents');
+                        if($scope.model.hidden.showView) {
+                            $scope.changeView('agendaDay', 'calendar');
+                        }
+                    },
+                    function(errResult){
+                    });
+    };
+
+    /**
+     * get event on day click
+     */
+    $scope.getEventOnDay = function(objDate, allDay, jsEvent, view){
+        uiCalendarConfig.calendars['calendar'].fullCalendar( 'gotoDate', objDate );
+        $scope.changeView('agendaDay', 'calendar');
+    };
+
+    // calendar
+
+    /* alert on eventClick */
+    $scope.alertOnEventClick = function(calEvent, jsEvent, view){
+    };
+
+    /* alert on Drop */
+    $scope.alertOnDrop = function(event, delta, revertFunc, jsEvent, ui, view){
+    };
+    /* alert on Resize */
+    $scope.alertOnResize = function(event, delta, revertFunc, jsEvent, ui, view ){
+    };
+
+    /* Change View */
+    $scope.changeView = function(view,calendar) {
+        if(view == 'month'){
+            $('.fc-agendaWeek-button').removeClass('fc-state-active');
+            $('.fc-agendaDay-button').removeClass('fc-state-active');
+            $('.fc-month-button').addClass('fc-state-active');
+        }else if(view == 'agendaWeek'){
+            $('.fc-agendaDay-button').removeClass('fc-state-active');
+            $('.fc-month-button').removeClass('fc-state-active');
+            $('.fc-agendaWeek-button').addClass('fc-state-active');
+        }else if(view == 'agendaDay'){
+            $('.fc-agendaWeek-button').removeClass('fc-state-active');
+            $('.fc-month-button').removeClass('fc-state-active');
+            $('.fc-agendaDay-button').addClass('fc-state-active');
+        }
+        uiCalendarConfig.calendars[calendar].fullCalendar('changeView',view);
+    };
+
+    /* Change View */
+    $scope.renderCalender = function(calendar) {
+      $timeout(function() {
+        if(uiCalendarConfig.calendars[calendar]){
+          uiCalendarConfig.calendars[calendar].fullCalendar('render');
+        }
+      });
+    };
+
+    /* Render Tooltip */
+    $scope.eventRender = function( event, element, view ) {
+    };
+
+    $scope.eventViewAfterAllRender = function(view ) {
+        //Use view.intervalStart and view.intervalEnd to find date range of holidays
+        //Make ajax call to find holidays in range.
+        var fourthOfJuly = moment('2016-01-08','YYYY-MM-DD');
+        var holidays = [fourthOfJuly];
+        var holidayMoment;
+        for(var i = 0; i < holidays.length; i++) {
+            holidayMoment = holidays[i];
+            if (view.name == 'month') {
+                $("td[data-date=" + holidayMoment.format('YYYY-MM-DD') + "]").addClass('holiday');
+            } else if (view.name =='agendaWeek') {
+                var classNames = $("th:contains(' " + holidayMoment.format('M/D') + "')").attr("class");
+                if (classNames != null) {
+                    var classNamesArray = classNames.split(" ");
+                    for(var i = 0; i < classNamesArray.length; i++) {
+                        if(classNamesArray[i].indexOf('fc-col') > -1) {
+                            $("td." + classNamesArray[i]).addClass('holiday');
+                            break;
+                        }
+                    }
+                }
+            } else if (view.name == 'agendaDay') {
+                if(holidayMoment.format('YYYY-MM-DD') == $('#calendar').fullCalendar('getDate').format('YYYY-MM-DD')) {
+                    $("td.fc-col0").addClass('holiday');
+                };
+            }
+        }
+    };
+
+    $scope.eventViewRender = function(view, element){
+        if(locale == 'ja'){
+            view.title = view.title.replace('–', '～');
+            angular.element('.fc-left').html('<h2>' + view.title + '</h2>');
+        }
+        $('.fc-prev-button').addClass('btn btn-success waves-effect waves-light');
+        $('.fc-today-button').addClass('btn btn-success waves-effect waves-light');
+        $('.fc-next-button').addClass('btn btn-success waves-effect waves-light');
+
+        angular.element('.fc-axis.fc-widget-header').append('<i class="glyphicon glyphicon-plus" aria-hidden="true"></i>');
+        angular.element('.fc-axis.fc-widget-header').css('text-align','center');
+        angular.element('.fc-axis.fc-widget-header').css('cursor','pointer');
+        angular.element('.fc-axis.fc-widget-header > i').css('color', '#3598dc');
+        angular.element('.fc-axis.fc-widget-header > i').attr('ng-click', 'scheduleAdd()');
+
+        $compile(element)($scope);
+    };
+
+    $scope.alertOnEventHover = function(event, jsEvent, view, $popover, element){
+    };
+
+    $scope.scheduleAdd = function(data){
+        var dateEvent = angular.element('.fc-left').children().html();
+        dateEvent = dateEvent ? new Date(dateEvent.replace('年','/').replace('月','/').replace('日','')) : new Date();
+        var param = {
+                userCd : null,
+                userName : null,
+                scheduleCd : null,
+                scheduleName : null,
+                scheduleDate : dateEvent,
+                screenMode : 'INSERT',
+                allDayFlag : false,
+                topMode : true,
+                viewName: '',
+                fromScreen : 'ScheduleList'
+        };
+        sessionStorage.setItem("scheduleInfo", JSON.stringify(param));
+        sessionStorage.removeItem("scheduleSetting");
+        DialogsService.showDialog('PtlTodoControl', 'ptlTodoControlCtrl', param, {size: 'ptlTodo-control',});
+        $('.timepicker').prop('disabled', true);
+    };
+
+    $scope.scheduleView = function(calEvent, jsEvent, view){
+        var param = {
+                scheduleCd :calEvent.scheduleCd,
+                screenMode : 'UPDATE',
+                topMode : true,
+                fromScreen : 'ScheduleList',
+                salesReportNo: calEvent.salesReportNo
+        };
+        console.log(calEvent);
+        sessionStorage.setItem("scheduleInfo", JSON.stringify(param));
+        sessionStorage.removeItem("scheduleSetting");
+        DialogsService.showDialog('PtlTodoControl', 'ptlTodoControlCtrl', param, {size: 'ptlTodo-control'});
+    };
+
+    /**
+     * calendar config
+     */
+    $scope.uiConfig = {
+            calendar:{
+                scrollTime:'09:00:00',
+                defaultView: 'agendaDay',
+                locale: locale,
+                axisFormat: 'HH:mm',
+                height: 450,
+                editable: false,
+                firstDay : 1,
+                selectable: true,
+                selectHelper: true,
+                views: {
+                    month: {
+                        eventLimit: 3,
+                        titleFormat: $scope.model.hidden.resource.titleMonth
+                    },
+                    agendaWeek: {
+                        titleFormat: $scope.model.hidden.resource.titleWeek
+                    },
+                    agendaDay: {
+                        titleFormat: $scope.model.hidden.resource.titleDate
+                    }
+                },
+                header:{
+                    left: 'title',
+                    center: '',
+                    right: 'prev,today,next'
+                },
+                eventClick: $scope.scheduleView,
+                eventDrop: $scope.alertOnDrop,
+                eventResize: $scope.alertOnResize,
+                eventRender: $scope.eventRender,
+                //eventAfterAllRender : $scope.eventViewAfterAllRender,
+                viewRender : $scope.eventViewRender,
+                dayClick: $scope.getEventOnDay
+            }
+    };
+
+    /* add event sources array to calendar*/
+    $scope.eventsSchedule = function (start, end, timezone, callback) {
+        var events = [];
+        //$scope.convertData();
+        events = $scope.convertData();
+        callback(events);
+    };
+
+    $scope.eventSources = [$scope.eventsSchedule];
+
+    $scope.$watch('model.hidden.listHeader', function(){
+        $timeout(function() {
+            var listHeader = $scope.model.hidden.listHeader;
+            if(listHeader.length > 0){
+                $scope.model.hidden.scheduleStartDate = $filter('date')(listHeader[0].date, "yyyy/MM/dd") + listHeader[0].dayName;
+                $scope.model.hidden.scheduleEndDate = $filter('date')(listHeader[6].date, "yyyy/MM/dd") + listHeader[6].dayName;
+            }
+        },100);
+    });
+
+    $scope.changeViewGroup = function(mode){
+        if(mode == 'group'){
+            $scope.model.hidden.showView = true;
+            angular.element('.view-group').addClass('click-active');
+            angular.element('.view-user').removeClass('click-active');
+            $scope.uiConfig = {
+                    calendar:{
+                        scrollTime:'09:00:00',
+                        defaultView: 'agendaDay',
+                        locale: locale,
+                        axisFormat: 'HH:mm',
+                        height: 450,
+                        editable: false,
+                        firstDay : 1,
+                        selectable: true,
+                        selectHelper: true,
+                        views: {
+                            month: {
+                                eventLimit: 3,
+                                titleFormat: $scope.model.hidden.resource.titleMonth
+                            },
+                            agendaWeek: {
+                                titleFormat: $scope.model.hidden.resource.titleWeek
+                            },
+                            agendaDay: {
+                                titleFormat: $scope.model.hidden.resource.titleDate
+                            }
+                        },
+                        header:{
+                            left: 'title',
+                            center: '',
+                            right: 'prev,today,next'
+                        },
+                        eventClick: $scope.scheduleView,
+                        eventDrop: $scope.alertOnDrop,
+                        eventResize: $scope.alertOnResize,
+                        eventRender: $scope.eventRender,
+                        //eventAfterAllRender : $scope.eventViewAfterAllRender,
+                        viewRender : $scope.eventViewRender,
+                        dayClick: $scope.getEventOnDay
+                    }
+            };
+            $scope.changeView('agendaDay', 'calendar');
+        }else{
+            $scope.model.hidden.showView = false;
+            angular.element('.view-group').removeClass('click-active');
+            angular.element('.view-user').addClass('click-active');
+            //$scope.search();
+            var session = angular.fromJson(sessionStorage.getItem("session"));
+            var item = {"userCd": session.userCd, "title": session.userName};
+            $scope.getEvents(item);
+            $scope.uiConfig = {
+                    calendar:{
+                        scrollTime:'09:00:00',
+                        //defaultView: 'agendaDay',
+                        locale: locale,
+                        axisFormat: 'HH:mm',
+                        height: 450,
+                        editable: false,
+                        firstDay : 1,
+                        selectable: true,
+                        selectHelper: true,
+                        views: {
+                            month: {
+                                titleFormat: $scope.model.hidden.resource.titleMonth
+                            },
+                            agendaWeek: {
+                                titleFormat: $scope.model.hidden.resource.titleWeek
+                            },
+                            agendaDay: {
+                                titleFormat: $scope.model.hidden.resource.titleDate
+                            }
+                        },
+                        header:{
+                            left: 'title',
+                            center: '',
+                            right: 'prev,today,next'
+                        },
+                        eventClick: $scope.scheduleView,
+                        eventDrop: $scope.alertOnDrop,
+                        eventResize: $scope.alertOnResize,
+                        eventRender: $scope.eventRender,
+                        //eventAfterAllRender : $scope.eventViewAfterAllRender,
+                        viewRender : $scope.eventViewRender,
+                        dayClick: $scope.getEventOnDay
+                    }
+            };
+            $scope.changeView('month', 'calendar');
+        }
+    };
+
+    $scope.changeViewSearch = function(code){
+        $scope.model.form.search.displayPeriod = code;
+        $scope.search();
+    };
+
+    $scope.showSalesReport = function(row){
+        var salesReport = {
+                salesReportNo: row.salesReportNo,
+                fromScreen: 'ScheduleList',
+                isDisabled: false,
+                screenMode: 'UPDATE',
+            };
+        sessionStorage.setItem("salesReport", JSON.stringify(salesReport));
+        sessionStorage.removeItem("salesReportUrl");
+        var options = {
+            size: 'lg'
+        };
+        DialogsService.showDialog('SalesReportDialog', 'SalesReportControlCtrl', null, options);
+    }
+}]);
+
+exexSMSApp.directive('exexDaySchedule', function($window, DialogsService){
+    return {
+        require: 'ngModel',
+        restrict : 'A',
+        transclude: true,
+        replace: true,
+        scope : {
+            ngModel : '=ngModel'
+        },
+        link : function(scope, element, attrs, ngModel) {
+            if(attrs.startTime == undefined || attrs.startTime == ''){
+                attrs.startTime = '00:00';
+            }
+            if(attrs.endTime == undefined || attrs.endTime == ''){
+                attrs.endTime = '24:00';
+            }
+            if(attrs.widthTime == undefined || attrs.widthTime == ''){
+                attrs.widthTime = 60 * 15;
+            }
+            if(attrs.timeLineY == undefined || attrs.timeLineY == ''){
+                attrs.timeLineY = 30;
+            }
+            if(attrs.verticalScrollbar == undefined || attrs.verticalScrollbar == ''){
+                attrs.verticalScrollbar = 20;
+            }
+            if(attrs.timeLineBorder == undefined || attrs.timeLineBorder == ''){
+                attrs.timeLineBorder = 1;
+            }
+
+            var options = {
+                    startTime : attrs.startTime,
+                    endTime : attrs.endTime,
+                    widthTime : attrs.widthTime,
+                    timeLineY : attrs.timeLineY,
+                    verticalScrollbar : attrs.verticalScrollbar,
+                    timeLineBorder : attrs.timeLineBorder,
+                    debug : "#debug",
+                    language : locale,
+                    rows : scope.ngModel
+            };
+            element.timeSchedule(options);
+
+            scope.$watch('ngModel' ,function() {
+                scope.ngModel = ngModel.$modelValue;
+                //distroy
+                $(element).html('');
+                //init
+                element.timeSchedule({
+                    startTime : attrs.startTime,
+                    endTime : attrs.endTime,
+                    widthTime : attrs.widthTime,
+                    timeLineY : attrs.timeLineY,
+                    verticalScrollbar : attrs.verticalScrollbar,
+                    timeLineBorder : attrs.timeLineBorder,
+                    debug : "#debug",
+                    language : locale,
+                    rows : scope.ngModel,
+                    change: function(node,data){
+                    },
+                    init_data: function(node,data){
+                    },
+                    click: function(node,data){
+                        scope.scheduleView(data);
+                    },
+                    user_click : function(node, data){
+                        scope.scheduleAdd(data);
+                    },
+                    append: function(node,data){
+                    },
+                    time_click: function(time,data){
+                    },
+                });
+                element.scrollLeft( 800 );
+            });
+
+            scope.scheduleView = function(data){
+                var param = {
+                        userCd : null,
+                        userName : null,
+                        scheduleCd : data.scheduleCd,
+                        scheduleName : data.text,
+                        scheduleDate : null,
+                        screenMode : 'UPDATE',
+                        topMode : true,
+                        fromScreen : 'ScheduleList',
+                        salesReportNo : data.salesReportNo
+                };
+                console.log(data);
+                sessionStorage.setItem("scheduleInfo", JSON.stringify(param));
+                sessionStorage.removeItem("scheduleSetting");
+                DialogsService.showDialog('PtlTodoControl', 'ptlTodoControlCtrl', param, {size: 'ptlTodo-control'});
+            };
+
+            scope.scheduleAdd = function(data){
+                var param = {
+                        userCd : data.userCd,
+                        userName : data.title,
+                        scheduleCd : null,
+                        scheduleName : null,
+                        scheduleDate : angular.element('input[name="scheduleStartDate"]').val(),
+                        screenMode : 'INSERT',
+                        allDayFlag : false,
+                        topMode : true,
+                        viewName: '',
+                        fromScreen : 'ScheduleList'
+                };
+                sessionStorage.setItem("scheduleInfo", JSON.stringify(param));
+                sessionStorage.removeItem("scheduleSetting");
+                DialogsService.showDialog('PtlTodoControl', 'ptlTodoControlCtrl', param, {size: 'ptlTodo-control',});
+                $('.timepicker').prop('disabled', true);
+            };
+        }
+    };
+});
+
+exexSMSApp.directive('compile', ['$compile', function ($compile) {
+    return function(scope, element, attrs) {
+      scope.$watch(
+        function(scope) {
+          return scope.$eval(attrs.compile);
+        },
+        function(value) {
+          element.html(value);
+          $compile(element.contents())(scope);
+        }
+     )};
+    }
+]);

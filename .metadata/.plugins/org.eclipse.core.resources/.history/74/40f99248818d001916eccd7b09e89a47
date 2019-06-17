@@ -1,0 +1,150 @@
+/**
+ * 文字変換用のオブジェクト
+ *
+ * @author SYSTEM-EXE Y-Shibutani
+ * @version 1.0.0
+ */
+var CharFilter = (function() {
+    if(!Array.indexOf) {
+       Array.prototype.indexOf = function(obj) {
+           for(var i in this) {
+               if(this[i] == obj) {
+                   return i;
+               }
+           }
+           return -1;
+       }
+    }
+
+    var CharFilterType = {
+        // 半角カタカナ配列
+        HANKAKU_KATAKANA : new Array("ｶﾞ","ｷﾞ","ｸﾞ","ｹﾞ","ｺﾞ","ｻﾞ","ｼﾞ","ｽﾞ","ｾﾞ","ｿﾞ","ﾀﾞ","ﾁﾞ",
+            "ﾂﾞ","ﾃﾞ","ﾄﾞ","ﾊﾞ","ﾋﾞ","ﾌﾞ","ﾍﾞ","ﾎﾞ","ﾊﾟ","ﾋﾟ","ﾌﾟ","ﾍﾟ","ﾎﾟ","ｦ","ｧ",
+            "ｨ","ｩ","ｪ","ｫ","ｬ","ｭ","ｮ","ｯ","ｰ","ｱ","ｲ","ｳ","ｴ","ｵ","ｶ","ｷ","ｸ","ｹ",
+            "ｺ","ｻ","ｼ","ｽ","ｾ","ｿ","ﾀ","ﾁ","ﾂ","ﾃ","ﾄ","ﾅ","ﾆ","ﾇ","ﾈ","ﾉ","ﾊ","ﾋ",
+            "ﾌ","ﾍ","ﾎ","ﾏ","ﾐ","ﾑ","ﾒ","ﾓ","ﾔ","ﾕ","ﾖ","ﾗ","ﾘ","ﾙ","ﾚ","ﾛ","ﾜ","ﾝ"),
+
+        // 全角カタカナ配列
+        ZENKAKU_KATAKANA : new Array("ガ","ギ","グ","ゲ","ゴ","ザ","ジ","ズ","ゼ","ゾ","ダ","ヂ",
+            "ヅ","デ","ド","バ","ビ","ブ","ベ","ボ","パ","ピ","プ","ペ","ポ","ヲ","ァ",
+            "ィ","ゥ","ェ","ォ","ャ","ュ","ョ","ッ","ー","ア","イ","ウ","エ","オ","カ","キ","ク","ケ",
+            "コ","サ","シ","ス","セ","ソ","タ","チ","ツ","テ","ト","ナ","ニ","ヌ","ネ","ノ","ハ","ヒ",
+            "フ","ヘ","ホ","マ","ミ","ム","メ","モ","ヤ","ユ","ヨ","ラ","リ","ル","レ","ロ","ワ","ン"),
+
+        // 半角英字配列
+        HANKAKU_EIJI : new Array("A","a","B","b","C","c","D","d","E","e","F","f","G","g",
+            "H","h","I","i","J","j","K","k","L","l","M","m","N","n","O","o","P","p",
+            "Q","q","R","r","S","s","T","t","U","u","V","v","W","w","X","x","Y","y",
+            "Z","z"),
+
+        // 全角英字配列
+        ZENKAKU_EIJI : new Array("Ａ","ａ","Ｂ","ｂ","Ｃ","ｃ","Ｄ","ｄ","Ｅ","ｅ","Ｆ","ｆ","Ｇ","ｇ",
+            "Ｈ","ｈ","Ｉ","ｉ","Ｊ","ｊ","Ｋ","ｋ","Ｌ","ｌ","Ｍ","ｍ","Ｎ","ｎ","Ｏ","ｏ","Ｐ","ｐ",
+            "Ｑ","ｑ","Ｒ","ｒ","Ｓ","ｓ","Ｔ","ｔ","Ｕ","ｕ","Ｖ","ｖ","Ｗ","ｗ","Ｘ","ｘ","Ｙ","ｙ",
+            "Ｚ","ｚ"),
+
+        // 半角数字配列
+        HANKAKU_SUJI : new Array("1","2","3","4","5","6","7","8","9","0"),
+
+        // 全角数字配列
+        ZENKAKU_SUJI : new Array("１","２","３","４","５","６","７","８","９","０"),
+
+        // 半角記号
+        HANKAKU_KGO : new Array("(",")"," ","-","_","*","@","/",".",",","'","\"",
+            ":",";","[","]","~","+","!","?","&","%","#","<",">","|","\\","=","{","}","^","`"),
+
+        // 全角記号
+        ZENKAKU_KGO : new Array("（","）","　","－","＿","＊","＠","／","．","，","’","”",
+            "：","；","［","］","～","＋","！","？","＆","％","＃","＜","＞","｜","￥","＝","｛","｝","＾","‘")
+    };
+
+    var F = function(){};
+    F.prototype = {
+          convertHalf : function(val) {
+              var ret = "";
+              for(var i = 0; i < val.length; i++) {
+                  var charVal = val.charAt(i);
+                  if(val.charCodeAt(i) < 255
+                      || CharFilterType.HANKAKU_KATAKANA.indexOf(charVal) > -1) {
+                      ret += charVal;
+                      continue;
+                  }
+
+                  var charIndex = CharFilterType.ZENKAKU_KATAKANA.indexOf(charVal);
+                  if(charIndex > -1) {
+                      ret += CharFilterType.HANKAKU_KATAKANA[charIndex];
+                      continue;
+                  }
+
+                  var engIndex = CharFilterType.ZENKAKU_EIJI.indexOf(charVal);
+                  if(engIndex > -1) {
+                      ret += CharFilterType.HANKAKU_EIJI[engIndex];
+                      continue;
+                  }
+
+                  var numIndex = CharFilterType.ZENKAKU_SUJI.indexOf(charVal);
+                  if(numIndex > -1) {
+                      ret += CharFilterType.HANKAKU_SUJI[numIndex];
+                      continue;
+                  }
+
+                  var markIndex = CharFilterType.ZENKAKU_KGO.indexOf(charVal);
+                  if(markIndex > -1) {
+                      ret += CharFilterType.HANKAKU_KGO[markIndex];
+                      continue;
+                  }
+              }
+              return ret;
+          },
+          convertFull : function(val) {
+              var ret = "";
+              for(var i = 0; i < val.length; i++) {
+                  var charVal = val.charAt(i);
+                  var charIndex = CharFilterType.HANKAKU_KATAKANA.indexOf(charVal);
+                  if(CharFilterType.ZENKAKU_KATAKANA.indexOf(charVal) > -1
+                      || CharFilterType.ZENKAKU_EIJI.indexOf(charVal) > -1
+                      || CharFilterType.ZENKAKU_SUJI.indexOf(charVal) > -1
+                      || CharFilterType.ZENKAKU_KGO.indexOf(charVal) > -1) {
+                      ret += charVal;
+                      continue;
+                  }
+
+                  if(charIndex > -1) {
+                      if(i < val.length) {
+                          // 濁点・半濁点に対応させる。
+                          var nextCharVal = val.charAt(i + 1);
+                          var char2Index = CharFilterType.HANKAKU_KATAKANA.indexOf(charVal + nextCharVal);
+                          if(char2Index > -1) {
+                              ret += CharFilterType.ZENKAKU_KATAKANA[char2Index];
+                              val = val.replace(nextCharVal, '');
+                              continue;
+                          }
+                      }
+                      ret += CharFilterType.ZENKAKU_KATAKANA[charIndex];
+                      continue;
+                  }
+
+                  var engIndex = CharFilterType.HANKAKU_EIJI.indexOf(charVal);
+                  if(engIndex > -1) {
+                      ret += CharFilterType.ZENKAKU_EIJI[engIndex];
+                      continue;
+                  }
+
+                  var numIndex = CharFilterType.HANKAKU_SUJI.indexOf(charVal);
+                  if(numIndex > -1) {
+                      ret += CharFilterType.ZENKAKU_SUJI[numIndex];
+                      continue;
+                  }
+
+                  var markIndex = CharFilterType.HANKAKU_KGO.indexOf(charVal);
+                  if(markIndex > -1) {
+                      ret += CharFilterType.ZENKAKU_KGO[markIndex];
+                      continue;
+                  }
+                  ret += charVal;
+              }
+              return ret;
+          }
+    };
+    return new F();
+})();

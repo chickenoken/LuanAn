@@ -1,0 +1,17 @@
+package org.planning.net.entity;
+
+import org.seasar.doma.Column;
+import org.seasar.doma.Entity;
+
+@Entity
+public class Phong {
+
+    @Column(name = "MA_PHONG")
+    private String maNhanVien;
+
+    @Column(name = "LOAI_PHONG")
+    private String tenNhanVien;
+
+    @Column(name = "DON_GIA")
+    private String role;
+}

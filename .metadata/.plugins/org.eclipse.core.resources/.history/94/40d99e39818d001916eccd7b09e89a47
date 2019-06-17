@@ -1,0 +1,99 @@
+body.document-editor {
+    background: white;
+    display: block;
+    margin: 0 auto 0;
+    border: none;
+    box-shadow: none;
+    padding: 30px;
+    font-size: 14px;
+    line-height: 20pt;
+    font-family: 'MS PMincho';
+}
+
+body.document-editor h1 {
+    margin-bottom:1cm;
+}
+
+body.document-editor table {
+    border-collapse: collapse;
+}
+
+body.document-editor table td {
+    padding: 0px 5px;
+}
+
+/* do not print table line when table line has border = 0 */
+.cke_show_borders table.cke_show_border, .cke_show_borders table.cke_show_border > tr > td, .cke_show_borders table.cke_show_border > tr > th, .cke_show_borders table.cke_show_border > tbody > tr > td, .cke_show_borders table.cke_show_border > tbody > tr > th, .cke_show_borders table.cke_show_border > thead > tr > td, .cke_show_borders table.cke_show_border > thead > tr > th, .cke_show_borders table.cke_show_border > tfoot > tr > td, .cke_show_borders table.cke_show_border > tfoot > tr > th {
+    border: none !important;
+}
+
+/**A3 page size*/
+.page-size-A3-portrait{
+    width: 297mm !important;
+    height: 419mm !important;
+}
+
+.page-size-A3-landscape{
+    width: 420mm !important;
+    height: 296mm !important;
+}
+
+/**A4 page size*/
+.page-size-A4-portrait{
+    width: 210mm !important;
+    height: 296mm !important;
+
+}
+
+.page-size-A4-landscape{
+    width: 297mm !important;
+    height: 209mm !important;
+}
+
+/**A5 page size*/
+.page-size-A5-portrait{
+    width: 148mm !important;
+    height: 209mm !important;
+}
+
+.page-size-A5-landscape{
+    width: 210mm !important;
+    height: 147mm !important;
+}
+
+/**B5 page size*/
+.page-size-B5-portrait{
+    width: 176mm !important;
+    height: 250mm !important;
+}
+.page-size-B5-landscape{
+    width: 250mm !important;
+    height: 176mm !important;
+}
+/**B4 page size*/
+.page-size-B4-portrait{
+    width: 250mm !important;
+    height: 353mm !important;
+}
+.page-size-B4-landscape{
+    width: 353mm !important;
+    height: 250mm !important;
+}
+
+.p-t-50{
+	padding-top: 50px;
+}
+
+.p-b-20{
+	padding-bottom: 20px;
+}
+
+body.document-editor .h-card {
+    background: none;
+    padding: unset;
+    border-bottom: none;
+}
+
+table > tbody > tr:nth-child(2).hidden{
+  display: none !important;
+}

@@ -1,0 +1,503 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision: 1.0 $  $Date: 2014/06/06 $
+ * @author : Hoai-Nam
+ */
+
+/**
+ * Table : 受注「TBL_RECEIVE」
+ */
+
+'use strict';
+
+exexSMSApp.factory('SalDemandListModel', [ 'BaseModel', function(BaseModel) {
+
+    var model = BaseModel.getInstance();
+
+    model.form = {
+        search : {
+            salDateFrom : '',
+            salDateTo : '',
+            salesSno : '',
+            billPlanDateFrom : '',
+            billPlanDateTo : '',
+            sumPriceFrom : '',
+            sumPriceTo : '',
+            documentStatus : [],
+            rcvName : '',
+            exportExcel : '',
+            custName : '',
+            projectSno : '',
+            billSno: '',
+            itemName: ''
+        },
+        salDemandList : [],
+        listDocumentStatus : [],
+        listExport: [],
+        listSelectedSNo: [],
+        listInvoice : [],
+        listReverse: [
+            {code: false,codeName: "昇順"},
+            {code: true,codeName: "降順"}
+        ],
+        listPredicate: [
+            {code: "salDate",codeName: "売上日"},
+            {code: "salesSno",codeName: "売上番号"},
+            {code: "custName",codeName: "顧客名"},
+            {code: "rcvName",codeName: "受注件名"},
+            {code: "sumPrice",codeName: "売上金額"},
+            {code: "billPlanDate",codeName: "請求予定日"},
+            {code: "documentStatusName",codeName: "ステータス"}
+        ]
+    };
+
+    model.hidden = {
+        screenMode : '',
+        isDisabled : true,
+        enableButton: true,
+        exportName: 'EXEX03',
+    };
+
+    return model;
+} ]);
+
+exexSMSApp.controller('salDemandListCtrl',
+        ['$scope', '$filter', 'DialogsService', 'RouteService', 'ServerService', 'SalDemandListModel', 'SalDecideProcessService','HeaderModel', 'Messages',
+         function($scope, $filter, DialogsService, RouteService, ServerService, SalDemandListModel, SalDecideProcessService, HeaderModel, Messages) {
+
+    $scope.model = SalDemandListModel;
+    $scope.modelHeader = HeaderModel;
+
+    $scope.convertParamsSearch = function(param){
+        var params = {
+            salDateFrom : !ValidateUtil.isValidTextEmpty(param.salDateFrom) ? new Date(param.salDateFrom) : "",
+            salDateTo : !ValidateUtil.isValidTextEmpty(param.salDateTo) ? new Date(param.salDateTo) : "",
+            salesSno : param.salesSno,
+            billPlanDateFrom : !ValidateUtil.isValidTextEmpty(param.billPlanDateFrom) ? new Date(param.billPlanDateFrom) : "",
+            billPlanDateTo : !ValidateUtil.isValidTextEmpty(param.billPlanDateTo) ? new Date(param.billPlanDateTo) : "",
+            sumPriceFrom : !ValidateUtil.isValidTextEmpty(param.sumPriceFrom) ? parseInt(param.sumPriceFrom) : '',
+            sumPriceTo : !ValidateUtil.isValidTextEmpty(param.sumPriceTo) ? parseInt(param.sumPriceTo) : '',
+            documentStatus : !ValidateUtil.isValidTextEmpty(param.documentStatus) ? param.documentStatus.toString() : "",
+            documentStatusName : !ValidateUtil.isValidTextEmpty(param.documentStatus) ? param.documentStatus.toString() : "",
+            custName : !ValidateUtil.isValidTextEmpty(param.custName) ? param.custName.toString() : "",
+            rcvName : param.rcvName,
+            projectSno : param.projectSno,
+            billSno : param.billSno,
+            itemName : param.itemName,
+            controlCd: param.controlCd
+        };
+        return params;
+    };
+
+    /**
+     * 初期表示
+     */
+    $scope.init = function(){
+        ServerService.doPost('SalDemandList/getInit', {}).then(
+            function(okResult) {
+                var error = okResult.data.failed;
+                if(!ValidateUtil.isValidTextEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                }
+                $scope.model.form.listDocumentStatus = okResult.data.listDocumentStatus;
+                // use for kenanken company
+                $scope.model.form.listInvoice = okResult.data.listInvoice;
+                $scope.model.form.listExport=okResult.data.listExport;
+
+                var param = angular.fromJson(sessionStorage.getItem("projectSno"));
+                var sessionSearch = angular.fromJson(sessionStorage.getItem("salDemandListSession"));
+                if(!ValidateUtil.isValidTextEmpty(param)){
+                    $scope.model.form.search.salDateFrom = "";
+                    $scope.model.form.search.salDateTo = "";
+                    $scope.model.form.search.projectSno = param.projectSno;
+                    $scope.model.form.search.custName = param.custName;
+                    sessionStorage.removeItem("projectSno");
+                } else if(!StringUtils.isEmpty(sessionSearch)){
+                    if(!StringUtils.isEmpty(sessionSearch.documentStatus)) {
+                        sessionSearch.documentStatus = sessionSearch.documentStatus.split(',');
+                    }
+                    $scope.model.form.search = sessionSearch;
+                    $scope.model.currentPage = sessionSearch.currentPage;
+                }
+                $scope.search($scope.model.form.search, $scope.model.currentPage);
+            }
+        );
+    };
+    $scope.init();
+
+    $scope.checkDate = function (param) {
+        var dateFrom = new Date(param.billPlanDateFrom);
+        var dateTo = new Date(param.billPlanDateTo);
+        var minDate = new Date('1000/01/01');
+        var maxDate = new Date('9999/12/31');
+        if(dateFrom < minDate || dateTo > maxDate){
+            DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00117',$('#billPlanDateLabel').text()));
+            return true;
+        }
+    };
+
+    /**
+     * 売上一覧を選択する
+     */
+    $scope.search = function(param, page){
+        $scope.model.hidden.enableButton = true;
+
+        var params = $scope.convertParamsSearch($scope.model.form.search);
+        if($scope.checkDate(params)){
+            return;
+        };
+        sessionStorage.setItem('salDemandListSession', JSON.stringify(params));
+
+        ServerService.doPost('SalDemandList/search', params).then(
+            function(okResult) {
+                var error = okResult.data.failed;
+                var warning = okResult.data.warning;
+                if(!ValidateUtil.isValidTextEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                }else if(!ValidateUtil.isValidTextEmpty(warning)){
+                    DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                    return;
+                }
+
+                var length = okResult.data.resultList.length;
+                $scope.model.form.salDemandList = okResult.data.resultList;
+                $scope.model.currentPage = !StringUtils.isEmpty(page) ? page : 1; //current page
+                $scope.model.entryLimit = 20; //max no of items to display in a page
+                $scope.model.number = 20;
+                $scope.model.filteredItems = length; //Initially for no filter
+                $scope.model.totalItems = length;
+                // add colresizable to table
+                setTimeout(function(){
+                    $scope.setColResizable();
+                });
+            }
+        );
+    };
+
+
+    /**
+     * Excel出カ
+     */
+    $scope.exportExcel=function(param){
+        var params = {
+            salDateFrom : !ValidateUtil.isValidTextEmpty(param.salDateFrom) ? new Date(param.salDateFrom, "yyyy/MM/dd") : null,
+            salDateTo : !ValidateUtil.isValidTextEmpty(param.salDateTo) ? new Date(param.salDateTo, "yyyy/MM/dd") : null,
+            salesSno : param.salesSno,
+            billPlanDateFrom : !ValidateUtil.isValidTextEmpty(param.billPlanDateFrom) ? new Date(param.billPlanDateFrom, "yyyy/MM/dd") : null,
+            billPlanDateTo : !ValidateUtil.isValidTextEmpty(param.billPlanDateTo) ? new Date(param.billPlanDateTo, "yyyy/MM/dd") : null,
+            sumPriceFrom : !ValidateUtil.isValidTextEmpty(param.sumPriceFrom) ? param.sumPriceFrom : null,
+            sumPriceTo : !ValidateUtil.isValidTextEmpty(param.sumPriceTo) ? param.sumPriceTo : null,
+            documentStatus : !ValidateUtil.isValidTextEmpty(param.documentStatus) ? param.documentStatus.toString() : null,
+            custName : !ValidateUtil.isValidTextEmpty(param.custName) ? param.custName.toString() : null,
+            rcvName : param.rcvName,
+            projectSno : param.projectSno,
+            billSno : param.billSno,
+            itemName : param.itemName,
+            exportExcel: param.exportExcel.toString(),
+            controlCd: param.controlCd
+        };
+        var title = '';
+        if ('01' == params.exportExcel) {
+            title = Messages.getMessage("common.excel.file.name.sale01");
+        } else if ('02' == params.exportExcel) {
+            title = Messages.getMessage("common.excel.file.name.sale02");
+        } else if ('03' == params.exportExcel) {
+            title = Messages.getMessage("common.excel.file.name.sale03");
+        } else if ('04' == params.exportExcel) {
+            title = Messages.getMessage("common.excel.file.name.sale04");
+        }
+        var fileName = title + '_' + DateUtils.getYYYYMMDD(new Date());
+        ServerService.doDownload('/SalDemandList/downloadSalDemandExcel', params
+                , 'application/vnd.ms-excel', fileName + '.xlsx');
+    };
+
+    /**
+     * redirect to edit form
+     */
+    $scope.goToSalDecideProcess = function(row){
+        var param = {
+            salesSno : row.salesSno,
+            recodeNo : row.recodeNo
+        };
+        ServerService.doPost('SalDemandList/isExistData', param).then(
+            function(okResult) {
+                var error =  okResult.data.failed;
+                var warning =  okResult.data.warning;
+                if(!ValidateUtil.isValidTextEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                }else if(!ValidateUtil.isValidTextEmpty(warning)){
+                    var dlg = DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                    dlg.result.then(function() {
+                        var paramSearch = $scope.model.form.search;
+                        $scope.search(paramSearch);
+                    });
+                }else{
+                    var salDecideProcess = {
+                        custCd : row.custCd,
+                        salesSno :  row.salesSno,
+                        recodeNo : row.recodeNo,
+                        documentStatus : row.documentStatus,
+                        custType: row.custType ? '1' : '0',
+                        screenMode : "VIEW",
+                        backMode : true,
+                        isDisabled : true,
+                        projectSno : row.projectSno,
+                        businessCd : row.businessCd,
+                        processNo : row.processNo,
+                        lineNo : row.lineNo,
+                        workNo : row.workNo,
+                        inputValue : row.inputValue,
+                        connectWorkNo : row.connectWorkNo,
+                        workflowFlag :  row.workflowFlag,
+                        redirectUrl : 'SalDemandList'
+                    };
+                    sessionStorage.removeItem("projectSno");
+                    sessionStorage.removeItem("processDetail");
+                    sessionStorage.removeItem("customerInfo");
+                    sessionStorage.removeItem("fromSalEXEX");
+                    sessionStorage.setItem("salDecideProcess", JSON.stringify(salDecideProcess));
+                    RouteService.gotoUrl('SalDecideProcess');
+                }
+            }
+        );
+    };
+
+    /**
+     * redirect to mail creation
+     */
+    $scope.goToMailReg = function(){
+        var params = $scope.convertParamsSearch($scope.model.form.search);
+        if($scope.checkDate(params)){
+            return;
+        };
+        ServerService.doPost('SalDemandList/getOwnerMail', params).then(
+            function(okResult) {
+                var error = okResult.data.failed;
+                var warning = okResult.data.warning;
+                if(!ValidateUtil.isValidTextEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                }else if(!ValidateUtil.isValidTextEmpty(warning)){
+                    DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                    return;
+                }else{
+                    if(!ValidateUtil.isValidTextEmpty(okResult.data)){
+                        sessionStorage.removeItem("mailListDetail");
+                        sessionStorage.setItem("mailCreateDetail", JSON.stringify(okResult.data));
+                        RouteService.gotoUrl('MailRegistration');
+                    }
+                }
+            }
+        );
+    };
+
+    $scope.resetForm = function (){
+        $scope.model.form.search.salDateFrom = "";
+        $scope.model.form.search.salDateTo = "";
+        $scope.model.form.search.billPlanDateFrom = "";
+        $scope.model.form.search.billPlanDateTo = "";
+        angular.element('#sumPriceFrom').val("");
+        angular.element('#sumPriceTo').val("");
+        ObjectUtil.resetEmpty($scope.model.form.search);
+    };
+
+    $scope.showPopover = function(index) {
+        var length = $scope.model.form.salDemandList.length;
+        for(var i = 0; i< length; i++){
+            if(i == index){
+                $scope.model.form.salDemandList[i].opened = true;
+            }else{
+                $scope.model.form.salDemandList[i].opened = false;
+            }
+        }
+    };
+
+    $scope.gotoUrlEXEX = function(url, screenMode, item){
+        var toScreen = '';
+        if(url === 'SalEstimateControl'){
+            toScreen = 'EXEX01';
+        }else if(url === 'SalRsvControl'){
+            toScreen = 'EXEX02';
+        }else if(url === 'SalDecideProcess'){
+            toScreen = 'EXEX03';
+        }else if(url === 'SalOrderControl'){
+            toScreen = 'EXEX06';
+        }else if(url === 'SalStockControl'){
+            toScreen = 'EXEX07';
+        }
+        sessionStorage.removeItem("salEstimate");
+        sessionStorage.removeItem("receiveItemInfo");
+        sessionStorage.removeItem('salDecideProcess');
+        sessionStorage.removeItem("salSell");
+        sessionStorage.removeItem("salStock");
+        sessionStorage.removeItem('projectSno');
+        sessionStorage.removeItem('customerInfo');
+        var params = {
+            custCd : item.custCd,
+            estimateSno : item.estimateSno,
+            rcvSno : item.rcvSno,
+            salesSno : item.salesSno,
+            orderSno : item.orderSno,
+            stockSno : item.stockSno,
+            recodeNo : item.recodeNo,
+            projectSno : item.projectSno,
+            salDataName : item.projectName,
+            screenMode : screenMode,
+            screenName : 'EXEX03',
+            toScreen : toScreen,
+            isDisabled : false,
+            redirectUrl : 'SalDemandList'
+        };
+        sessionStorage.setItem('fromSalEXEX', JSON.stringify(params));
+        RouteService.gotoUrl(url);
+    };
+
+    $scope.gotoUrl = function(url, row){
+        if(!ValidateUtil.isValidTextEmpty(row.businessCd)){
+            var prjBusiness = {
+                projectSno : row.projectSno,
+                businessCd : row.businessCd,
+                redirectUrl : 'SalDemandList'
+            };
+            sessionStorage.setItem("prjBusiness", JSON.stringify(prjBusiness));
+            RouteService.gotoUrl(url);
+        }else{
+            var param = {
+                custCd : row.custCd,
+                projectSno : row.projectSno
+            };
+            RouteService.gotoUrl(url);
+        }
+    };
+
+    $scope.$on($scope.model.hidden.exportName + "#downloadReport", function(evt, param) {
+        $scope.download($scope.model.hidden.selectRow);
+    });
+
+    $scope.$on($scope.model.hidden.exportName + "#exportReport", function(evt, param) {
+        if(!StringUtils.isEmpty(param.tempNo)){
+            $scope.showCustomReport(param);
+        }else{
+            $scope.downloadKenankenDenpyoExcel($scope.model.hidden.selectRow);
+        }
+    });
+
+    /**show ckeditor report*/
+    $scope.showCustomReport = function(param){
+        var params = {};
+        if(!StringUtils.isEmpty($scope.model.hidden.selectRow)){
+            var listSelectedSNo = [];
+            listSelectedSNo.push($scope.model.hidden.selectRow.salesSno + '_' + $scope.model.hidden.selectRow.recodeNo);
+            params ={'invoiceType': '03', objSno: listSelectedSNo, 'tempNoCustomer': param.tempNo};
+        }else{
+            params ={'invoiceType': '03', objSno: $scope.model.form.listSelectedSNo, 'tempNoCustomer': param.tempNo};
+        }
+        var options ={size: 1100};
+        DialogsService.showDialog('InvoiceTemplate/getCustomReportPage', 'CustomReportCtrl', params, options);
+    }
+
+    /**download 伝票 excel file for kenanken company*/
+    $scope.downloadKenankenDenpyoExcel = function(row){
+        var fileName = '伝票.xlsx';
+        var params = {
+            salesSno : row.salesSno,
+            recodeNo : row.recodeNo
+        };
+        ServerService.doDownload('/SalDecideProcess/downloadKenankenDenpyoExcel',  params, 'application/vnd.ms-excel', fileName);
+    }
+
+    $scope.download = function(row){
+        var params = {
+            salesSno : row.salesSno,
+            recodeNo : row.recodeNo
+        };
+        SalDecideProcessService.checkDataForReport(params).then(
+            function(result) {
+                var error = result.data.failed;
+                var warning = result.data.warning;
+                if(!ValidateUtil.isValidTextEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                } else if(!ValidateUtil.isValidTextEmpty(warning)){
+                    if(angular.equals(warning,Messages.getMessage('W00172'))){
+                        DialogsService.showWarning(Messages.getMessage('check.error'), warning).result.then(function() {
+                            sessionStorage.removeItem("salDecideProcess");
+                            RouteService.gotoUrl('SalDemandList');
+                        });
+                        return;
+                    }else{
+                        DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                        return;
+                    }
+                }else{
+                    var pdfName = Messages.getMessage('PDF.SALES') + row.salesSno+".pdf";
+                    ServerService.doDownload('/SalDecideProcess/downloadSalDecideProcess',  params, 'application/pdf', pdfName);
+                }
+            }
+        );
+    };
+
+    /**select all row of sales list table when call this function*/
+    $scope.checkAll = function(selectedAll){
+        if(selectedAll){
+            $scope.selectedAll = true;
+            $scope.model.hidden.enableButton = false;
+        }else{
+            $scope.selectedAll = false;
+            $scope.model.hidden.enableButton = true;
+            $scope.model.form.listSelectedSNo = [];
+        }
+        angular.forEach($scope.model.form.filtered, function (row) {
+            row.isSelected = $scope.selectedAll;
+            if($scope.selectedAll){
+                $scope.model.form.listSelectedSNo.push(row.salesSno + '_' + row.recodeNo);
+            }
+        });
+    };
+
+    /**event when checked or unchecked any row in table sales list*/
+    $scope.getValue=function(index, param, selected){
+        if(selected==true){
+            $scope.model.form.listSelectedSNo.push(param.salesSno + '_' + param.recodeNo);
+        } else {
+            $scope.model.form.listSelectedSNo.splice($scope.model.form.listSelectedSNo.indexOf(param.salesSno + '_' + param.recodeNo),1);
+        }
+        if($scope.model.form.listSelectedSNo.length == $scope.model.form.filtered.length){
+            $scope.selectedAll = true;
+        }else{
+            $scope.selectedAll = false;
+        }
+
+        if($scope.model.form.listSelectedSNo.length == 0){
+            $scope.model.hidden.enableButton = true;
+        }else{
+            $scope.model.hidden.enableButton = false;
+        }
+    };
+
+    // set colResizable
+    $scope.setColResizable = function(){
+        // remove JCLRgrips if having
+        $('.JCLRgrips').remove();
+
+        angular.element('#tableSalesList').colResizable({
+            liveDrag: true,
+            postbackSafe: true,
+            useLocalStorage: true
+        });
+    }
+
+    $scope.$watch('model.currentPage', function(newPage, oldPage) {
+        if(!StringUtils.isEmpty(newPage)) {
+            var sessionSearch = SessionUtils.prepareSession(sessionStorage.getItem("salDemandListSession"));
+            sessionSearch.currentPage = newPage;
+            sessionStorage.setItem("salDemandListSession", JSON.stringify(sessionSearch));
+        }
+    })
+}]);

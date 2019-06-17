@@ -1,0 +1,148 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision:  $  $Date:  $
+ * @author minh-dao
+ */
+'use strict';
+
+exexSMSApp.factory('MstBankListModel', [ 'BaseModel', function(BaseModel) {
+
+    var model = BaseModel.getInstance();
+    model.form = {
+         bank : {
+             bankName : '',
+             bankSiteName : '',
+             bankAccountName:'',
+             bankAccountKana:''
+         },
+         listM040002:[],
+         bankList : [],
+         paginationInfo : {
+             page: 0,
+             pageSize: 20,
+             totalPage: 0,
+             totalRecord: 0,
+             from: 0,
+             to: 0
+         }
+    };
+
+    return model;
+} ]);
+
+exexSMSApp.controller('MstBankListCtrl',
+        ['$scope', '$timeout', 'MstBankListModel', 'DialogsService', 'ServerService',
+         function($scope, $timeout, MstBankListModel, DialogsService, ServerService){
+
+    $scope.model = MstBankListModel;
+
+    $scope.init = function(model){
+         $scope.list = [];
+         $scope.filtered = [];
+         $scope.search($scope.model.form.bank);
+         $scope.$on("MstBankList#editBankList", function(evt, param) {
+            $scope.search($scope.model.form.bank);
+         });
+    };
+
+    /**
+     * open dialog
+     */
+    $scope.openDialog = function(result) {
+        var options = {
+                size: '840',
+            };
+        switch (result) {
+            case 'addBank':
+                var param = {
+                    bank: {
+                        bankName:'',
+                        bankSiteName:'',
+                        subjects:'',
+                        bankType:'',
+                        bankSiteNo:'',
+                        bankAccountNo:'',
+                        bankAccountName:'',
+                        bankAccountKana:'',
+                        showOnReport: true,
+                        remark:'',
+                        bankCd:'',
+                        version:'',
+                    }
+            };
+            DialogsService.showDialog('MstBankControl', 'mstBankControlDialogCtrl', param,options);
+            break;
+            default:
+                //set Param from data on form
+                var param = {'bankCd':result};
+                ServerService.doPost('MstBankList/checkData', param).then(
+                    function(okResult) {
+                        var warning = okResult.data.warning;
+                        var error = okResult.data.failed;
+                        if(!StringUtils.isEmpty(warning)){
+                            DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                            $scope.search($scope.model.form.bank);
+                            return;
+                        }else if(!StringUtils.isEmpty(error)){
+                            DialogsService.showError(Messages.getMessage('system.error'), error);
+                            return;
+                        }else{
+                            var param = {bankCd : okResult.data.resultEntity.bankCd};
+                            DialogsService.showDialog('MstBankControl', 'mstBankControlDialogCtrl', param, options)
+                            .result.then(function(param){ });
+                        }
+                    }
+                );
+                break;
+        };
+    };// end launch
+
+    /**
+     * search
+     */
+
+    $scope.search = function(param){
+        $scope.doSearch(1, param);
+    }
+
+    $scope.doSearch = function(page, param) {
+        var params = {
+            bankName : !StringUtils.isEmpty(param.bankName) ? param.bankName.toString() : "",
+            bankSiteName : !StringUtils.isEmpty(param.bankSiteName) ? param.bankSiteName.toString() : "",
+            bankAccountName : !StringUtils.isEmpty(param.bankAccountName) ? param.bankAccountName.toString() : "",
+            bankAccountKana : !StringUtils.isEmpty(param.bankAccountKana) ? param.bankAccountKana.toString() : "",
+            page : page,
+            pageSize : $scope.model.form.paginationInfo.pageSize
+        };
+        ServerService.doPost('MstBankList/searchBank', params).then(
+            function(okResult) {
+                var warning = okResult.data.warning;
+                if(!StringUtils.isEmpty(warning)){
+                    DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                }else{
+                   $scope.model.form.bankList = okResult.data.listMstBank;
+                   $scope.model.form.paginationInfo = okResult.data.paginationInfo;
+               }
+               // add colresizable to table
+               setTimeout(function(){
+                   $scope.setColResizable();
+               });
+            }
+        );
+    };
+
+    // set colResizable
+    $scope.setColResizable = function(){
+        // remove JCLRgrips if having
+        $('.JCLRgrips').remove();
+
+        angular.element('#tableMstBankList').colResizable({
+            liveDrag: true,
+            postbackSafe: true,
+            useLocalStorage: true
+        });
+    }
+}]);

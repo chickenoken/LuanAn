@@ -1,0 +1,658 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision: 1.0 $  $Date:  $
+ * @author quang-tung
+ */
+
+exexSMSApp.factory('StockTransferControlModel', [ 'BaseModel', function(BaseModel) {
+
+    var model = BaseModel.getInstance();
+
+    model.form = {
+        stockTransfer :{
+            transferName : '',
+            transferUserCd : '',
+            controlCd : '',
+            transferSno : '',
+            transferDate : '',
+            custCd : '',
+            siteCd : '',
+            deptCd : '',
+            ownerCd : '',
+            prefix : '2',
+            addressInfoDepart : '',
+            addressInfoPosition : '',
+            addressInfoOwner : '',
+            remark : '',
+            createDate: '',
+            createUser : '',
+            lastUpdDate : '',
+            lastUpdUser : '',
+            version : ''
+        },
+        listExport : [],
+        listS010006 : [],
+        listMstSite : [],
+        listCUSREP0015: [],
+        listInvoice : [],
+        listAddressInfoDepart : [],
+        listAddressInfoOwner : []
+    };
+    model.hidden = {
+            exportName : 'STOCK_TRANSFER',
+            screenMode : "INSERT",
+            redirectUrl: 'StockTransferList',
+            isDisabled : false,
+            ptlMode : false,
+            documentStatus : '',
+            isSubmited : false,
+            ptlScreen : '',
+            version: '',
+            recodeNo: '',
+            customCsv : '',
+            checkWarehouse : [],
+            validFlag : ''
+    };
+    return model;
+} ]);
+
+exexSMSApp.controller('stockTransferControlCtrl',
+        ['$scope', '$filter', 'SalEstimateControlService', 'DialogsService', 'RouteService', 'StockTransferService', 'StockTransferControlModel', 'StockDetailsControlModel', 'Messages', 'HeaderModel', 'ServerService',
+         function($scope, $filter, SalEstimateControlService , DialogsService, RouteService, StockTransferService, StockTransferControlModel, StockDetailsControlModel, Messages, HeaderModel, ServerService){
+
+    $scope.model = StockTransferControlModel;
+    $scope.modelHeader = HeaderModel;
+    $scope.modelDetails = StockDetailsControlModel;
+
+    /**初期*/
+    $scope.init = function(){
+        $scope.getInit();
+        $scope.model.form.stockTransfer.transferDate = $filter('date')(DateUtils.getCurrentDate(), "yyyy/MM/dd");
+        var stockTransfer = angular.fromJson(sessionStorage.getItem('stockTransfer'));
+        if(!StringUtils.isEmpty(stockTransfer)){
+            $scope.model.hidden.ptlScreen = stockTransfer.ptlScreen;
+            $scope.model.hidden.ptlMode = stockTransfer.ptlMode;
+            $scope.model.hidden.redirectUrl = StringUtils.isEmpty(stockTransfer.redirectUrl) ? 'StockTransferList' : stockTransfer.redirectUrl;
+            $scope.inquiry(stockTransfer);
+        }
+    };
+
+    $scope.getInit = function(){
+        StockTransferService.getInit(null).then(
+            function(result) {
+                $scope.model.form.listS010006 = result.data.listS010006;
+                $scope.model.form.listExport = result.data.listExport;
+                $scope.model.form.listInvoice = result.data.listInvoice;
+                var sessionLogin = angular.fromJson(sessionStorage.getItem("session"));
+                if(!StringUtils.isEmpty(sessionLogin) && $scope.model.hidden.screenMode !== 'VIEW'){
+                    $scope.model.form.stockTransfer.transferUserCd = sessionLogin.userCd;
+                    $scope.model.hidden.transferUserName = sessionLogin.userName;
+                }
+            }
+        )
+    };
+
+    $scope.onChangeCustomer = function(custCd, flgSelect) {
+        var params = {
+            custCd : custCd
+        };
+
+        if(!StringUtils.isEmpty(custCd)){
+            $scope.model.form.listMstSite = [];
+            SalEstimateControlService.onChangeCustomer(params).then(
+                function(okResult) {
+                    if(!StringUtils.isEmpty(okResult.data.failed)){
+                        DialogsService.showError(Messages.getMessage('system.error'), okResult.data.failed);
+                        return;
+                    }
+                    if(!StringUtils.isEmpty(okResult.data)){
+                        $scope.model.form.stockTransfer.custCd = okResult.data.mstCustomer.custCd;
+                        $scope.model.form.stockTransfer.custName = okResult.data.mstCustomer.custName;
+                        $scope.model.form.listMstSite = okResult.data.listMstSite;
+                        $scope.model.form.listAddressInfoDepart = okResult.data.listAddressInfoDepart;
+                        $scope.model.form.listAddressInfoOwner = okResult.data.listAddressInfoOwner;
+                        if($scope.model.hidden.screenMode != 'VIEW' && flgSelect){
+                            if(!StringUtils.isEmpty($scope.model.form.listMstSite) && $scope.model.form.listMstSite.length == 1){
+                                $scope.model.form.stockTransfer.siteCd = $scope.model.form.listMstSite[0].siteCd;
+                            } else {
+                                $scope.model.form.stockTransfer.siteCd = ""
+                            }
+                            if(!StringUtils.isEmpty($scope.model.form.listAddressInfoDepart) && $scope.model.form.listAddressInfoDepart.length == 1){
+                                $scope.model.form.stockTransfer.deptCd = $scope.model.form.listAddressInfoDepart[0].deptCd;
+                                $scope.model.form.stockTransfer.addressInfoDepart = $scope.model.form.listAddressInfoDepart[0].deptName;
+                            } else {
+                                $scope.model.form.stockTransfer.deptCd = "";
+                                $scope.model.form.stockTransfer.addressInfoDepart = "";
+                            }
+                            if(!StringUtils.isEmpty($scope.model.form.listAddressInfoOwner) && $scope.model.form.listAddressInfoOwner.length == 1){
+                                $scope.model.form.stockTransfer.ownerCd = $scope.model.form.listAddressInfoOwner[0].ownerCd;
+                                $scope.model.form.stockTransfer.addressInfoOwner = $scope.model.form.listAddressInfoOwner[0].ownerName;
+                                $scope.model.form.stockTransfer.addressInfoPosition = $scope.model.form.listAddressInfoOwner[0].position;
+                            } else {
+                                $scope.model.form.stockTransfer.ownerCd = "";
+                                $scope.model.form.stockTransfer.addressInfoOwner = '';
+                                $scope.model.form.stockTransfer.addressInfoPosition = '';
+                            }
+                        }
+                    }
+                }
+            );
+        } else {
+            $scope.model.form.listMstSite = [];
+            $scope.model.form.listAddressInfoDepart = [];
+            $scope.model.form.listAddressInfoOwner = [];
+            $scope.model.form.stockTransfer.siteCd = '';
+            $scope.model.form.stockTransfer.deptCd = '';
+            $scope.model.form.stockTransfer.ownerCd = '';
+            $scope.model.form.stockTransfer.addressInfoDepart = '';
+            $scope.model.form.stockTransfer.addressInfoOwner = '';
+            $scope.model.form.stockTransfer.addressInfoPosition = '';
+        }
+    };
+
+    $scope.inquiry = function(stockTransfer){
+        StockTransferService.inquiry(stockTransfer).then(
+            function(result) {
+                var error =  result.data.failed;
+                var warning =  result.data.warning;
+                if(!StringUtils.isEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                }else if(!StringUtils.isEmpty(warning)){
+                    DialogsService.showWarning(Messages.getMessage('check.error'), warning).result.then(function() {
+                        sessionStorage.removeItem("stockTransfer");
+                        RouteService.gotoUrl('StockTransferList');
+                    });
+                    return;
+                }
+                var stockTransfer = result.data.stockTransfer;
+                $scope.model.hidden.version = result.data.version;
+                $scope.model.hidden.screenMode = 'VIEW';
+                $scope.model.hidden.isDisabled = true;
+                $scope.model.hidden.documentStatus = stockTransfer.documentStatus;
+                $scope.model.hidden.documentStatusName = stockTransfer.documentStatusName;
+                $scope.model.hidden.createDate = stockTransfer.createDate;
+                $scope.model.hidden.createUserName = stockTransfer.createUserName;
+                $scope.model.hidden.lastUpdDate = stockTransfer.lastUpdDate;
+                $scope.model.hidden.lastUpdUserName = stockTransfer.lastUpdUserName;
+                $scope.model.hidden.recodeNo = stockTransfer.recodeNo;
+                $scope.model.hidden.validFlag = stockTransfer.validFlag;
+                $scope.model.form.stockTransfer = stockTransfer;
+                $scope.model.hidden.transferUserName = stockTransfer.transferUserName;
+                $scope.modelDetails.form.stockDetailControl = result.data.stockDetails;
+
+                if(!StringUtils.isEmpty($scope.model.form.stockTransfer.custCd)){
+                    $scope.onChangeCustomer($scope.model.form.stockTransfer.custCd, false);
+                }
+            }
+        );
+    };
+    $scope.init();
+
+    /**
+     * edit stock work flow
+     */
+    $scope.$on("StockTransferTransfer#editStockTransferWF", function(evt, param) {
+        $scope.model.hidden.screenMode = param.screenMode;
+        $scope.model.hidden.isDisabled = param.isDisabled;
+        $scope.inquiry(param.stockTransfer);
+    });
+
+    $scope.openDialog = function(data, result, param) {
+        switch (result) {
+            case 'searchCustomer':
+                var options = {
+                    size: 'auto'
+                };
+                var paramsSearch = {'clientType': '0'};
+                sessionStorage.setItem('searchCustStock',JSON.stringify(paramsSearch));
+                DialogsService.showDialog('SearchCustomer', 'searchCustomerCtrl', 'data', options)
+                .result.then(function(param) {}, function(){
+                    var searchCustomer = angular.fromJson(sessionStorage.getItem("searchCustomer"));
+                    sessionStorage.removeItem("searchCustomer");
+                    if(!ValidateUtil.isValidTextEmpty(searchCustomer)){
+                        $scope.model.form.stockTransfer.custCd = searchCustomer.custCd;
+                        $scope.model.form.stockTransfer.custName = searchCustomer.custName;
+                        $scope.onChangeCustomer($scope.model.form.stockTransfer.custCd, true);
+                    }
+                });
+            break;
+            case 'searchWarehouse':
+                var options = {
+                    size: 'md'
+                };
+                DialogsService.showDialog('SearchWarehouse', 'searchWarehouseCtrl', 'data', options)
+                .result.then(function(param) {}, function(){
+                    var warehouseInfo = angular.fromJson(sessionStorage.getItem("warehouseNo"));
+                    sessionStorage.removeItem("warehouseNo");
+                    if(!StringUtils.isEmpty(warehouseInfo)){
+                        if(param){
+                            $scope.model.form.stockTransfer.sourceWarehouseNo = warehouseInfo.warehouseNo;
+                            $scope.model.form.stockTransfer.sourceWarehouseName = warehouseInfo.warehouseName;
+                        }else{
+                            $scope.model.form.stockTransfer.destWarehouseNo = warehouseInfo.warehouseNo;
+                            $scope.model.form.stockTransfer.destWarehouseName = warehouseInfo.warehouseName;
+                        }
+                    }
+                });
+            break;
+        };
+    };
+
+    $scope.insert = function(paramControl, paramDetails, documentStatus, formInvalid){
+        for (var i = 0; i < $scope.model.hidden.checkWarehouse.length ; i++) {
+           if($scope.model.hidden.checkWarehouse[i]){
+               return;
+           }
+        }
+        $scope.model.hidden.isSubmited = true;
+        if (formInvalid) {
+            return;
+        }
+        if($scope.validationListEmpty() == 0){
+            DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00046'));
+            return;
+        }
+        StockTransferService.checkWorkFlow({}).then(
+            function(result) {
+                var msgConfirm = 'S00003';
+                var workFlow = result.data.workFlow;
+
+                if(!StringUtils.isEmpty(documentStatus) && angular.equals(documentStatus, '01')){
+                    workFlow = '0000000000';
+                    msgConfirm = 'S00031';
+                }
+                if(angular.equals(workFlow.slice(5,6), '1')){
+                    var options = {size: '875'};
+                    paramControl.transferDate = new Date(paramControl.transferDate);
+                    var param = {
+                            screen : 'EXEX09',
+                            data : paramControl,
+                            listDetailData : paramDetails,
+                            mode : 'insert',
+                            recodeNo : '1',
+                            workNo : '',
+                            version : $scope.model.hidden.version,
+                            msgConfirm : msgConfirm
+                    };
+                    DialogsService.showDialog('PtlRequest', 'ptlRequestCtrl', param, options);
+                }else{
+                    DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage(msgConfirm)).result.then(function(btn){
+                        $scope.insertServer(paramControl, paramDetails, documentStatus);
+                    },function(btn){ });
+                }
+            }
+        );
+    };
+
+    $scope.convertParamControl = function(params){
+        var param = {
+                controlCd : params.controlCd,
+                transferSno : params.transferSno,
+                transferDate : new Date(params.transferDate),
+                transferName : params.transferName,
+                transferUserCd : params.transferUserCd,
+                remark : params.remark,
+                custCd : params.custCd,
+                siteCd : params.siteCd,
+                deptCd : params.deptCd,
+                ownerCd : params.ownerCd,
+                prefix : params.prefix,
+                addressInfoDepart : params.addressInfoDepart,
+                addressInfoPosition : params.addressInfoPosition,
+                addressInfoOwner : params.addressInfoOwner,
+                createDate: new Date(params.createDate),
+                createUser : params.createUser,
+                lastUpdDate : new Date(params.lastUpdDate),
+                lastUpdUser : params.lastUpdUser,
+                version : params.version
+        }
+        return param;
+    }
+
+    $scope.insertServer = function(paramControl, paramDetails, documentStatus){
+        var params = $scope.convertParamControl(paramControl);
+        params.documentStatus = documentStatus;
+        params.stockDetailControlJson = JSON.stringify(paramDetails);
+        StockTransferService.insert(params).then(
+            function(result) {
+                var warning =  result.data.warning;
+                var success = result.data.success;
+                if(!StringUtils.isEmpty(success)){
+                    var stockTransfer = {
+                            transferSno :  result.data.transferSno,
+                            recodeNo : 1,
+                            custCd : paramControl.custCd,
+                            screenMode : "VIEW",
+                            isDisabled : true,
+                            ptlMode : false,
+                            ptlScreen : ''
+                    };
+                    sessionStorage.setItem("stockTransfer", JSON.stringify(stockTransfer));
+                    DialogsService.showNotify(Messages.getMessage('title.info'), success)
+                        .result.then(function(btn){
+                            $scope.inquiry(stockTransfer);
+                        });
+                } else if(!StringUtils.isEmpty(warning)){
+                    DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                    return;
+                }
+            }
+        );
+    };
+
+    $scope.update = function(paramControl, paramDetails, documentStatus,formInvalid){
+        for (var i = 0; i < $scope.model.hidden.checkWarehouse.length ; i++) {
+            if($scope.model.hidden.checkWarehouse[i]){
+                return;
+            }
+         }
+
+        $scope.model.hidden.isSubmited = true;
+        if (formInvalid) {
+            return;
+        }
+        if($scope.validationListEmpty() == 0){
+            DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00046'));
+            return;
+        }
+        StockTransferService.checkWorkFlow({}).then(
+            function(result) {
+                var workFlow = result.data.workFlow;
+                if(angular.equals(workFlow.slice(5,6), '1') && StringUtils.isEmpty(documentStatus)){
+                    paramControl.documentStatus = '';
+                    paramControl.transferDate = new Date(paramControl.transferDate);
+                    delete paramControl.validFlag;
+                    delete paramControl.createDate;
+                    delete paramControl.lastUpdDate;
+                    delete paramControl.documentStatusName;
+                    delete paramControl.sourceWarehouseName;
+                    delete paramControl.destWarehouseName;
+                    delete paramControl.createUserName;
+                    delete paramControl.lastUpdUserName;
+
+                    var options = {size: '875'};
+                    var msgConfirm = 'S00004';
+                    var param = {
+                            screen : 'EXEX09',
+                            data : paramControl,
+                            listDetailData : paramDetails,
+                            mode : 'update',
+                            recodeNo : paramControl.recodeNo,
+                            workNo : paramControl.transferSno,
+                            version : $scope.model.hidden.version,
+                            documentStatus : $scope.model.hidden.documentStatus,
+                            msgConfirm : msgConfirm
+                    };
+
+                    DialogsService.showDialog('PtlRequest', 'ptlRequestCtrl', param,options).result.then(function(param) {});
+                }else{
+                    DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('S00004')).result.then(function(btn){
+                        $scope.updateServer(paramControl, paramDetails, documentStatus);
+                    },function(btn){ });
+                }
+            }
+        );
+    };
+
+    $scope.updateServer = function(paramControl, paramDetails, documentStatus){
+        var params = $scope.convertParamControl(paramControl);
+        params.version = paramControl.version;
+        params.recodeNo = paramControl.recodeNo;
+        params.documentStatus = documentStatus;
+        params.stockDetailControlJson = JSON.stringify(paramDetails);
+
+        StockTransferService.update(params).then(
+            function(result) {
+                var warning =  result.data.warning;
+                var success = result.data.success;
+                if(!StringUtils.isEmpty(success)){
+                    var stockTransfer = {
+                          transferSno :  result.data.transferSno,
+                          recodeNo : result.data.recodeNo,
+                          custCd : paramControl.custCd,
+                          screenMode : "VIEW",
+                          isDisabled : true,
+                          ptlMode : false,
+                          ptlScreen : ''
+                    };
+                    sessionStorage.setItem("stockTransfer", JSON.stringify(stockTransfer));
+                    DialogsService.showNotify(Messages.getMessage('title.info'), success);
+                    $scope.inquiry(stockTransfer);
+                    return;
+                } else if(!StringUtils.isEmpty(warning)){
+                    DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                    return;
+                }
+            }
+        );
+    };
+
+    $scope.deleteTransfer = function(paramControl, paramDetails){
+        $scope.model.hidden.isSubmited = false;
+        var params = {
+                transferSno :  paramControl.transferSno,
+                recodeNo : paramControl.recodeNo,
+                version : paramControl.version,
+                documentStatus : '09'
+        };
+        DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('S00005')).result.then(function(btn){
+            StockTransferService.sdelete(params).then(
+                function(result) {
+                    var warning =  result.data.warning;
+                    var success = result.data.success;
+                    if(!StringUtils.isEmpty(success)){
+                        DialogsService.showNotify(Messages.getMessage('title.info'), success).result.then(function(btn){
+                            sessionStorage.removeItem("stockTransfer");
+                            RouteService.gotoUrl("StockTransferList");
+                        });
+                    } else if(!StringUtils.isEmpty(warning)){
+                        DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                        return;
+                    }
+                }
+            );
+        },function(btn){ });
+    };
+
+    $scope.edit = function(paramControl){
+        var params = {
+                transferSno :  paramControl.transferSno,
+                recodeNo : paramControl.recodeNo,
+        };
+        StockTransferService.checkData(params).then(
+            function(result) {
+                var error =  result.data.failed;
+                var warning =  result.data.warning;
+                if(!StringUtils.isEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                }else if(!StringUtils.isEmpty(warning)){
+                    if(angular.equals(warning,Messages.getMessage('W00172'))){
+                        DialogsService.showWarning(Messages.getMessage('check.error'), warning)
+                        .result.then(function() {
+                            sessionStorage.removeItem("stockTransfer");
+                            RouteService.gotoUrl("StockTransferList");
+                        });
+                        return;
+                    }else{
+                        DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                        return;
+                    }
+                }
+                $scope.model.hidden.screenMode = 'UPDATE';
+                $scope.model.hidden.isDisabled = false;
+                $scope.resetDetailList();
+            }
+        );
+    };
+
+    $scope.newWin = function(){
+        sessionStorage.removeItem("stockTransfer");
+        RouteService.gotoUrl("StockTransferControl");
+    };
+
+    $scope.gotoUrl = function(url){
+        if(url == 'StockTransferList'){
+            sessionStorage.removeItem("stockTransfer");
+            RouteService.gotoUrl(url);
+        }else if(url === 'CrmControl'){
+            sessionStorage.removeItem("stockTransfer");
+            RouteService.gotoUrl(url);
+        }
+    };
+
+    $scope.copy = function(paramControl, paramDetails){
+        $scope.model.form.stockTransfer.transferSno = '';
+        $scope.model.form.stockTransfer.transferDate = $filter('date')(DateUtils.getCurrentDate(), "yyyy/MM/dd");
+        $scope.resetDetailList();
+        $scope.model.hidden.screenMode = 'INSERT';
+        $scope.model.hidden.isDisabled = false;
+    };
+
+    $scope.backEdit = function(){
+        $scope.model.hidden.checkWarehouse = [];
+        $scope.model.hidden.isSubmited = false;
+        var stockTransfer = angular.fromJson(sessionStorage.getItem("stockTransfer"));
+        if(null != stockTransfer){
+            $scope.inquiry(stockTransfer);
+        }
+    };
+    /**
+     * reset detail list
+     */
+    $scope.resetDetailList = function(){
+        var lastIndex = $scope.modelDetails.form.stockDetailControl.length - 1;
+        var data = $scope.modelDetails.form.stockDetailControl[lastIndex];
+        var item = {
+                serialCd : '',
+                itemCd : '',
+                janCd : '',
+                itemName : '',
+                itemUnit : '',
+                packageQuantity : '',
+                sourceWarehouseNo : data.sourceWarehouseNo,
+                sourceWarehouseName : data.sourceWarehouseName,
+                sourceWarehouseItemSum : '',
+                sourceWarehouseValidItemSum : '',
+                sourceWarehouseItemAvarageCost: '',
+                sourceWarehouseItemLastCost: '',
+                destWarehouseNo : data.destWarehouseNo,
+                destWarehouseName : data.destWarehouseName,
+                destWarehouseItemSum : '',
+                destWarehouseValidItemSum : '',
+                destWarehouseItemAvarageCost: '',
+                destWarehouseItemLastCost: '',
+                basicStockNum: '',
+                itemSum : ''
+        };
+        $scope.modelDetails.form.stockDetailControl.push(item);
+    };
+
+    $scope.backPtlList = function (){
+        sessionStorage.removeItem("stockTransfer");
+        RouteService.gotoUrl($scope.model.hidden.ptlScreen);
+    };
+
+    $scope.exportExcel = function(){
+        var params = {
+                transferSno : $scope.model.form.stockTransfer.transferSno,
+                recodeNo : $scope.model.hidden.recodeNo
+        };
+        var fileName = Messages.getMessage('common.excel.file.name.stocktransfer') + '_' + DateUtils.getYYYYMMDD(new Date());
+        ServerService.doDownload('/StockTransferControl/downloadStockTransferExcel', angular.toJson(params)
+                , 'application/vnd.ms-excel', fileName + '.xlsx');
+    };
+
+
+    $scope.validationListEmpty = function(){
+        var length = 0;
+        angular.forEach($scope.modelDetails.form.stockDetailControl, function(item, i){
+            if(!StringUtils.isEmpty($scope.modelDetails.form.stockDetailControl[i].itemName)){
+                length += 1;
+            }
+        });
+        return length;
+    };
+
+    /** START: USE FOR EXPORT REPORT */
+    $scope.$on($scope.model.hidden.exportName + "#exportReport", function(evt, param) {
+        if(!StringUtils.isEmpty(param.tempNo)){
+            $scope.showCustomReport($scope.model.form.stockTransfer, param);
+        } else{
+            $scope.exportOutput(param);
+        }
+    });
+    /** END: USE FOR EXPORT REPORT */
+
+    /** Excel export (check type to export) */
+    $scope.exportOutput = function(item){
+        if (item.codeType == 'CUSREP0015' && item.code == '01') {
+            $scope.exportTrialItem();
+        } else if (item.codeType == 'CUSREP0016' && item.code == '01') {
+            $scope.downloadKenankenDenpyoExcel();
+        } else if (item.codeType == 'L010020' && item.code == '01') {
+            $scope.exportExcel();
+        }
+    };
+
+    /**show ckeditor report*/
+    $scope.showCustomReport = function(obj, param){
+        var listObjSno = [];
+        listObjSno.push(obj.transferSno + '_' + obj.recodeNo);
+        var param ={'invoiceType': '08', objSno: listObjSno, 'tempNoCustomer': param.tempNo};
+        var options ={size: 1100};
+        DialogsService.showDialog('InvoiceTemplate/getCustomReportPage', 'CustomReportCtrl', param, options);
+    }
+
+    /** only use for kenanken */
+    $scope.exportTrialItem = function(){
+        var params = {
+                transferSno : $scope.model.form.stockTransfer.transferSno,
+                recodeNo : $scope.model.hidden.recodeNo
+        };
+        var fileName = '新作のご案内' + '_' + DateUtils.getYYYYMMDD(new Date());
+        ServerService.doDownload('/StockTransferControl/exportTrialItem', angular.toJson(params), 'application/vnd.ms-excel', fileName + '.xlsx');
+    };
+
+    /** Donwload 伝票 excel file for kenanken company*/
+    $scope.downloadKenankenDenpyoExcel = function(){
+        var fileName = '伝票.xlsx';
+        var params = {
+            transferSno : $scope.model.form.stockTransfer.transferSno,
+            recodeNo : $scope.model.hidden.recodeNo
+        };
+        ServerService.doDownload('/StockTransferControl/downloadKenankenDenpyoExcel',  params, 'application/vnd.ms-excel', fileName);
+    }
+
+
+    $scope.onChangeDept = function (item){
+        if(!StringUtils.isEmpty(item.deptCd)){
+            $scope.model.form.stockTransfer.deptCd = item.deptCd;
+            $scope.model.form.stockTransfer.addressInfoDepart = item.deptName;
+        }else{
+            $scope.model.form.stockTransfer.deptCd = "";
+            $scope.model.form.stockTransfer.addressInfoDepart = item;
+        }
+    }
+
+    $scope.onChangeOwner = function (item){
+        if(!StringUtils.isEmpty(item.ownerCd)){
+            $scope.model.form.stockTransfer.ownerCd = item.ownerCd;
+            $scope.model.form.stockTransfer.addressInfoOwner = item.ownerName;
+            $scope.model.form.stockTransfer.addressInfoPosition = item.position;
+        }else{
+            $scope.model.form.stockTransfer.ownerCd = "";
+            $scope.model.form.stockTransfer.addressInfoOwner = item;
+            $scope.model.form.stockTransfer.addressInfoPosition = "";
+        }
+    }
+
+    $scope.close = function () {
+        sessionStorage.removeItem('stockTransfer');
+        $scope.$dismiss('cancel');
+    };
+}]);

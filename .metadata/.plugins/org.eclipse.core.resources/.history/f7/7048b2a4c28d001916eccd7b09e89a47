@@ -1,0 +1,47 @@
+@CHARSET "UTF-8";
+
+.apps-container {
+  /* border: 2px dashed blue; */
+  border: 1px solid #CCC;
+  padding: 5px;
+  height: 293px;
+  width: 250px;
+  overflow-y: auto;
+}
+
+.app {
+  padding: 5px 10px;
+  margin: 5px 0;
+  border: 1px solid #5CB85C;
+  border-radius: 5px;
+  background-color: #5CB85C;
+  font-size: 1.1em;
+  font-weight: bold;
+  cursor: default;
+  color: white;
+}
+
+.ptlRequest-div{
+  width: 350px;
+}
+
+.ptlRequest-div > .form-group{
+  margin-left: 0px;
+  margin-right: 0px;
+}
+
+textarea{
+  resize:none;
+  border: 1px solid #CCC;
+  transition: border-color 0.15s ease-in-out 0s, box-shadow 0.15s ease-in-out 0s;
+  border-radius: 4px;
+}
+
+.ptl-request-modal-footer{
+  padding : 21px 20px 21px !important;
+  margin-top: -21px !important;
+}
+
+.margin-t-150{
+  margin-top: 150px;
+}

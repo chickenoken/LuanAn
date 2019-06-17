@@ -1,0 +1,328 @@
+
+exexSMSApp.factory('CustomReportModel', [ 'BaseModel', '$rootScope', function(BaseModel, $rootScope) {
+    var model = BaseModel.getInstance();
+    model= {
+            form:{
+                companyCd: '',
+                version: 1,
+                invoiceType: '',
+                pageSize: 'page-size-A4-portrait',
+                tempNo: '',
+                tempName: '',
+                tempContent: ''
+            },
+            listInvoiceType: [],
+            listInvoiceSize: [{code: 'page-size-A4-portrait', codeName: 'A4 Portrait'},
+                              {code: 'page-size-A4-landscape', codeName: 'A4 Landscape'},
+                              {code: 'page-size-A5-portrait', codeName: 'A5 Portrait'},
+                              {code: 'page-size-A5-landscape', codeName: 'A5 Landscape'},
+                              {code: 'page-size-A3-portrait', codeName: 'A3 Portrait'},
+                              {code: 'page-size-A3-landscape', codeName: 'A3 Landscape'},
+                              {code: 'page-size-B4-portrait', codeName: 'B4 Portrait'},
+                              {code: 'page-size-B4-landscape', codeName: 'B4 Landscape'},
+                              {code: 'page-size-B5-portrait', codeName: 'B5 Portrait'},
+                              {code: 'page-size-B5-landscape', codeName: 'B5 Landscape'}],
+
+            listInvoiceTemplateField: [],
+            listInvoiceDetailTemplateField: [],
+            estimateDetail: {},
+            listEstimate: [],
+            listDetailEstimate: [],
+            listData: [],
+            listDetailData: [],
+            listDatasource: [],
+            tableData: [],
+            content: '',
+            contentPrint: '',
+            hidden: {
+                isNew: true,
+                isEdit: false,
+                invoiceTypeName: '',
+                isViewChooseTemplate: true,
+                customFlag : '',
+                readOnly : true,
+                ckHeight : ''
+            }
+    };
+    return model;
+
+}]);
+
+exexSMSApp.controller('CustomReportCtrl',
+        ['$rootScope', '$scope','$uibModalInstance','$filter','$compile', '$timeout','$parse', 'CustomReportModel', 'DialogsService','InvoiceTemplateService','data', 'Messages',
+         function($rootScope, $scope, $uibModalInstance, $filter, $compile, $timeout, $parse, customReportModel,  DialogsService, InvoiceTemplateService, data, Messages){
+
+        $scope.model = customReportModel;
+        $scope.model.hidden.isDisabled = false;
+        $scope.data = data;
+        $scope.model.contentPrint = null;
+        $('#content').html();
+
+        // calc ck height
+        $scope.model.hidden.ckHeight = $(window).height() - 300;
+
+        var sessionLogin = angular.fromJson(sessionStorage.getItem("session"));
+        /**config for view and print*/
+        $scope.viewPrintOptions = {
+                language: sessionLogin.locale,
+                height: $scope.model.hidden.ckHeight,
+                toolbar:[{items: ['Preview','Print']}],
+                bodyClass: 'document-editor ' + $scope.model.form.pageSize,
+                width: 'auto',
+                extraPlugins: 'print,justify,lineutils,font',
+                removePlugins: 'pagebreak',
+                contentsCss: [getContextPath() + '/resources/assets/ckeditor/contents.css', getContextPath() + '/resources/assets/ckeditor/mystylesPrint.css'],
+                toolbarCanCollapse : true,
+                allowedContent: true,
+                readOnly: true,
+                font_names: 'ＭＳ Ｐゴシック;ＭＳ Ｐ明朝;ＭＳ ゴシック;ＭＳ 明朝;Arial/Arial, Helvetica, sans-serif;Comic Sans MS/Comic Sans MS, cursive;Courier New/Courier New, Courier, monospace;Georgia/Georgia, serif;Lucida Sans Unicode/Lucida Sans Unicode, Lucida Grande, sans-serif;Tahoma/Tahoma, Geneva, sans-serif;Times New Roman/Times New Roman, Times, serif;Trebuchet MS/Trebuchet MS, Helvetica, sans-serif;Verdana/Verdana, Geneva, sans-serif',
+                font_defaultLabel: 'ＭＳ Ｐ明朝',
+                fontSize_defaultLabel: '14',
+        };
+
+        $scope.model.hidden.customFlag = CompanyUtil.getCustomFlag(3);
+        if($scope.model.hidden.customFlag === '1'){
+            $scope.model.hidden.readOnly = false;
+            $scope.viewPrintOptions = {
+                    language: sessionLogin.locale,
+                    height: $scope.model.hidden.ckHeight,
+                    toolbar:[
+                                { name: 'document', items: [ 'Preview', 'Print', '-', 'Source' ] },
+                                { name: 'clipboard', items: [ 'Cut', 'Copy', 'Paste', 'PasteText', '-', 'Undo', 'Redo' ] },
+                                { name: 'styles', items: [ 'Styles', 'Format', 'Font', 'FontSize' ] },
+                                { name: 'colors', items: [ 'TextColor', 'BGColor' ] },
+                                '/',
+                                { name: 'basicstyles', items: [ 'Bold', 'Italic', 'Underline', 'Strike', 'Subscript', 'Superscript' ] },
+                                { name: 'paragraph', items: [ 'NumberedList', 'BulletedList', '-', 'Outdent', 'Indent', 'Blockquote', '-', 'JustifyLeft', 'JustifyCenter', 'JustifyRight', 'JustifyBlock', '-', 'BidiLtr', 'BidiRtl' ] },
+                                { name: 'insert', items: [ 'Image', 'Table', 'HorizontalRule', 'Smiley', 'SpecialChar', 'PageBreak' ] },
+                                { name: 'lineheight', items: ['lineheight'] },
+                            ],
+                    bodyId: 'body-editor',
+                    bodyClass: 'document-editor ' + $scope.model.form.pageSize,
+                    width: 'auto',
+                    extraPlugins: 'print,justify,tableresize,lineutils,tabletools,colordialog,font,tableselection,lineheight,image2',
+                    removePlugins: 'pagebreak,image',
+                    contentsCss: [getContextPath() + '/resources/assets/ckeditor/contents.css', getContextPath() + '/resources/assets/ckeditor/mystylesPrint.css'],
+                    toolbarCanCollapse : true,
+                    allowedContent: true,
+                    readOnly: true,
+                    font_names: 'ＭＳ Ｐゴシック;ＭＳ Ｐ明朝;ＭＳ ゴシック;ＭＳ 明朝;Arial/Arial, Helvetica, sans-serif;Comic Sans MS/Comic Sans MS, cursive;Courier New/Courier New, Courier, monospace;Georgia/Georgia, serif;Lucida Sans Unicode/Lucida Sans Unicode, Lucida Grande, sans-serif;Tahoma/Tahoma, Geneva, sans-serif;Times New Roman/Times New Roman, Times, serif;Trebuchet MS/Trebuchet MS, Helvetica, sans-serif;Verdana/Verdana, Geneva, sans-serif',
+                    enterMode: 2, //CK_EDITOR.ENTER_BR
+            };
+        }
+
+        /**初期*/
+        $scope.initInvoice = function(){
+            $scope.model.form.invoiceType = data.invoiceType;
+
+            var param = {'invoiceType': data.invoiceType};
+            InvoiceTemplateService.getInvoiceTemplateByType(param).then(
+                function(result) {
+                    $scope.model.listInvoiceTemplate = result.data.listInvoiceTemplate;
+                    if(!StringUtils.isEmpty($scope.model.listInvoiceTemplate)
+                            && $scope.model.listInvoiceTemplate.length > 0){
+
+                        $scope.model.form.tempNo = $scope.model.listInvoiceTemplate[0].tempNo;
+                        if(!StringUtils.isEmpty(data.tempNoCustomer)){
+                            $scope.model.form.tempNo = data.tempNoCustomer;
+                            $scope.model.hidden.isViewChooseTemplate = false;
+                        }else{
+                            $scope.model.hidden.isViewChooseTemplate = true;
+                        }
+                        $scope.onChangeTemplate($scope.model.form.tempNo);
+                    }
+                }
+            );
+        };
+
+        $scope.initInvoice();
+
+        /**変更見積*/
+        $scope.onChangeTemplate = function(tempNo){
+            console.log($scope.model.form.pageSize);
+            /**initial for html content*/
+            var view = $('#view');
+            view.empty();
+
+            /**create param post into server*/
+            var recodeNo = null;
+            if(!StringUtils.isEmpty(data.recodeNo)){
+                recodeNo = data.recodeNo;
+            }
+            var param = {'tempNo': tempNo, 'invoiceType': data.invoiceType, 'objSno': data.objSno, 'recodeNo': recodeNo};
+            InvoiceTemplateService.getInvoiceTemplateData(param).then(
+                function(result) {
+                    $scope.model.form.pageSize = result.data.pageSize;
+                    $scope.reConfigCkEditor();
+                    /**convert data for content ck*/
+                    var length = 0;
+                    $scope.listObj = [];
+                    if(!StringUtils.isEmpty(result.data.templateData)){
+                        if('07' != param.invoiceType && '09' != param.invoiceType){
+                            var i = 0;
+                            length = result.data.templateData.length;
+                            for(;i < length; i++){
+                                var data  = angular.copy(result.data.templateData[i]);
+                                var dataDetail  = result.data.templateDataDetail[i];
+                                var size = 0;
+                                angular.forEach(dataDetail, function(value, index){
+                                    if(size < value.listItem.length){
+                                        size = value.listItem.length;
+                                    }
+                                });
+                                var obj = {height: size*30, obj: data, listData: dataDetail};
+                                $scope.listObj.push(obj);
+                            }
+                        }else{
+                            var obj = {height: 500, obj: result.data.templateData, listData: result.data.templateData};
+                            $scope.listObj.push(obj);
+                        }
+
+                        /**get and compile template content*/
+                        var template = angular.copy(result.data.templateContent);
+                        // TUNG: fix string to html
+                        var content = $.parseHTML(template);
+                        $compile($('#content').html(content))($scope);
+                        if('07' != param.invoiceType && '09' != param.invoiceType){
+                            /**get detail data table for add data source*/
+                            var table = $('#content').find('table.item-detail-data-source');
+                            /**count number column for set colspan for group_name if has data*/
+                            if(table){
+                                if(!StringUtils.isEmpty(table[0])){
+                                    var top =  $(table[0]).parent().offset().top - $('#content').offset().top;
+                                    angular.forEach($scope.listObj, function(val, i){
+                                        val.height = val.height + top;
+                                    });
+                                }
+                                angular.forEach(table, function(value, index){
+                                    var colCount = 0;
+                                    $(value).find('tbody tr:first td').each(function () {
+                                        if ($(this).attr('colspan')) {
+                                            colCount += +$(this).attr('colspan');
+                                        } else {
+                                            colCount++;
+                                        }
+                                    });
+                                    var rows = $(value).find('tbody tr');
+                                    var numberRow = $(value).find('tbody tr').length;
+                                    /**add data source for ng-repeat-start of angular*/
+                                    if(numberRow >= 2){
+                                        var tdContent = $(rows[1]).html();
+                                        var groupFont = $(rows[1]).find('td:first span').attr("style");
+                                        $(rows[1]).remove();
+                                        var rowData = '<tr ng-repeat-start="item in data.listData track by $index" ' +
+                                        'ng-class="{'+'hidden'+' : !item.groupName && $first}"><td colspan="' + colCount + '">' +
+                                        '<span style="height: 25px;font-weight: bold;' + groupFont + '" ng-if="item.groupNo != \'999999999\' || !$first">' +
+                                        '<label>{{item.groupName}}&nbsp;</label></span></td></tr>' +
+                                        '<tr ng-repeat-end ng-repeat="row in item.listItem track by $index">' + tdContent + '</tr>'
+                                        $(value).find('tbody tr:first').after(rowData);
+                                        $compile($('#content').html())($scope);
+                                    }else if(numberRow == 1){
+                                        var tdContent = $(rows[0]).html();
+                                        var groupFont = $(rows[1]).find('td:first span').attr("style");
+                                        $(rows[0]).remove();
+                                        var rowData = '<tr ng-repeat-start="item in data.listData track by $index" ' +
+                                        'ng-class="{'+'hidden'+' : !item.groupName && $first}"><td colspan="' + colCount + '">' +
+                                        '<span style="height: 25px;font-weight: bold;' + groupFont + '" ng-if="item.groupNo != \'999999999\' || !$first">' +
+                                        '<label>{{item.groupName}}&nbsp;</label></span></td></tr>' +
+                                        '<tr ng-repeat-end ng-repeat="row in item.listItem track by $index">' + tdContent + '</tr>'
+                                        $(value).find('tbody tr:first').before(rowData);
+                                        $compile($('#content').html())($scope);
+                                    }
+                                });
+                            }
+                            /**compile data again*/
+                            $compile($('#content').html())($scope);
+                            /**map data into html page from 'exex-src' attribute
+                            * 1. search attribute data-src and get value in html string.
+                            * 2. append into html using expression of angular (ex: {{obj.estimateDate}})
+                            * */
+                            var span = $('#content').find('span.h-card');
+                            angular.forEach(span, function(value, index){
+                                var val = $(value).text();
+                                var dataSrc = $(value).attr('exex-src');
+                                $(value).empty();
+                                if(dataSrc && dataSrc.indexOf("{{obj.") == 0){
+                                    dataSrc = dataSrc.replace('{{','data.');
+                                    $(value).attr('ng-bind-html', dataSrc.replace('}}',''));
+                                    $(value).removeAttr('exex-src');
+                                }
+                                if(dataSrc && dataSrc.indexOf("{{row.") == 0){
+                                    dataSrc = dataSrc.replace('{{','');
+                                    $(value).attr('ng-bind-html', dataSrc.replace('}}',''));
+                                    $(value).removeAttr('exex-src');
+                                }
+                            });
+
+                            var htmlTxt = '<div style="min-height: {{data.height}}px;" ng-class="{\'p-t-50\':!$first, \'p-b-20\': $last}" class="row" ng-repeat="data in listObj track by $index">' +
+                                          $('#content').html() +
+                                          '<div style="page-break-after: always;"><span style="display: none;">&nbsp;</span></div>' +
+                                          '</div>';
+                            $compile($('#content').html(htmlTxt))($scope);
+                            $timeout(function(){
+                                $compile($scope.model.contentPrint = $('#content').html())($scope);
+                            },1000);
+                        }else{
+                            /**map data into html page from 'exex-src' attribute
+                             * 1. search attribute data-src and get value in html string.
+                             * 2. append into html using expression of angular (ex: {{obj.estimateDate}})
+                             * */
+                             var span = $('#content').find('span.h-card');
+                             angular.forEach(span, function(value, index){
+                                 var val = $(value).text();
+                                 var dataSrc = $(value).attr('exex-src');
+                                 $(value).empty();
+                                 if(dataSrc && dataSrc.indexOf("{{obj.") == 0){
+                                     dataSrc = dataSrc.replace('{{','');
+                                     $(value).attr('ng-bind-html', dataSrc.replace('}}',''));
+                                     $(value).removeAttr('exex-src');
+                                 }
+                             });
+                            var htmlTxt = '<div ng-class="{\'p-t-50\':!$first, \'p-b-20\': $last}" class="row" ng-repeat="item in listObj track by $index">' +
+                                            '<div class="row" ng-repeat="obj in item.obj track by $index">' +
+                                                $('#content').html() +
+                                                '<div style="page-break-after: always;"><span style="display: none;">&nbsp;</span></div>' +
+                                            '</div>' +
+                                          '</div>';
+                            console.log(htmlTxt);
+                              $compile($('#content').html(htmlTxt))($scope);
+                              $timeout(function(){
+                                  $compile($scope.model.contentPrint = $('#content').html())($scope);
+                              },1000);
+                        }
+                    }
+                }
+            );
+        };
+
+        $scope.reConfigCkEditor = function(){
+            /**reconfig ck editor*/
+            CKEDITOR.instances.printEditor.config.bodyClass = 'document-editor ' + $scope.model.form.pageSize;
+        }
+
+        /**close popup*/
+        $scope.close = function() {
+            $uibModalInstance.dismiss('close');
+        };
+
+        /**
+         * update bill issue date
+         */
+        CKEDITOR.on( 'instanceReady', function(event) {
+            var editor = event.editor;
+            editor.on('beforeCommandExec', handleBeforeCommandExec);
+            function handleBeforeCommandExec(event) {
+                var commandName = event.data.name;
+                if (commandName === 'print'){
+                    if(!StringUtils.isEmpty($scope.model.form.invoiceType)) {
+                        var param = {'objSno': data.objSno};
+                        InvoiceTemplateService.updateBillIssue(param).then(
+                                function(okResult) {
+                                }
+                        );
+                    }
+                }
+            }
+        });
+
+}]);

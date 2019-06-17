@@ -1,0 +1,520 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision: 1.0 $  $Date:  $
+ * @author quang-tung
+ */
+
+exexSMSApp.factory('BusinessPartnerModel', [ 'BaseModel', '$rootScope', function(BaseModel, $rootScope) {
+
+    var model = BaseModel.getInstance();
+    model.form = {
+        search :{
+            custName : '',
+            salesUserCd : [],
+            ownerName : '',
+            createDateFrom : '',
+            createDateTo : '',
+            keyword : '',
+            ownerPerson1 : [],
+            ownerPerson2 : [],
+            ownerPerson3 : [],
+            ownerClass1 : [],
+            ownerClass2 : [],
+            ownerClass3 : [],
+            ownerClass4 : [],
+            ownerClass5 : [],
+            ownerClass6 : [],
+            ownerClass7 : [],
+            ownerClass8 : [],
+            mailReceiveFlag1 : [],
+            leadStatus : [],
+            leadSource : [],
+            leadSourceDetail : '',
+            clientType : [],
+            registStatus : [],
+            siteName : '',
+            deptName : '',
+        },
+        businessPartner : {
+            status : '',
+            partnerGroupCd : [],
+            partnerGroupName : '',
+            partnerUserCd : [],
+            partnerUserName : ''
+        },
+        listMstGroupType : [],
+        listC010010 : [],
+        listS020015 : [],
+        listC030002 : [],
+        listC010013 : [],
+        listBusinessPartner : []
+    };
+    model.hidden = {
+        checkAll : false,
+        isAdd : false,
+        listGroupSelect : [],
+        inDetail : false,
+        listParamSearch : [],
+        listSearch: [],
+        listTmp: [],
+        listDataAjax : []
+    }
+    return model;
+} ]);
+
+exexSMSApp.controller('businessPartnerCtrl',
+        ['$scope', '$timeout','$uibModalInstance', 'BusinessPartnerModel', 'DialogsService', 'RouteService', 'ServerService', 'Messages', 'data',
+         function($scope, $timeout, $uibModalInstance, BusinessPartnerModel, DialogsService, RouteService, ServerService, Messages, data){
+
+    $scope.model = BusinessPartnerModel;
+
+    //TRUE if user click on pencil in column 取引先名 at TodoControl table
+    $scope.model.isChange = data.isChange;
+
+    $scope.newListParamSearch = function(){
+        $scope.model.hidden.listTmp = angular.copy($scope.model.hidden.listParamSearch);
+        for (var i = 0; i < $scope.model.hidden.listSearch.length; i++) {
+            var item = $scope.model.hidden.listSearch[i];
+            var removeIndex = $scope.model.hidden.listTmp.map(function(items) { return items.model; }).indexOf(item.model);
+            if (item.model == 'custName') { $scope.model.hidden.listTmp.splice(removeIndex, 1) }
+            else if (item.model == 'salesUserCd') { $scope.model.hidden.listTmp.splice(removeIndex, 1) }
+            else if (item.model == 'ownerName') { $scope.model.hidden.listTmp.splice(removeIndex, 1) }
+            else if (item.model == 'createDate') { $scope.model.hidden.listTmp.splice(removeIndex, 1) }
+            else if (item.model == 'keyword') { $scope.model.hidden.listTmp.splice(removeIndex, 1) }
+            else if (item.model == 'ownerPerson1') { $scope.model.hidden.listTmp.splice(removeIndex, 1) }
+            else if (item.model == 'ownerPerson2') { $scope.model.hidden.listTmp.splice(removeIndex, 1) }
+            else if (item.model == 'ownerPerson3') { $scope.model.hidden.listTmp.splice(removeIndex, 1) }
+            else if (item.model == 'ownerClass1') { $scope.model.hidden.listTmp.splice(removeIndex, 1) }
+            else if (item.model == 'ownerClass2') { $scope.model.hidden.listTmp.splice(removeIndex, 1) }
+            else if (item.model == 'ownerClass3') { $scope.model.hidden.listTmp.splice(removeIndex, 1) }
+            else if (item.model == 'ownerClass4') { $scope.model.hidden.listTmp.splice(removeIndex, 1) }
+            else if (item.model == 'ownerClass5') { $scope.model.hidden.listTmp.splice(removeIndex, 1) }
+            else if (item.model == 'ownerClass6') { $scope.model.hidden.listTmp.splice(removeIndex, 1) }
+            else if (item.model == 'ownerClass7') { $scope.model.hidden.listTmp.splice(removeIndex, 1) }
+            else if (item.model == 'ownerClass8') { $scope.model.hidden.listTmp.splice(removeIndex, 1) }
+            else if (item.model == 'mailReceiveFlag1') { $scope.model.hidden.listTmp.splice(removeIndex, 1) }
+            else if (item.model == 'leadStatus') { $scope.model.hidden.listTmp.splice(removeIndex, 1) }
+            else if (item.model == 'leadSource') { $scope.model.hidden.listTmp.splice(removeIndex, 1) }
+            else if (item.model == 'leadSourceDetail') { $scope.model.hidden.listTmp.splice(removeIndex, 1) }
+            else if (item.model == 'clientType') { $scope.model.hidden.listTmp.splice(removeIndex, 1)}
+            else if (item.model == 'registStatus') { $scope.model.hidden.listTmp.splice(removeIndex, 1)}
+            else if (item.model == 'siteName') { $scope.model.hidden.listTmp.splice(removeIndex, 1) }
+            else if (item.model == 'deptName') { $scope.model.hidden.listTmp.splice(removeIndex, 1) }
+        }
+    };
+
+    $scope.prepareListParamSearch = function (){
+        var listParamSearch = $scope.model.hidden.listParamSearch;
+        var sessionLogin = angular.fromJson(sessionStorage.getItem("session"));
+        for (var i = 0; i < $scope.model.hidden.listSearch.length; i++) {
+            var item = $scope.model.hidden.listSearch[i];
+            item.listDetailParam = angular.copy($scope.model.hidden.listTmp);
+            if (item.model == 'custName') { item.listDetailParam.push(listParamSearch[0])}
+            else if (item.model == 'salesUserCd') {
+                item.listDetailParam.push(listParamSearch[1]);
+                $scope.model.form.search.salesUserCd = [sessionLogin.userCd];
+                var listTmp = [];
+                listTmp.push({
+                    no : sessionLogin.userCd,
+                    name : sessionLogin.userName
+                })
+                $scope.model.hidden.listDataAjax[0] = listTmp;
+            }
+            else if (item.model == 'ownerName') { item.listDetailParam.push(listParamSearch[2])}
+            else if (item.model == 'createDate') {
+                item.listDetailParam.push(listParamSearch[3]);
+                $scope.model.form.search.createDateFrom = DateUtils.getPreviousMonth();
+                $scope.model.form.search.createDateTo = DateUtils.getCurrentDate();
+            }
+            else if (item.model == 'keyword') {item.listDetailParam.push(listParamSearch[4])}
+            else if (item.model == 'ownerPerson1') {
+                item.listDetailParam.push(listParamSearch[5]);
+                $scope.model.form.search.salesUserCd = [sessionLogin.userCd];
+                var listTmp = [];
+                listTmp.push({
+                    no : sessionLogin.userCd,
+                    name : sessionLogin.userName
+                })
+                $scope.model.hidden.listDataAjax[1] = listTmp;
+            }
+            else if (item.model == 'ownerPerson2') {
+                item.listDetailParam.push(listParamSearch[6]);
+                $scope.model.form.search.salesUserCd = [sessionLogin.userCd];
+                var listTmp = [];
+                listTmp.push({
+                    no : sessionLogin.userCd,
+                    name : sessionLogin.userName
+                })
+                $scope.model.hidden.listDataAjax[2] = listTmp;
+            }
+            else if (item.model == 'ownerPerson3') {
+                item.listDetailParam.push(listParamSearch[7]);
+                $scope.model.form.search.salesUserCd = [sessionLogin.userCd];
+                var listTmp = [];
+                listTmp.push({
+                    no : sessionLogin.userCd,
+                    name : sessionLogin.userName
+                })
+                $scope.model.hidden.listDataAjax[3] = listTmp;
+            }
+            else if (item.model == 'ownerClass1') { item.listDetailParam.push(listParamSearch[8])}
+            else if (item.model == 'ownerClass2') { item.listDetailParam.push(listParamSearch[9])}
+            else if (item.model == 'ownerClass3') { item.listDetailParam.push(listParamSearch[10])}
+            else if (item.model == 'ownerClass4') { item.listDetailParam.push(listParamSearch[11])}
+            else if (item.model == 'ownerClass5') { item.listDetailParam.push(listParamSearch[12])}
+            else if (item.model == 'ownerClass6') { item.listDetailParam.push(listParamSearch[13])}
+            else if (item.model == 'ownerClass7') { item.listDetailParam.push(listParamSearch[14])}
+            else if (item.model == 'ownerClass8') { item.listDetailParam.push(listParamSearch[15])}
+            else if (item.model == 'mailReceiveFlag1') { item.listDetailParam.push(listParamSearch[16])}
+            else if (item.model == 'leadStatus') { item.listDetailParam.push(listParamSearch[17])}
+            else if (item.model == 'leadSource') { item.listDetailParam.push(listParamSearch[18])}
+            else if (item.model == 'leadSourceDetail') { item.listDetailParam.push(listParamSearch[19])}
+            else if (item.model == 'clientType') { item.listDetailParam.push(listParamSearch[20])}
+            else if (item.model == 'registStatus') { item.listDetailParam.push(listParamSearch[21])}
+            else if (item.model == 'siteName') { item.listDetailParam.push(listParamSearch[22])}
+            else if (item.model == 'deptName') { item.listDetailParam.push(listParamSearch[23])}
+
+
+        }
+    };
+
+    $scope.prepareSessionSearch = function(session){
+        var listSearch = [];
+        for(var key in session){
+            var item = {};
+            if (key == 'custName') { $scope.model.form.search.custName = session[key]; item.model = key }
+            else if (key == 'salesUserCd') { $scope.model.form.search.createUserCd = session[key]; item.model = key }
+            else if (key == 'ownerName') { $scope.model.form.search.ownerName = session[key]; item.model = key }
+            else if (key == 'createDateFrom') { $scope.model.form.search.createDateFrom = session[key]; item.model = 'createDate' }
+            else if (key == 'createDateTo') { $scope.model.form.search.createDateTo = session[key] }
+            else if (key == 'keyword') { $scope.model.form.search.ownerName = session[key]; item.model = key }
+            else if (key == 'ownerPerson1') { $scope.model.form.search.ownerPerson1 = session[key]; item.model = key }
+            else if (key == 'ownerPerson2') { $scope.model.form.search.ownerPerson2 = session[key]; item.model = key }
+            else if (key == 'ownerPerson3') { $scope.model.form.search.ownerPerson3 = session[key]; item.model = key }
+            else if (key == 'ownerClass1') { $scope.model.form.search.ownerClass1 = session[key]; item.model = key }
+            else if (key == 'ownerClass2') { $scope.model.form.search.ownerClass2 = session[key]; item.model = key }
+            else if (key == 'ownerClass3') { $scope.model.form.search.ownerClass3 = session[key]; item.model = key }
+            else if (key == 'ownerClass4') { $scope.model.form.search.ownerClass4 = session[key]; item.model = key }
+            else if (key == 'ownerClass5') { $scope.model.form.search.ownerClass5 = session[key]; item.model = key }
+            else if (key == 'ownerClass6') { $scope.model.form.search.ownerClass6 = session[key]; item.model = key }
+            else if (key == 'ownerClass7') { $scope.model.form.search.ownerClass7 = session[key]; item.model = key }
+            else if (key == 'ownerClass8') { $scope.model.form.search.ownerClass8 = session[key]; item.model = key }
+            else if (key == 'mailReceiveFlag1') { $scope.model.form.search.mailReceiveFlag1 = session[key]; item.model = key }
+            else if (key == 'leadStatus') { $scope.model.form.search.leadStatus = session[key]; item.model = key }
+            else if (key == 'leadSource') { $scope.model.form.search.leadSource = session[key]; item.model = key }
+            else if (key == 'leadSourceDetail') { $scope.model.form.search.leadSourceDetail = session[key]; item.model = key }
+            else if (key == 'clientType') { $scope.model.form.search.clientType = session[key]; item.model = key }
+            else if (key == 'registStatus') { $scope.model.form.search.registStatus = session[key]; item.model = key }
+            else if (key == 'siteName') { $scope.model.form.search.siteName = session[key]; item.model = key }
+            else if (key == 'deptName') { $scope.model.form.search.deptName = session[key]; item.model = key }
+
+            if (!StringUtils.isEmpty(item.model)){
+                listSearch.push(item);
+            }
+        };
+        $scope.model.hidden.listSearch = listSearch;
+        $scope.newListParamSearch();
+        $scope.prepareListParamSearch();
+    };
+
+    $scope.convertParamsSearch = function(param){
+        var params = {
+            listCustSelected : data.listCustSelected,
+            listCustCd : []
+        }
+
+        for (var i = 0; i < $scope.model.hidden.listSearch.length; i++) {
+            var item = $scope.model.hidden.listSearch[i];
+            if (item.model == 'custName') {
+                params.custName = !StringUtils.isEmpty(param.custName) ? param.custName : null;
+            } else if (item.model == 'salesUserCd') {
+                params.salesUserCd = !StringUtils.isEmpty(param.salesUserCd) ? param.salesUserCd : [];
+            } else if (item.model == 'ownerName') {
+                params.ownerName = !StringUtils.isEmpty(param.ownerName) ? param.ownerName : null;
+            } else if (item.model == 'createDate') {
+                params.createDateFrom = !StringUtils.isEmpty(param.createDateFrom) ? new Date(param.createDateFrom) : null;
+                params.createDateTo = !StringUtils.isEmpty(param.createDateTo) ? new Date(param.createDateTo) : null;
+            } else if (item.model == 'keyword') {
+                params.keyword = !StringUtils.isEmpty(param.keyword) ? param.keyword : null;
+            } else if (item.model == 'ownerPerson1') {
+                params.ownerPerson1 = !StringUtils.isEmpty(param.ownerPerson1) ? param.ownerPerson1 : [];
+            } else if (item.model == 'ownerPerson2') {
+                params.ownerPerson2 = !StringUtils.isEmpty(param.ownerPerson2) ? param.ownerPerson2 : [];
+            } else if (item.model == 'ownerPerson3') {
+                params.ownerPerson3 = !StringUtils.isEmpty(param.ownerPerson3) ? param.ownerPerson3 : [];
+            } else if (item.model == 'ownerClass1') {
+                params.ownerClass1 = !StringUtils.isEmpty(param.ownerClass1) ? param.ownerClass1 : [];
+            } else if (item.model == 'ownerClass2') {
+                params.ownerClass2 = !StringUtils.isEmpty(param.ownerClass2) ? param.ownerClass2 : [];
+            } else if (item.model == 'ownerClass3') {
+                params.ownerClass3 = !StringUtils.isEmpty(param.ownerClass3) ? param.ownerClass3 : [];
+            } else if (item.model == 'ownerClass4') {
+                params.ownerClass4 = !StringUtils.isEmpty(param.ownerClass4) ? param.ownerClass4 : [];
+            } else if (item.model == 'ownerClass5') {
+                params.ownerClass5 = !StringUtils.isEmpty(param.ownerClass5) ? param.ownerClass5 : [];
+            } else if (item.model == 'ownerClass6') {
+                params.ownerClass6 = !StringUtils.isEmpty(param.ownerClass6) ? param.ownerClass6 : [];
+            } else if (item.model == 'ownerClass7') {
+                params.ownerClass7 = !StringUtils.isEmpty(param.ownerClass7) ? param.ownerClass7 : [];
+            } else if (item.model == 'ownerClass8') {
+                params.ownerClass8 = !StringUtils.isEmpty(param.ownerClass8) ? param.ownerClass8 : [];
+            } else if (item.model == 'mailReceiveFlag1') {
+                params.mailReceiveFlag1 = !StringUtils.isEmpty(param.mailReceiveFlag1) ? param.mailReceiveFlag1 : [];
+            } else if (item.model == 'leadStatus') {
+                params.leadStatus = !StringUtils.isEmpty(param.leadStatus) ? param.leadStatus : [];
+            } else if (item.model == 'leadSource') {
+                params.leadSource = !StringUtils.isEmpty(param.leadSource) ? param.leadSource : [];
+            } else if (item.model == 'leadSourceDetail') {
+                params.leadSourceDetail = !StringUtils.isEmpty(param.leadSourceDetail) ? param.leadSourceDetail : null;
+            } else if (item.model == 'clientType') {
+                params.clientType = !StringUtils.isEmpty(param.clientType) ? param.clientType : [];
+            } else if (item.model == 'registStatus') {
+                params.registStatus = !StringUtils.isEmpty(param.registStatus) ? param.registStatus : [];
+            } else if (item.model == 'siteName') {
+                params.siteName = !StringUtils.isEmpty(param.siteName) ? param.siteName : null;
+            } else if (item.model == 'deptName') {
+                params.deptName = !StringUtils.isEmpty(param.deptName) ? param.deptName : null;
+            }
+        };
+
+        return params;
+    };
+
+    $scope.changeListParamSearch = function (){
+        $scope.newListParamSearch();
+        $scope.prepareListParamSearch();
+    };
+
+    $scope.newRowParamSearch = function(){
+        $scope.newListParamSearch();
+        var tmp = ""
+        var param = {
+                model : $scope.model.hidden.listTmp[0].model,
+                listDetailParam : $scope.model.hidden.listTmp
+        };
+        $scope.model.hidden.listSearch.push(param);
+        for (var i = 0; i < param.listDetailParam.length; i++) {
+            var tmp = $scope.model.hidden.listTmp[i];
+            if(param.model == tmp.model){
+                param.listDetailParam.splice(i, 1);
+            }
+        };
+        $scope.prepareListParamSearch();
+    };
+
+    $scope.removeItem = function(index) {
+        $scope.model.hidden.listSearch.splice(index, 1);
+        $scope.newListParamSearch();
+        $scope.prepareListParamSearch();
+    };
+
+    /**初期*/
+    $scope.init = function(){
+        $scope.model.hidden.inDetail = false;
+        $scope.model.hidden.checkAll = false;
+        $scope.getInit();
+    };
+
+    $scope.getInit = function(){
+        ServerService
+        .doPost('BusinessPartner/getInit', null).then(
+            function(okResult) {
+                $scope.model.form.businessPartner.partnerGroupCd = [sessionLogin.groupCd];
+                $scope.model.form.listC010010 = okResult.data.listC010010;
+                $scope.model.form.listC010011 = okResult.data.listC010011;
+                $scope.model.form.listC010012 = okResult.data.listC010012;
+                $scope.model.form.listC010013 = okResult.data.listC010013;
+                $scope.model.form.listC010014 = okResult.data.listC010014;
+                $scope.model.form.listC010015 = okResult.data.listC010015;
+                $scope.model.form.listC010016 = okResult.data.listC010016;
+                $scope.model.form.listC010017 = okResult.data.listC010017;
+                $scope.model.form.listC010018 = okResult.data.listC010018;
+                $scope.model.form.listC010019 = okResult.data.listC010019;
+                $scope.model.form.listC010020 = okResult.data.listC010020;
+                $scope.model.form.listC030002 = okResult.data.listC030002;
+                $scope.model.form.listS020012 = okResult.data.listS020012;
+                $scope.model.form.listS020015 = okResult.data.listS020015;
+
+                $scope.model.hidden.listParamSearch = [
+                   {id: 1, model: 'custName', name: angular.element('#custNameLabel').text()},
+                   {id: 2, model: 'salesUserCd', name: angular.element('#salesUserCdLabel').text()},
+                   {id: 3, model: 'ownerName', name: angular.element('#ownerNameLabel').text()},
+                   {id: 4, model: 'createDate', name: angular.element('#createDateLabel').text()},
+                   {id: 5, model: 'keyword', name: angular.element('#keywordLabel').text()},
+                   {id: 6, model: 'ownerPerson1', name: angular.element('#ownerPerson1Label').text()},
+                   {id: 7, model: 'ownerPerson2', name: angular.element('#ownerPerson2Label').text()},
+                   {id: 8, model: 'ownerPerson3', name: angular.element('#ownerPerson3Label').text()},
+                   {id: 9, model: 'ownerClass1', name: angular.element('#ownerClass1Label').text()},
+                   {id: 10, model: 'ownerClass2', name: angular.element('#ownerClass2Label').text()},
+                   {id: 11, model: 'ownerClass3', name: angular.element('#ownerClass3Label').text()},
+                   {id: 12, model: 'ownerClass4', name: angular.element('#ownerClass4Label').text()},
+                   {id: 13, model: 'ownerClass5', name: angular.element('#ownerClass5Label').text()},
+                   {id: 14, model: 'ownerClass6', name: angular.element('#ownerClass6Label').text()},
+                   {id: 15, model: 'ownerClass7', name: angular.element('#ownerClass7Label').text()},
+                   {id: 16, model: 'ownerClass8', name: angular.element('#ownerClass8Label').text()},
+                   {id: 17, model: 'mailReceiveFlag1', name: angular.element('#mailReceiveFlag1Label').text()},
+                   {id: 18, model: 'leadStatus', name: angular.element('#leadStatusLabel').text()},
+                   {id: 19, model: 'leadSource', name: angular.element('#leadSourceLabel').text()},
+                   {id: 20, model: 'leadSourceDetail', name: angular.element('#leadSourceDetailLabel').text()},
+                   {id: 21, model: 'clientType', name: angular.element('#clientTypeLabel').text()},
+                   {id: 22, model: 'registStatus', name: angular.element('#registStatusLabel').text()},
+                   {id: 23, model: 'siteName', name: angular.element('#siteNameLabel').text()},
+                   {id: 24, model: 'deptName', name: angular.element('#deptNameLabel').text()}];
+
+                var sessionLogin = angular.fromJson(sessionStorage.getItem("session"));
+                if(!StringUtils.isEmpty(sessionLogin)){
+                    $scope.model.form.search.salesUserCd = [sessionLogin.userCd];
+                }
+
+                //Set default search condition
+                var defaultCondition = {custName: '', registStatus: []};
+                $scope.prepareSessionSearch(defaultCondition);
+
+                $scope.search($scope.model.form.search);
+            },
+            function(errResult){}
+        );
+    };
+    $scope.init();
+
+    $scope.search = function(param){
+        $scope.model.hidden.checkAll = false;
+        var params = $scope.convertParamsSearch(param);
+        ServerService.doPost('BusinessPartner/search', params).then(
+            function(okResult) {
+                var warning =  okResult.data.warning;
+                if(!ValidateUtil.isValidTextEmpty(warning)){
+                    DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                    return;
+                }
+                $scope.model.form.listBusinessPartner = okResult.data.listBusinessPartner;
+                var listBusinessPartner = $scope.model.form.listBusinessPartner;
+                if(listBusinessPartner.length > 0){
+                    angular.forEach(listBusinessPartner, function(item, i){
+                        $scope.model.form.listBusinessPartner[i].checked = false;
+                    });
+                }
+                // Table Paging
+                $scope.model.currentPage = 1; //current page
+                $scope.model.entryLimit = 20; //max no of items to display in a page
+                $scope.model.number = 20;
+                $scope.model.filteredItems = listBusinessPartner.length; //Initially for no filter
+                $scope.model.totalItems = listBusinessPartner.length;
+                if(listBusinessPartner.length > 0){
+                    $scope.model.beginValFilter = 1;
+                }else{
+                    $scope.model.beginValFilter = 0;
+                }
+
+                $scope.setPage = function(pageNo) {
+                    $scope.currentPage = pageNo;
+                };
+
+                $scope.model.filter = function() {
+                    $timeout(function() {
+                        $scope.model.filteredItems = $scope.model.form.filtered.length;
+                        if($scope.model.form.filtered.length > 0){
+                            $scope.model.beginValFilter = 1;
+                        }else{
+                            $scope.model.beginValFilter = 0;
+                        }
+                    }, 10);
+                };
+                // End Table Paging
+            },
+            function(errResult){}
+        );
+    };
+
+    $scope.click = function(row, index){
+        if (row.checked == true) {
+            row.checked = false;
+        }else {
+            row.checked = true;
+        }
+    };
+
+    $scope.selectBusinessPartner = function() {
+        var options = {size: '600'};
+        DialogsService.showDialog('BusinessPartnerSetting', 'businessPartnerSettingCtrl', null, options)
+        .result.then(function () {
+            $scope.model.form.listBusinessPartner = [];
+            $scope.close();
+        });
+    };
+
+    $scope.changeBusinessPartner = function(index) {
+        sessionStorage.setItem('businessPartner',JSON.stringify($scope.model.form.listBusinessPartner[($scope.model.currentPage-1)*$scope.model.entryLimit + index]));
+        $uibModalInstance.close('close');
+    }
+
+    $scope.selectAll = function(selectAll){
+        angular.forEach($scope.model.form.listBusinessPartner, function(item, i){
+            $scope.model.form.listBusinessPartner[i].checked = selectAll;
+        })
+    }
+
+    $scope.close = function() {
+        $uibModalInstance.dismiss('close');
+    };
+}]);
+
+exexSMSApp.controller('businessPartnerSettingCtrl',
+        ['$scope', '$uibModalInstance', 'BusinessPartnerModel', 'TodoControlModel', 'DialogsService', 'RouteService', 'ServerService', 'Messages', 'data',
+         function($scope, $uibModalInstanceChild, BusinessPartnerModel, TodoControlModel, DialogsService, RouteService, ServerService, Messages, data){
+
+    $scope.model = BusinessPartnerModel;
+
+    $scope.init = function(){
+        $scope.model.hidden.inDetail = false;
+        $scope.model.form.listMstGroupType = TodoControlModel.form.listMstGroupType;
+        var sessionLogin = angular.fromJson(sessionStorage.getItem("session"));
+        $scope.model.form.businessPartner.partnerUserCd =  [sessionLogin.userCd];
+        var listTmp = [];
+        listTmp.push({
+            no : sessionLogin.userCd,
+            name : sessionLogin.userName
+        })
+        $scope.model.hidden.listDataAjax[0] = listTmp;
+        $scope.model.form.businessPartner.status = '1';
+    }
+    $scope.init();
+
+    $scope.addBusinessPartner = function() {
+        var partnerGroupName = [];
+        if($scope.model.form.businessPartner.partnerGroupCd.length > 0){
+            var listPartnerGroup = $("#partnerGroupCd").select2('data');
+            angular.forEach(listPartnerGroup, function(item, i){
+                partnerGroupName.push(item.text);
+            });
+        }
+        var partnerUserName = [];
+        if($scope.model.form.businessPartner.partnerUserCd.length > 0){
+            var listPartnerUser = $("#partnerUserCd").select2('data');
+            angular.forEach(listPartnerUser, function(item, i){
+                partnerUserName.push(item.text);
+            });
+        }
+
+        var listTmp = [];
+        angular.forEach($scope.model.form.listBusinessPartner, function(item, i){
+            if(item.checked){
+                item.status = $scope.model.form.businessPartner.status;
+                item.partnerGroupCd = $scope.model.form.businessPartner.partnerGroupCd.toString();
+                item.partnerGroupName = partnerGroupName.join(', ');
+                item.partnerUserCd = $scope.model.form.businessPartner.partnerUserCd.toString();
+                item.partnerUserName = partnerUserName.join(', ');
+                listTmp.push(item);
+            }
+        });
+        sessionStorage.setItem('businessPartner',JSON.stringify(listTmp));
+        $uibModalInstanceChild.close();
+    }
+
+    $scope.closeBusinessPartner = function() {
+        $uibModalInstanceChild.dismiss();
+    };
+}]);

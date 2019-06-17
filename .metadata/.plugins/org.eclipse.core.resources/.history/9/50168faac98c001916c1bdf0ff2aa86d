@@ -1,0 +1,116 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision:  $  $Date:  $
+ */
+'use strict';
+
+exexSMSApp.factory('exExCancelModel', [ 'BaseModel', function(BaseModel) {
+
+    var model = BaseModel.getInstance();
+
+    model.form = {
+            remark:'',
+            listReason: [],
+    };
+
+    model.hidden = {
+            screenMode : 'VIEW',
+            isDisabled : false,
+            termsOfService : ''
+        };
+
+    return model;
+} ]);
+exexSMSApp.controller('exExCancelCtrl',
+        ['$scope', '$timeout', '$window', 'DialogsService', '$sce', 'exExCancelModel', 'Messages', 'ServerService',
+         function($scope, $timeout, $window, DialogsService, $sce, exExCancelModel, Messages, ServerService){
+
+    $scope.model = exExCancelModel;
+
+    $scope.init = function(model){
+        var processInfo = angular.fromJson(sessionStorage.getItem("processInfo"));
+        if(!ValidateUtil.isValidTextEmpty(processInfo)){
+            $scope.model.hidden.isDisabled = processInfo.isDisabled;
+            $scope.model.hidden.screenMode = processInfo.screenMode;
+        }
+        $scope.getInit();
+    };
+
+
+    $scope.getInit = function(){
+        var params = {};
+        ServerService
+            .doPost('ExExCancel/getInit', params)
+            .then(
+                    function(okResult) {
+                        $scope.model.hidden.termsOfService = okResult.data.termsOfService;
+                        $scope.reasons = okResult.data.reasonsList;
+                        },
+                    function(errResult){
+                    });
+    };
+
+    $scope.processCancel = function() {
+
+        $scope.model.hidden.isDisabled = true;
+        $scope.model.hidden.screenMode = 'CANCEL';
+        var processInfo = {
+            isDisabled : $scope.model.hidden.isDisabled,
+            screenMode : $scope.model.hidden.screenMode
+        };
+        sessionStorage.setItem("processInfo", JSON.stringify(processInfo));
+    };
+
+    $scope.getValue=function(index,param,selected){
+        var reason = {
+                'id' : param.id,
+                'name' :  param.name
+        };
+        if(selected==true){
+            $scope.model.form.listReason.push(reason.name);
+        }else{
+            for(var i=0;i<$scope.model.form.listReason.length;i++){
+                if($scope.model.form.listReason[i]==reason.name)
+                    $scope.model.form.listReason.splice($scope.model.form.listReason.indexOf(reason.billSno),1);
+            }
+        }
+    };
+
+    $scope.finish = function(){
+        var companyInfo = angular.fromJson(sessionStorage.getItem("companyInfo"));
+        var userInfo = angular.fromJson(sessionStorage.getItem("session"));
+        var params = {
+                remark : $scope.model.form.remark,
+                reason : $scope.model.form.listReason,
+                companyCd : companyInfo.companyCd,
+                companyName : companyInfo.companyName,
+                version : companyInfo.version,
+                userCd : userInfo.userCd
+        };
+        ServerService
+            .doPost('ExExCancel/feedBack', params)
+            .then(
+                    function(okResult) {
+                        var error = okResult.data.failed;
+                        var warning = okResult.data.warning;
+                        if(!ValidateUtil.isValidTextEmpty(error)){
+                            DialogsService.showError(Messages.getMessage('system.error'), error);
+                            return;
+                        }else if(!ValidateUtil.isValidTextEmpty(warning)){
+                            DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                            return;
+                        }else{
+                            sessionStorage.clear();
+                            var screenInfo = {toScreen : 'cancel'};
+                            sessionStorage.setItem("screenInfo", JSON.stringify(screenInfo));
+                            $window.location = "ExExCommit";
+                        }
+                    },
+                    function(errResult){
+                    });
+    };
+
+}]);

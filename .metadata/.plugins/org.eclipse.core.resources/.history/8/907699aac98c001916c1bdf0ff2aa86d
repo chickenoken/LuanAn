@@ -1,0 +1,203 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision: 1.0 $  $Date: 2014/07/01 $
+ * @author minh-dao
+ */
+'use strict';
+
+exexSMSApp.factory('MstBillAddressListModel', [ 'BaseModel', function(BaseModel) {
+
+    var model = BaseModel.getInstance();
+    model.form = {
+        search : {
+            billaddressNo:'',
+            billaddressName:'',
+            billOwnerName:'',
+            billType:'',
+            billCloseType:'',
+            paymentMaturity:'',
+            address:'',
+            controlCd: ''
+        },
+       B010001:[],
+       B010003:[],
+       B010004:[],
+       billAddressList : [],
+       listSearch : [],
+       paginationInfo : {
+           page: 0,
+           pageSize: 20,
+           totalPage: 0,
+           totalRecord: 0,
+           from: 0,
+           to: 0
+       }
+  };
+
+
+    model.hidden = {
+        screenMode : '',
+        isDisabled : false
+    };
+
+    return model;
+} ]);
+
+
+exexSMSApp.controller('MstBillAddressListCtrl',
+        ['$scope', '$timeout', 'DialogsService', 'MstBillAddressListModel', 'Messages', 'ServerService',
+         function($scope, $timeout, DialogsService, MstBillAddressListModel, Messages, ServerService){
+
+    $scope.model = MstBillAddressListModel;
+    $scope.init = function(model){
+        $scope.getInit();
+    };
+
+    /**
+     * getInit
+     */
+    $scope.getInit = function(){
+        ServerService.doPost('MstBillAddressList/getInit', {}).then(
+            function(okResult) {
+                var error = okResult.data.failed;
+                if(!ValidateUtil.isValidTextEmpty(error)){
+                     DialogsService.showError(Messages.getMessage('system.error'),error);
+                     return;
+                }
+                $scope.model.form.listB010001 = okResult.data.listB010001;
+                $scope.model.form.listB010003 = okResult.data.listB010003;
+                $scope.model.form.listB010004 = okResult.data.listB010004;
+                $scope.search($scope.model.form.search);
+            }
+        );
+    };
+
+    /**
+     * open dialog
+     */
+    $scope.openDialog = function(result) {
+        var options = {size: 'bill-control'};
+        var param = {
+            billaddress :{
+                billaddressNo: '',
+                billaddressName : '',
+                billOwnerName:'',
+                paymentMaturity: '',
+                remark:'',
+                billStartMonth:'',
+                billPrefix: '',
+                postNo : '',
+                postNo1 : '',
+                postNo2 : '',
+                address1 : '',
+                address2 : '',
+                telephoneNo : '',
+                telephoneNo1 : '',
+                telephoneNo2 : '',
+                telephoneNo3 : '',
+                faxNo :'',
+                faxNo1 :'',
+                faxNo2 :'',
+                faxNo3 :'',
+                billType : '',
+                billCloseType : ''
+            }
+        };
+        switch (result) {
+            case 'addBillAddress':
+                DialogsService.showDialog('MstBillControl', 'mstBillControlCtrl', param, options)
+                .result.then(function(param) {
+                    $scope.search($scope.model.form.search);
+                });
+                break;
+            default:
+            var param = {billaddressNo : result.billaddressNo};
+            ServerService.doPost('MstBillAddressList/checkData', param).then(
+                function(okResult) {
+                    var warning = okResult.data.warning;
+                    var error = okResult.data.failed;
+                    if(!ValidateUtil.isValidTextEmpty(warning)){
+                        DialogsService.showWarning(Messages.getMessage('check.error'),warning);
+                        $scope.search({});
+                        return;
+                    }else if(!ValidateUtil.isValidTextEmpty(error)){
+                        DialogsService.showError(Messages.getMessage('system.error'),error);
+                        return;
+                    }else{
+                        param.item = okResult.data.resultEntity;
+                        param.billaddress = {billaddressNo : okResult.data.resultEntity.billaddressNo};
+                        DialogsService.showDialog('MstBillControl', 'mstBillControlCtrl', param, options)
+                        .result.then(function(param) {
+                            $scope.search($scope.model.form.search);
+                        });
+                    }
+                });
+            break;
+        };
+    };
+
+
+    /**
+     * search
+    */
+
+    $scope.search = function(param){
+        $scope.doSearch(1,param);
+    };
+
+    $scope.doSearch = function(page, param) {
+        var params = {
+            billaddressName : param.billaddressName,
+            billType : param.billType,
+            billOwnerName : param.billOwnerName,
+            billCloseType : param.billCloseType,
+            paymentMaturity : param.paymentMaturity,
+            address : param.address,
+            controlCd : param.controlCd,
+            page : page,
+            pageSize : $scope.model.form.paginationInfo.pageSize
+        };
+        ServerService.doPost('MstBillAddressList/search', params).then(
+            function(okResult) {
+                var error = okResult.data.failed;
+                if(!ValidateUtil.isValidTextEmpty(error)){
+                     DialogsService.showError(Messages.getMessage('system.error'),error);
+                     return;
+                }else{
+                    $scope.model.form.paginationInfo = okResult.data.paginationInfo;
+                    $scope.model.form.listSearch = okResult.data.resultList;
+                }
+                // add colresizable to table
+                setTimeout(function(){
+                    $scope.setColResizable();
+                });
+            }
+        );
+    };
+
+    // set colResizable
+    $scope.setColResizable = function(){
+        // remove JCLRgrips if having
+        $('.JCLRgrips').remove();
+
+        angular.element('#tableMstBillAddressList').colResizable({
+            liveDrag: true,
+            postbackSafe: true,
+            useLocalStorage: true
+        });
+    }
+
+    $scope.showAdvancesReceived = function(row){
+        var options = {size: '800'};
+        var param = {
+            billaddressNo: row.billaddressNo,
+            billaddressName: row.billaddressName,
+            advancesReceivedBalance: row.advancesReceivedBalance,
+        }
+        DialogsService.showDialog('AdvancesReceivedHistory', 'advancesReceivedHistoryCtrl', param, options);
+    }
+
+}]);

@@ -1,0 +1,54 @@
+/**
+**/
+var EXEXQuickSidebar = function () {
+
+    // Handles quick sidebar toggler
+    var handleQuickSidebarToggler = function () {
+        // quick sidebar toggler
+        $('.top-menu .dropdown-quick-sidebar-toggler a, .exex-right-sidebar-toggler').click(function (e) {
+            $('body').toggleClass('exex-right-sidebar-open');
+        });
+    };
+
+    // Handles quick sidebar chats
+    var handleQuickSidebarChat = function () {
+        var wrapper = $('.exex-right-sidebar-wrapper');
+        //var wrapperChat = wrapper.find('.exex-right-sidebar-chat');
+        var wrapperChat = wrapper.find('#leftSidebar');
+        //leftSidebar
+
+        var initChatSlimScroll = function () {
+            var chatUsers = wrapper.find('.exex-right-sidebar-project');
+            var chatUsersHeight;
+
+            chatUsersHeight = wrapper.height() - wrapper.find('.nav-justified > .nav-tabs').outerHeight();
+
+            // chat user list
+            EXEXMaterial.destroySlimScroll(chatUsers);
+            chatUsers.attr("data-height", chatUsersHeight);
+            EXEXMaterial.initSlimScroll(chatUsers);
+
+            var chatMessages = wrapperChat.find('.exex-right-sidebar-chat-user-messages');
+            var chatMessagesHeight = chatUsersHeight - wrapperChat.find('.exex-right-sidebar-chat-user-form').outerHeight() - wrapperChat.find('.exex-right-sidebar-nav').outerHeight();
+
+            // user chat messages
+            EXEXMaterial.destroySlimScroll(chatMessages);
+            chatMessages.attr("data-height", chatMessagesHeight);
+            EXEXMaterial.initSlimScroll(chatMessages);
+        };
+
+        initChatSlimScroll();
+        EXEXMaterial.addResizeHandler(initChatSlimScroll); // reinitialize on window resize
+
+    };
+
+    return {
+
+        init: function () {
+            //layout handlers
+            handleQuickSidebarToggler(); // handles quick sidebar's toggler
+            handleQuickSidebarChat(); // handles quick sidebar's chats
+        }
+    };
+
+}();

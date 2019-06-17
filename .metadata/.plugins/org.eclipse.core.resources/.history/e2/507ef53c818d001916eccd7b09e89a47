@@ -1,0 +1,106 @@
+/**
+ * datatables拡張
+ * 
+ * $Revision:  $  $Date:  $
+ */
+$(document).ready(function() {
+	//数値型カンマ付き"numeric-comma"
+	jQuery.extend(jQuery.fn.dataTableExt.oSort, {
+		"numeric-comma-pre": function(a) {
+			var x = a.replace(/,/g, "");
+			return parseFloat(x);
+		},
+
+		"numeric-comma-asc": function(a, b) {
+			return ((a < b) ? -1 : ((a > b) ? 1 : 0));
+		},
+
+		"numeric-comma-desc": function(a, b) {
+			return ((a < b) ? 1 : ((a > b) ? -1 : 0));
+		}
+	});
+	//yyyy/MM/dd形式ソート"date-jp"
+	jQuery.extend(jQuery.fn.dataTableExt.oSort, {
+		"date-jp-pre": function(a) {
+			return calculate_yyyymmdd(a);
+		},
+
+		"date-jp-asc": function(a, b) {
+			x = calculate_yyyymmdd(a);
+			y = calculate_yyyymmdd(b);
+			return ((x < y) ? -1 : ((x > y) ? 1 : 0));
+		},
+
+		"date-jp-desc": function(a, b) {
+			x = calculate_yyyymmdd(a);
+			y = calculate_yyyymmdd(b);
+			return ((x < y) ? 1 : ((x > y) ? -1 : 0));
+		}
+	});
+});
+
+//数値をカンマ付きで表示する
+//aoColumn又はaoColumnDefsにmRenderを指定し、呼び出す。
+function toFormatedNumber(toFormat) {
+	return toFormat.toString().replace(
+		/\B(?=(\d{3})+(?!\d))/g,
+		","
+	);
+}
+
+//日付文字列(yyyymmdd）をyyyy/mm/dd(0埋め)に変換する
+function calculate_yyyymmdd(val) {
+	var date = val.replace(" ", "");
+	var jp_date = null;
+	if (val.indexOf('.') > 0) {
+		/*date a, format dd.mn.(yyyy) ; (year is optional)*/
+		jp_date = val.split('.');
+	} else {
+		/*date a, format dd/mn/(yyyy) ; (year is optional)*/
+		jp_date = val.split('/');
+	}
+
+	/*year (optional)*/
+	var year = 0;
+	if (jp_date[0]) {
+		year = jp_date[0];
+	}
+
+	/*month*/
+	var month = jp_date[1];
+	if (month.length == 1) {
+		month = 0 + month;
+	}
+
+	/*day*/
+	var day = jp_date[2];
+	if (day.length == 1) {
+		day = 0 + day;
+	}
+
+	return (year + "/" + month + "/" + day);
+}
+
+
+//dateをyyyy/mm/dd(0埋め)
+function dateToString(day){
+	var date = day;
+
+	var yyyy = date.getFullYear().toString();
+	var mm = ("0" + (date.getMonth()+1).toString()).slice(-2);
+	var dd  = ("0" + date.getDate().toString()).slice(-2);
+	var datestring = yyyy + "/" + mm + "/" + dd;
+
+	return datestring;
+}
+
+//datatables clear filter
+function clearFilter(_dt){
+	$('input[aria-controls="' + _dt[0].id +'"]').val('');
+	_dt.fnFilter('');
+};
+
+function clearFilterAndRow(_dt){
+	clearFilter(_dt);
+	_dt.fnClearTable();
+}

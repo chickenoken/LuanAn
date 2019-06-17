@@ -1,0 +1,8 @@
+eclipse.preferences.version=1
+encoding//src/main/java/org/planning/net/config/AppConfig.java=UTF-8
+encoding//src/main/java/org/planning/net/config/ApplicationContextConfig.java=UTF-8
+encoding//src/main/java/org/planning/net/config/Slf4jJdbcLogger.java=UTF-8
+encoding//src/main/java/org/planning/net/logic/LoginLogicImpl.java=UTF-8
+encoding//src/main/webapp/WEB-INF/pages/quanLyNhanVienControl.jsp=UTF-8
+encoding//src/main/webapp/WEB-INF/views/Footer.jsp=UTF-8
+encoding//src/main/webapp/WEB-INF/views/Header.jsp=UTF-8

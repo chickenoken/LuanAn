@@ -1,0 +1,5 @@
+eclipse.preferences.version=1
+org.eclipse.jdt.apt.processorOptions/dao.subpackage=impl
+org.eclipse.jdt.apt.processorOptions/dao.suffix=impl
+org.eclipse.jdt.apt.processorOptions/debug=false
+org.eclipse.jdt.apt.processorOptions/sql.validation=false

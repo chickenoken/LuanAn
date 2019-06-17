@@ -1,0 +1,163 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision: 1.0 $  $Date:  $
+ * @author quang-tung
+ */
+
+exexSMSApp.factory('SalPayPlanListModel', [ 'BaseModel', function(BaseModel) {
+
+    var model = BaseModel.getInstance();
+    model.form = {
+        search : {
+            spendFixedDateFrom : '',
+            spendFixedDateTo : '',
+            stockaddressName : '',
+            stockSno : '',
+            orderSno : '',
+            exportCsv : ''
+        },
+        listL020001 : [],
+    };
+
+    model.hidden = {
+        csvRequired : true,
+        isSubmitted : false
+    };
+    return model;
+} ]);
+
+
+exexSMSApp.controller('salPayPlanListCtrl',
+        ['$scope', 'RouteService', 'DialogsService', 'SalPayPlanListModel', 'Messages', 'ServerService',
+            function($scope, RouteService, DialogsService, SalPayPlanListModel, Messages, ServerService){
+
+    $scope.model = SalPayPlanListModel;
+
+    $scope.init = function(){
+        ServerService.doPost('SalPayPlanList/getInit', null).then(
+            function(okResult) {
+                var error = okResult.data.failed;
+                if(!StringUtils.isEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                }
+                $scope.model.form.listL010022 = okResult.data.listL010022;
+                var sessionSearch = angular.fromJson(sessionStorage.getItem("salPayPlanListSession"));
+
+                if(!StringUtils.isEmpty(sessionSearch)){
+                    $scope.model.currentPage = sessionSearch.currentPage;
+                    $scope.model.form.search = sessionSearch;
+                }
+                $scope.search($scope.model.form.search, $scope.model.currentPage);
+            }
+        );
+    };
+    $scope.init();
+
+    $scope.search = function(param, page){
+        $scope.model.hidden.isSubmitted = false;
+        $scope.model.hidden.csvRequired = false;
+        var params = {
+            spendFixedDateFrom : !StringUtils.isEmpty(param.spendFixedDateFrom) ? new Date(param.spendFixedDateFrom) : "",
+            spendFixedDateTo : !StringUtils.isEmpty(param.spendFixedDateTo) ? new Date(param.spendFixedDateTo) : "",
+            stockaddressName : param.stockaddressName,
+            stockSno : param.stockSno,
+            orderSno : param.orderSno
+        };
+
+        sessionStorage.setItem("salPayPlanListSession",JSON.stringify(params));
+        ServerService.doPost('SalPayPlanList/search', params).then(
+            function(okResult) {
+                var error =  okResult.data.failed;
+                var warning =  okResult.data.warning;
+                if(!StringUtils.isEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                }else if(!StringUtils.isEmpty(warning)){
+                    DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                    return;
+                }
+
+                $scope.model.form.salPayPlanList = okResult.data.salPayPlanList;
+                // Table Paging
+                var length = $scope.model.form.salPayPlanList.length;
+                $scope.model.currentPage = !StringUtils.isEmpty(page) ? page : 1; //current page
+                $scope.model.entryLimit = 20; //max no of items to display in a page
+                $scope.model.number = 20;
+                $scope.model.filteredItems = length; //Initially for no filter
+                $scope.model.totalItems = length;
+
+                // End Table Paging
+                $scope.model.hidden.csvRequired = true;
+
+                // add colresizable to table
+                setTimeout(function(){
+                    $scope.setColResizable();
+                });
+            }
+        );
+    };
+
+    /**
+     * goToPayControl()
+     */
+    $scope.goToPayControl = function(row){
+        var param = {
+            stockaddressName: row.stockaddressName,
+            stockaddressNo: row.stockaddressNo,
+            bankCd: row.bankCd,
+            spendFixedDateFrom: row.spendFixedDate,
+            spendFixedDateTo: row.spendFixedDate
+        };
+        sessionStorage.setItem("salPayControl", JSON.stringify(param));
+        RouteService.gotoUrl('SalPayControl');
+    };
+
+    // set colResizable
+    $scope.setColResizable = function(){
+        // remove JCLRgrips if having
+        $('.JCLRgrips').remove();
+
+        angular.element('#tableSalPayPlanList').colResizable({
+            liveDrag: true,
+            postbackSafe: true,
+            useLocalStorage: true
+        });
+    }
+
+    $scope.exportCSV = function(params, formInvalid){
+        $scope.model.hidden.isSubmitted = true;
+        $scope.model.hidden.csvRequired = true;
+        if (formInvalid) {
+            return;
+        }
+        var param = {
+            spendFixedDateFrom : !StringUtils.isEmpty(params.spendFixedDateFrom) ? new Date(params.spendFixedDateFrom) : "",
+            spendFixedDateTo : !StringUtils.isEmpty(params.spendFixedDateTo) ? new Date(params.spendFixedDateTo) : "",
+            stockaddressName : params.stockaddressName,
+            stockSno : params.stockSno,
+            orderSno : params.orderSno
+        };
+
+        var fileName = $("#salPayPlanListLabel").text() + DateUtils.getYYYYMMDD(new Date());
+        var fileType = '.xlsx';
+        var limit = 10000;
+        if($scope.model.totalItems > limit){
+            DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00329', limit.toString()));
+            return;
+        }
+        ServerService.doDownload('/SalPayPlanList/exportCsv',  param, 'application/vnd.ms-excel', fileName + fileType);
+    };
+
+    $scope.$watch('model.currentPage',function(newVal ,oldVal){
+        if(!StringUtils.isEmpty(newVal)){
+            var sessionSearch = SessionUtils.prepareSession(sessionStorage.getItem('salPayPlanListSession'));
+            sessionSearch.currentPage = newVal;
+            sessionStorage.setItem("salPayPlanListSession",JSON.stringify(sessionSearch));
+        }
+    });
+
+}]);

@@ -1,0 +1,401 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision:  $  $Date:  $
+ * @author : huy-du
+ */
+'use strict';
+/**
+ * Table :
+ */
+exexSMSApp.factory('customerItemModel', [ 'BaseModel', function(BaseModel) {
+    var model = BaseModel.getInstance();
+    model.form = {
+        item : {
+            custType : '',
+            groupNo : '',
+            groupLabelName : '',
+            initDisplayFlag : '',
+            groupControlDisplayFlag : '',
+            displayPosition : '',
+            groupFreeItemFlag : '',
+            lineNo : '',
+            controlLabelName : '',
+            controlType : '',
+            listDataSource : '',
+            listDisplayFlag : '',
+            controlDisplayFlag : '',
+            detailFreeItemFlag : '',
+            listCustomerItemDetail : []
+        },
+        position : '',
+        groupNo : '',
+        listMstCode : [],
+        listA050002 : [],
+        listA050003 : []
+    };
+    model.listDetail= [],
+    model.listColorPopover = ColorUtils.getListColor();
+    model.listSpecial = ['SITE_NAME','SITE_ADDRESS','DEPT_NAME','DEPT_TEL','DEPT_FAX','OWNER_NAME','OWNER_POSITION','OWNER_MAIL_ADDRESS','OWNER_PHONE_MAIL_ADDRESS'],
+    model.hidden = {
+        isSubmited: false,
+        addDetail: false,
+        locale:'',
+        listDisabled: [],
+    };
+
+return model;
+
+}]);
+exexSMSApp.controller('customerItemCtrl',
+        ['$scope','customerItemModel', 'DialogsService', '$uibModalInstance', 'ServerService', 'Messages', 'data','MstCustomerItemSettingModel',
+         function($scope, customerItemModel,  DialogsService, $uibModalInstance, ServerService, Messages, data, MstCustomerItemSettingModel){
+
+    $scope.model = customerItemModel;
+    $scope.modelCustomer = MstCustomerItemSettingModel;
+
+    $scope.convertListView = function(list){
+        angular.forEach(list, function(group, i){
+            group.locale = group.locale ? group.locale.split("#") : ['ja', 'vi'];
+            group.groupLabelName = group.groupLabelName ? group.groupLabelName.split("#")  : [group.groupLabelName];
+        });
+        return list;
+    };
+
+    $scope.convertListDetailView = function(list){
+        angular.forEach(list, function(detail, i){
+            detail.controlLabelName = detail.controlLabelName ? detail.controlLabelName.split("#") : [detail.controlLabelName];
+            detail.locale = detail.locale ? detail.locale.split("#") : ['ja', 'vi'];
+        });
+        return list;
+    };
+
+    $scope.init = function(){
+        var sessionLogin = angular.fromJson(sessionStorage.getItem("session"));
+        $scope.model.hidden.locale = sessionLogin.locale;
+        $scope.model.hidden.isSubmited = false;
+        $scope.model.form.item = [];
+        $scope.getInit();
+    }
+
+    $scope.getInit = function(){
+        var param = {
+            custType: data.custType,
+            groupNo: data.item ? data.item.groupNo : "",
+            groupFreeItemFlag: data.item ? data.item.groupFreeItemFlag : ""
+        }
+        ServerService.doPost('MstCustomerItemSetting/getInitGroup', param).then(
+            function(okResult) {
+                var error = okResult.data.failed;
+                var warning =  okResult.data.warning;
+                if (!StringUtils.isEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                } else if (!StringUtils.isEmpty(warning)){
+                    DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                    return;
+                }
+                $scope.model.form.listMstCode = okResult.data.listMstCode;
+                $scope.model.form.listA050002 = okResult.data.listA050002;
+                $scope.model.form.listA050003 = okResult.data.listA050003;
+                $scope.model.form.listS020020 = okResult.data.listS020020;
+                $scope.model.form.listM010001 = okResult.data.listM010001;
+                $scope.model.form.groupNo = data.index + 1;
+                if(data.item){
+                    $scope.model.form.position = data.position;
+                    $scope.model.form.item = angular.copy(data.item);
+                    $scope.model.form.item.listCustomerItemDetail = $scope.convertListDetailView(okResult.data.listCustomerItemDetail);
+                    // remove special control type from current item
+                    angular.forEach($scope.model.form.item.listCustomerItemDetail, function(item, key){
+                        var itemIndex = $scope.modelCustomer.hidden.listDisabled.indexOf(item.controlType);
+                        if(!StringUtils.isEmpty(item.controlType) && $scope.model.listSpecial.indexOf(item.controlType) > -1 && itemIndex > -1){
+                            $scope.modelCustomer.hidden.listDisabled.splice(itemIndex, 1);
+                        }
+                    });
+                }else{
+                    $scope.model.form.item = {
+                        custType: '',
+                        locale:['ja', 'vi'],
+                        groupNo: '',
+                        groupLabelName: ['', ''],
+                        initDisplayFlag: true,
+                        groupCustDisplayFlag: true,
+                        groupStockaddressDisplayFlag: true,
+                        displayPosition: data.position,
+                        groupFreeItemFlag: true,
+                        lineNo: '',
+                        controlLabelName:'',
+                        controlType: '',
+                        listDataSource: '',
+                        listDisplayFlag: false,
+                        custDisplayFlag: true,
+                        stockaddressDisplayFlag: true,
+                        detailFreeItemFlag: true,
+                        listCustomerItemDetail:[],
+                        backgroundColor : '#26a69a'
+                    };
+                }
+                if($scope.model.form.item.groupKey != "06" && $scope.model.form.item.groupKey != "07" && $scope.model.form.item.listCustomerItemDetail.length == 0){
+                    $scope.addDetail();
+                }
+             }
+         );
+    }
+
+    $scope.loadInitJsEvent = function(row, index, event){
+        //Save color
+        var currColor = row.backgroundColor;
+        if(!StringUtils.isEmpty(event)){
+            currColor = $(event.target).css('color');
+        }
+        row.backgroundColor = currColor;
+        //Add color effect to button
+        $('#eventColor').css({"background-color": currColor, "border-color": currColor});
+        $('.popover').remove();
+        angular.element('body').click();
+    };
+
+    $scope.removeItem = function(index){
+        $scope.model.form.item.listCustomerItemDetail.splice(index, 1);
+    }
+
+    $scope.addDetail = function(formInvalid){
+        if(formInvalid && $scope.model.hidden.addDetail){
+            $scope.model.hidden.isSubmited = true;
+            return;
+        }else{
+            $scope.model.hidden.addDetail = false;
+            $scope.model.hidden.isSubmited = false;
+        }
+        var item = {
+            custType: '',
+            locale:['ja', 'vi'],
+            groupNo: '',
+            groupLabelName: '',
+            initDisplayFlag: true,
+            groupCustDisplayFlag: true,
+            groupStockaddressDisplayFlag: true,
+            displayPosition: data.position,
+            groupFreeItemFlag: true,
+            lineNo: '',
+            controlLabelName: ['', ''],
+            controlType: '',
+            listDataSource: '',
+            listDisplayFlag: false,
+            custDisplayFlag: true,
+            stockaddressDisplayFlag: true,
+            detailFreeItemFlag: true,
+            isActive: true,
+            autoConvertInputType : '01'
+        }
+        $scope.model.form.item.listCustomerItemDetail.push(item);
+        $scope.calWidth();
+        $scope.model.hidden.addDetail = true;
+    }
+
+    $scope.insertGroup = function(formInvalid){
+        $scope.model.hidden.isSubmited = true;
+        for (var i = 0; i < $scope.model.form.item.listCustomerItemDetail.length; i++) {
+            var detail = $scope.model.form.item.listCustomerItemDetail[i];
+            if(!StringUtils.isEmpty(detail.minLength) && !StringUtils.isEmpty(detail.maxLength)) {
+                detail.minLength = parseInt(detail.minLength);
+                detail.maxLength = parseInt(detail.maxLength);
+                if(detail.minLength > detail.maxLength) {
+                    return DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00679'));
+                }
+            }
+        }
+        if(formInvalid){
+            return;
+        }
+        var params = angular.copy($scope.model.form.item);
+        var cust = {
+            custType: $scope.modelCustomer.form.custType
+        }
+        ServerService.doPost('MstCustomerItemSetting/hasDataListDisplayFlag', cust).then(
+            function(okResult) {
+                if(okResult.data.hasDataListDisplayFlag){
+                    DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('S00004'))
+                    .result.then(function(btn){
+                        if(!StringUtils.isEmpty(params)){
+                            sessionStorage.setItem("mstCustItemInsert", JSON.stringify(params));
+                            $scope.update(params);
+                        }
+                    });
+                } else {
+                    return DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00340', angular.element('#titleLabel').text()));
+                }
+            }
+        )
+    }
+
+    /**更新*/
+    $scope.update = function(params) {
+
+        var listUpdate = [];
+        delete params.isOpen;
+        delete params.opened;
+        params.locale = params.locale.join("#");
+        if(!StringUtils.isEmpty(params.groupLabelName[0]) && StringUtils.isEmpty(params.groupLabelName[1])){
+            params.groupLabelName[1] = params.groupLabelName[0];
+        }
+        if(!StringUtils.isEmpty(params.groupLabelName[1]) && StringUtils.isEmpty(params.groupLabelName[0])){
+            params.groupLabelName[0] = params.groupLabelName[1];
+        }
+        params.groupLabelName = params.groupLabelName.join("#");
+
+        angular.forEach(params.listCustomerItemDetail, function(detail, j){
+            if(!StringUtils.isEmpty(detail.controlLabelName[0]) && StringUtils.isEmpty(detail.controlLabelName[1])){
+                detail.controlLabelName[1] = detail.controlLabelName[0];
+            }
+            if(StringUtils.isEmpty(detail.controlLabelName[0]) && !StringUtils.isEmpty(detail.controlLabelName[1])){
+                detail.controlLabelName[0] = detail.controlLabelName[1];
+            }
+            detail.controlLabelName = detail.controlLabelName.join("#");
+            detail.locale = detail.locale.join("#");
+        });
+        listUpdate.push(params);
+        var param = {
+            custType: $scope.modelCustomer.form.custType,
+            listCustomerItemDetail: listUpdate
+        }
+        ServerService.doPost('MstCustomerItemSetting/update', param).then(
+            function(okResult) {
+                var error = okResult.data.failed;
+                var warning = okResult.data.warning;
+                var success = okResult.data.success;
+                if(!StringUtils.isEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                }else if(!StringUtils.isEmpty(warning)){
+                    DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                    return;
+                }else if(!StringUtils.isEmpty(success)){
+                    $scope.model.hidden.isSubmited = false;
+                    $scope.model.form.item = [];
+                    DialogsService.showNotify(Messages.getMessage('title.info'), success);
+                    $uibModalInstance.close();
+                    return;
+                }
+            }
+        );
+    };
+
+    /**
+     * calculate width for table
+     */
+    $scope.calWidth = function(){
+        setTimeout(function(){
+            $('#tableBody').animate({scrollTop:$('.rpt-list-popup').height()}, 'slow');
+            var isChrome = !!window.chrome && !!window.chrome.webstore;
+            if(!isChrome){
+                $scope.model.hidden.widthHeader = {"width": "calc(100% - 102px)"};
+                return;
+            }else if (isChrome){
+                $scope.model.hidden.widthHeader = {"width": "calc(100% - 95px)"};
+                return;
+            }
+        },100);
+    }
+
+    $scope.removeItem = function(index){
+        $scope.model.form.item.listCustomerItemDetail.splice(index, 1);
+    }
+
+    $scope.init();
+
+    $scope.close = function() {
+        sessionStorage.removeItem("mstCustItemInsert");
+        $uibModalInstance.dismiss('close');
+    };
+
+    $scope.sortableConfig = {
+        handle:'.handle',
+    };
+
+    $scope.changeControlType = function(index, controlType){
+        $scope.model.form.item.listCustomerItemDetail[index].checkUnique = false;
+        if($scope.model.form.item.listCustomerItemDetail[index].controlType != '04'
+            && $scope.model.form.item.listCustomerItemDetail[index].controlType != '08'
+                && $scope.model.form.item.listCustomerItemDetail[index].controlType != '10'
+                    && $scope.model.form.item.listCustomerItemDetail[index].controlType != '11'){
+            $scope.model.form.item.listCustomerItemDetail[index].listDataSource = '';
+        }
+
+        // check special control type
+        var msg = $scope.checkSpecialControlType(index, $scope.model.form.item.listCustomerItemDetail, controlType);
+        if(!StringUtils.isEmpty(msg)){
+            DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00332', msg));
+        } else{
+            // add original column name
+            var sLength = $scope.model.form.listA050002.length;
+            for(var sKey = 0; sKey < sLength ; sKey++){
+                var sItem = $scope.model.form.listA050002[sKey];
+                if(sItem.codeType === 'C050001' && controlType === sItem.code){
+                    $scope.model.form.item.listCustomerItemDetail[index].originalColName = sItem.remark;
+                }
+            }
+        }
+    }
+
+    /**
+     * check special unique control type
+     */
+    $scope.checkSpecialControlType = function(index, listPosition, controlType){
+        var length = listPosition.length;
+        for(var key = 0; key < length ; key++){
+            var item = listPosition[key];
+            if(!StringUtils.isEmpty(item.controlType) &&
+                    ((item.controlType == controlType && key != index && $scope.model.listSpecial.indexOf(controlType) > -1 && item.controlType == controlType )
+                            || $scope.modelCustomer.hidden.listDisabled.indexOf(controlType) > -1) ){
+                var msg = '';
+                var sLength = $scope.model.form.listA050002.length;
+                for(var sKey = 0; sKey < sLength ; sKey++){
+                    var sItem = $scope.model.form.listA050002[sKey];
+                    if(controlType === sItem.code){
+                        msg = sItem.codeName;
+                    }
+                }
+                listPosition[index].controlType = '';
+                return msg;
+            }
+        };
+    }
+
+
+    $scope.checkDataListDisplayFlag = function(params){
+        for (var i = 0; i < params.listCustomerItemDetail.length; i++) {
+            if(params.listCustomerItemDetail[i].listDisplayFlag) {
+                return true;
+            }
+        }
+        if(params.groupNo != '1'){
+            var listSub = $scope.modelCustomer.form.listCustomerItemDetail0;
+            for (var y = 0; y < listSub.length; y++) {
+                if(listSub[y].listDisplayFlag) {
+                    return true;
+                }
+            }
+        }
+        if(params.groupNo != '2'){
+            var listSub = $scope.modelCustomer.form.listCustomerItemDetail1;
+            for (var y = 0; y < listSub.length; y++) {
+                if(listSub[y].listDisplayFlag) {
+                    return true;
+                }
+            }
+        }
+        if(params.groupNo != '3'){
+            var listSub = $scope.modelCustomer.form.listCustomerItemDetail2;
+            for (var y = 0; y < listSub.length; y++) {
+                if(listSub[y].listDisplayFlag) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    };
+
+}]);

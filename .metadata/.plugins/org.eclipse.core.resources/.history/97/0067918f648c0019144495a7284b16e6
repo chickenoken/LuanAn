@@ -1,0 +1,5 @@
+package org.planning.net.dto;
+
+public class Login {
+
+}

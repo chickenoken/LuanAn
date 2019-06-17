@@ -1,0 +1,29 @@
+package org.planning.net.logic;
+
+import org.planning.net.dao.testDoma;
+import org.planning.net.dto.LoginDto;
+import org.planning.net.entity.NhanVien;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+@Component
+public class LoginLogicImpl implements LoginLogic{
+
+    @Autowired
+    private testDoma testDoma;
+
+    @Override
+    public NhanVien dangNhap(LoginDto model) throws Exception {
+
+        NhanVien testCc = new NhanVien();
+        MA_NHAN_VIEN    TEN_NHAN_VIEN   ROLE    TAI_KHOAN   MAT_KHAU
+        00001       Nguyễn Chí Cường    admin       ccc                     123456789
+
+        testCc.setMaNhanVien("00001");
+        testCc.setTenNhanVien("Nguyễn Chí Cường");
+        testCc.setRole("admin");
+        testCc.setTaiKhoan("ccc");
+        return true;//testDoma.selectByTaiKhoanAndPass(model.getTaiKhoan(), model.getMatKhau());
+    }
+
+}

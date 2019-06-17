@@ -1,0 +1,165 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision: 1.0 $  $Date: 2016/07/01 $
+ * @author quang-tung
+ */
+'use strict';
+
+exexSMSApp.factory('MstWarehouseListModel', [ 'BaseModel', function(BaseModel) {
+
+    var model = BaseModel.getInstance();
+    model.form = {
+        search : {
+            usagePeriodFrom : '',
+            usagePeriodTo : '',
+            warehouseName : '',
+            userCd : '',
+            groupCd : '',
+            controlCd: '',
+            address : ''
+        },
+        paginationInfo : {
+            page: 0,
+            pageSize: 20,
+            totalPage: 0,
+            totalRecord: 0,
+            from: 0,
+            to: 0
+        }
+    };
+    model.listUser = [];
+    model.listExport = [];
+    model.listGroup = [];
+    return model;
+} ]);
+
+
+exexSMSApp.controller('mstWarehouseListCtrl',
+        ['$scope', '$timeout', 'DialogsService', 'MstWarehouseListModel', 'MstWarehouseService', 'Messages', 'ServerService',
+         function($scope, $timeout, DialogsService, MstWarehouseListModel, MstWarehouseService, Messages, ServerService){
+
+    $scope.model = MstWarehouseListModel;
+    $scope.init = function(){
+        $scope.getInit();
+    };
+
+    $scope.$on("MstWarehouseList#getWarehouseList", function(evt, param) {
+        $scope.doSearch($scope.model.form.search, 1);
+    });
+
+    /**
+     * getInit
+     */
+    $scope.getInit = function(){
+        var param = {};
+        MstWarehouseService.init(param).then(function(result) {
+            var error = result.data.failed;
+            if(!StringUtils.isEmpty(error)){
+                DialogsService.showError(Messages.getMessage('system.error'), error);
+                 return;
+            }
+            $scope.model.listUser = result.data.listUser;
+            $scope.model.listGroup = result.data.listGroup;
+            $scope.model.listExport = result.data.listL010012;
+            $scope.doSearch($scope.model.form.search, 1);
+        });
+    };
+
+    /**
+     * open dialog
+     */
+    $scope.openDialog = function(value) {
+        var options = {size: 'warehouse-control'};
+        var param = {};
+        switch (value) {
+            case 'insert':
+                DialogsService.showDialog('MstWarehouseControl', 'mstWarehouseControlCtrl', param,options).result.then(function(param) {
+                });
+                break;
+            default:
+                var params = {warehouseNo : value.warehouseNo};
+                MstWarehouseService.checkData(params).then(function(result) {
+                    var warning = result.data.warning;
+                    var error = result.data.failed;
+                    var success = result.data.success;
+                    if(!StringUtils.isEmpty(warning)){
+                        DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                        return;
+                    }else if(!StringUtils.isEmpty(error)){
+                        DialogsService.showError(Messages.getMessage('system.error'), error);
+                        return;
+                    }else{
+                         param.warehouse = {warehouseNo : value.warehouseNo};
+                         DialogsService.showDialog('MstWarehouseControl', 'mstWarehouseControlCtrl', param,options).result.then(function(param) {
+                         });
+                    }
+                });
+            break;
+        };
+    };
+
+    $scope.doSearch = function(param, page) {
+        var params = {
+                usagePeriodFrom : !StringUtils.isEmpty(param.usagePeriodFrom) ? new Date(param.usagePeriodFrom) : "",
+                usagePeriodTo : !StringUtils.isEmpty(param.usagePeriodTo) ? new Date(param.usagePeriodTo) : "",
+                warehouseName : !StringUtils.isEmpty(param.warehouseName) ? param.warehouseName : "",
+                userCd : !StringUtils.isEmpty(param.userCd) ? param.userCd : "",
+                groupCd : !StringUtils.isEmpty(param.groupCd) ? param.groupCd : "",
+                controlCd : !StringUtils.isEmpty(param.controlCd) ? param.controlCd : "",
+                address : !StringUtils.isEmpty(param.address) ? param.address : "",
+                page : page,
+                pageSize : $scope.model.form.paginationInfo.pageSize
+        };
+        MstWarehouseService.search(params).then(function(result) {
+            var warning = result.data.warning;
+            var error = result.data.failed;
+            var success = result.data.success;
+            if(!StringUtils.isEmpty(warning)){
+                DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                return;
+            }else if(!StringUtils.isEmpty(error)){
+                DialogsService.showError(Messages.getMessage('system.error'), error);
+                return;
+            }else{
+                $scope.model.listWarehouse = result.data.resultList;
+                $scope.model.form.paginationInfo = result.data.paginationInfo;
+             }
+
+            // add colresizable to table
+            setTimeout(function(){
+                $scope.setColResizable();
+            });
+         });
+    };
+
+    $scope.exportExcel = function(param){
+        if(param.exportExcel == '1'){
+            var params = {
+                usagePeriodFrom : !StringUtils.isEmpty(param.usagePeriodFrom) ? new Date(param.usagePeriodFrom) : "",
+                usagePeriodTo : !StringUtils.isEmpty(param.usagePeriodTo) ? new Date(param.usagePeriodTo) : "",
+                warehouseName : !StringUtils.isEmpty(param.warehouseName) ? param.warehouseName : "",
+                userCd : !StringUtils.isEmpty(param.userCd) ? param.userCd : "",
+                groupCd : !StringUtils.isEmpty(param.groupCd) ? param.groupCd : "",
+                controlCd : !StringUtils.isEmpty(param.controlCd) ? param.controlCd : "",
+                address : !StringUtils.isEmpty(param.address) ? param.address : ""
+            };
+            var fileName = Messages.getMessage('common.excel.file.name.warehouse') + '_' + DateUtils.getYYYYMMDD(new Date());
+            ServerService.doDownload('/MstWarehouseList/downloadExcel', angular.toJson(params), 'application/vnd.ms-excel', fileName + '.xlsx');
+        }
+    };
+
+    // set colResizable
+    $scope.setColResizable = function(){
+        // remove JCLRgrips if having
+        $('.JCLRgrips').remove();
+
+        angular.element('#tableMstWarehouseList').colResizable({
+            liveDrag: true,
+            postbackSafe: true,
+            useLocalStorage: true
+        });
+    }
+}]);

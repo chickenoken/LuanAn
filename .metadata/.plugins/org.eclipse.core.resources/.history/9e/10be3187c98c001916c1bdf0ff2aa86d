@@ -1,0 +1,1132 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision: $ $Date: $
+ * @author huy-du
+ */
+
+'use strict';
+
+exexSMSApp.factory('BudgetMaintenanceModel', ['BaseModel', function(BaseModel) {
+
+    var model = BaseModel.getInstance();
+    model.form = {
+            search : {
+            },
+            listAggregateType : [],
+            listMonth:[]
+    };
+
+    model.hidden = {
+        viewTable : false,
+        itemHeight : 125,
+        budgetHeight : 125,
+        heightOneRow: 25,
+        tableWidth: 1328,
+        heightHeader: 30,
+        innerHeight: 715,
+        nodata: false,
+        hiddenCopyGroupButton: false,
+        hiddenCopyUserButton: false,
+        viewTableGroup: false,
+        calTableGroup: false,
+        tmpYearStart : DateUtils.getPrevious3YearYYYYMM(),
+        tmpYearEnd : DateUtils.getCurrentYYYYMM(),
+        listCalUserData: []
+    }
+
+    return model;
+} ]);
+
+exexSMSApp.controller('BudgetMaintenanceCtrl',
+        ['$rootScope', '$scope', '$filter', '$window', '$timeout', 'ServerService','DialogsService','RouteService','BudgetMaintenanceModel', 'Messages',
+        function($rootScope, $scope, $filter, $window, $timeout,serverService, dialogsService, routeService, budgetMaintenanceModel, Messages) {
+    $scope.model = budgetMaintenanceModel;
+
+    $scope.calTabelWidth = function(){
+      $timeout(function() {
+            var width = 0;
+            var widthOuter = 0;
+            var widthTableLeft = 0;
+            var widthTableLeft1 = 0;
+            var widthTableMiddleLabel = 0;
+            var widthTableMiddle = 0;
+            var widthTableRight  = 0;
+            var innerHeight = 0;
+            var subWidth = 0;
+            widthOuter = parseInt(angular.element('.outer').width());
+            widthTableLeft = parseInt(angular.element('#table-left').width());
+            widthTableLeft1 = parseInt(angular.element('#table-left-1').width());
+            widthTableMiddle = parseInt(angular.element('#table-middle-label').width());
+            widthTableRight  = parseInt(angular.element('#table-right').width());
+            innerHeight = parseInt(angular.element('#table-middle').height());
+            subWidth = widthTableLeft + widthTableLeft1 + widthTableRight + widthTableMiddle;
+            width = widthOuter - subWidth;
+            $scope.model.hidden.tableWidth = width;
+            $scope.model.hidden.hrWidth = widthOuter - 2;
+            $scope.model.hidden.innerHeight = innerHeight + 12;
+      },500);
+    };
+
+    /**
+     * 集計
+     */
+    $scope.search = function(){
+        $scope.model.hidden.labelPlan = (locale == 'ja' ? '予定' : 'K.Hoạch');
+        $scope.model.hidden.nodata = false;
+        var param = angular.fromJson(sessionStorage.getItem("budgetSearch"));
+        if(ValidateUtil.isValidTextEmpty(param)){
+            routeService.gotoUrl("BudgetControl");
+        }
+        /**check data before export csv*/
+        var pr = angular.copy(param);
+        serverService.doPost('BudgetMaintenance/search', pr)
+        .then(
+        /* success function */
+        function(result) {
+            if(!ValidateUtil.isValidTextEmpty(result)){
+                if(!ValidateUtil.isValidTextEmpty(result.data.warning)){
+                    $scope.model.hidden.nodata = true;
+                    $scope.model.hidden.viewTable = false;
+                }else{
+                    $scope.model.hidden.nodata = false;
+                    $scope.model.hidden.viewTable = true;
+                    $scope.model.form.listHeader = result.data.listHeader;
+                    $scope.model.form.listData = result.data.listResult;
+                    $scope.model.form.listGroupData = [];
+                    $scope.model.hidden.viewTableGroup = false;
+                }
+            }
+
+            $scope.calHeight();
+            $scope.calTabelWidth();
+        },function(error) {});
+
+    };
+
+    $scope.search();
+
+    /**
+     * 部署を検索
+     */
+    $scope.calByGroup = function(){
+        $scope.model.hidden.calTableGroup = true;
+        $scope.model.hidden.hiddenCopyGroupButton = true;
+        var length = $scope.model.form.listGroupData.length;
+        /**予定*/
+        var val10 = [0,0,0,0,0,0,0,0,0,0,0,0], sum10 = 0;
+        var val11 = [0,0,0,0,0,0,0,0,0,0,0,0], sum11 = 0;
+        var val12 = [0,0,0,0,0,0,0,0,0,0,0,0], sum12 = 0;
+        var val13 = [0,0,0,0,0,0,0,0,0,0,0,0], sum13 = 0;
+        var val14 = [0,0,0,0,0,0,0,0,0,0,0,0], sum14 = 0;
+        var val15 = [0,0,0,0,0,0,0,0,0,0,0,0], sum15 = 0;
+        var val16 = [0,0,0,0,0,0,0,0,0,0,0,0], sum16 = 0;
+        var val17 = [0,0,0,0,0,0,0,0,0,0,0,0], sum17 = 0;
+        var val18 = [0,0,0,0,0,0,0,0,0,0,0,0], sum18 = 0;
+
+        var val19 = [0,0,0,0,0,0,0,0,0,0,0,0], sum19 = 0;
+        var val110 = [0,0,0,0,0,0,0,0,0,0,0,0], sum110 = 0;
+        var val111 = [0,0,0,0,0,0,0,0,0,0,0,0], sum111 = 0;
+        var val112 = [0,0,0,0,0,0,0,0,0,0,0,0], sum112 = 0;
+        var val113 = [0,0,0,0,0,0,0,0,0,0,0,0], sum113 = 0;
+        var val114 = [0,0,0,0,0,0,0,0,0,0,0,0], sum114 = 0;
+
+        /**実績*/
+        var val20 = [0,0,0,0,0,0,0,0,0,0,0,0], sum20 = 0;
+        var val21 = [0,0,0,0,0,0,0,0,0,0,0,0], sum21 = 0;
+        var val22 = [0,0,0,0,0,0,0,0,0,0,0,0], sum22 = 0;
+        var val23 = [0,0,0,0,0,0,0,0,0,0,0,0], sum23 = 0;
+        var val24 = [0,0,0,0,0,0,0,0,0,0,0,0], sum24 = 0;
+        var val25 = [0,0,0,0,0,0,0,0,0,0,0,0], sum25 = 0;
+        var val26 = [0,0,0,0,0,0,0,0,0,0,0,0], sum26 = 0;
+        var val27 = [0,0,0,0,0,0,0,0,0,0,0,0], sum27 = 0;
+        var val28 = [0,0,0,0,0,0,0,0,0,0,0,0], sum28 = 0;
+
+        var val29 = [0,0,0,0,0,0,0,0,0,0,0,0], sum29 = 0;
+        var val210 = [0,0,0,0,0,0,0,0,0,0,0,0], sum210 = 0;
+        var val211 = [0,0,0,0,0,0,0,0,0,0,0,0], sum211 = 0;
+        var val212 = [0,0,0,0,0,0,0,0,0,0,0,0], sum212 = 0;
+        var val213 = [0,0,0,0,0,0,0,0,0,0,0,0], sum213 = 0;
+        var val214 = [0,0,0,0,0,0,0,0,0,0,0,0], sum214 = 0;
+
+        /**差異*/
+        var val30 = [0,0,0,0,0,0,0,0,0,0,0,0], sum30 = 0;
+        var val31 = [0,0,0,0,0,0,0,0,0,0,0,0], sum31 = 0;
+        var val32 = [0,0,0,0,0,0,0,0,0,0,0,0], sum32 = 0;
+        var val33 = [0,0,0,0,0,0,0,0,0,0,0,0], sum33 = 0;
+        var val34 = [0,0,0,0,0,0,0,0,0,0,0,0], sum34 = 0;
+        var val35 = [0,0,0,0,0,0,0,0,0,0,0,0], sum35 = 0;
+        var val36 = [0,0,0,0,0,0,0,0,0,0,0,0], sum36 = 0;
+        var val37 = [0,0,0,0,0,0,0,0,0,0,0,0], sum37 = 0;
+        var val38 = [0,0,0,0,0,0,0,0,0,0,0,0], sum38 = 0;
+
+        var val39 = [0,0,0,0,0,0,0,0,0,0,0,0], sum39 = 0;
+        var val310 = [0,0,0,0,0,0,0,0,0,0,0,0], sum310 = 0;
+        var val311 = [0,0,0,0,0,0,0,0,0,0,0,0], sum311 = 0;
+        var val312 = [0,0,0,0,0,0,0,0,0,0,0,0], sum312 = 0;
+        var val313 = [0,0,0,0,0,0,0,0,0,0,0,0], sum313 = 0;
+        var val314 = [0,0,0,0,0,0,0,0,0,0,0,0], sum314 = 0;
+
+        var i = 0;
+        var groupData = angular.copy($scope.model.form.listGroupData[0]);
+        for(;i < length;i++){
+            sum10 = 0;sum11 = 0;sum12 = 0;sum13 = 0;sum14 = 0;sum15 = 0;sum16 = 0;sum17 = 0;sum18 = 0;sum19 = 0;sum110 = 0;sum111 = 0;sum112 = 0;sum113 = 0;sum114 = 0;
+            sum20 = 0;sum21 = 0;sum22 = 0;sum23 = 0;sum24 = 0;sum25 = 0;sum26 = 0;sum27 = 0;sum28 = 0;sum29 = 0;sum210 = 0;sum211 = 0;sum212 = 0;sum213 = 0;sum214 = 0;
+            sum30 = 0;sum31 = 0;sum32 = 0;sum33 = 0;sum34 = 0;sum35 = 0;sum36 = 0;sum37 = 0;sum38 = 0;sum39 = 0;sum310 = 0;sum311 = 0;sum312 = 0;sum313 = 0;sum314 = 0;
+            var tmp = angular.copy($scope.model.form.listGroupData[i]);
+            /**予定*/
+            var tmpVal10 = tmp.listObject[0].listAnalytics[0].listValue;
+            var tmpVal11 = tmp.listObject[1].listAnalytics[0].listValue;
+            var tmpVal12 = tmp.listObject[2].listAnalytics[0].listValue;
+            var tmpVal13 = tmp.listObject[3].listAnalytics[0].listValue;
+            var tmpVal14 = tmp.listObject[4].listAnalytics[0].listValue;
+            var tmpVal15 = tmp.listObject[5].listAnalytics[0].listValue;
+            var tmpVal16 = tmp.listObject[6].listAnalytics[0].listValue;
+            var tmpVal17 = tmp.listObject[7].listAnalytics[0].listValue;
+            var tmpVal18 = tmp.listObject[8].listAnalytics[0].listValue;
+
+            var tmpVal19 = tmp.listObject[9].listAnalytics[0].listValue;
+            var tmpVal110 = tmp.listObject[10].listAnalytics[0].listValue;
+            var tmpVal111 = tmp.listObject[11].listAnalytics[0].listValue;
+            var tmpVal112 = tmp.listObject[12].listAnalytics[0].listValue;
+            var tmpVal113 = tmp.listObject[13].listAnalytics[0].listValue;
+//            var tmpVal114 = tmp.listObject[14].listAnalytics[0].listValue;
+
+            /**実績*/
+            var tmpVal20 = tmp.listObject[0].listAnalytics[1].listValue;
+            var tmpVal21 = tmp.listObject[1].listAnalytics[1].listValue;
+            var tmpVal22 = tmp.listObject[2].listAnalytics[1].listValue;
+            var tmpVal23 = tmp.listObject[3].listAnalytics[1].listValue;
+            var tmpVal24 = tmp.listObject[4].listAnalytics[1].listValue;
+            var tmpVal25 = tmp.listObject[5].listAnalytics[1].listValue;
+            var tmpVal26 = tmp.listObject[6].listAnalytics[1].listValue;
+            var tmpVal27 = tmp.listObject[7].listAnalytics[1].listValue;
+            var tmpVal28 = tmp.listObject[8].listAnalytics[1].listValue;
+
+            var tmpVal29 = tmp.listObject[9].listAnalytics[1].listValue;
+            var tmpVal210 = tmp.listObject[10].listAnalytics[1].listValue;
+            var tmpVal211 = tmp.listObject[11].listAnalytics[1].listValue;
+            var tmpVal212 = tmp.listObject[12].listAnalytics[1].listValue;
+            var tmpVal213 = tmp.listObject[13].listAnalytics[1].listValue;
+//            var tmpVal214 = tmp.listObject[14].listAnalytics[1].listValue;
+
+            /**差異*/
+            var tmpVal30 = tmp.listObject[0].listAnalytics[2].listValue;
+            var tmpVal31 = tmp.listObject[1].listAnalytics[2].listValue;
+            var tmpVal32 = tmp.listObject[2].listAnalytics[2].listValue;
+            var tmpVal33 = tmp.listObject[3].listAnalytics[2].listValue;
+            var tmpVal34 = tmp.listObject[4].listAnalytics[2].listValue;
+            var tmpVal35 = tmp.listObject[5].listAnalytics[2].listValue;
+            var tmpVal36 = tmp.listObject[6].listAnalytics[2].listValue;
+            var tmpVal37 = tmp.listObject[7].listAnalytics[2].listValue;
+            var tmpVal38 = tmp.listObject[8].listAnalytics[2].listValue;
+
+            var tmpVal39 = tmp.listObject[9].listAnalytics[2].listValue;
+            var tmpVal310 = tmp.listObject[10].listAnalytics[2].listValue;
+            var tmpVal311 = tmp.listObject[11].listAnalytics[2].listValue;
+            var tmpVal312 = tmp.listObject[12].listAnalytics[2].listValue;
+            var tmpVal313 = tmp.listObject[13].listAnalytics[2].listValue;
+//            var tmpVal314 = tmp.listObject[14].listAnalytics[2].listValue;
+
+            var j = 0;
+            for(;j < 12; j++){
+                /**予定*/
+                val10[j] += !ValidateUtil.isValidTextEmpty(tmpVal10[j]) ? parseInt(tmpVal10[j]) : 0;
+                sum10 += val10[j];
+                val11[j] += !ValidateUtil.isValidTextEmpty(tmpVal11[j]) ? parseInt(tmpVal11[j]) : 0;
+                sum11 += val11[j];
+                val12[j] += !ValidateUtil.isValidTextEmpty(tmpVal12[j]) ? parseInt(tmpVal12[j]) : 0;
+                sum12 += val12[j];
+                val13[j] += !ValidateUtil.isValidTextEmpty(tmpVal13[j]) ? parseInt(tmpVal13[j]) : 0;
+                sum13 += val13[j];
+                val14[j] += !ValidateUtil.isValidTextEmpty(tmpVal14[j]) ? parseInt(tmpVal14[j]) : 0;
+                sum14 += val14[j];
+                val15[j] += !ValidateUtil.isValidTextEmpty(tmpVal15[j]) ? parseInt(tmpVal15[j]) : 0;
+                sum15 += val15[j];
+                val16[j] += !ValidateUtil.isValidTextEmpty(tmpVal16[j]) ? parseInt(tmpVal16[j]) : 0;
+                sum16 += val16[j];
+                val17[j] += !ValidateUtil.isValidTextEmpty(tmpVal17[j]) ? parseInt(tmpVal17[j]) : 0;
+                sum17 += val17[j];
+                val18[j] += !ValidateUtil.isValidTextEmpty(tmpVal18[j]) ? parseInt(tmpVal18[j]) : 0;
+                sum18 += val18[j];
+
+                val19[j] += !ValidateUtil.isValidTextEmpty(tmpVal19[j]) ? parseInt(tmpVal19[j]) : 0;
+                sum19 += val19[j];
+                val110[j] += !ValidateUtil.isValidTextEmpty(tmpVal110[j]) ? parseInt(tmpVal110[j]) : 0;
+                sum110 += val110[j];
+                val111[j] += !ValidateUtil.isValidTextEmpty(tmpVal111[j]) ? parseInt(tmpVal111[j]) : 0;
+                sum111 += val111[j];
+                val112[j] += !ValidateUtil.isValidTextEmpty(tmpVal112[j]) ? parseInt(tmpVal112[j]) : 0;
+                sum112 += val112[j];
+                val113[j] += !ValidateUtil.isValidTextEmpty(tmpVal113[j]) ? parseInt(tmpVal113[j]) : 0;
+                sum113 += val113[j];
+//                val114[j] += !ValidateUtil.isValidTextEmpty(tmpVal114[j]) ? parseInt(tmpVal114[j]) : 0;
+//                sum114 += val114[j];
+
+                /**実績*/
+                val20[j] += !ValidateUtil.isValidTextEmpty(tmpVal20[j]) ? parseInt(tmpVal20[j]) : 0;
+                sum20 += val20[j];
+                val21[j] += !ValidateUtil.isValidTextEmpty(tmpVal21[j]) ? parseInt(tmpVal21[j]) : 0;
+                sum21 += val21[j];
+                val22[j] += !ValidateUtil.isValidTextEmpty(tmpVal22[j]) ? parseInt(tmpVal22[j]) : 0;
+                sum22 += val22[j];
+                val23[j] += !ValidateUtil.isValidTextEmpty(tmpVal23[j]) ? parseInt(tmpVal23[j]) : 0;
+                sum23 += val23[j];
+                val24[j] += !ValidateUtil.isValidTextEmpty(tmpVal24[j]) ? parseInt(tmpVal24[j]) : 0;
+                sum24 += val24[j];
+                val25[j] += !ValidateUtil.isValidTextEmpty(tmpVal25[j]) ? parseInt(tmpVal25[j]) : 0;
+                sum25 += val25[j];
+                val26[j] += !ValidateUtil.isValidTextEmpty(tmpVal26[j]) ? parseInt(tmpVal26[j]) : 0;
+                sum26 += val26[j];
+                val27[j] += !ValidateUtil.isValidTextEmpty(tmpVal27[j]) ? parseInt(tmpVal27[j]) : 0;
+                sum27 += val27[j];
+                val28[j] += !ValidateUtil.isValidTextEmpty(tmpVal28[j]) ? parseInt(tmpVal28[j]) : 0;
+                sum28 += val28[j];
+
+                val29[j] += !ValidateUtil.isValidTextEmpty(tmpVal29[j]) ? parseInt(tmpVal29[j]) : 0;
+                sum29 += val29[j];
+                val210[j] += !ValidateUtil.isValidTextEmpty(tmpVal210[j]) ? parseInt(tmpVal210[j]) : 0;
+                sum210 += val210[j];
+                val211[j] += !ValidateUtil.isValidTextEmpty(tmpVal211[j]) ? parseInt(tmpVal211[j]) : 0;
+                sum211 += val211[j];
+                val212[j] += !ValidateUtil.isValidTextEmpty(tmpVal212[j]) ? parseInt(tmpVal212[j]) : 0;
+                sum212 += val212[j];
+                val213[j] += !ValidateUtil.isValidTextEmpty(tmpVal213[j]) ? parseInt(tmpVal213[j]) : 0;
+                sum213 += val213[j];
+//                val213[j] += !ValidateUtil.isValidTextEmpty(tmpVal213[j]) ? parseInt(tmpVal213[j]) : 0;
+//                sum213 += val213[j];
+
+                /**差異*/
+                val30[j] += !ValidateUtil.isValidTextEmpty(tmpVal30[j]) ? parseInt(tmpVal30[j]) : 0;
+                sum30 += val30[j];
+                val31[j] += !ValidateUtil.isValidTextEmpty(tmpVal31[j]) ? parseInt(tmpVal31[j]) : 0;
+                sum31 += val31[j];
+                val32[j] += !ValidateUtil.isValidTextEmpty(tmpVal32[j]) ? parseInt(tmpVal32[j]) : 0;
+                sum32 += val32[j];
+                val33[j] += !ValidateUtil.isValidTextEmpty(tmpVal33[j]) ? parseInt(tmpVal33[j]) : 0;
+                sum33 += val33[j];
+                val34[j] += !ValidateUtil.isValidTextEmpty(tmpVal34[j]) ? parseInt(tmpVal34[j]) : 0;
+                sum34 += val34[j];
+                val35[j] += !ValidateUtil.isValidTextEmpty(tmpVal35[j]) ? parseInt(tmpVal35[j]) : 0;
+                sum35 += val35[j];
+                val36[j] += !ValidateUtil.isValidTextEmpty(tmpVal36[j]) ? parseInt(tmpVal36[j]) : 0;
+                sum36 += val36[j];
+                val37[j] += !ValidateUtil.isValidTextEmpty(tmpVal37[j]) ? parseInt(tmpVal37[j]) : 0;
+                sum37 += val37[j];
+                val38[j] += !ValidateUtil.isValidTextEmpty(tmpVal38[j]) ? parseInt(tmpVal38[j]) : 0;
+                sum38 += val38[j];
+
+                val39[j] += !ValidateUtil.isValidTextEmpty(tmpVal39[j]) ? parseInt(tmpVal39[j]) : 0;
+                sum39 += val39[j];
+                val310[j] += !ValidateUtil.isValidTextEmpty(tmpVal310[j]) ? parseInt(tmpVal310[j]) : 0;
+                sum310 += val310[j];
+                val311[j] += !ValidateUtil.isValidTextEmpty(tmpVal311[j]) ? parseInt(tmpVal311[j]) : 0;
+                sum311 += val311[j];
+                val312[j] += !ValidateUtil.isValidTextEmpty(tmpVal312[j]) ? parseInt(tmpVal312[j]) : 0;
+                sum312 += val312[j];
+                val313[j] += !ValidateUtil.isValidTextEmpty(tmpVal313[j]) ? parseInt(tmpVal313[j]) : 0;
+                sum313 += val313[j];
+//                val314[j] += !ValidateUtil.isValidTextEmpty(tmpVal314[j]) ? parseInt(tmpVal314[j]) : 0;
+//                sum314 += val314[j];
+
+            }
+            groupData.listObject[0].listAnalytics[0].listValue = val10;
+            groupData.listObject[0].listAnalytics[0].sum = sum10;
+            groupData.listObject[0].listAnalytics[1].listValue = val20;
+            groupData.listObject[0].listAnalytics[1].sum = sum20;
+            groupData.listObject[0].listAnalytics[2].listValue = val30;
+            groupData.listObject[0].listAnalytics[2].sum = sum30
+
+
+            groupData.listObject[1].listAnalytics[0].listValue = val11;
+            groupData.listObject[1].listAnalytics[0].sum = sum11;
+            groupData.listObject[1].listAnalytics[1].listValue = val21;
+            groupData.listObject[1].listAnalytics[1].sum = sum21;
+            groupData.listObject[1].listAnalytics[2].listValue = val31;
+            groupData.listObject[1].listAnalytics[2].sum = sum31;
+
+            groupData.listObject[2].listAnalytics[0].listValue = val12;
+            groupData.listObject[2].listAnalytics[0].sum = sum12;
+            groupData.listObject[2].listAnalytics[1].listValue = val22;
+            groupData.listObject[2].listAnalytics[1].sum = sum22;
+            groupData.listObject[2].listAnalytics[2].listValue = val32;
+            groupData.listObject[2].listAnalytics[2].sum = sum32;
+
+            groupData.listObject[3].listAnalytics[0].listValue = val13;
+            groupData.listObject[3].listAnalytics[0].sum = sum13;
+            groupData.listObject[3].listAnalytics[1].listValue = val23;
+            groupData.listObject[3].listAnalytics[1].sum = sum23;
+            groupData.listObject[3].listAnalytics[2].listValue = val33;
+            groupData.listObject[3].listAnalytics[2].sum = sum33;
+
+            groupData.listObject[4].listAnalytics[0].listValue = val14;
+            groupData.listObject[4].listAnalytics[0].sum = sum14;
+            groupData.listObject[4].listAnalytics[1].listValue = val24;
+            groupData.listObject[4].listAnalytics[1].sum = sum24;
+            groupData.listObject[4].listAnalytics[2].listValue = val34;
+            groupData.listObject[4].listAnalytics[2].sum = sum34;
+
+            groupData.listObject[5].listAnalytics[0].listValue = val15;
+            groupData.listObject[5].listAnalytics[0].sum = sum15;
+            groupData.listObject[5].listAnalytics[1].listValue = val25;
+            groupData.listObject[5].listAnalytics[1].sum = sum25;
+            groupData.listObject[5].listAnalytics[2].listValue = val35;
+            groupData.listObject[5].listAnalytics[2].sum = sum35;
+
+            groupData.listObject[6].listAnalytics[0].listValue = val16;
+            groupData.listObject[6].listAnalytics[0].sum = sum16;
+            groupData.listObject[6].listAnalytics[1].listValue = val26;
+            groupData.listObject[6].listAnalytics[1].sum = sum26;
+            groupData.listObject[6].listAnalytics[2].listValue = val36;
+            groupData.listObject[6].listAnalytics[2].sum = sum36;
+
+            groupData.listObject[7].listAnalytics[0].listValue = val17;
+            groupData.listObject[7].listAnalytics[0].sum = sum17;
+            groupData.listObject[7].listAnalytics[1].listValue = val27;
+            groupData.listObject[7].listAnalytics[1].sum = sum27;
+            groupData.listObject[7].listAnalytics[2].listValue = val37;
+            groupData.listObject[7].listAnalytics[2].sum = sum37;
+
+            groupData.listObject[8].listAnalytics[0].listValue = val18;
+            groupData.listObject[8].listAnalytics[0].sum = sum18;
+            groupData.listObject[8].listAnalytics[1].listValue = val28;
+            groupData.listObject[8].listAnalytics[1].sum = sum28;
+            groupData.listObject[8].listAnalytics[2].listValue = val38;
+            groupData.listObject[8].listAnalytics[2].sum = sum38;
+
+            groupData.listObject[9].listAnalytics[0].listValue = val19;
+            groupData.listObject[9].listAnalytics[0].sum = sum19;
+            groupData.listObject[9].listAnalytics[1].listValue = val29;
+            groupData.listObject[9].listAnalytics[1].sum = sum29;
+            groupData.listObject[9].listAnalytics[2].listValue = val39;
+            groupData.listObject[9].listAnalytics[2].sum = sum39;
+
+            groupData.listObject[10].listAnalytics[0].listValue = val110;
+            groupData.listObject[10].listAnalytics[0].sum = sum110;
+            groupData.listObject[10].listAnalytics[1].listValue = val210;
+            groupData.listObject[10].listAnalytics[1].sum = sum210;
+            groupData.listObject[10].listAnalytics[2].listValue = val310;
+            groupData.listObject[10].listAnalytics[2].sum = sum310;
+
+            groupData.listObject[11].listAnalytics[0].listValue = val111;
+            groupData.listObject[11].listAnalytics[0].sum = sum111;
+            groupData.listObject[11].listAnalytics[1].listValue = val211;
+            groupData.listObject[11].listAnalytics[1].sum = sum211;
+            groupData.listObject[11].listAnalytics[2].listValue = val311;
+            groupData.listObject[11].listAnalytics[2].sum = sum311;
+
+            groupData.listObject[12].listAnalytics[0].listValue = val112;
+            groupData.listObject[12].listAnalytics[0].sum = sum112;
+            groupData.listObject[12].listAnalytics[1].listValue = val212;
+            groupData.listObject[12].listAnalytics[1].sum = sum212;
+            groupData.listObject[12].listAnalytics[2].listValue = val312;
+            groupData.listObject[12].listAnalytics[2].sum = sum312;
+
+            groupData.listObject[13].listAnalytics[0].listValue = val113;
+            groupData.listObject[13].listAnalytics[0].sum = sum113;
+            groupData.listObject[13].listAnalytics[1].listValue = val213;
+            groupData.listObject[13].listAnalytics[1].sum = sum213;
+            groupData.listObject[13].listAnalytics[2].listValue = val313;
+            groupData.listObject[13].listAnalytics[2].sum = sum313;
+
+//            groupData.listObject[14].listAnalytics[0].listValue = val114;
+//            groupData.listObject[14].listAnalytics[0].sum = sum114;
+//            groupData.listObject[14].listAnalytics[1].listValue = val214;
+//            groupData.listObject[14].listAnalytics[1].sum = sum214;
+//            groupData.listObject[14].listAnalytics[2].listValue = val314;
+//            groupData.listObject[14].listAnalytics[2].sum = sum314;
+
+        }
+        $scope.model.form.listCalGroupData = [];
+        $scope.model.form.listCalGroupData.push(groupData);
+        console.log($scope.model.form.listCalGroupData);
+    };
+
+    /**
+     * 部署を複写
+     */
+    $scope.copyByGroup = function(){
+        var data = $scope.model.form.listData[0];
+        var calGroupData = angular.copy($scope.model.form.listCalGroupData[0]);
+        data.listObject[0].listAnalytics[0].listValue = calGroupData.listObject[0].listAnalytics[0].listValue;
+        data.listObject[1].listAnalytics[0].listValue = calGroupData.listObject[1].listAnalytics[0].listValue;
+        data.listObject[2].listAnalytics[0].listValue = calGroupData.listObject[2].listAnalytics[0].listValue;
+        data.listObject[3].listAnalytics[0].listValue = calGroupData.listObject[3].listAnalytics[0].listValue;
+        data.listObject[4].listAnalytics[0].listValue = calGroupData.listObject[4].listAnalytics[0].listValue;
+        data.listObject[5].listAnalytics[0].listValue = calGroupData.listObject[5].listAnalytics[0].listValue;
+        data.listObject[6].listAnalytics[0].listValue = calGroupData.listObject[6].listAnalytics[0].listValue;
+        data.listObject[7].listAnalytics[0].listValue = calGroupData.listObject[7].listAnalytics[0].listValue;
+        data.listObject[8].listAnalytics[0].listValue = calGroupData.listObject[8].listAnalytics[0].listValue;
+    };
+
+    /**
+     * 部署を検索
+     */
+    $scope.searchByGroup = function(){
+        $scope.model.hidden.nodata = false;
+        var param = angular.fromJson(sessionStorage.getItem("budgetSearch"));
+        param.listHeader = $scope.model.form.listHeader;
+        /**check data before export csv*/
+        var pr = angular.copy(param);
+        serverService.doPost('BudgetMaintenance/searchByGroup', pr)
+        .then(
+        /* success function */
+        function(result) {
+            if(!ValidateUtil.isValidTextEmpty(result)){
+                if(!ValidateUtil.isValidTextEmpty(result.data.warning)){
+                    $scope.model.hidden.viewTableGroup = false;
+                }else{
+                    $scope.model.hidden.viewTableGroup = true;
+                    $scope.model.form.listHeader = result.data.listHeader;
+                    $scope.model.form.listGroupData = result.data.listResult;
+                    var length = $scope.model.form.listGroupData.length;
+                    var i = 0;
+                    for(;i < length;i++){
+                        var groupData = $scope.model.form.listGroupData[i];
+                        groupData.listHeader = $scope.model.form.listHeader;
+                    }
+                    $scope.calByGroup();
+                }
+            }
+
+            $scope.calHeight1();
+            $scope.calTabelWidth();
+        },function(error) {});
+
+    };
+
+
+    /**
+     * ユーザーを検索
+     */
+    $scope.searchByUser = function(groupCd){
+        $scope.model.hidden.nodata = false;
+        var param = angular.fromJson(sessionStorage.getItem("budgetSearch"));
+        param.listHeader = $scope.model.form.listHeader;
+        param.groupCd = groupCd;
+        /**check data before export csv*/
+        var pr = angular.copy(param);
+        serverService.doPost('BudgetMaintenance/searchByUser', pr)
+        .then(
+        /* success function */
+        function(result) {
+            if(!ValidateUtil.isValidTextEmpty(result)){
+                if(!ValidateUtil.isValidTextEmpty(result.data.warning)){
+                    $scope.model.hidden.viewTableGroup = false;
+                }else{
+                    $scope.model.hidden.viewTableGroup = true;
+                    $scope.model.form.listHeader = result.data.listHeader;
+                    $scope.model.form.listUserData = result.data.listResult;
+                    var length = $scope.model.form.listGroupData.length;
+                    var lengthUser = $scope.model.form.listUserData.length;
+                    var i = 0;
+                    for(;i < length; i++){
+                        var groupData = $scope.model.form.listGroupData[i];
+                        if(!ValidateUtil.isValidTextEmpty(groupData.parentCd)){
+                            $scope.model.form.listGroupData.splice(i, 1);
+                            length = $scope.model.form.listGroupData.length;
+                            i = 0;
+                        }
+                    }
+                    i = 0;
+                    for(;i < length; i++){
+                        var groupData = $scope.model.form.listGroupData[i];
+                        if(groupCd == groupData.budgetCd){
+                            $scope.calByUser(groupCd, groupData.budgetName);
+                            break;
+                        }
+                    }
+                    length = $scope.model.form.listGroupData.length;
+                    lengthUser = $scope.model.form.listUserData.length;
+                    i = 0;
+                    for(;i < length; i++){
+                        var groupData1 = $scope.model.form.listGroupData[i];
+                        if(groupCd == groupData1.budgetCd){
+                            var j = 0;
+                            var index = i + 1;
+                            for(;j < lengthUser; j++){
+                                var userData = $scope.model.form.listUserData[j];
+                                userData.parentCd = groupCd;
+                                userData.listHeader = $scope.model.form.listHeader;
+                                $scope.model.form.listGroupData.splice(index, 0, userData);
+                                index ++;
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+
+            $scope.calHeight1();
+            $scope.calTabelWidth();
+        },function(error) {});
+
+    };
+
+    /**
+     * ユーザーを検索
+     */
+    $scope.calByUser = function(groupCd, groupName){
+        $scope.model.hidden.hiddenCopyUserButton = true;
+        var length = $scope.model.form.listUserData.length;
+        /**予定*/
+        var val10 = [0,0,0,0,0,0,0,0,0,0,0,0], sum10 = 0;
+        var val11 = [0,0,0,0,0,0,0,0,0,0,0,0], sum11 = 0;
+        var val12 = [0,0,0,0,0,0,0,0,0,0,0,0], sum12 = 0;
+        var val13 = [0,0,0,0,0,0,0,0,0,0,0,0], sum13 = 0;
+        var val14 = [0,0,0,0,0,0,0,0,0,0,0,0], sum14 = 0;
+        var val15 = [0,0,0,0,0,0,0,0,0,0,0,0], sum15 = 0;
+        var val16 = [0,0,0,0,0,0,0,0,0,0,0,0], sum16 = 0;
+        var val17 = [0,0,0,0,0,0,0,0,0,0,0,0], sum17 = 0;
+        var val18 = [0,0,0,0,0,0,0,0,0,0,0,0], sum18 = 0;
+
+        /**実績*/
+        var val20 = [0,0,0,0,0,0,0,0,0,0,0,0], sum20 = 0;
+        var val21 = [0,0,0,0,0,0,0,0,0,0,0,0], sum21 = 0;
+        var val22 = [0,0,0,0,0,0,0,0,0,0,0,0], sum22 = 0;
+        var val23 = [0,0,0,0,0,0,0,0,0,0,0,0], sum23 = 0;
+        var val24 = [0,0,0,0,0,0,0,0,0,0,0,0], sum24 = 0;
+        var val25 = [0,0,0,0,0,0,0,0,0,0,0,0], sum25 = 0;
+        var val26 = [0,0,0,0,0,0,0,0,0,0,0,0], sum26 = 0;
+        var val27 = [0,0,0,0,0,0,0,0,0,0,0,0], sum27 = 0;
+        var val28 = [0,0,0,0,0,0,0,0,0,0,0,0], sum28 = 0;
+
+        /**差異*/
+        var val30 = [0,0,0,0,0,0,0,0,0,0,0,0], sum30 = 0;
+        var val31 = [0,0,0,0,0,0,0,0,0,0,0,0], sum31 = 0;
+        var val32 = [0,0,0,0,0,0,0,0,0,0,0,0], sum32 = 0;
+        var val33 = [0,0,0,0,0,0,0,0,0,0,0,0], sum33 = 0;
+        var val34 = [0,0,0,0,0,0,0,0,0,0,0,0], sum34 = 0;
+        var val35 = [0,0,0,0,0,0,0,0,0,0,0,0], sum35 = 0;
+        var val36 = [0,0,0,0,0,0,0,0,0,0,0,0], sum36 = 0;
+        var val37 = [0,0,0,0,0,0,0,0,0,0,0,0], sum37 = 0;
+        var val38 = [0,0,0,0,0,0,0,0,0,0,0,0], sum38 = 0;
+        var i = 0;
+        var calUserData = angular.copy($scope.model.form.listUserData[0]);
+        for(;i < length;i++){
+            sum10 = 0;sum11 = 0;sum12 = 0;sum13 = 0;sum14 = 0;sum15 = 0;sum16 = 0;sum17 = 0;sum18 = 0;
+            sum20 = 0;sum21 = 0;sum22 = 0;sum23 = 0;sum24 = 0;sum25 = 0;sum26 = 0;sum27 = 0;sum28 = 0;
+            sum30 = 0;sum31 = 0;sum32 = 0;sum33 = 0;sum34 = 0;sum35 = 0;sum36 = 0;sum37 = 0;sum38 = 0;
+            var tmp = angular.copy($scope.model.form.listUserData[i]);
+            /**予定*/
+            var tmpVal10 = tmp.listObject[0].listAnalytics[0].listValue;
+            var tmpVal11 = tmp.listObject[1].listAnalytics[0].listValue;
+            var tmpVal12 = tmp.listObject[2].listAnalytics[0].listValue;
+            var tmpVal13 = tmp.listObject[3].listAnalytics[0].listValue;
+            var tmpVal14 = tmp.listObject[4].listAnalytics[0].listValue;
+            var tmpVal15 = tmp.listObject[5].listAnalytics[0].listValue;
+            var tmpVal16 = tmp.listObject[6].listAnalytics[0].listValue;
+            var tmpVal17 = tmp.listObject[7].listAnalytics[0].listValue;
+            var tmpVal18 = tmp.listObject[8].listAnalytics[0].listValue;
+
+            /**実績*/
+            var tmpVal20 = tmp.listObject[0].listAnalytics[1].listValue;
+            var tmpVal21 = tmp.listObject[1].listAnalytics[1].listValue;
+            var tmpVal22 = tmp.listObject[2].listAnalytics[1].listValue;
+            var tmpVal23 = tmp.listObject[3].listAnalytics[1].listValue;
+            var tmpVal24 = tmp.listObject[4].listAnalytics[1].listValue;
+            var tmpVal25 = tmp.listObject[5].listAnalytics[1].listValue;
+            var tmpVal26 = tmp.listObject[6].listAnalytics[1].listValue;
+            var tmpVal27 = tmp.listObject[7].listAnalytics[1].listValue;
+            var tmpVal28 = tmp.listObject[8].listAnalytics[1].listValue;
+
+            /**差異*/
+            var tmpVal30 = tmp.listObject[0].listAnalytics[2].listValue;
+            var tmpVal31 = tmp.listObject[1].listAnalytics[2].listValue;
+            var tmpVal32 = tmp.listObject[2].listAnalytics[2].listValue;
+            var tmpVal33 = tmp.listObject[3].listAnalytics[2].listValue;
+            var tmpVal34 = tmp.listObject[4].listAnalytics[2].listValue;
+            var tmpVal35 = tmp.listObject[5].listAnalytics[2].listValue;
+            var tmpVal36 = tmp.listObject[6].listAnalytics[2].listValue;
+            var tmpVal37 = tmp.listObject[7].listAnalytics[2].listValue;
+            var tmpVal38 = tmp.listObject[8].listAnalytics[2].listValue;
+            var j = 0;
+            for(;j < 12; j++){
+                /**予定*/
+                val10[j] += !ValidateUtil.isValidTextEmpty(tmpVal10[j]) ? parseInt(tmpVal10[j]) : 0;
+                sum10 += val10[j];
+                val11[j] += !ValidateUtil.isValidTextEmpty(tmpVal11[j]) ? parseInt(tmpVal11[j]) : 0;
+                sum11 += val11[j];
+                val12[j] += !ValidateUtil.isValidTextEmpty(tmpVal12[j]) ? parseInt(tmpVal12[j]) : 0;
+                sum12 += val12[j];
+                val13[j] += !ValidateUtil.isValidTextEmpty(tmpVal13[j]) ? parseInt(tmpVal13[j]) : 0;
+                sum13 += val13[j];
+                val14[j] += !ValidateUtil.isValidTextEmpty(tmpVal14[j]) ? parseInt(tmpVal14[j]) : 0;
+                sum14 += val14[j];
+                val15[j] += !ValidateUtil.isValidTextEmpty(tmpVal15[j]) ? parseInt(tmpVal15[j]) : 0;
+                sum15 += val15[j];
+                val16[j] += !ValidateUtil.isValidTextEmpty(tmpVal16[j]) ? parseInt(tmpVal16[j]) : 0;
+                sum16 += val16[j];
+                val17[j] += !ValidateUtil.isValidTextEmpty(tmpVal17[j]) ? parseInt(tmpVal17[j]) : 0;
+                sum17 += val17[j];
+                val18[j] += !ValidateUtil.isValidTextEmpty(tmpVal18[j]) ? parseInt(tmpVal18[j]) : 0;
+                sum18 += val18[j];
+
+                /**実績*/
+                val20[j] += !ValidateUtil.isValidTextEmpty(tmpVal20[j]) ? parseInt(tmpVal20[j]) : 0;
+                sum20 += val20[j];
+                val21[j] += !ValidateUtil.isValidTextEmpty(tmpVal21[j]) ? parseInt(tmpVal21[j]) : 0;
+                sum21 += val21[j];
+                val22[j] += !ValidateUtil.isValidTextEmpty(tmpVal22[j]) ? parseInt(tmpVal22[j]) : 0;
+                sum22 += val22[j];
+                val23[j] += !ValidateUtil.isValidTextEmpty(tmpVal23[j]) ? parseInt(tmpVal23[j]) : 0;
+                sum23 += val23[j];
+                val24[j] += !ValidateUtil.isValidTextEmpty(tmpVal24[j]) ? parseInt(tmpVal24[j]) : 0;
+                sum24 += val24[j];
+                val25[j] += !ValidateUtil.isValidTextEmpty(tmpVal25[j]) ? parseInt(tmpVal25[j]) : 0;
+                sum25 += val25[j];
+                val26[j] += !ValidateUtil.isValidTextEmpty(tmpVal26[j]) ? parseInt(tmpVal26[j]) : 0;
+                sum26 += val26[j];
+                val27[j] += !ValidateUtil.isValidTextEmpty(tmpVal27[j]) ? parseInt(tmpVal27[j]) : 0;
+                sum27 += val27[j];
+                val28[j] += !ValidateUtil.isValidTextEmpty(tmpVal28[j]) ? parseInt(tmpVal28[j]) : 0;
+                sum28 += val28[j];
+
+                /**差異*/
+                val30[j] += !ValidateUtil.isValidTextEmpty(tmpVal30[j]) ? parseInt(tmpVal30[j]) : 0;
+                sum30 += val30[j];
+                val31[j] += !ValidateUtil.isValidTextEmpty(tmpVal31[j]) ? parseInt(tmpVal31[j]) : 0;
+                sum31 += val31[j];
+                val32[j] += !ValidateUtil.isValidTextEmpty(tmpVal32[j]) ? parseInt(tmpVal32[j]) : 0;
+                sum32 += val32[j];
+                val33[j] += !ValidateUtil.isValidTextEmpty(tmpVal33[j]) ? parseInt(tmpVal33[j]) : 0;
+                sum33 += val33[j];
+                val34[j] += !ValidateUtil.isValidTextEmpty(tmpVal34[j]) ? parseInt(tmpVal34[j]) : 0;
+                sum34 += val34[j];
+                val35[j] += !ValidateUtil.isValidTextEmpty(tmpVal35[j]) ? parseInt(tmpVal35[j]) : 0;
+                sum35 += val35[j];
+                val36[j] += !ValidateUtil.isValidTextEmpty(tmpVal36[j]) ? parseInt(tmpVal36[j]) : 0;
+                sum36 += val36[j];
+                val37[j] += !ValidateUtil.isValidTextEmpty(tmpVal37[j]) ? parseInt(tmpVal37[j]) : 0;
+                sum37 += val37[j];
+                val38[j] += !ValidateUtil.isValidTextEmpty(tmpVal38[j]) ? parseInt(tmpVal38[j]) : 0;
+                sum38 += val38[j];
+            }
+
+            calUserData.listObject[0].listAnalytics[0].listValue = val10;
+            calUserData.listObject[0].listAnalytics[0].sum = sum10;
+            calUserData.listObject[0].listAnalytics[1].listValue = val20;
+            calUserData.listObject[0].listAnalytics[1].sum = sum20;
+            calUserData.listObject[0].listAnalytics[2].listValue = val30;
+            calUserData.listObject[0].listAnalytics[2].sum = sum30
+
+            calUserData.listObject[1].listAnalytics[0].listValue = val11;
+            calUserData.listObject[1].listAnalytics[0].sum = sum11;
+            calUserData.listObject[1].listAnalytics[1].listValue = val21;
+            calUserData.listObject[1].listAnalytics[1].sum = sum21;
+            calUserData.listObject[1].listAnalytics[2].listValue = val31;
+            calUserData.listObject[1].listAnalytics[2].sum = sum31;
+
+            calUserData.listObject[2].listAnalytics[0].listValue = val12;
+            calUserData.listObject[2].listAnalytics[0].sum = sum12;
+            calUserData.listObject[2].listAnalytics[1].listValue = val22;
+            calUserData.listObject[2].listAnalytics[1].sum = sum22;
+            calUserData.listObject[2].listAnalytics[2].listValue = val32;
+            calUserData.listObject[2].listAnalytics[2].sum = sum32;
+
+            calUserData.listObject[3].listAnalytics[0].listValue = val13;
+            calUserData.listObject[3].listAnalytics[0].sum = sum13;
+            calUserData.listObject[3].listAnalytics[1].listValue = val23;
+            calUserData.listObject[3].listAnalytics[1].sum = sum23;
+            calUserData.listObject[3].listAnalytics[2].listValue = val33;
+            calUserData.listObject[3].listAnalytics[2].sum = sum33;
+
+            calUserData.listObject[4].listAnalytics[0].listValue = val14;
+            calUserData.listObject[4].listAnalytics[0].sum = sum14;
+            calUserData.listObject[4].listAnalytics[1].listValue = val24;
+            calUserData.listObject[4].listAnalytics[1].sum = sum24;
+            calUserData.listObject[4].listAnalytics[2].listValue = val34;
+            calUserData.listObject[4].listAnalytics[2].sum = sum34;
+
+            calUserData.listObject[5].listAnalytics[0].listValue = val15;
+            calUserData.listObject[5].listAnalytics[0].sum = sum15;
+            calUserData.listObject[5].listAnalytics[1].listValue = val25;
+            calUserData.listObject[5].listAnalytics[1].sum = sum25;
+            calUserData.listObject[5].listAnalytics[2].listValue = val35;
+            calUserData.listObject[5].listAnalytics[2].sum = sum35;
+
+            calUserData.listObject[6].listAnalytics[0].listValue = val16;
+            calUserData.listObject[6].listAnalytics[0].sum = sum16;
+            calUserData.listObject[6].listAnalytics[1].listValue = val26;
+            calUserData.listObject[6].listAnalytics[1].sum = sum26;
+            calUserData.listObject[6].listAnalytics[2].listValue = val36;
+            calUserData.listObject[6].listAnalytics[2].sum = sum36;
+
+            calUserData.listObject[7].listAnalytics[0].listValue = val17;
+            calUserData.listObject[7].listAnalytics[0].sum = sum17;
+            calUserData.listObject[7].listAnalytics[1].listValue = val27;
+            calUserData.listObject[7].listAnalytics[1].sum = sum27;
+            calUserData.listObject[7].listAnalytics[2].listValue = val37;
+            calUserData.listObject[7].listAnalytics[2].sum = sum37;
+
+            calUserData.listObject[8].listAnalytics[0].listValue = val18;
+            calUserData.listObject[8].listAnalytics[0].sum = sum18;
+            calUserData.listObject[8].listAnalytics[1].listValue = val28;
+            calUserData.listObject[8].listAnalytics[1].sum = sum28;
+            calUserData.listObject[8].listAnalytics[2].listValue = val38;
+            calUserData.listObject[8].listAnalytics[2].sum = sum38;
+        }
+        calUserData.groupName = groupName;
+        calUserData.backgroudColor = '#953735';
+        calUserData.mode = "CAL";
+        var lengthGroupData = $scope.model.form.listGroupData.length;
+        i = 0;
+        for(;i < lengthGroupData; i++){
+            var groupData = $scope.model.form.listGroupData[i];
+            if(groupCd == groupData.budgetCd){
+                calUserData.budgetCd = groupCd;
+                $scope.model.form.listUserData.splice(0, -1, calUserData);
+                $scope.model.hidden.listCalUserData = calUserData;
+                break;
+            }
+        }
+    };
+
+    /**
+     * 部署を複写
+     */
+    $scope.copyByUser = function(groupCd){
+        var lengthGroupData = $scope.model.form.listGroupData.length;
+        var i = 0;
+        for(;i < lengthGroupData; i++){
+            var groupData = $scope.model.form.listGroupData[i];
+            if(groupCd == groupData.budgetCd){
+                var calUserData = angular.copy($scope.model.hidden.listCalUserData);
+                groupData.listObject[0].listAnalytics[0].listValue = calUserData.listObject[0].listAnalytics[0].listValue;
+                groupData.listObject[1].listAnalytics[0].listValue = calUserData.listObject[1].listAnalytics[0].listValue;
+                groupData.listObject[2].listAnalytics[0].listValue = calUserData.listObject[2].listAnalytics[0].listValue;
+                groupData.listObject[3].listAnalytics[0].listValue = calUserData.listObject[3].listAnalytics[0].listValue;
+                groupData.listObject[4].listAnalytics[0].listValue = calUserData.listObject[4].listAnalytics[0].listValue;
+                groupData.listObject[5].listAnalytics[0].listValue = calUserData.listObject[5].listAnalytics[0].listValue;
+                groupData.listObject[6].listAnalytics[0].listValue = calUserData.listObject[6].listAnalytics[0].listValue;
+                groupData.listObject[7].listAnalytics[0].listValue = calUserData.listObject[7].listAnalytics[0].listValue;
+                groupData.listObject[8].listAnalytics[0].listValue = calUserData.listObject[8].listAnalytics[0].listValue;
+                break;
+            }
+        }
+
+    };
+
+    /**
+     * calculate the height of tables
+     **/
+     $scope.calHeight= function(){
+         var length = $scope.model.form.listData[0].listObject.length;
+         $scope.model.hidden.heightOneRow = 30;
+         $scope.model.hidden.itemHeight = length*90;
+    };
+
+    /**
+     * calculate the height of tables
+     **/
+     $scope.calHeight1= function(){
+         var length = $scope.model.form.listGroupData[0].listObject.length;
+         $scope.model.hidden.heightOneRowGroup = 30;
+         $scope.model.hidden.itemHeightGroup = length*90;
+    };
+
+    /**
+     * check row is last row
+     */
+    $scope.lastRow = function(plabel, clabel){
+        if(!ValidateUtil.isValidTextEmpty(plabel) && !ValidateUtil.isValidTextEmpty(clabel)){
+            if(plabel.indexOf('EXEX03') !== -1 && clabel.indexOf('O') !== -1 ){
+                return true;
+            }
+        }
+    };
+
+    $scope.lastParentRow = function(plabel){
+        if(!ValidateUtil.isValidTextEmpty(plabel)){
+            if(plabel.indexOf('EXEX03') !== -1){
+                return true;
+            }
+        }
+    };
+
+    /**hidden input text*/
+    $scope.hiddenCol = function (label,index,mode) {
+        if(!ValidateUtil.isValidTextEmpty(mode)){
+            return true;
+        }else{
+            if(label.indexOf('P') === -1 ){
+                return true;
+            }else{
+               return false;
+            }
+        }
+    };
+
+    /**
+     * 表頭を変化
+     */
+    $scope.changeAggregateType = function(){
+        $scope.titlePanel = '　';
+        var aggregateType = $scope.model.form.search.aggregateType;
+        if(!ValidateUtil.isValidTextEmpty(aggregateType)){
+            if(aggregateType.toString() == '1'){
+                $scope.calendarType = 3;
+            }else if(aggregateType.toString() == '2'){
+                $scope.calendarType = 4;
+                $scope.changeMonth();
+            }
+        }
+
+        $scope.model.form.search.yearMonthStart = DateUtils.getFirstYYYYMM();
+        $scope.model.form.search.yearMonthEnd = DateUtils.getLastYYYYMM();
+        var sessionLogin = angular.fromJson(sessionStorage.getItem("session"));
+        if(!ValidateUtil.isValidTextEmpty(sessionLogin)){
+            $scope.model.form.search.month = sessionLogin.accountClosingMonth;
+            $scope.changeMonth();
+        }
+        $scope.model.form.search.aggregateDate = {
+            startDate: $filter('date')(DateUtils.getCurrentDatePreviousMonthForString(), "yyyy/MM/dd"),
+            endDate: $filter('date')(DateUtils.getCurrentDateForString(), "yyyy/MM/dd")
+        };
+    };
+
+    /**
+     * logResize
+     */
+    $scope.logResize = function () {
+        if(!ValidateUtil.isValidTextEmpty($scope.model.form.listData)){
+            $scope.calHeight();
+        }
+        if(!ValidateUtil.isValidTextEmpty($scope.model.form.listGroupData)){
+            $scope.calHeight1();
+        }
+        $scope.calTabelWidth();
+    };
+
+    /**
+     * 表頭を変化
+     */
+    $scope.changeAnkenBetsu = function(){
+        var ankenBetsu = $scope.model.form.search.ankenBetsu;
+        if(!ValidateUtil.isValidTextEmpty(ankenBetsu)){
+            ankenBetsu = ankenBetsu.toString();
+            $scope.model.hidden.ankenBetsuLength = 1;
+            if(ankenBetsu === '4'){
+                $scope.model.hidden.ankenBetsuLength = 2;
+            }
+        }else{
+            $scope.model.hidden.ankenBetsuLength = 0;
+        }
+    };
+
+
+  //Hide row when check
+    $scope.hideLastRow = function(index){
+        if(index != ""){
+           return true;
+        }else{
+          return false;
+        }
+    };
+
+    /**変更*/
+    $scope.update = function(){
+        dialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('S00004')).result.then(function(btn){
+
+            /**全体*/
+            $scope.listSalesPlan = [];
+            $scope.listActivityPlan = [];
+            if(!ValidateUtil.isValidTextEmpty($scope.model.form.listData) && $scope.model.form.listData.length > 0){
+                $scope.listSalesPlan = $scope.createSalesUpdateData($scope.model.form.listData, 'main');
+                $scope.listActivityPlan = $scope.createActivityUpdateData($scope.model.form.listData, 'main');
+            }
+
+
+            /**部署*/
+            $scope.listGroupSalesPlan = [];
+            $scope.listGroupActivityPlan = [];
+            if(!ValidateUtil.isValidTextEmpty($scope.model.form.listGroupData) && $scope.model.form.listGroupData.length > 0){
+                $scope.listGroupSalesPlan = $scope.createSalesUpdateData($scope.model.form.listGroupData, 'group');
+                $scope.listGroupActivityPlan = $scope.createActivityUpdateData($scope.model.form.listGroupData, 'group');
+            }
+
+            /**ユーザー*/
+            $scope.listUserSalesPlan = [];
+            $scope.listUserActivityPlan = [];
+            if(!ValidateUtil.isValidTextEmpty($scope.model.form.listUserData) && $scope.model.form.listUserData.length > 0){
+                $scope.listUserSalesPlan = $scope.createSalesUpdateData($scope.model.form.listUserData, 'user');
+                $scope.listUserActivityPlan = $scope.createActivityUpdateData($scope.model.form.listUserData, 'user');
+            }
+
+            var paramSession = angular.fromJson(sessionStorage.getItem("budgetSearch"));
+
+            var param = {listSalesPlan: $scope.listSalesPlan,
+                         listActivityPlan: $scope.listActivityPlan,
+                         listGroupSalesPlan: $scope.listGroupSalesPlan,
+                         listGroupActivityPlan: $scope.listGroupActivityPlan,
+                         listUserSalesPlan: $scope.listUserSalesPlan,
+                         listUserActivityPlan: $scope.listUserActivityPlan,
+                         aggregateType : !ValidateUtil.isValidTextEmpty(paramSession.aggregateType) ? paramSession.aggregateType.toString() : '',
+                         yearMonthStart: paramSession.yearMonthStart,
+                         yearMonthEnd: paramSession.yearMonthEnd,
+                         yearStart:  paramSession.yearStart,
+                         yearEnd: paramSession.yearEnd,
+                         listHeader : paramSession.listHeader
+                        };
+
+            serverService.doPost('BudgetMaintenance/update',param).then(
+                /* success function */
+                function(result) {
+                    var success = result.data.success;
+                    if(!ValidateUtil.isValidTextEmpty(success)){
+                        dialogsService.showNotify(Messages.getMessage('title.info'), success).result.then(function(btn){
+                            $scope.search();
+                            if(!ValidateUtil.isValidTextEmpty($scope.model.form.listGroupData)){
+                                $scope.searchByGroup();
+                            }
+//                            if(!ValidateUtil.isValidTextEmpty($scope.model.form.listUserData)){
+//                                $scope.searchByUser();
+//                            }
+                        });
+                    }
+                },
+                /* error function */
+                function(error) {}
+           );
+
+        },function(btn){ });
+    };
+
+
+    /**
+     * create sales plan update data
+     */
+    $scope.createSalesUpdateData = function(listData, mode){
+        var listTmp = angular.copy(listData);
+        var i = 0;
+        var length = listTmp.length;
+        var listSalesPlan = [];
+        for(;i < length; i++){
+            if(!ValidateUtil.isValidTextEmpty(listTmp[i].mode) && listTmp[i].mode === 'CAL'){
+                continue;
+            }
+            if(!ValidateUtil.isValidTextEmpty(listTmp[i].parentCd) && mode === 'group'){
+                continue;
+            }
+            var mainCd = listTmp[i].budgetCd;
+            var j = 0;
+            for(;j < 3; j++){
+                var listAnalytics = listTmp[i].listObject[j].listAnalytics;
+                var listAnalyticsTmp = [];
+                angular.forEach(listAnalytics, function(value, key) {
+                    if(value.label.indexOf($scope.model.hidden.labelPlan) !== -1){
+                        listAnalyticsTmp.push(value);
+                    }
+                });
+                listTmp[i].listObject[j].objectUnit = mainCd;
+                listTmp[i].listObject[j].listAnalytics = listAnalyticsTmp;
+                listSalesPlan.push(listTmp[i].listObject[j]);
+            }
+        }
+
+        return listSalesPlan;
+
+    };
+
+    /**
+     * create activity plan update data
+     */
+    $scope.createActivityUpdateData = function(listData, mode){
+        var listTmp = angular.copy(listData);
+        var i = 0;
+        var length = listTmp.length;
+        var listActivityPlan = [];
+        for(;i < length; i++){
+            if(!ValidateUtil.isValidTextEmpty(listTmp[i].mode) && listTmp[i].mode === 'CAL'){
+                continue;
+            }
+            if(!ValidateUtil.isValidTextEmpty(listTmp[i].parentCd) && mode === 'group'){
+                continue;
+            }
+            var j = 3;
+            var mainCd = listTmp[i].budgetCd;
+            var lengthObject = listTmp[i].listObject.length;
+            for(;j < lengthObject; j++){
+                var listAnalytics = listTmp[i].listObject[j].listAnalytics;
+                var listAnalyticsTmp = [];
+                angular.forEach(listAnalytics, function(value, key) {
+                    if(value.label.indexOf($scope.model.hidden.labelPlan) !== -1){
+                        listAnalyticsTmp.push(value);
+                    }
+                });
+                listTmp[i].listObject[j].objectUnit = mainCd;
+                listTmp[i].listObject[j].listAnalytics = listAnalyticsTmp;
+                listActivityPlan.push(listTmp[i].listObject[j]);
+            }
+        }
+        return listActivityPlan;
+    };
+
+    /**clear 全体*/
+    $scope.clearData = function(){
+        if(!ValidateUtil.isValidTextEmpty($scope.model.form.listData) && $scope.model.form.listData.length > 0){
+            var i = 0;
+            var listData = $scope.model.form.listData;
+            var length = listData.length;
+            for(;i < length; i++){
+                var j = 0;
+                var lengthObject = listData[i].listObject.length;
+                for(;j < lengthObject; j++){
+                    var listAnalytics = listData[i].listObject[j].listAnalytics;
+                    angular.forEach(listAnalytics, function(value, key) {
+                        if(value.label.indexOf($scope.model.hidden.labelPlan) !== -1){
+                            var l = 0;
+                            for(;l < 12; l++){
+                                value.listValue[l] = 0;
+                            }
+                        }
+                    });
+                }
+            }
+        }
+    };
+
+    /**clear 部署*/
+    $scope.clearGroupData = function(groupCd){
+        if(!ValidateUtil.isValidTextEmpty($scope.model.form.listGroupData) && $scope.model.form.listGroupData.length > 0){
+            var i = 0;
+            var listGroupData = $scope.model.form.listGroupData;
+            var length = listGroupData.length;
+            for(;i < length; i++){
+                var groupData = $scope.model.form.listGroupData[i];
+                if(groupCd == groupData.budgetCd){
+                    var j = 0;
+                    var lengthObject = listGroupData[i].listObject.length;
+                    for(;j < lengthObject; j++){
+                        var listAnalytics = listGroupData[i].listObject[j].listAnalytics;
+                        angular.forEach(listAnalytics, function(value, key) {
+                            if(value.label.indexOf($scope.model.hidden.labelPlan) !== -1){
+                                var l = 0;
+                                for(;l < 12; l++){
+                                    value.listValue[l] = 0;
+                                }
+                            }
+                        });
+                    }
+                }
+            }
+        }
+    };
+
+    /**change text value*/
+    $scope.changeTextValue = function(index, listValue, budgetCd,objectSno){
+        var val = angular.element('#planVal_' + budgetCd + '_' + objectSno + '_'+ index).val().replace(/,/g, '');
+        listValue[index] = val;
+    };
+
+    /**back to budget control*/
+    $scope.backBudgetControl = function(){
+        routeService.gotoUrl('BudgetControl');
+    };
+    $scope.$on('divResize', function() {
+        $scope.calTabelWidth();
+    });
+
+}]);

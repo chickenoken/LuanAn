@@ -1,0 +1,68 @@
+@CHARSET "UTF-8";
+
+textarea {
+  border-radius: 4px 4px 4px 4px;
+  resize:none;
+}
+
+.btn-area {
+  color: white;
+  background-color: #666666;
+  border-color: #666666;
+  padding: 8px 0px 6px 12px;
+  border-radius: 3px 3px 3px 3px;
+  cursor: default !important;
+}
+.label-btn{
+  cursor: default !important;
+}
+
+.agreement{
+    border: 1px solid #BBB8B8;
+    padding: 5px 40px 0px 40px;
+}
+
+.agreement-text{
+  padding: 5px 3px;
+  text-align: center;
+  background-color: #F2F2F2;
+}
+
+.label-btn:HOVER{
+  cursor: default !important;
+  color: white;
+    background-color: #d9534f !important;
+    border-color:  #d9534f !important;
+}
+
+.about_link ul {
+  list-style-type: none;
+  padding: 2px 0;
+}
+
+.about_link li {
+  display: inline;
+  padding: 7px;
+}
+
+.about_link li a{
+  text-decoration: underline;
+}
+
+.content-separator-line{
+  margin-top: 5px;
+  margin-bottom: 5px;
+}
+
+.page-content-wrapper .page-content, .exex-sidebar-closed .page-content-wrapper .page-content {
+  transition: transform 0s ease-in-out, margin 0s ease-in-out !important;
+  margin-left: 0px !important;
+}
+.exex-text-align {
+  text-align: right;
+}
+@media only screen and (max-width: 993px) {
+  .exex-text-align{
+    text-align: start !important;
+  }
+}

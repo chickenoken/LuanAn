@@ -1,0 +1,166 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision: 1.0 $  $Date:  $
+ * @author quang-tung
+ */
+
+exexSMSApp.factory('SalDepositPlanListModel', [ 'BaseModel', function(BaseModel) {
+
+    var model = BaseModel.getInstance();
+    model.form = {
+        search : {
+            paymentMaturityFrom : '',
+            paymentMaturityTo : '',
+            billAddressName : '',
+            custName : '',
+            projectSno: '',
+            salesSno: '',
+            exportCsv : ''
+        },
+        listL020001 : []
+    };
+
+    model.hidden = {
+        csvRequired : true,
+        isSubmitted : false
+    };
+    return model;
+} ]);
+
+exexSMSApp.controller('salDepositPlanListCtrl',
+        ['$scope', 'RouteService', 'DialogsService', 'SalDepositPlanListModel', 'Messages', 'ServerService',
+            function($scope, RouteService, DialogsService, SalDepositPlanListModel, Messages, ServerService){
+    $scope.model = SalDepositPlanListModel;
+
+    $scope.init = function(model){
+        // 初期表示
+        ServerService.doPost('SalDepositPlanList/getInit', null).then(
+            function(okResult) {
+                var error = okResult.data.failed;
+                if(!ValidateUtil.isValidTextEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                }
+                $scope.model.form.listL010021 = okResult.data.listL010021;
+
+                var sessionSearch = angular.fromJson(sessionStorage.getItem("salDepositPlanListSession"));
+                if(!StringUtils.isEmpty(sessionSearch)){
+                    $scope.model.currentPage = sessionSearch.currentPage;
+                    $scope.model.form.search = sessionSearch;
+                }
+                $scope.search($scope.model.form.search, $scope.model.currentPage);
+            }
+        );
+    };
+
+
+    $scope.search = function(param, page){
+        $scope.model.hidden.isSubmitted = false;
+        $scope.model.hidden.csvRequired = false;
+        var params = {
+            paymentMaturityFrom : !ValidateUtil.isValidTextEmpty(param.paymentMaturityFrom) ? new Date(param.paymentMaturityFrom) : "",
+            paymentMaturityTo : !ValidateUtil.isValidTextEmpty(param.paymentMaturityTo) ? new Date(param.paymentMaturityTo) : "",
+            billAddressName : param.billAddressName,
+            custName : param.custName,
+            projectSno: param.projectSno,
+            salesSno: param.salesSno
+        };
+
+        sessionStorage.setItem("salDepositPlanListSession",JSON.stringify(params));
+        ServerService.doPost('SalDepositPlanList/search', params).then(
+            function(okResult) {
+                var error =  okResult.data.failed;
+                var warning =  okResult.data.warning;
+                if(!ValidateUtil.isValidTextEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                }else if(!ValidateUtil.isValidTextEmpty(warning)){
+                    DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                    return;
+                }
+                $scope.model.form.salDepositPlanList = okResult.data.salDepositPlanList;
+                // Table Paging
+                var length = $scope.model.form.salDepositPlanList.length;
+                $scope.model.currentPage = !StringUtils.isEmpty(page) ? page : 1; //current page
+                $scope.model.entryLimit = 20; //max no of items to display in a page
+                $scope.model.number = 20;
+                $scope.model.filteredItems = length; //Initially for no filter
+                $scope.model.totalItems = length;
+                // End Table Paging
+                $scope.model.hidden.csvRequired = true;
+
+                // add colresizable to table
+                setTimeout(function(){
+                    $scope.setColResizable();
+                });
+            }
+        );
+    };
+
+    $scope.init();
+
+    /**
+     * goToEstimateDetails()
+     */
+    $scope.goToDepositControl = function(row){
+        var param = {
+            billaddressName: row.billaddressName,
+            billaddressNo: row.billaddressNo,
+            paymentMaturityFrom: row.paymentMaturity,
+            paymentMaturityTo: row.paymentMaturity
+        };
+        if(row.billType == '1'){
+            param.billMonth = row.billMonth;
+        }
+        sessionStorage.setItem("salDepositControl", JSON.stringify(param));
+        RouteService.gotoUrl('SalDepositControl');
+    };
+
+    // set colResizable
+    $scope.setColResizable = function(){
+        // remove JCLRgrips if having
+        $('.JCLRgrips').remove();
+
+        angular.element('#tableSalDepositPlanList').colResizable({
+            liveDrag: true,
+            postbackSafe: true,
+            useLocalStorage: true
+        });
+    }
+
+    $scope.exportCSV = function(params, formInvalid){
+        $scope.model.hidden.isSubmitted = true;
+        $scope.model.hidden.csvRequired = true;
+        if (formInvalid) {
+            return;
+        }
+        var param = {
+            paymentMaturityFrom : !ValidateUtil.isValidTextEmpty(params.paymentMaturityFrom) ? new Date(params.paymentMaturityFrom) : "",
+            paymentMaturityTo : !ValidateUtil.isValidTextEmpty(params.paymentMaturityTo) ? new Date(params.paymentMaturityTo) : "",
+            billAddressName : params.billAddressName,
+            custName : params.custName,
+            projectSno: params.projectSno,
+            salesSno: params.salesSno
+        };
+
+        var fileName = $("#salDepositPlanListLabel").text() + DateUtils.getYYYYMMDD(new Date());
+        var fileType = '.xlsx';
+        var limit = 10000;
+        if($scope.model.totalItems > limit){
+            DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00329', limit.toString()));
+            return;
+        }
+        ServerService.doDownload('/SalDepositPlanList/exportCsv',  param, 'application/vnd.ms-excel', fileName + fileType);
+    };
+
+    $scope.$watch('model.currentPage',function(newVal ,oldVal){
+        if(!StringUtils.isEmpty(newVal)){
+            var sessionSearch = SessionUtils.prepareSession(sessionStorage.getItem('salDepositPlanListSession'));
+            sessionSearch.currentPage = newVal;
+            sessionStorage.setItem("salDepositPlanListSession",JSON.stringify(sessionSearch));
+        }
+    });
+}]);

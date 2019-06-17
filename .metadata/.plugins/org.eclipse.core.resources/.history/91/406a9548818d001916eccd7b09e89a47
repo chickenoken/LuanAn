@@ -1,0 +1,16 @@
+var app = angular.module("myApp", []);
+
+app.controller("myCtrl",  ['$scope', '$http', '$filter','$rootScope',
+    function($scope, $http, $filter, $rootScope){
+
+    $scope.test = function(){
+        $rootScope.setLoading(true);
+        $http({
+        method: 'POST',
+        url: 'login/dangNhap'}).then(
+            function (response){
+                var a = response;
+             },function (error){
+        });
+    }
+}]);

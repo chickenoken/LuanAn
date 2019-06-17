@@ -1,0 +1,11 @@
+package org.planning.net.logic;
+
+import java.util.List;
+
+import org.planning.net.dto.LoginDto;
+
+public interface LoginLogic {
+
+	public List<LoginDto> getList() throws Exception;
+
+}

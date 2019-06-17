@@ -1,0 +1,13 @@
+package org.planning.net.dto;
+
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter
+@Setter
+public class Login {
+
+	private String maNhanVien;
+
+	private String tenNhanVien;
+}

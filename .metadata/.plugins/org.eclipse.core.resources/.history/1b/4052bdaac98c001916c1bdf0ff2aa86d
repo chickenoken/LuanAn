@@ -1,0 +1,103 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @author Quang-Thien
+ * @version $Revision:  $  $Date:  $
+ */
+'use strict';
+
+/*========SfaPPMDialogService========*/
+exexSMSApp.service('SfaPPMDialogService', ['$q', 'ServerService',function ($q, ServerService) {
+    var _self = this;
+
+    _self.initData = function(param) {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('SfaPPMDialog/getInit', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    _self.getSgtUserByGroupCd = function(param) {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('SfaPPMDialog/getSgtUserByGroupCd', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    _self.initDataPGroup = function(param) {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('SfaPPMDialog/initDataPGroup', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    _self.selectUserByGroupCdPGroup = function(param) {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('SfaPPMDialog/selectUserByGroupCdPGroup', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+}]);
+
+
+/*========SfaPPMIconService========*/
+exexSMSApp.service('SfaPPMIconService', ['$q', 'ServerService',function ($q, ServerService) {
+    var _self = this;
+
+    _self.initData = function(param) {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('MstIconManagement/getInit', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+}]);
+

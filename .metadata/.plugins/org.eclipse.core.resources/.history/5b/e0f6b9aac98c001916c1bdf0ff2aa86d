@@ -1,0 +1,221 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision:  $  $Date:  $
+ * @author : quang-tung
+ */
+'use strict';
+
+exexSMSApp.factory('ScheduleSettingModel', [ 'BaseModel', function(BaseModel) {
+
+    var model = BaseModel.getInstance();
+    model.form = {
+            scheduleSetting : {
+                repeatType: '',
+                repeatInterval: '',
+                repeatFromDate: '',
+                repeatToDate: '',
+                repeatDates: ''
+            },
+            listS020007 : [],
+            listInterval : [{code: "1",codeName: "1"},{code: "2",codeName: "2"},{code: "3",codeName: "3"},{code: "4",codeName: "4"},{code: "5",codeName: "5"},
+                            {code: "6",codeName: "6"},{code: "7",codeName: "7"},{code: "8",codeName: "8"},{code: "9",codeName: "9"},{code: "10",codeName: "10"},
+                            {code: "11",codeName: "11"},{code: "12",codeName: "12"},{code: "13",codeName: "13"},{code: "14",codeName: "14"},{code: "15",codeName: "15"},
+                            {code: "16",codeName: "16"},{code: "17",codeName: "17"},{code: "18",codeName: "18"},{code: "19",codeName: "19"},{code: "20",codeName: "20"},
+                            {code: "21",codeName: "21"},{code: "22",codeName: "22"},{code: "23",codeName: "23"},{code: "24",codeName: "24"},{code: "25",codeName: "25"},
+                            {code: "26",codeName: "26"},{code: "27",codeName: "27"},{code: "28",codeName: "28"},{code: "29",codeName: "29"},{code: "30",codeName: "30"}]
+    };
+    model.hidden = {
+            firstRepeatDate: '',
+            lastRepeatDate: '',
+            repeatTypeName: '',
+            isSubmited: false
+    };
+    return model;
+}]);
+
+exexSMSApp.service('ScheduleSettingService', ['$q','ServerService', function($q, ServerService){
+    var _self = this;
+    _self.initData = function(param){
+        var deferred = $q.defer();
+        ServerService
+            .doPost('ScheduleSetting/getInit', param)
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+        return deferred.promise;
+    };
+}]);
+
+exexSMSApp.controller('scheduleSettingCtrl',
+        ['$scope', '$uibModalInstance','$timeout','$filter', 'data', 'DialogsService', 'ScheduleSettingService','ScheduleSettingModel', 'ScheduleControlModel',
+         function($scope, $uibModalInstance, $timeout, $filter, data, DialogsService, ScheduleSettingService, ScheduleSettingModel, ScheduleControlModel) {
+
+    $scope.model = ScheduleSettingModel;
+    $scope.modelScheduleControl = ScheduleControlModel;
+
+    $scope.init = function(){
+
+        var scheduleSetting = angular.fromJson(sessionStorage.getItem("scheduleSetting"));
+        if(!ValidateUtil.isValidTextEmpty(scheduleSetting)){
+            $scope.model.form.scheduleSetting.repeatType =  scheduleSetting.repeatType;
+            $scope.model.form.scheduleSetting.repeatFromDate = $filter('date')(scheduleSetting.repeatFromDate, "yyyy/MM/dd");
+            if($scope.model.form.scheduleSetting.repeatType == '0'){
+                $timeout(function() {
+                    var dateListTmp = [];
+                    var listRepeatDate = scheduleSetting.repeatDates.split(',').sort();
+                    if(listRepeatDate.indexOf($scope.model.form.scheduleSetting.repeatFromDate) == -1){
+                        listRepeatDate.push($scope.model.form.scheduleSetting.repeatFromDate);
+                    }
+                    angular.forEach(listRepeatDate, function(date, i){
+                        dateListTmp.push(new Date(date));
+                    });
+                    $scope.model.form.scheduleSetting.repeatDates = listRepeatDate.toString();
+                    $('.multi-date').datepicker('setDatesDisabled', [$scope.model.form.scheduleSetting.repeatFromDate]);
+                    $('.multi-date').datepicker('setDates', dateListTmp);
+                }, 100);
+            }else{
+                $scope.model.form.scheduleSetting.repeatType = scheduleSetting.repeatType;
+                $scope.model.form.scheduleSetting.repeatDates = '';
+                $scope.model.form.scheduleSetting.repeatToDate = $filter('date')(scheduleSetting.repeatToDate, "yyyy/MM/dd");
+                $scope.model.form.scheduleSetting.repeatInterval = scheduleSetting.repeatInterval;
+            };
+            $scope.getInit($scope.model.form.scheduleSetting.repeatType);
+        }else{
+            $scope.model.form.scheduleSetting.repeatFromDate = $filter('date')(data.scheduleStartYmd, "yyyy/MM/dd");
+            if($scope.model.form.scheduleSetting.repeatType == '0'){
+                $timeout(function() {
+                    var dateListTmp = [];
+                    $scope.model.form.scheduleSetting.repeatDates = $scope.model.form.scheduleSetting.repeatFromDate;
+                    var listRepeatDate = $scope.model.form.scheduleSetting.repeatDates.split(',').sort();
+                    angular.forEach(listRepeatDate, function(date, i){
+                        dateListTmp.push(new Date(date));
+                    });
+                    $scope.model.form.scheduleSetting.repeatDates = listRepeatDate.toString();
+                    $('.multi-date').datepicker('setDatesDisabled', [$scope.model.form.scheduleSetting.repeatFromDate]);
+                    $('.multi-date').datepicker('setDates', dateListTmp);
+                }, 100);
+            }else{
+                $scope.model.form.scheduleSetting.repeatType = '1';
+                $scope.model.form.scheduleSetting.repeatDates = '';
+                $scope.model.form.scheduleSetting.repeatToDate = '';
+                $scope.model.form.scheduleSetting.repeatInterval = '1';
+            };
+            $scope.getInit($scope.model.form.scheduleSetting.repeatType);
+        }
+    };
+
+    $scope.getInit = function(type) {
+        var param = {};
+        ScheduleSettingService.initData(param).then(
+            function(result) {
+                var error =  result.data.failed;
+                if(!ValidateUtil.isValidTextEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                };
+                $scope.model.form.listS020007 = result.data.listS020007;
+                $scope.onChangeRepeatType(type);
+            });
+    };
+
+    $scope.onChangeRepeatType = function(type){
+        angular.forEach($scope.model.form.listS020007, function(item, i){
+            if(item.code == type){
+                $scope.model.hidden.repeatTypeName = item.codeName;
+            }
+        });
+        if($scope.model.form.scheduleSetting.repeatType == '0'){
+            $timeout(function() {
+                var dateListTmp = [];
+                if($scope.model.form.scheduleSetting.repeatDates == ''){
+                    $scope.model.form.scheduleSetting.repeatDates = $scope.model.form.scheduleSetting.repeatFromDate;
+                }
+                var listRepeatDate = $scope.model.form.scheduleSetting.repeatDates.split(',').sort();
+                if(listRepeatDate.indexOf($scope.model.form.scheduleSetting.repeatFromDate) == -1){
+                    listRepeatDate.push($scope.model.form.scheduleSetting.repeatFromDate);
+                }
+                angular.forEach(listRepeatDate, function(date, i){
+                    dateListTmp.push(new Date(date));
+                });
+                $scope.model.form.scheduleSetting.repeatDates = listRepeatDate.toString();
+                $('.multi-date').datepicker('setDatesDisabled', [$scope.model.form.scheduleSetting.repeatFromDate]);
+                $('.multi-date').datepicker('setDates', dateListTmp);
+                $scope.model.hidden.firstRepeatDate = listRepeatDate[0];
+                $scope.model.form.scheduleSetting.repeatToDate = listRepeatDate.pop();
+            }, 100);
+        };
+
+    };
+
+    $scope.init();
+
+    $scope.close = function(){
+        $uibModalInstance.dismiss();
+    };
+
+    $scope.removeItem = function(index, item) {
+
+        //Remove date
+        var listRepeatDate = $scope.model.form.scheduleSetting.repeatDates.split(',').sort();
+        listRepeatDate.splice(index,1);
+        $scope.model.form.scheduleSetting.repeatDates = listRepeatDate.toString();
+        //Update active day calendar
+        var dateListTmp = [];
+        angular.forEach(listRepeatDate, function(date, i){
+            dateListTmp.push(new Date(date));
+        });
+        $('.multi-date').datepicker('setDates', dateListTmp);
+        $scope.model.hidden.firstRepeatDate = listRepeatDate[0];
+        $scope.model.form.scheduleSetting.repeatToDate = listRepeatDate.pop();
+    };
+
+
+    $scope.save = function(formInvalid, param) {
+        $scope.model.hidden.isSubmited = true;
+        if(formInvalid){
+            return;
+        };
+        if($scope.checkDates(param)){
+            return;
+        }
+        $scope.modelScheduleControl.hidden.repeatSetting = true;
+        var scheduleSetting = {
+                repeatType: param.repeatType,
+                repeatInterval: param.repeatInterval,
+                repeatFromDate: $scope.model.form.scheduleSetting.repeatFromDate,
+                repeatToDate: param.repeatToDate,
+                repeatDates: param.repeatDates
+        };
+        sessionStorage.setItem("scheduleSetting", JSON.stringify(scheduleSetting));
+        $uibModalInstance.dismiss();
+    };
+
+    $scope.$watch('model.form.scheduleSetting.repeatDates', function () {
+        if($scope.model.form.scheduleSetting.repeatType == '0'){
+            var listRepeatDate = [];
+            if(!ValidateUtil.isValidTextEmpty($scope.model.form.scheduleSetting.repeatDates)){
+                listRepeatDate = $scope.model.form.scheduleSetting.repeatDates.split(',').sort();
+            };
+            $scope.model.hidden.firstRepeatDate = listRepeatDate[0];
+            $scope.model.form.scheduleSetting.repeatToDate = listRepeatDate.pop();
+        }
+    });
+
+    $scope.checkDates = function(param){
+        var fromDate = new Date($scope.model.form.scheduleSetting.repeatFromDate);
+        var toDate = new Date(param.repeatToDate);
+        if(fromDate > toDate && $scope.model.form.scheduleSetting.repeatType != '0'){
+            DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W11015'));
+            return true;
+        }
+        return false;
+    };
+}]);
+

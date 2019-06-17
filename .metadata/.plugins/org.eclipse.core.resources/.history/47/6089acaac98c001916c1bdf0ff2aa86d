@@ -1,0 +1,897 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision:  $  $Date:  $
+ * @author : quang-tung
+ */
+'use strict';
+exexSMSApp.factory('ReceiveReservationControlModel', [ 'BaseModel', '$rootScope', function(BaseModel, $rootScope) {
+    var model = BaseModel.getInstance();
+    model.form = {
+          search:{
+              reservationSno : '',
+              reservationRecodeNo : '',
+              version : '',
+              searchIncludeMinusValidStock : false,
+              searchRcvDateFrom: '',
+              searchRcvDateTo : '',
+              searchCustName : '',
+              searchProjectSno : '',
+              searchProjectName: '',
+              searchDelPlanDateFrom : '',
+              searchDelPlanDateTo : '',
+              searchRcvSno: '',
+              searchRcvName: '',
+              searchStockDateFrom : '',
+              searchStockDateTo : '',
+              searchStockSno: '',
+              searchStockaddressNo : '',
+              searchItemName : '',
+              searchItemCd: '',
+              searchItemJanCd: '',
+              searchWarehouseNo: '',
+              remark : '',
+              keyOrder : [],
+              orderDirection : 'ASC',
+
+              reservationStatus: '10',
+              reservationStatusName: '',
+              documentStatus:'',
+              salesDocumentStatus : '',
+              createDate:'',
+              createUserName:'',
+              lastUpdDate:'',
+              lastUpdUserName:''
+          },
+          sales : {
+              controlCd :'',
+              salDate : '',
+              billPlanDate : '',
+              acceptDate : '',
+              delDate : '',
+              billSno : '',
+              taxType : '',
+              taxRate : ''
+          },
+          listResult : [],
+          listSortAscDesc : []
+    };
+
+    model.fileImport = {
+        fileData: '',
+        fileName : '',
+        fileType : '',
+        fileSize : '',
+        isFileChange :false
+    };
+
+    model.hidden = {
+        redirectUrl : 'ReceiveReservationList',
+        reservationStatus: '10',
+        salesDocumentStatus : '',
+        screenMode:'CREATE',
+        isEXEX03 : '',
+        groupDataType : '',
+        isSubmited : false,
+        isParentSubmited : false,
+        isExtendCtrl : false,
+        isShowBtnSales : true,
+        pPJM : false,
+        pPJMData : '',
+        businessCd: '',
+        documentStatus: ''
+    }
+    return model;
+}]);
+exexSMSApp.controller('ReceiveReservationControlCtrl',
+    ['$rootScope', '$scope', 'DialogsService', 'RouteService', 'ServerService', 'ReceiveReservationControlModel', 'HeaderModel', 'Messages', '$filter',
+     function($rootScope, $scope, DialogsService, RouteService, ServerService, ReceiveReservationControlModel, HeaderModel, Messages, $filter){
+
+    $scope.model = ReceiveReservationControlModel;
+    $scope.modelHeader = HeaderModel;
+    var projectInfo = angular.fromJson(sessionStorage.getItem("projectSno"));
+
+    $scope.getInit = function(){
+        ServerService.doPost('ReceiveReservationControl/loadInit', {}).then(
+            function(okResult) {
+                $scope.model.form.listL010013 = okResult.data.listL010013;
+                $scope.model.form.listMstStockaddress = okResult.data.listMstStockaddress;
+                $scope.model.form.listSort = okResult.data.listSort;
+                $scope.model.form.listMstTax = okResult.data.listMstTax;
+                $scope.model.form.listSortAscDesc = okResult.data.listSortAscDesc;
+                // $scope.model.form.search.keyOrder = ["TR.RCV_SNO", "TDR.ITEM_CD"];
+                $scope.model.form.search.keyOrder = ["TR.RCV_SNO"];
+            }
+        );
+    };
+
+    $scope.loadInitData = function(param){
+        ServerService
+            .doPost('ReceiveReservationControl/loadInitData', param)
+            .then(
+                function(okResult) {
+                    $scope.model.form.listL010013 = okResult.data.listL010013;
+                    $scope.model.form.listMstStockaddress = okResult.data.listMstStockaddress;
+                    $scope.model.form.listSort = okResult.data.listSort;
+                    $scope.model.form.listMstTax = okResult.data.listMstTax;
+                    $scope.model.form.listSortAscDesc = okResult.data.listSortAscDesc;
+
+                    $scope.model.form.listResult = okResult.data.listResult;
+                    $scope.model.form.search = okResult.data.result;
+                    // $scope.model.form.search.keyOrder = ["TR.RCV_SNO", "TDR.ITEM_CD"];
+                    $scope.model.form.search.keyOrder = ["TR.RCV_SNO"];
+                    $scope.model.form.search.orderDirection = 'ASC';
+                    $scope.model.hidden.reservationStatus = okResult.data.result.reservationStatus;
+
+                    // check show btn sales
+                    if($scope.model.form.listResult.length > 0 && $scope.isDiablesBtnSales() > 0){
+                        $scope.model.hidden.isShowBtnSales = false;
+                    }else{
+                        $scope.model.hidden.isShowBtnSales = true;
+                    }
+                },
+                function(errResult){});
+    };
+
+    $scope.orderData = function(){
+        var params = {
+                'reservationSno': $scope.model.form.search.reservationSno,
+                'recodeNo' : $scope.model.form.search.reservationRecodeNo,
+                'version' : $scope.model.form.search.version,
+                'keyOrder' : $scope.model.form.search.keyOrder,
+                'orderDirection' : $scope.model.form.search.orderDirection
+        };
+        ServerService
+            .doPost('ReceiveReservationControl/sortData', params)
+            .then(
+                    function(okResult) {
+                        $scope.model.form.listResult = okResult.data.listResult;
+                    },
+                    function(errResult){});
+    }
+
+    $scope.init = function(){
+
+        if(!$scope.model.hidden.isExtendCtrl){
+
+            var rcvReservation = angular.fromJson(sessionStorage.getItem("rcvReservation"));
+            if(!StringUtils.isEmpty(rcvReservation)){
+                $scope.model.hidden.screenMode = 'EDIT';
+                $scope.model.hidden.businessCd = rcvReservation.businessCd
+                $scope.model.hidden.documentStatus = rcvReservation.documentStatus;
+
+                $scope.model.hidden.redirectUrl = rcvReservation.redirectUrl;
+                var param = {
+                        reservationSno: rcvReservation.reservationSno,
+                        recodeNo : rcvReservation.recodeNo,
+                        version : rcvReservation.version,
+                        keyOrder : [],
+                        orderDirection : ""
+                };
+                $scope.loadInitData(param);
+            }else{
+                $scope.getInit();
+            }
+            $scope.model.form.search.searchRcvDateFrom = DateUtils.getPreviousMonth();
+            $scope.model.form.search.searchRcvDateTo = DateUtils.getCurrentDate();
+        }
+
+        if(!ValidateUtil.isValidTextEmpty(projectInfo) && !$scope.model.hidden.isExtendCtrl){
+            $scope.model.form.search.searchRcvDateFrom = '';
+            $scope.model.form.search.searchRcvDateTo = '';
+            $scope.model.form.search.searchProjectSno = projectInfo.projectSno;
+
+            // TODO check goto from process
+            if(!ValidateUtil.isValidTextEmpty(projectInfo.pPJM)){
+                $scope.model.hidden.pPJM = true;
+                $scope.model.hidden.redirectUrl = projectInfo.redirectUrl;
+                $scope.model.hidden.pPJMData = projectInfo;
+                if(!ValidateUtil.isValidTextEmpty(projectInfo.workNo)){
+                    $scope.model.hidden.screenMode = 'EDIT';
+                    var param = {
+                            reservationSno: projectInfo.workNo,
+                            recodeNo : projectInfo.recodeNo,
+                            version : 0,
+                            keyOrder : [],
+                            orderDirection : ""
+                    };
+                    $scope.loadInitData(param);
+                }
+            }
+            // TODO end
+        }
+
+    };
+
+    $scope.init();
+
+    /**
+     * convert search parameters
+     */
+    $scope.convertParamSearch = function(typeParam){
+        var param = angular.copy($scope.model.form.search);
+        if(!StringUtils.isEmpty(param.searchDelPlanDateFrom)){
+            param.searchDelPlanDateFrom = new Date(param.searchDelPlanDateFrom);
+        }else{
+            param.searchDelPlanDateFrom = null;
+        }
+        if(!StringUtils.isEmpty(param.searchDelPlanDateTo)){
+            param.searchDelPlanDateTo = new Date(param.searchDelPlanDateTo);
+        }else{
+            param.searchDelPlanDateTo = null;
+        }
+        if(!StringUtils.isEmpty(param.searchRcvDateFrom)){
+            param.searchRcvDateFrom = new Date(param.searchRcvDateFrom);
+        }else{
+            param.searchRcvDateFrom = null;
+        }
+        if(!StringUtils.isEmpty(param.searchRcvDateTo)){
+            param.searchRcvDateTo = new Date(param.searchRcvDateTo);
+        }else{
+            param.searchRcvDateTo = null;
+        }
+        if(!StringUtils.isEmpty(param.searchStockDateFrom)){
+            param.searchStockDateFrom = new Date(param.searchStockDateFrom);
+        }else{
+            param.searchStockDateFrom = null;
+        }
+        if(!StringUtils.isEmpty(param.searchStockDateTo)){
+            param.searchStockDateTo = new Date(param.searchStockDateTo);
+        }else{
+            param.searchStockDateTo = null;
+        }
+//        if(!StringUtils.isEmpty(param.keyOrder)){
+//            param.keyOrder = param.keyOrder.toString();
+//        }else{
+//            param.keyOrder = '';
+//        }
+
+        // TODO process
+        if(!ValidateUtil.isValidTextEmpty($scope.model.hidden.pPJMData) && ValidateUtil.isValidTextEmpty(typeParam)){
+            param.processPjmJson = $scope.model.hidden.pPJMData;
+        }
+        delete param.warehouseName;
+        delete param.reservationStatusName;
+        delete param.createDate;
+        delete param.createUserName;
+        delete param.lastUpdDate;
+        delete param.lastUpdUserName;
+        return param;
+    };
+
+    /*
+     * convert crud parameters
+     */
+    $scope.convertParamCrud = function(){
+        var param = angular.copy($scope.model.form.listResult);
+        angular.forEach(param, function(item, key){
+            item.groupDataType = $scope.model.hidden.groupDataType;
+
+            item.controlCd = $scope.model.form.sales.controlCd;
+            item.taxRate = $scope.model.form.sales.taxRate;
+            if(!StringUtils.isEmpty($scope.model.form.sales.salDate)){
+                item.salDate = new Date($scope.model.form.sales.salDate);
+            }else{
+                item.salDate = null;
+            }
+            if(!StringUtils.isEmpty($scope.model.form.sales.billPlanDate)){
+                item.billPlanDate = new Date($scope.model.form.sales.billPlanDate);
+            }else{
+                item.billPlanDate = null;
+            }
+            if(!StringUtils.isEmpty($scope.model.form.sales.acceptDate)){
+                item.acceptDate = new Date($scope.model.form.sales.acceptDate);
+            }else{
+                item.acceptDate = null;
+            }
+            if(!StringUtils.isEmpty($scope.model.form.sales.delDate)){
+                item.delDate = new Date($scope.model.form.sales.delDate);
+            }else{
+                item.delDate = null;
+            }
+
+            delete item.listItemUnit;
+        });
+        return param;
+    };
+
+    /**
+     * search
+     */
+    $scope.search = function(){
+
+        var param = $scope.convertParamSearch('search');
+        if('EDIT' === $scope.model.hidden.screenMode){
+            DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('S00043')).result.then(function(btn){
+                ServerService
+                .doPost('ReceiveReservationControl/search', param)
+                .then(
+                    function(okResult) {
+                        $scope.model.form.listResult = okResult.data.listResult;
+                    },
+                    function(errResult){});
+            },function(btn){});
+        }else{
+
+            ServerService
+                .doPost('ReceiveReservationControl/search', param)
+                .then(
+                    function(okResult) {
+                        $scope.model.form.listResult = okResult.data.listResult;
+                    },
+                    function(errResult){});
+        }
+    };
+
+//    /**
+//     * rounding number
+//     */
+//    $scope.rounding = function(value, rounding){
+//        if(!ValidateUtil.isValidTextEmpty(rounding)){
+//            if(rounding == 1){
+//                //ep: 5.2→5 (rounding up when number after, >5)
+//                value = Math.round(value);
+//            } else if(rounding == 0){
+//                //ep: 5.2→5
+//                if(value < 0){
+//                    value = Math.abs(value);
+//                    value = Math.floor(value);
+//                    value = value * (-1);
+//                } else {
+//                    value = Math.floor(value);
+//                }
+//            } else if(rounding == 2){
+//                //ep: 5.2→6
+//                value = Math.ceil(value);
+//            }
+//        }
+//        return value;
+//    };
+
+    /**
+     * calculator when change input 38
+     */
+    $scope.calcItemSum = function(row, item){
+        var totalMinUnitItemSum = 0;
+        angular.forEach(row.listDetail, function(tmp, key){
+            if(!StringUtils.isEmpty(tmp.reservationItemSum)){
+                tmp.minUnitItemSum = parseFloat(tmp.reservationItemSum) * parseFloat(tmp.reservationPackageQuantity);
+                totalMinUnitItemSum = parseFloat(totalMinUnitItemSum) + parseFloat(tmp.minUnitItemSum);
+            }else{
+                tmp.minUnitItemSum = 0;
+            }
+        });
+        row.totalMinUnitItemSum = totalMinUnitItemSum;
+        if(!StringUtils.isEmpty(item.reservationItemSum)){
+            item.minUnitItemSum = parseFloat(item.reservationItemSum) * parseFloat(item.reservationPackageQuantity);
+        }
+        if(!StringUtils.isEmpty(item.minUnitValidStockItemSum) && !StringUtils.isEmpty(item.minUnitItemSum)
+                && !StringUtils.isEmpty(item.serialCd) && item.itemType === '01'
+                && parseFloat(item.minUnitItemSum) > parseFloat(item.minUnitValidStockItemSum)){
+            DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W11002'));
+        }
+        // input 37
+        item.validStockItemSum = $rootScope.rounding(Math.round10(parseFloat(item.minUnitValidStockItemSum) / parseFloat(item.reservationPackageQuantity), -10),
+                $scope.modelHeader.login.currentUser.rounding);
+
+        // check show btn sales
+        if($scope.model.form.listResult.length > 0 && $scope.isDiablesBtnSales() > 0){
+            $scope.model.hidden.isShowBtnSales = false;
+        }else{
+            $scope.model.hidden.isShowBtnSales = true;
+        }
+    };
+
+    $scope.isDiablesBtnSales = function(){
+        var count = 0;
+        angular.forEach($scope.model.form.listResult, function(item, key){
+            angular.forEach(item.listDetail, function(subItem, subKey){
+                if(!StringUtils.isEmpty(subItem.reservationItemSum)){
+                    count++;
+                }
+            });
+        });
+        return count;
+    };
+
+    /**
+     * change item unit
+     */
+    $scope.changeItemUnit = function(parent, index, row, item){
+        var lineNo = angular.element('select[name="reservationItemUnit'+parent.toString() + index.toString()+'"] option:selected').attr('lineNo');
+        if(!StringUtils.isEmpty(item.serialCd)){
+            var param = {
+                    serialCd : item.serialCd,
+                    lineNo : lineNo,
+                    itemUnit : item.reservationItemUnit
+            }
+            ServerService
+                .doPost('SalDetailsControl/getItemByItemUnit', param)
+                .then(
+                    function(okResult) {
+                        var okResult = okResult.data;
+                        item.itemCost = okResult.itemCost;
+                        item.itemPrice = okResult.itemPrice;
+                        item.reservationPackageQuantity = okResult.packageQuantity;
+                        item.reservationItemUnitName = okResult.itemUnitName;
+                        if(!StringUtils.isEmpty(item.reservationItemSum)){
+                            item.minUnitItemSum = parseFloat(item.reservationItemSum) * parseFloat(item.reservationPackageQuantity);
+                        }
+                        // calculator total
+                        var totalMinUnitItemSum = 0;
+                        angular.forEach(row.listDetail, function(tmp, key){
+                            if(!StringUtils.isEmpty(tmp.reservationItemSum)){
+                                tmp.minUnitItemSum = parseFloat(tmp.reservationItemSum) * parseFloat(tmp.reservationPackageQuantity);
+                                totalMinUnitItemSum = parseFloat(totalMinUnitItemSum) + parseFloat(tmp.minUnitItemSum);
+                            }else{
+                                tmp.minUnitItemSum = 0;
+                            }
+                        });
+                        row.totalMinUnitItemSum = totalMinUnitItemSum;
+
+                        // input 37
+                        item.validStockItemSum = $rootScope.rounding(Math.round10(parseFloat(item.minUnitValidStockItemSum) / parseFloat(item.reservationPackageQuantity), -10),
+                                $scope.modelHeader.login.currentUser.rounding);
+                    },
+                    function(errResult){});
+        }
+    };
+
+    $scope.changeItemUnitClear = function(index, row){
+        var lineNo = angular.element('select[name="itemUnitClear'+index+'"] option:selected').attr('lineNo');
+        if(!StringUtils.isEmpty(row.serialCd)){
+            var param = {
+                    serialCd : row.serialCd,
+                    lineNo : lineNo,
+                    itemUnit : row.clearItemUnit
+            }
+            ServerService
+                .doPost('SalDetailsControl/getItemByItemUnit', param)
+                .then(
+                    function(okResult) {
+                        var okResult = okResult.data;
+                        row.packageQuantity = okResult.packageQuantity;
+                        row.rcvItemUnitName = okResult.itemUnitName;
+                        if(!StringUtils.isEmpty(row.reservationItemSum)){
+                            row.minUnitItemSum = parseFloat(row.reservationItemSum) * parseFloat(row.packageQuantity);
+                        }
+                        row.itemReceiveRemainingRecal = $rootScope.rounding(Math.round10(parseFloat(row.itemReceiveRemaining) / parseFloat(row.packageQuantity), -10),
+                                $scope.modelHeader.login.currentUser.rounding);
+                        row.itemSum = $rootScope.rounding(Math.round10(parseFloat(row.rcvMinUnitItemSum) / parseFloat(row.packageQuantity), -10),
+                                $scope.modelHeader.login.currentUser.rounding);
+                    },
+                    function(errResult){});
+        }
+    };
+
+    $scope.calcItemClear = function(row){
+        if(!StringUtils.isEmpty(row.clearItemSum)
+                && (parseFloat(row.clearItemSum) * parseFloat(row.packageQuantity)) > parseFloat(row.itemReceiveRemaining)){
+            DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W11003'));
+        }
+    };
+
+    /**
+     * change clear remaining mode
+     */
+    $scope.clearRemainingMode = function(){
+        $scope.model.hidden.screenMode = 'CLEAR_REMAINING';
+    }
+
+    /**
+     * back edit mode
+     */
+    $scope.backEdit = function(){
+        if(!StringUtils.isEmpty($scope.model.form.search.reservationSno)){
+            $scope.model.hidden.screenMode = 'EDIT';
+        }else{
+            $scope.model.hidden.screenMode = 'CREATE';
+        }
+    }
+
+    $scope.rcvRSVSales = function(formInvalid) {
+
+        $scope.model.hidden.isParentSubmited = true;
+
+        if (formInvalid) {
+            return;
+        }
+
+        if(!$scope.modelHeader.login.permission.sfa0310Access){
+            DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W11007'));
+            return;
+        }
+        DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('S00033')).result.then(function(btn){
+            DialogsService.showDialog('ReceiveReservationSales', 'rcvRSVSalesCtrl', null, {size: '610'}).result.then(function(param) {
+            });
+        },function(btn){});
+    };
+
+    $scope.$on('Reservation#rcvRSVSales', function(evt, param){
+        $scope.model.hidden.groupDataType = param.groupDataType;
+        $scope.model.hidden.isEXEX03 = 'EXEX03';
+        $scope.doInsert();
+    });
+
+    $scope.$on('Reservation#listReservationWF', function(evt, param){
+        var paramSession = {
+                'reservationSno': param.reservationSno,
+                'recodeNo': param.recodeNo
+        };
+        $scope.model.hidden.screenMode = 'EDIT';
+        sessionStorage.setItem("rcvReservation", JSON.stringify(paramSession));
+        $scope.loadInitData(paramSession);
+    });
+
+    /**
+     * insert data
+     */
+    $scope.insert = function (formInvalid){
+
+        $scope.model.hidden.isParentSubmited = true;
+
+        if (formInvalid) {
+            return;
+        }
+
+        var param = $scope.convertParamSearch();
+        var listData = $scope.convertParamCrud();
+        param.listData = listData;
+        param.screenMode = $scope.model.hidden.screenMode;
+
+        DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('S00034')).result.then(function(btn){
+            $scope.doInsert();
+        },function(btn){ });
+    };
+
+    /**
+     * do insert data server
+     */
+    $scope.doInsert = function(){
+
+        var param = $scope.convertParamSearch();
+        delete param.keyOrder;
+        var listData = $scope.convertParamCrud();
+        param.listData = listData;
+        param.screenMode = $scope.model.hidden.screenMode;
+        param.isEXEX03 = $scope.model.hidden.isEXEX03;
+
+        var url = 'ReceiveReservationControl/';
+        if($scope.model.hidden.screenMode === 'EDIT'){
+            url = url + 'update';
+        }else{
+            url = url + 'insert';
+        }
+        ServerService
+            .doPost(url, param)
+            .then(
+                function(okResult) {
+                    var msgObj = okResult.data.msgResult;
+                    if(msgObj.rtnCd === 0){
+                        DialogsService.showNotify(Messages.getMessage('title.info'), msgObj.messages);
+//                        if(!StringUtils.isEmpty($scope.model.hidden.isEXEX03)){
+//                            sessionStorage.removeItem("rcvReservation");
+//                            RouteService.gotoUrl('ReceiveReservationList');
+//                        }else{
+                            var paramSession = {
+                                    'reservationSno': okResult.data.rtnCd,
+                                    'recodeNo': okResult.data.rtnNo
+                            };
+                            $scope.model.hidden.screenMode = 'EDIT';
+                            sessionStorage.setItem("rcvReservation", JSON.stringify(paramSession));
+                            $scope.loadInitData(paramSession);
+//                        }
+                    }else{
+                        DialogsService.showWarning(Messages.getMessage('check.error'), msgObj.messages);
+                    }
+                },
+                function(errResult){});
+    };
+
+    /**
+     * delete reservation
+     */
+    $scope.deleteR = function(){
+        var param = {
+                reservationSno: $scope.model.form.search.reservationSno,
+                recodeNo : $scope.model.form.search.reservationRecodeNo,
+                version : $scope.model.form.search.version
+        };
+        // TODO process
+        if(!ValidateUtil.isValidTextEmpty($scope.model.hidden.pPJMData)){
+            param.processPjmJson = $scope.model.hidden.pPJMData;
+        }
+        DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('S00005')).result.then(function(btn){
+            ServerService
+            .doPost('ReceiveReservationControl/delete', param)
+            .then(
+                    function(okResult) {
+                        var msgObj = okResult.data.msgResult;
+                        if(msgObj.rtnCd === 0){
+                            DialogsService.showNotify(Messages.getMessage('title.info'), msgObj.messages).result.then(function(btn){
+                                sessionStorage.removeItem("rcvReservation");
+                                if(!ValidateUtil.isValidTextEmpty($scope.model.hidden.pPJMData)){
+                                    RouteService.gotoUrl($scope.model.hidden.redirectUrl);
+                                }else{
+                                    RouteService.gotoUrl('ReceiveReservationList');
+                                }
+                            });
+                        }else{
+                            DialogsService.showWarning(Messages.getMessage('check.error'), msgObj.messages);
+                        }
+                    },
+                    function(errResult){});
+        },function(btn){ });
+    }
+
+    /**
+     *
+     * 受注残数クリア
+     *
+     */
+    $scope.insertClearMaining = function(){
+
+//        $scope.model.hidden.isParentSubmited = true;
+//        if (formInvalid) {
+//            return;
+//        }
+
+        var param = $scope.convertParamSearch();
+        var listData = $scope.convertParamCrud();
+
+        param.listData = listData;
+        param.screenMode = $scope.model.hidden.screenMode;
+
+        DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('S00036')).result.then(function(btn){
+            ServerService
+            .doPost('ReceiveReservationControl/insertClearMaining', param)
+            .then(
+                function(okResult) {
+                    var msgObj = okResult.data.msgResult;
+                    if(msgObj.rtnCd === 0){
+                        DialogsService.showNotify(Messages.getMessage('title.info'), msgObj.messages);
+                        var rcvReservation = angular.fromJson(sessionStorage.getItem("rcvReservation"));
+                        if(!StringUtils.isEmpty(rcvReservation)){
+                            var param = {
+                                    reservationSno: rcvReservation.reservationSno,
+                                    recodeNo : rcvReservation.recodeNo,
+                                    version : rcvReservation.version
+                            };
+                            $scope.loadInitData(param);
+                        }else{
+                            // TODO process
+                            if(!ValidateUtil.isValidTextEmpty($scope.model.hidden.pPJMData)){
+                                var param = {
+                                        reservationSno: $scope.model.form.search.reservationSno,
+                                        recodeNo : $scope.model.form.search.reservationRecodeNo,
+                                        version : $scope.model.form.search.version
+                                };
+                                $scope.loadInitData(param);
+                            }else{
+                                $scope.search();
+                            }
+                        }
+                    }else{
+                        DialogsService.showWarning(Messages.getMessage('check.error'), msgObj.messages);
+                    }
+                },
+                function(errResult){});
+        },function(btn){ });
+    }
+
+    /**
+     * back reservation list
+     */
+    $scope.backList = function(){
+        if(!StringUtils.isEmpty($scope.model.hidden.redirectUrl)){
+            sessionStorage.removeItem("rcvReservation");
+            RouteService.gotoUrl($scope.model.hidden.redirectUrl);
+        }else{
+            sessionStorage.removeItem("rcvReservation");
+            RouteService.gotoUrl('ReceiveReservationList');
+        }
+    };
+
+    $scope.export = function(){
+        var param = angular.fromJson(sessionStorage.getItem("rcvReservation"));
+        var params = {};
+        if(!StringUtils.isEmpty(param)){
+            params = {
+                    reservationSno: param.reservationSno,
+                    recodeNo : param.recodeNo,
+                    version : param.version,
+                    keyOrder : [],
+                    orderDirection : ""
+            };
+        }
+        var now = $filter('date')(new Date(), "yyyyMMdd");
+        ServerService.doDownload('/ReceiveReservationControl/export', params, "application/vnd.ms-excel", "Reservation_" + now + ".xlsx");
+    };
+
+    $scope.importFile = function(){
+        if(!StringUtils.isEmpty($scope.model.fileImport.fileData)){
+            var params = {
+                    fileData : $scope.model.fileImport.fileData,
+                    fileName : $scope.model.fileImport.fileName
+            };
+            ServerService.doPost('ReceiveReservationControl/import', params)
+                .then(
+                    function(okResult) {
+                    var result = okResult.data;
+                    if(!ValidateUtil.isValidTextEmpty(okResult.data.failed)){
+                        DialogsService.showError(Messages.getMessage('system.error'), okResult.data.failed);
+                        return;
+                    }else if(!ValidateUtil.isValidTextEmpty(okResult.data.warning)){
+                        DialogsService.showWarning(Messages.getMessage('check.error'), okResult.data.warning);
+                        var params = {
+                                fileData : result.fileData
+                        };
+                        var now = $filter('date')(new Date(), "yyyyMMdd");
+                        ServerService.doDownload('/ReceiveReservationControl/downloadError',  params, "application/vnd.ms-excel", "Error" + now + ".xlsx");
+                        return;
+                    }
+                    DialogsService.showNotify(Messages.getMessage('title.info'), okResult.data.success);
+                    var paramSession = {
+                            reservationSno: okResult.data.reservationSno,
+                            recodeNo : okResult.data.recodeNo
+                    };
+                    $scope.model.hidden.screenMode = 'EDIT';
+                    sessionStorage.setItem("rcvReservation", JSON.stringify(paramSession));
+                    $scope.loadInitData(paramSession);
+                }
+            );
+        };
+
+        ObjectUtil.resetEmpty($scope.model.fileImport);
+        $('input[name="importData"]').wrap('<form>').parent('form').trigger('reset');
+        $('input[name="importData"]').unwrap();
+    };
+
+    $scope.close = function () {
+        sessionStorage.removeItem('rcvReservation');
+        $scope.$dismiss('cancel');
+    };
+
+}]);
+
+/**
+ * sales popup data
+ */
+exexSMSApp.controller('rcvRSVSalesCtrl',
+        ['$rootScope', '$scope', '$uibModalInstance', 'ReceiveReservationControlModel', 'DialogsService', 'ServerService', 'Messages',
+         function($rootScope, $scope, $uibModalInstance, ReceiveReservationControlModel, DialogsService, ServerService, Messages) {
+
+    $scope.model = ReceiveReservationControlModel;
+
+    $scope.ok = function(formInvalid) {
+        $scope.model.hidden.isSubmited = true;
+
+        if (formInvalid) {
+            return;
+        }
+        $scope.model.hidden.isExtendCtrl = true;
+        DialogsService.showDialog('ReceiveReservationRequest', 'rcvRSVRequestCtrl', null, {size: '520'});
+        $uibModalInstance.dismiss();
+    };
+
+    /**
+     * change tax rate when change sal date
+     */
+    $scope.$watchCollection('model.form.sales.salDate', function(){
+        var salDate = $scope.model.form.sales.salDate;
+        if(!ValidateUtil.isValidTextEmpty(salDate)){
+            salDate = new Date(salDate);
+            ServerService
+                .doPost('SalDetailsControl/getTaxRate', salDate)
+                .then(
+                    function(okResult) {
+                        $scope.model.form.sales.taxRate = okResult.data.taxRate;
+                    },
+                    function(errResult){ });
+        }else{
+            $scope.model.form.sales.taxRate = '';
+        }
+    });
+
+    $scope.close = function(){
+        $uibModalInstance.dismiss();
+    };
+}]);
+
+/**
+ * reservation sales data group
+ */
+exexSMSApp.controller('rcvRSVRequestCtrl',
+        ['$rootScope', '$scope', '$controller', '$uibModalInstance', 'ServerService', 'DialogsService', 'ReceiveReservationControlModel', 'Messages',
+         function($rootScope, $scope, $controller, $uibModalInstance, ServerService, DialogsService, ReceiveReservationControlModel, Messages) {
+
+    $controller('ReceiveReservationControlCtrl', {
+        $scope: $scope
+    });
+
+    $scope.model = ReceiveReservationControlModel;
+
+    $scope.init = function(){
+    };
+
+    $scope.actionType = function(groupDataType) {
+
+        $scope.model.hidden.groupDataType = groupDataType;
+        var param = $scope.convertParamSearch();
+        delete param.keyOrder;
+        var listData = $scope.convertParamCrud();
+        param.listData = listData;
+        param.screenMode = $scope.model.hidden.screenMode;
+        param.isEXEX03 = 'EXEX03';
+
+        // TODO process
+        if(!ValidateUtil.isValidTextEmpty($scope.model.hidden.pPJMData)){
+            $scope.model.hidden.groupDataType = groupDataType;
+            $scope.model.hidden.isEXEX03 = 'EXEX03';
+            $scope.model.form.search.documentStatus = '01';
+            if($scope.model.hidden.pPJMData.workflowFlag){
+                DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('W00231')).result.then(function(btn){
+                    $scope.model.form.search.salesDocumentStatus = '02';
+                    $scope.doInsert();
+                    $uibModalInstance.dismiss();
+                },function(btn){ });
+            }else{
+                $scope.model.form.search.salesDocumentStatus = '01';
+                $scope.doInsert();
+                $uibModalInstance.dismiss();
+            }
+        }else{
+            ServerService
+                .doPost('SalCommon/checkWorkFlow', {})
+                .then(function(okResult) {
+                        var workFlow = okResult.data.workFlow;
+                        if(angular.equals(workFlow.slice(2,3), '1')){
+                            var options = {size: '875'};
+                            var recodeNo = 1;
+                            var mode = 'insert';
+                            var workNo = '';
+                            if($scope.model.hidden.screenMode === 'EDIT'){
+                                recodeNo = $scope.model.form.search.reservationRecodeNo;
+                                mode = 'update';
+                                workNo = $scope.model.form.search.reservationSno;
+                            }
+                            var params = {
+                                    screen : 'EXEX10',
+                                    data : '',
+                                    detailData : '',
+                                    dataReservation : param,
+                                    mode : mode,
+                                    workNo : workNo,
+                                    recodeNo : recodeNo,
+                                    version : 1,
+                                    documentStatus : $scope.model.form.search.documentStatus,
+                                    msgConfirm : 'S00004'
+                            };
+                            DialogsService.showDialog('PtlRequest', 'ptlRequestCtrl', params, options).result.then(function(param) {});
+                            $uibModalInstance.dismiss();
+                        }else{
+                            $scope.model.hidden.groupDataType = groupDataType;
+                            $scope.model.hidden.isEXEX03 = 'EXEX03';
+                            // check business code when reservation has process
+                            if(!StringUtils.isEmpty($scope.model.hidden.businessCd)){
+                                $scope.model.form.search.documentStatus = $scope.model.hidden.documentStatus;
+                            } else{
+                                $scope.model.form.search.documentStatus = '03';
+                            }
+                            $scope.doInsert();
+                            $uibModalInstance.dismiss();
+                        }
+                    },
+                    function(errResult){ }
+                );
+        }
+
+    }
+
+    $scope.close = function(){
+        $uibModalInstance.dismiss();
+    };
+
+}]);

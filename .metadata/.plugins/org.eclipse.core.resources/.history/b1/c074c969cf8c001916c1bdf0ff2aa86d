@@ -1,0 +1,6 @@
+<%@ tag pageEncoding="utf-8"%>
+
+<!DOCTYPE html>
+<html ng-app="exexSMSApp" ng-controller="CommonCtrl">
+  <jsp:doBody />
+</html>

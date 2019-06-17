@@ -1,0 +1,12 @@
+package org.planning.net.dao;
+
+import java.sql.ResultSet;
+import java.sql.SQLException;
+
+import org.planning.net.dto.LoginDto;
+import org.springframework.jdbc.core.RowMapper;
+import org.springframework.jdbc.core.support.JdbcDaoSupport;
+
+public class LoginDao extends JdbcDaoSupport {
+
+}

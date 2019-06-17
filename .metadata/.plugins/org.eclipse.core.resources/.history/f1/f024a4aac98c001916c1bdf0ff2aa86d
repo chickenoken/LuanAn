@@ -1,0 +1,134 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision: $ $Date: $
+ * @author Quang-Tung
+ *
+ */
+
+'use strict';
+
+exexSMSApp.factory('MstSubAccountListModel', [ 'BaseModel', function(BaseModel) {
+
+    var model = BaseModel.getInstance();
+    model.form = {
+            listSubAccount : [],
+    };
+    return model;
+} ]);
+
+exexSMSApp.controller('mstSubAccountListCtrl',
+        ['$scope', '$uibModalInstance', 'MstSubAccountListModel', 'DialogsService', 'Messages', 'ServerService',
+         function($scope, $uibModalInstance, MstSubAccountListModel, DialogsService, Messages, ServerService) {
+
+    $scope.model = MstSubAccountListModel;
+
+    $scope.done = function(){
+        $uibModalInstance.close();
+    };
+
+    $scope.no = function(){
+        $uibModalInstance.dismiss('no');
+    };
+
+    $scope.getListSubAccount = function() {
+        var projectCustItemInfo = angular.fromJson(sessionStorage.getItem("projectCustItemInfo"));
+        var param = {
+                'custCd': projectCustItemInfo.custCd,
+        };
+        ServerService
+        .doPost('MstSubAccountList/getListSubAccount', param)
+        .then(
+            function(okResult) {
+                var error = okResult.data.failed;
+                var warning = okResult.data.warning;
+                if (!ValidateUtil.isValidTextEmpty(error)) {
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    $scope.model.form.listSubAccount = [];
+                    return;
+                }else if(!ValidateUtil.isValidTextEmpty(warning)){
+                    DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                    $scope.model.form.listSubAccount = [];
+                    return;
+                 }else{
+                    $scope.model.form.listSubAccount = okResult.data.listSubAccount;
+                    var length = $scope.model.form.listSubAccount.length;
+
+                    // Table Paging
+                    $scope.model.currentPage = 1; //current page
+                    $scope.model.entryLimit = 10; //max no of items to display in a page
+                    $scope.model.number = 10;
+                    $scope.model.filteredItems = length; //Initially for no filter
+                    $scope.model.totalItems = length;
+                    if(length > 0){
+                        $scope.model.beginValFilter = 1;
+                    }else{
+                        $scope.model.beginValFilter = 0;
+                    }
+                    $scope.setPage = function(pageNo) {
+                        $scope.currentPage = pageNo;
+                    };
+                    $scope.model.filter = function() {
+                        $timeout(function() {
+                            $scope.model.filteredItems = $scope.model.form.filtered.length;
+                            if($scope.model.form.filtered.length > 0){
+                                $scope.model.beginValFilter = 1;
+                            }else{
+                                $scope.model.beginValFilter = 0;
+                            }
+                        }, 10);
+                    };
+                    // End Table Paging
+                }
+            },
+            function(errResult){
+            });
+    };
+
+    $scope.openDialog = function(result){
+        $uibModalInstance.close();
+        var options = {size: '600'};
+        var param = {};
+        switch (result) {
+            case 'createAccount':
+                param = {};
+                DialogsService.showDialog('MstSubAccountControl','mstSubAccountControlCtrl', param, options);
+                break;
+            default:
+                var param = {'custCd' :result.custCd,
+                             'custAccountCd' :result.custAccountCd};
+                ServerService
+                .doPost('MstSubAccountList/checkData', param)
+                .then(
+                    function(okResult) {
+                        var warning = okResult.data.warning;
+                        var error = okResult.data.failed;
+                        if(!ValidateUtil.isValidTextEmpty(warning)){
+                            DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                            $scope.getListSubAccount();
+                            return;
+                        }else if(!ValidateUtil.isValidTextEmpty(error)){
+                            DialogsService.showError(Messages.getMessage('system.error'), error);
+                            return;
+                        }else{
+                            param.subAccount = okResult.data.resultEntity;
+                            DialogsService.showDialog('MstSubAccountControl', 'mstSubAccountControlCtrl', param, options);
+                        }
+                    },
+                    function(errResult){
+                    });
+                break;
+        };
+    };
+
+    $scope.init = function(){
+        $scope.getListSubAccount();
+    };
+    $scope.init();
+
+    $scope.$on("MstSubAccountControl#loadList", function(evt, param) {
+        $scope.getListSubAccount();
+    });
+}]);

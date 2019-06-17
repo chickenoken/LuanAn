@@ -1,0 +1,279 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision:  $  $Date:  $
+ */
+'use strict';
+
+exexSMSApp.factory('ExExSettingModel', [ 'BaseModel', function(BaseModel) {
+
+    var model = BaseModel.getInstance();
+
+    model.form = {
+            company : {
+                companyCd : '',
+                taxType :'',
+                rounding : '',
+                accountClosingMonth: '',
+                workflow : '',
+                sharingFlag : false,
+                customInvoiceUsing: '',
+                usageStandardDays: '',
+                version : '',
+                lastCloseMonth :''
+            },
+            wf_1 : false,
+            wf_2 : false,
+            wf_3 : false,
+            wf_4 : false,
+            wf_5 : false,
+            wf_6 : false
+    };
+
+    model.hidden = {
+            logo : '',
+            logoFileName :'',
+            isSubmited: false,
+            isDisable : true
+    }
+
+    model.listS010002 = [];
+    model.listS010004 = [];
+    model.listInvoice = [];
+    model.disableStock = true;
+
+    return model;
+} ]);
+exexSMSApp.controller('exExSettingCtrl',
+        ['$scope', 'DialogsService', 'ExExSettingModel', 'Messages', 'ServerService', '$filter',
+         function($scope, DialogsService, ExExSettingModel, Messages, ServerService, $filter){
+
+    $scope.model = ExExSettingModel;
+
+    $scope.init = function(model){
+        $scope.getInit();
+    };
+
+    /**
+     * 初期表示。
+     */
+    $scope.getInit = function() {
+        ServerService.doPost('ExExSetting/getInit', {}).then(
+            function(okResult) {
+                if(!StringUtils.isEmpty(okResult.data.failed)){
+                    DialogsService.showError(Messages.getMessage('system.error') ,okResult.data.failed);
+                    return;
+                }else if(!StringUtils.isEmpty(okResult.data.warning)){
+                    DialogsService.showWarning(Messages.getMessage('check.error'), okResult.data.warning);
+                    return;
+                } else{
+                    $scope.model.listS010002 = okResult.data.listS010002;
+                    $scope.model.listS010004 = okResult.data.listS010004;
+                    $scope.model.listS010015 = okResult.data.listS010015;
+                    var result = okResult.data;
+                    $scope.model.form.company = result.company;
+                    if(!StringUtils.isEmpty(result.company.lastCloseMonth)){
+                        var closeMonth = result.company.lastCloseMonth;
+                        $scope.model.form.company.lastCloseMonth = [closeMonth.slice(0,4), '/', closeMonth.slice(4,6)].join('');
+                        $scope.model.hidden.isDisable = false;
+                    }
+
+                    $scope.model.hidden.logo = !StringUtils.isEmpty(result.company.logo) ? result.company.logo : null;
+                    $scope.model.hidden.logoFileName =  !StringUtils.isEmpty(result.company.logoFileName) ? result.company.logoFileName : null;
+                    $scope.model.hidden.logoFilePath =  $scope.model.hidden.logoFileName;
+
+                    delete $scope.model.form.company.disableStockSummary;
+                    var workflow = $scope.model.form.company.workflow;
+                    $scope.model.form.wf_1 = workflow.slice(0,1) == '1' ? true : false;
+                    $scope.model.form.wf_2 = workflow.slice(1,2) == '1' ? true : false;
+                    $scope.model.form.wf_3 = workflow.slice(2,3) == '1' ? true : false;
+                    $scope.model.form.wf_4 = workflow.slice(3,4) == '1' ? true : false;
+                    $scope.model.form.wf_5 = workflow.slice(4,5) == '1' ? true : false;
+                    $scope.model.form.wf_6 = workflow.slice(5,6) == '1' ? true : false;
+                    $scope.model.disableStock = result.disableStockSummary;
+                    $scope.model.listInvoice = result.company.listInvoiceUsing;
+                }
+            },
+            function(errResult){}
+        );
+    };
+
+    $scope.convert = function(){
+        var listCode = [];
+        var listTempNo = [];
+        angular.forEach($scope.model.listInvoice, function(value, key){
+            var tmpCode = value.code;
+            if(value.sysFlag){
+                tmpCode = tmpCode + '1';
+            } else{
+                tmpCode = tmpCode + '0';
+            }
+            if(value.ckFlag){
+                tmpCode = tmpCode + '1';
+                if(!StringUtils.isEmpty(value.tempNo)){
+                    listTempNo.push(value.tempNo);
+                }
+            } else{
+                tmpCode = tmpCode + '0';
+            }
+            listCode.push(tmpCode);
+        });
+        var item = {
+                'listCode' : listCode.toString(),
+                'listTempNo' : listTempNo.toString()
+        }
+        return item;
+    }
+
+    /**
+     * 会社を更新する。
+     */
+    $scope.update = function(formInvalid){
+
+        $scope.model.hidden.isSubmited = true;
+        if (formInvalid) {
+            return;
+        }
+
+        if($scope.model.hidden.imageSize > (CONSTANT.LOGO_SIZE)){
+            return DialogsService.showWarning(Messages.getMessage('check.error'),Messages.getMessage('W00252',(CONSTANT.LOGO_SIZE/1024/1024).toString() + 'MB '));
+        }
+        DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('S00004'))
+        .result.then(function(btn){
+            var item = $scope.convert();
+            var wf_1 = $scope.model.form.wf_1 ? "1" : "0",
+                    wf_2 = $scope.model.form.wf_2 ?  "1" : "0",
+                    wf_3 = $scope.model.form.wf_3 ? '1' : '0',
+                    wf_4 =  $scope.model.form.wf_4 ? '1' : '0',
+                    wf_5 = $scope.model.form.wf_5 ? '1' : '0',
+                    wf_6 = $scope.model.form.wf_6 ? '1' : '0';
+            var workflow = wf_1 + wf_2 + wf_3 + wf_4 + wf_5 + wf_6 + '0000';
+            var params = {
+                     companyCd : $scope.model.form.company.companyCd,
+                     taxType : $scope.model.form.company.taxType.toString(),
+                     rounding : $scope.model.form.company.rounding.toString(),
+                     accountClosingMonth : $scope.model.form.company.accountClosingMonth.toString(),
+                     sharingFlag : $scope.model.form.company.sharingFlag,
+                     usageStandardDays : $scope.model.form.company.usageStandardDays,
+                     workflow : workflow,
+                     version : $scope.model.form.company.version,
+                     customInvoiceUsing : item.listCode,
+                     listTempNo : item.listTempNo,
+                     logo : $scope.model.hidden.logo,
+                     logoFileName : $scope.model.hidden.logoFileName
+                };
+            ServerService.doPost('ExExSetting/update', params).then(
+                function(okResult) {
+                    if(!StringUtils.isEmpty(okResult.data.failed)){
+                        DialogsService.showError(Messages.getMessage('system.error') ,okResult.data.failed);
+                        return;
+                    }else if(!StringUtils.isEmpty(okResult.data.warning)){
+                        DialogsService.showWarning(Messages.getMessage('check.error'), okResult.data.warning);
+                        return;
+                    } else{
+                         var sessionLogin = angular.fromJson(sessionStorage.getItem("session"));
+                         sessionLogin.workflow = workflow;
+                         sessionLogin.rounding = $scope.model.form.company.rounding;
+                         sessionStorage.removeItem('session');
+                         sessionStorage.setItem("session", JSON.stringify(sessionLogin));
+                         $scope.model.form.company.version = okResult.data.version;
+
+                         $scope.model.hidden.logoFileName =  !StringUtils.isEmpty(okResult.data.logoFileName) ? okResult.data.logoFileName : null;
+                         $scope.model.hidden.logoFilePath = $scope.model.hidden.logoFileName;
+                         DialogsService.showNotify(Messages.getMessage('title.info'), okResult.data.success);
+                    }
+                },
+                function(errResult){}
+            );
+        });
+    };
+
+    $scope.updateStockSummary = function(){
+        DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('S00058'))
+        .result.then(function(btn){
+             ServerService.doPost('ExExSetting/updateStockSummary', {}).then(
+                 function(okResult) {
+                     if(!StringUtils.isEmpty(okResult.data.failed)){
+                         DialogsService.showError(Messages.getMessage('system.error') ,okResult.data.failed);
+                         return;
+                     }else if(!StringUtils.isEmpty(okResult.data.warning)){
+                         DialogsService.showWarning(Messages.getMessage('check.error'), okResult.data.warning);
+                         return;
+                     } else{
+                         $scope.model.disableStock = true;
+                         DialogsService.showNotify(Messages.getMessage('title.info'), Messages.getMessage('S00059'));
+                     }
+                 },
+                 function(errResult){}
+             );
+        });
+    }
+
+    $scope.uploadImage = function (img) {
+        $scope.model.hidden.logoFilePath = '';
+        $scope.model.hidden.logo = img.logo;
+        $scope.model.hidden.logoFileName = img.imageName;
+    }
+
+    $scope.deleteImage = function(){
+        $('#thumbnail').attr('src', '');
+        ObjectUtil.resetEmpty($scope.model.hidden);
+        $scope.model.hidden.logo = null;
+        $('input[name="input-image"]').wrap('<form>').parent('form').trigger('reset');
+        $('input[name="input-image"]').unwrap();
+    }
+
+    $scope.updateCloseMonth = function(type){
+        switch(type){
+            case 'next':
+                DialogsService.showConfirm(Messages.getMessage('title.info'), $scope.model.form.company.lastCloseMonth + Messages.getMessage('S00070')).result.then(
+                    function(btn){
+                        var lastCloseMonth = '';
+                        if(!StringUtils.isEmpty($scope.model.form.company.lastCloseMonth)){
+                           var month = new Date($scope.model.form.company.lastCloseMonth);
+                           lastCloseMonth = $filter('date')(month.setMonth(month.getMonth() + 1), "yyyyMM");
+                        }else{
+                           lastCloseMonth = $filter('date')(DateUtils.getPreviousMonth(), "yyyyMM");
+                        }
+                        ServerService.doPost('ExExSetting/updateCloseMonth', lastCloseMonth).then(
+                            function(okResult){
+                                var error = okResult.data.failed;
+                                var sucess = okResult.data.success;
+                                if(!StringUtils.isEmpty(error)){
+                                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                                    return;
+                                }else{
+                                    DialogsService.showNotify(Messages.getMessage('title.info'), sucess).result.then(
+                                        function(){
+                                            $scope.getInit();
+                                        }
+                                )};
+                        });
+                });
+                break;
+            case 'previous':
+                DialogsService.showConfirm(Messages.getMessage('title.info'), $scope.model.form.company.lastCloseMonth + Messages.getMessage('S00071')).result.then(
+                    function(btn){
+                        var month = new Date($scope.model.form.company.lastCloseMonth);
+                        var lastCloseMonth = lastCloseMonth = $filter('date')(month.setMonth(month.getMonth() - 1), "yyyyMM");
+                        ServerService.doPost('ExExSetting/updateCloseMonth', lastCloseMonth).then(
+                            function(okResult){
+                                var error = okResult.data.failed;
+                                var sucess = okResult.data.success;
+                                if(!StringUtils.isEmpty(error)){
+                                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                                    return;
+                                }else{
+                                    DialogsService.showNotify(Messages.getMessage('title.info'), sucess).result.then(
+                                        function(){
+                                            $scope.getInit();
+                                        }
+                                )};
+                        });
+                });
+                break;
+        }
+    }
+}]);

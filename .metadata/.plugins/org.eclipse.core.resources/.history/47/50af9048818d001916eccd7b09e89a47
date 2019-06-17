@@ -1,0 +1,192 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision: $ $Date: $
+ * @author Quang-Thien
+ */
+
+'use strict';
+
+exexSMSApp.factory('RightSidebarModel', [ 'BaseModel', '$rootScope', function(BaseModel, $rootScope) {
+
+    var model = BaseModel.getInstance();
+
+    model.form = {
+            lstCustomer : [],
+            lstProject : [],
+
+            //TODO common pagination info
+            paginationInfo : {
+                page: 0,
+                pageSize: 20,
+                totalPage: 0,
+                totalRecord: 0,
+                from: 0,
+                to: 0
+            }
+        };
+
+    model.hidden = {
+        logoffTime : 0
+    };
+
+    return model;
+} ]);
+
+exexSMSApp.service('RightSidebarService', ['$q', 'ServerService',function ($q, ServerService) {
+    var self = this;
+
+    self.initData = function() {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('RightSidebar/initData', {})
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    self.searchCustomer = function() {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('RightSidebar/searchCustomer', {})
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+    self.searchProject = function() {
+        var deferred = $q.defer();
+
+        ServerService
+            .doPost('RightSidebar/searchProject', {})
+            .then(
+                    function(okResult) {
+                        deferred.resolve(okResult);
+                    },
+                    function(errResult){
+                        deferred.reject(errResult);
+                    });
+
+        return deferred.promise;
+    };
+
+}]);
+
+exexSMSApp.controller('RightSidebarCtrl',
+        ['$timeout', '$scope', '$rootScope', '$cookies', '$http', 'RightSidebarService', 'RouteService', 'RightSidebarModel' ,
+         function($timeout, $scope, $rootScope, $cookies, $http, RightSidebarService, RouteService, RightSidebarModel) {
+
+    $scope.model = RightSidebarModel;
+
+    $scope.$on("getDataRightBar", function(evt, param) {
+        $scope.getData();
+    });
+
+    $scope.alertMe = function(tab){
+        var activeTab = tab;
+        $cookies.put('activeTab', activeTab);
+    };
+
+    $scope.initData = function() {
+        $scope.active = ($cookies.get('activeTab') == "1") ? 1 : 2;
+    };
+    $scope.initData();
+
+    $scope.getData = function(){
+        RightSidebarService.initData().then(function(result) {
+            $scope.model.form.lstCustomer = result.data.customerList;
+            $scope.model.form.lstProject = result.data.projectList;
+
+            // Table Paging
+            $scope.model.currentPageP = 1;
+            $scope.model.entryLimitP = 20;
+            $scope.model.filteredItemsP = $scope.model.form.lstProject.length;
+            $scope.model.totalItemsP = $scope.model.form.lstProject.length;
+
+            $scope.setPageP = function(pageNo) {
+                $scope.model.currentPageP = pageNo;
+            };
+
+            $scope.filterProject = function() {
+                $timeout(function() {
+                    $scope.model.filteredItemsP = $scope.model.form.filteredP.length;
+                }, 10);
+            };
+
+            $scope.model.currentPageC = 1;
+            $scope.model.entryLimitC = 20;
+            $scope.model.filteredItemsC = $scope.model.form.lstCustomer.length;
+            $scope.model.totalItemsC = $scope.model.form.lstCustomer.length;
+
+            $scope.setPageC = function(pageNo) {
+                $scope.model.currentPageC = pageNo;
+            };
+
+            $scope.filterCustomer = function() {
+                $timeout(function() {
+                    $scope.model.filteredItemsC = $scope.model.form.filteredC.length;
+                }, 10);
+            };
+            // End Table Paging
+        });
+    }
+
+    $scope.goToSfaProjectControl = function(param) {
+        sessionStorage.removeItem("projectCustItemInfo");
+        sessionStorage.removeItem("sfaProjectListSession");
+        var params = {
+                custCd: param.custCd,
+                screenMode : 'VIEW',
+                projectSno : param.projectSno,
+                projectName : param.projectName,
+                fromScreen : 'rightSideBar',
+                searchParam: null
+        };
+        sessionStorage.setItem("projectItemControl", JSON.stringify(params));
+        RouteService.gotoUrl('SfaProjectControl');
+    };
+
+    $scope.goToSfaProjectList = function(param) {
+        sessionStorage.removeItem("sfaProjectListSession");
+        var params = {
+                custCd : param.custCd,
+                custName : param.custName,
+                connectionStatus : param.connectionStatus,
+                billAddressNo : param.billaddressNo
+        };
+        sessionStorage.setItem("projectCustItemInfo", JSON.stringify(params));
+        sessionStorage.removeItem("sessionSearch");
+        RouteService.gotoUrl('SfaProjectList');
+    };
+
+    /**顧客ページに移動*/
+    $scope.goToCrmControl = function(item){
+        var projectCustItemInfo = {
+                custCd: item.custCd,
+                custName: item.custName,
+                custType: item.custType,
+                curPage : 0,
+                fromScreen : 'rightSideBar',
+                searchParam: null
+        };
+        sessionStorage.setItem("projectCustItemInfo", JSON.stringify(projectCustItemInfo));
+        RouteService.gotoUrl('CrmControl');
+    }
+
+}]);

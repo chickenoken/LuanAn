@@ -1,0 +1,17 @@
+package org.planning.net.logic;
+
+import java.util.List;
+
+import org.planning.net.dto.LoginDto;
+import org.springframework.stereotype.Component;
+
+@Component
+public class LoginLogicImpl implements LoginLogic{
+
+	@Override
+	public List<LoginDto> getList() throws Exception {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+}

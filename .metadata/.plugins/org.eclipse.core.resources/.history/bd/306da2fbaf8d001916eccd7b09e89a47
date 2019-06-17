@@ -1,0 +1,22 @@
+package org.planning.net.logic;
+
+import org.planning.net.dao.testDoma;
+import org.planning.net.dto.LoginDto;
+import org.planning.net.entity.NhanVien;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+@Component
+public class LoginLogicImpl implements LoginLogic{
+
+    @Autowired
+    private testDoma testDoma;
+
+    @Override
+    public NhanVien dangNhap(LoginDto model) throws Exception {
+
+        NhanVien nv = testDoma.selectByTaiKhoanAndPass(model.getTaiKhoan(), model.getMatKhau());
+        return null;
+    }
+
+}

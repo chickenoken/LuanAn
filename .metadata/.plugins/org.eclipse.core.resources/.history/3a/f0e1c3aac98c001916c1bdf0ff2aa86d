@@ -1,0 +1,810 @@
+'use strict';
+
+exexSMSApp.factory('ScheduleControlModel', [ 'BaseModel', function(BaseModel) {
+
+    var model = BaseModel.getInstance();
+    model.form = {
+        schedule : {
+            scheduleStartYmd : '',
+            scheduleStartHm : '',
+            scheduleEndYmd : '',
+            scheduleEndHm : '',
+            scheduleCategory : '',
+            scheduleCategoryName : '',
+            scheduleName : '',
+            schedulePlace : '',
+            scheduleFacilityName : '',
+            scheduleContent : '',
+            scheduleColor : '',
+            createUser : '',
+            targetUser : [],
+            custCd: '',
+            custName : '',
+            ownerCd: [],
+            ownerName : '',
+            projectSno : '',
+            repeatFlag: false,
+            actionType: '',
+            allDayFlag: false,
+            scheduleCd: '',
+            todoName: '',
+            todoLineNoInfo: '',
+            sourceTodoNo: '',
+            sourceTodoLineNo: '',
+            todoCustCd: '',
+            todoOwnerCd: '',
+            todoCustName: '',
+            todoOwnerName: '',
+            salesReportNo: ''
+        },
+        listS020002 : [],
+        listTargetUser : [],
+        listProject: [],
+        listMstOwner: [],
+        listTargetUserUI: [],
+    };
+
+    model.listColorPopover = ColorUtils.getListColor();
+    model.hidden = {
+        screenMode : 'INSERT',
+        isSubmited: false,
+        isDisabled : false,
+        isEdit : true,
+        topMode : false,
+        action: '',
+        changeDate : false,
+        scheduleStartYmd:'',
+        scheduleEndYmd:'',
+        repeatSetting: false,
+        fromScreen : '',
+        isTodo: false
+    };
+
+    return model;
+}]);
+
+exexSMSApp.directive('sheduleTimepicker', function(){
+    return {
+        require: 'ngModel',
+        restrict: 'A',
+        scope : {
+            ngModel: '=ngModel'
+        },
+        link: function (scope, element, attrs, ngModel) {
+            var minuteStep = attrs.minuteStep;
+            element.timepicker({
+                autoclose: true,
+                showSeconds: false,
+                showMeridian: false,
+                twoDigitsHour : true,
+                minuteStep : parseInt(minuteStep),
+                defaultTime : scope.ngModel
+            });
+            element.timepicker().on('changeTime.timepicker', function(e) {
+                scope.$apply(function () {
+                    e.time.value = scope.ngModel;
+                });
+            });
+        }
+    };
+});
+
+exexSMSApp.controller('ptlTodoControlCtrl',
+        ['$rootScope', '$scope', '$uibModalInstance', 'RouteService', 'ScheduleControlModel', 'ScheduleSettingModel', 'HeaderModel', 'DialogsService', 'Messages', 'ServerService', '$timeout',
+         function($rootScope, $scope, $uibModalInstance, RouteService, ScheduleControlModel, ScheduleSettingModel, HeaderModel, DialogsService, Messages, ServerService, $timeout) {
+
+    $scope.model = ScheduleControlModel;
+    $scope.modelHeader = HeaderModel;
+    $scope.modelSetting = ScheduleSettingModel;
+
+    $scope.init = function(){
+
+        $timeout(function() {
+            $('.timepicker').parent('.input-group').on('click', '.input-group-btn', function(e){
+                e.preventDefault();
+                $(this).parent('.input-group').find('.timepicker').timepicker('showWidget');
+            });
+            angular.element('.input-group input').keydown(function (e){
+                $(this).parent('.input-group').find('.timepicker').timepicker('hideWidget');
+            });
+            $scope.loadInitJsEvent();
+        }, 100);
+
+        $scope.getInit();
+    };
+
+    $scope.loadInitJsEvent = function(row, index, event){
+        //Save color
+        var currColor = !ValidateUtil.isValidTextEmpty($scope.model.form.schedule.scheduleColor) ?
+                $scope.model.form.schedule.scheduleColor : "#3c8dbc"; //Red by default
+        if(!ValidateUtil.isValidTextEmpty(event)){
+            currColor = $(event.target).css('color');
+        }
+        $scope.model.form.schedule.scheduleColor = currColor;
+        //Add color effect to button
+        $('#eventColor').css({"background-color": currColor, "border-color": currColor});
+        $('.popover').remove();
+        angular.element('body').click();
+        if($scope.model.form.schedule.allDayFlag){
+            $scope.model.form.schedule.scheduleStartHm = '';
+            $scope.model.form.schedule.scheduleEndHm = '';
+            $('.timepicker').prop('disabled', true);
+        } else {
+            $('.timepicker').prop('disabled', false);
+        }
+    };
+
+    /**
+     * get data init page
+     */
+    $scope.getInit = function(custCd){
+        var params = {'custCd' :!ValidateUtil.isValidTextEmpty(custCd) ? custCd : ""};
+        ServerService.doPost('PtlTodoControl/getInit', params).then(
+            function(okResult) {
+                var error = okResult.data.failed;
+                if(!ValidateUtil.isValidTextEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                }
+                $scope.model.form.listS020002 = okResult.data.listS020002;
+                $scope.model.form.listMstOwner = okResult.data.listMstOwner;
+                $scope.model.form.listTargetUserUI = okResult.data.listMstUser;
+                ObjectUtil.resetEmpty($scope.model.form.schedule);
+                $scope.model.form.schedule.repeatFlag = false;
+                $scope.model.form.schedule.allDayFlag = false;
+                ObjectUtil.resetEmpty($scope.model.hidden);
+                $scope.model.hidden.isEdit= true;
+                $scope.model.hidden.screenMode = 'INSERT'
+                var scheduleInfo = angular.fromJson(sessionStorage.getItem("scheduleInfo"));
+                $scope.model.hidden.fromScreen = scheduleInfo.fromScreen;
+                var nowTime = new Date().getHours(); //returns 0-23
+                if(!ValidateUtil.isValidTextEmpty(scheduleInfo) && !ValidateUtil.isValidTextEmpty(scheduleInfo.scheduleDate)){
+                    $scope.model.form.schedule.scheduleStartYmd = new Date(scheduleInfo.scheduleDate);
+                    $scope.model.form.schedule.scheduleEndYmd = new Date(scheduleInfo.scheduleDate);
+                    var preHours = '';
+                    var preMinutes = '';
+                    if(!scheduleInfo.allDayFlag && scheduleInfo.viewName == 'month'){
+                        var hours = new Date().getHours();
+                        if(hours < 10){
+                            preHours = '0';
+                        }
+                        $scope.model.form.schedule.scheduleStartHm = preHours + hours + ':00';
+                        hours = hours + 1;
+                        if(hours >= 10){
+                            preHours = '';
+                        }
+                        $scope.model.form.schedule.scheduleEndHm = preHours + hours + ':00';
+                    } else if(!scheduleInfo.allDayFlag && scheduleInfo.viewName != 'month'){
+                        var hours = new Date(scheduleInfo.scheduleDate).getHours();
+                        var minutes = new Date(scheduleInfo.scheduleDate).getMinutes();
+                        if(hours < 10){
+                            preHours = '0';
+                        }
+                        if(minutes == 0){
+                            preMinutes = '0';
+                        }
+                        $scope.model.form.schedule.scheduleStartHm = preHours + hours + ':' + preMinutes + minutes;
+                        var newDateObj = moment(scheduleInfo.scheduleDate).add(30, 'm');
+                        hours = new Date(newDateObj).getHours();
+                        minutes = new Date(newDateObj).getMinutes();
+                        preHours = '';
+                        preMinutes = '';
+                        if(hours < 10){
+                            preHours = '0';
+                        }
+                        if(minutes == 0){
+                            preMinutes = '0';
+                        }
+                        $scope.model.form.schedule.scheduleEndHm = preHours + hours + ':' + preMinutes + minutes;
+                    }
+                }else if(!ValidateUtil.isValidTextEmpty(scheduleInfo) && !ValidateUtil.isValidTextEmpty(scheduleInfo.scheduleCategory) && scheduleInfo.scheduleCategory == '5') {
+                    $scope.model.form.schedule.scheduleStartYmd = !StringUtils.isEmpty(scheduleInfo.scheduleStartYmd) ? new Date(scheduleInfo.scheduleStartYmd) : new Date();
+                    $scope.model.form.schedule.scheduleEndYmd = !StringUtils.isEmpty(scheduleInfo.scheduleEndYmd) ? new Date(scheduleInfo.scheduleEndYmd) : new Date();
+                    $scope.model.form.schedule.scheduleName = scheduleInfo.scheduleName;
+                    $scope.model.form.schedule.scheduleContent = scheduleInfo.scheduleContent;
+                    $scope.model.form.schedule.scheduleCategory = scheduleInfo.scheduleCategory;
+                    $scope.model.form.schedule.custCd = "";
+                    $scope.model.form.schedule.custName = "";
+                    $scope.onChangeCustomer(scheduleInfo.custCd, scheduleInfo.ownerCd);
+                    $scope.model.form.schedule.projectSno = scheduleInfo.projectSno;
+                    $scope.model.form.schedule.projectName = scheduleInfo.projectName;
+                    $scope.onChangeScheduleCategory(scheduleInfo.scheduleCategory);
+                    $scope.model.form.schedule.sourceTodoNo = scheduleInfo.sourceTodoNo;
+                    $scope.model.form.schedule.sourceTodoLineNo = scheduleInfo.sourceTodoLineNo;
+                    $scope.model.form.schedule.todoName = scheduleInfo.todoName;
+                    $scope.model.form.schedule.todoLineNoInfo = scheduleInfo.todoLineNoInfo;
+                    $scope.model.hidden.isTodo = true;
+                }else{
+                    $scope.model.form.schedule.scheduleStartYmd = new Date(DateUtils.getCurrentDate());
+                    $scope.model.form.schedule.scheduleEndYmd = new Date(DateUtils.getCurrentDate());
+                }
+                var session = angular.fromJson(sessionStorage.getItem("session"));
+                var user = {
+                        userCd : session.userCd,
+                        userName : session.userName
+                };
+                if(!ValidateUtil.isValidTextEmpty(scheduleInfo) && scheduleInfo.allDayFlag){
+                    $scope.model.form.schedule.allDayFlag = scheduleInfo.allDayFlag;
+                }
+                $scope.model.form.listTargetUser = [];
+                $scope.model.form.listTargetUser.push(user);
+                $scope.updateListTargetUser($scope.model.form.listTargetUser);
+
+                if(!ValidateUtil.isValidTextEmpty(scheduleInfo) && !StringUtils.isEmpty(scheduleInfo.scheduleCd)){
+                    var scheduleCd = scheduleInfo.scheduleCd;
+                    var salesReportNo = scheduleInfo.salesReportNo;
+                    $scope.inquiry(scheduleCd, salesReportNo);
+                }
+            }
+        );
+    };
+
+    /**
+     * get user add to schedule target
+     */
+    $scope.addUserSchedule = function(){
+        var options = {size: 'schedule'};
+        var param = {
+                targetUser : angular.copy($scope.model.form.listTargetUser)
+        };
+        var dlg = DialogsService.showDialog('ScheduleUserRequest', 'scheduleUserRequestCtrl', param, options);
+        dlg.result.then(function(param) {
+            $scope.updateListTargetUser(param);
+        });
+    };
+
+    $scope.addUserTarget = function(){
+        $scope.model.form.listTargetUser = [];
+        angular.forEach($scope.model.form.schedule.targetUser, function(item, i){
+            angular.forEach($scope.model.form.listTargetUserUI, function(itemSub, iSub){
+                if(item === itemSub.userCd){
+                    $scope.model.form.listTargetUser.push(itemSub);
+                    return;
+                }
+            });
+        });
+    };
+
+    $scope.updateListTargetUser = function(param){
+        $scope.model.form.listTargetUser = param;
+        $scope.convertListUserCd();
+        angular.element("#_targetUser option").prop('selected', 'selected');
+        angular.element('#_targetUser').trigger('chosen:updated');
+    };
+
+    /**
+     * covert data update list user target
+     */
+    $scope.convertListUserCd = function(){
+        $scope.model.form.schedule.targetUser = [];
+        angular.forEach($scope.model.form.listTargetUser, function(item, i){
+            $scope.model.form.schedule.targetUser.push(item.userCd);
+        });
+    };
+
+    /**
+     * insert schedule
+     */
+    $scope.insert = function(formInvalid){
+        $scope.model.hidden.isSubmited = true;
+        if (formInvalid) {
+            return;
+        }
+        if($scope.model.hidden.topMode){
+            $scope.model.hidden.topMode = true;
+        }
+        if($scope.model.form.schedule.repeatFlag && !$scope.model.hidden.repeatSetting){
+            DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00262'));
+            return;
+        }
+        if ($scope.model.form.listTargetUser.length == 0) {
+            DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W10098',$('#targetUserLabel').text()));
+            return;
+        }
+
+        var param = angular.extend({},$scope.model.form.schedule);
+        param.listTargetUser = JSON.stringify($scope.model.form.listTargetUser);
+        if($scope.model.form.schedule.repeatFlag){
+            var scheduleSetting = angular.fromJson(sessionStorage.getItem("scheduleSetting"));
+            $scope.convertDataSetting(param, scheduleSetting);
+        }
+        param = $scope.convertData(param);
+        delete param.targetUser;
+        ServerService
+            .doPost('ScheduleControl/insert', param)
+            .then(
+                    function(okResult) {
+                        var error = okResult.data.failed;
+                        if(!ValidateUtil.isValidTextEmpty(error)){
+                            DialogsService.showError(Messages.getMessage('system.error'), error);
+                            return;
+                        };
+                        var scheduleInfo = {
+                                userCd : null,
+                                userName : null,
+                                scheduleCd : null,
+                                scheduleName : null,
+                                scheduleDate : null,
+                                screenMode : 'INSERT',
+                                topMode : true
+                        };
+                        sessionStorage.removeItem("scheduleSetting");
+                        sessionStorage.setItem("scheduleInfo", JSON.stringify(scheduleInfo));
+                        var dlg = DialogsService.showNotify(Messages.getMessage('title.info'), okResult.data.success);
+                        $uibModalInstance.dismiss('close');
+                        if(!StringUtils.isEmpty($scope.model.hidden.fromScreen)){
+                            $rootScope.$broadcast("ScheduleList#getEvents");
+                        } else {
+                            $rootScope.$broadcast("PtlTodoList#getEvents");
+                        }
+                    },
+                    function(errResult){
+                    });
+    };
+
+    $scope.actionUpdate = function(formInvalid){
+        $scope.model.hidden.isSubmited = true;
+        if (formInvalid) {
+            return;
+        }
+        if($scope.model.form.schedule.repeatFlag){
+            if(!$scope.model.hidden.repeatSetting){
+                DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00262'));
+                return;
+            }
+            $scope.model.hidden.action = 'update';
+            DialogsService.showDialog('ScheduleSettingRequest', 'scheduleSettingRequestCtrl', {action: 'update'}, {size: '600'});
+        }else{
+            $scope.update();
+        }
+    };
+
+    /**
+     * update schedule
+     */
+    $scope.update = function(){
+        if ($scope.model.form.listTargetUser.length == 0) {
+            DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W10098',$('#targetUserLabel').text()));
+            return;
+        }
+
+        var param = angular.extend({},$scope.model.form.schedule);
+        param.listTargetUser = JSON.stringify($scope.model.form.listTargetUser);
+        if($scope.model.form.schedule.repeatFlag){
+            var scheduleSetting = angular.fromJson(sessionStorage.getItem("scheduleSetting"));
+            $scope.convertDataSetting(param, scheduleSetting);
+        }else{
+            delete param.repeatType;
+            delete param.repeatInterval;
+            delete param.repeatFromDate;
+            delete param.repeatToDate;
+            delete param.repeatDates;
+            delete param.repeatCd;
+        };
+        param = $scope.convertData(param);
+        delete param.targetUser;
+        ServerService.doPost('ScheduleControl/update', param).then(
+            function(okResult) {
+                var error = okResult.data.failed;
+                var warning = okResult.data.warning;
+                if(!ValidateUtil.isValidTextEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                }
+                if(!ValidateUtil.isValidTextEmpty(warning)){
+                    DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                    return;
+                }
+                var scheduleInfo = {
+                        userCd : null,
+                        userName : null,
+                        scheduleCd : okResult.data.scheduleCd,
+                        scheduleName : null,
+                        scheduleDate : null,
+                        screenMode : 'VIEW'
+                };
+                sessionStorage.removeItem("scheduleSetting");
+                sessionStorage.setItem("scheduleInfo", JSON.stringify(scheduleInfo));
+                DialogsService.showNotify(Messages.getMessage('title.info'), okResult.data.success);
+                $uibModalInstance.dismiss('close');
+                if(!StringUtils.isEmpty($scope.model.hidden.fromScreen)){
+                    $rootScope.$broadcast("ScheduleList#getEvents");
+                } else {
+                    $rootScope.$broadcast("PtlTodoList#getEvents");
+                }
+            }
+        );
+    };
+
+    $scope.convertData = function(param){
+        if(!ValidateUtil.isValidTextEmpty(param.scheduleCategory)){
+            param.scheduleCategory = param.scheduleCategory.toString();
+        }else{
+            param.scheduleCategory = null;
+        }
+        if(!ValidateUtil.isValidTextEmpty(param.targetUser)){
+            param.listTargetUser = $scope.removeDuplicatUser(param.targetUser).toString();
+        }
+        if(ValidateUtil.isValidTextEmpty(param.scheduleStartHm)){
+            param.scheduleStartHm = null;
+        }
+        if(ValidateUtil.isValidTextEmpty(param.scheduleEndHm)){
+            param.scheduleEndHm = null;
+        }
+        param.scheduleStartYmd = new Date(param.scheduleStartYmd);
+        param.scheduleEndYmd = new Date(param.scheduleEndYmd);
+        param.repeatFlag = param.repeatFlag;
+        param.ownerCd = !StringUtils.isEmpty(param.ownerCd) ? param.ownerCd.toString() : "";
+
+        delete param.todoName;
+        delete param.todoLineNoInfo;
+        delete param.todoCustCd;
+        delete param.todoCustName;
+        delete param.todoOwnerCd;
+        delete param.todoOwnerName;
+        delete param.salesReportNo;
+        return param;
+    };
+
+    $scope.removeDuplicatUser = function(targetUser){
+        var arr = angular.extend({},targetUser);
+        var newarr = [];
+        var unique = {};
+        angular.forEach(arr, function(item) {
+            if(!ValidateUtil.isValidTextEmpty(item)){
+                if (!unique[item]) {
+                    newarr.push(item.toString());
+                    unique[item] = item;
+                }
+            }
+        });
+        return newarr;
+    };
+    $scope.close = function(){
+        $uibModalInstance.dismiss();
+    };
+    $scope.onChangeCustomer = function(custCd, ownerCd){
+        var params = {'custCd' :!ValidateUtil.isValidTextEmpty(custCd) ? custCd : ""};
+        if(!ValidateUtil.isValidTextEmpty(custCd)){
+            ServerService.doPost('ScheduleControl/onChangeCustomer', params).then(
+                function(okResult) {
+                    var error = okResult.data.failed;
+                    if(!ValidateUtil.isValidTextEmpty(error)){
+                        DialogsService.showError(Messages.getMessage('system.error'), error);
+                        return;
+                    }
+                    $scope.model.form.listMstOwner = okResult.data.listMstOwner;
+                    if(!StringUtils.isEmpty(ownerCd)){
+                        $scope.model.form.schedule.ownerCd = [ownerCd];
+                    }
+                    $scope.model.form.listProject = okResult.data.listProject;
+                }
+            );
+        }else{
+            $scope.model.form.listMstOwner = [];
+            $scope.model.form.listProject = [];
+        }
+
+    };
+
+    $scope.openDialog = function(data, result) {
+        switch (result) {
+            case 'searchCustomer':
+                var options = {
+                    size: 'auto',
+                };
+                var paramsSearch = {'clientType': '0'};
+                sessionStorage.setItem('searchCustStock',JSON.stringify(paramsSearch));
+                DialogsService.showDialog('SearchCustomer', 'searchCustomerCtrl', 'data', options)
+                .result.then(function(param) {},
+                        function(){
+                    var searchCustomer = angular.fromJson(sessionStorage.getItem("searchCustomer"));
+                    sessionStorage.removeItem("searchCustomer");
+                    if(!ValidateUtil.isValidTextEmpty(searchCustomer)){
+                        $scope.model.form.schedule.custName = searchCustomer.custName;
+                        $scope.model.form.schedule.custCd = searchCustomer.custCd;
+                        $scope.onChangeCustomer($scope.model.form.schedule.custCd);
+                    }
+                });
+                break;
+            case 'scheduleSetting':
+                var data = {
+                    scheduleStartYmd : $scope.model.form.schedule.scheduleStartYmd
+                };
+                var options = {
+                    size: '500',
+                };
+                DialogsService.showDialog('ScheduleSetting', 'scheduleSettingCtrl', data, options)
+                .result.then(function(param) {},function(){
+                });
+                break;
+        };
+    };// end launch
+
+    $scope.goToSfaProjectControl= function(projectSno){
+        if(!StringUtils.isEmpty(projectSno) && $scope.model.hidden.screenMode == 'VIEW'){
+            var param = {projectSno : projectSno,
+                         screenMode : 'VIEW'};
+            sessionStorage.removeItem("projectCustItemInfo");
+            sessionStorage.setItem("projectItemControl", JSON.stringify(param));
+            RouteService.gotoUrl('SfaProjectControl');
+        }
+    };
+
+    $scope.gotoSfaProjectProcessManagement = function(){
+        var prjBusiness = {
+            projectSno : $scope.model.form.schedule.projectSno,
+            businessCd : $scope.model.form.schedule.businessCd,
+            redirectUrl : 'PtlTodoControl'
+        };
+        sessionStorage.setItem("prjBusiness", JSON.stringify(prjBusiness));
+        sessionStorage.removeItem("projectCustItemInfo");
+        RouteService.gotoUrl('SfaProjectProcessManagement');
+    };
+
+    $scope.onChangeScheduleCategory = function(code){
+        angular.forEach($scope.model.form.listS020002, function(item, i){
+            if(code == item.code){
+                $scope.model.form.schedule.scheduleColor = item.remark;
+            }
+        });
+    };
+
+    $scope.convertDataSetting = function(param, paramSetting){
+        if(!ValidateUtil.isValidTextEmpty(paramSetting)){
+            param.repeatType = paramSetting.repeatType;
+            param.repeatInterval = paramSetting.repeatInterval;
+            param.repeatFromDate = new Date(paramSetting.repeatFromDate);
+            param.repeatToDate = new Date(paramSetting.repeatToDate);
+            param.repeatDates = paramSetting.repeatDates;
+        }
+        return param;
+    };
+
+    $scope.$watchGroup(['model.form.schedule.scheduleStartYmd','model.form.schedule.scheduleEndYmd'], function () {
+        if(!ValidateUtil.isValidTextEmpty($scope.model.hidden.scheduleStartYmd) || !ValidateUtil.isValidTextEmpty($scope.model.hidden.scheduleEndYmd)){
+            if(($scope.model.form.schedule.scheduleStartYmd != $scope.model.hidden.scheduleStartYmd) ||
+                    ($scope.model.form.schedule.scheduleEndYmd != $scope.model.hidden.scheduleEndYmd)){
+                $scope.model.hidden.changeDate = true;
+            }else{
+                $scope.model.hidden.changeDate = false;
+            }
+        }
+    });
+
+    $scope.isAllDayCheck = function(){
+        if($scope.model.form.schedule.allDayFlag){
+            $scope.model.form.schedule.scheduleStartHm = '';
+            $scope.model.form.schedule.scheduleEndHm = '';
+            $('.timepicker').prop('disabled', true);
+        } else {
+            $('.timepicker').prop('disabled', false);
+        }
+    };
+
+    $scope.colorPicker = function(){
+        $('.popover').addClass('color-popup');
+    };
+
+    /**
+     * get data schedule for view mode
+     */
+    $scope.inquiry = function(scheduleCd, salesReportNo){
+        var param = {
+                scheduleCd : scheduleCd,
+                screenMode : 'UPDATE',
+        };
+        ServerService.doPost('ScheduleControl/inquiry', param)
+        .then(
+            function(okResult) {
+                $scope.onChangeCustomer(okResult.data.schedule.custCd);
+                $scope.model.hidden.isDisabled = false;
+                $scope.model.hidden.screenMode = 'UPDATE';
+                $scope.model.form.listTargetUser = okResult.data.listTargetUser;
+                $scope.model.form.schedule = okResult.data.schedule;
+                $scope.model.form.schedule.salesReportNo = salesReportNo;
+                $scope.model.form.schedule.ownerCd = !StringUtils.isEmpty(okResult.data.schedule.ownerCd)
+                    ? okResult.data.schedule.ownerCd.split(',') : [];
+                if(StringUtils.isEmpty(okResult.data.schedule.scheduleStartHm)
+                        && StringUtils.isEmpty(okResult.data.schedule.scheduleEndHm)){
+                    $scope.model.form.schedule.allDayFlag = true;
+                }
+                $scope.model.hidden.scheduleStartYmd = angular.copy(okResult.data.schedule.scheduleStartYmd);
+                $scope.model.hidden.scheduleEndYmd = angular.copy(okResult.data.schedule.scheduleEndYmd);
+                $scope.modelSetting.form.scheduleSetting = okResult.data.schedule;
+                $scope.model.form.schedule.repeatFlag = okResult.data.schedule.repeatFlag == '1' ? true : false;
+                var scheduleSetting = {
+                    repeatType: !ValidateUtil.isValidTextEmpty(okResult.data.schedule.repeatType) ? okResult.data.schedule.repeatType: '1',
+                    repeatInterval: !ValidateUtil.isValidTextEmpty(okResult.data.schedule.repeatInterval) ? okResult.data.schedule.repeatInterval.toString() : '1',
+                    repeatFromDate: !ValidateUtil.isValidTextEmpty(okResult.data.schedule.repeatFromDate)? okResult.data.schedule.repeatFromDate : $scope.model.hidden.scheduleStartYmd,
+                    repeatToDate: okResult.data.schedule.repeatToDate,
+                    repeatDates: !ValidateUtil.isValidTextEmpty(okResult.data.listRepeatDates) ? okResult.data.listRepeatDates.toString() : ''
+                };
+                sessionStorage.setItem("scheduleSetting", JSON.stringify(scheduleSetting));
+                $scope.model.form.schedule.targetUser = okResult.data.targetUser;
+                $scope.model.hidden.repeatSetting = !ValidateUtil.isValidTextEmpty(okResult.data.schedule.repeatCd) ? true : false;
+
+                /** Check show Todo or Customer info**/
+                //IF SCHEDULE HAS SOURCE_TODO_NO, THEN SCHEDULE HAS BEEN CREATED FROM TODO
+                if(!StringUtils.isEmpty($scope.model.form.schedule.sourceTodoNo)){
+                    $scope.model.hidden.isTodo = true;
+
+                }else{
+                    $scope.model.hidden.isTodo = false;
+                }
+
+            },
+            function(errResult){
+        });
+    };
+
+    $scope.newSchedule = function(){
+        sessionStorage.removeItem("scheduleInfo");
+        sessionStorage.removeItem("scheduleSetting");
+        $scope.model.hidden.screenMode = "INSERT";
+        $scope.model.form.schedule.scheduleCategory = '';
+        $scope.model.form.schedule.scheduleCategoryName = '';
+        $scope.model.form.schedule.scheduleName = '';
+        $scope.model.form.schedule.schedulePlace = '';
+        $scope.model.form.schedule.scheduleFacilityName = '';
+        $scope.model.form.schedule.scheduleContent = '';
+        $scope.model.form.schedule.scheduleColor = '';
+        $scope.model.form.schedule.custCd = '';
+        $scope.model.form.schedule.custName = '';
+        $scope.model.form.schedule.ownerCd = [];
+        $scope.model.form.schedule.projectSno = '';
+        $scope.model.form.schedule.projectName = '';
+        $scope.model.form.schedule.actionType = '';
+        $scope.model.form.schedule.repeatFlag = false;
+        $scope.model.form.schedule.allDayFlag = false;
+        $scope.model.form.schedule.sourceTodoNo = '';
+        $scope.model.form.schedule.sourceTodoLineNo = '';
+        $scope.model.form.schedule.todoName = '';
+        $scope.model.form.schedule.todoLineNoInfo = '';
+        $scope.model.form.schedule.todoCustCd = '';
+        $scope.model.form.schedule.todoCustName = '';
+        $scope.model.form.schedule.todoOwnerCd = '';
+        $scope.model.form.schedule.todoOwnerName = '';
+        $scope.model.form.schedule.salesReportNo = '';
+    };
+
+    $scope.copy = function(paramControl, paramDetails){
+        $scope.model.hidden.screenMode = "INSERT";
+    };
+
+    $scope.createSalesReport = function() {
+        $uibModalInstance.dismiss('close');
+        var mode = 'INSERT';
+        if(!StringUtils.isEmpty($scope.model.form.schedule.salesReportNo)){
+            mode = 'UPDATE';
+        }
+        switch(mode){
+            case 'INSERT':
+                var custCd = "", custName = "", ownerCd = "", ownerName = "";
+                if(!StringUtils.isEmpty($scope.model.form.schedule.custCd)){
+                    custCd = $scope.model.form.schedule.custCd;
+                    custName = $scope.model.form.schedule.custName;
+                    ownerCd = $scope.model.form.schedule.ownerCd;
+                    ownerName = $scope.model.form.schedule.ownerName;
+                }else if(!StringUtils.isEmpty($scope.model.form.schedule.sourceTodoNo)){
+                    custCd = $scope.model.form.schedule.todoCustCd;
+                    custName = $scope.model.form.schedule.todoCustName;
+                    ownerCd = $scope.model.form.schedule.todoOwnerCd;
+                    ownerName = $scope.model.form.schedule.todoOwnerName;
+                }
+                var param = {
+                        salesReportNo: "",
+                        isDisabled: false,
+                        screenMode: 'INSERT',
+                        custCd :  custCd,
+                        custName :  custName,
+                        projectSno :  $scope.model.form.schedule.projectSno,
+                        projectName :  $scope.model.form.schedule.projectName,
+                        ownerCd :  ownerCd,
+                        ownerName :  ownerName,
+                        scheduleStartHm : $scope.model.form.schedule.scheduleStartHm,
+                        scheduleEndHm : $scope.model.form.schedule.scheduleEndHm,
+                        scheduleStartYmd : $scope.model.form.schedule.scheduleStartYmd,
+                        todoNo: $scope.model.form.schedule.sourceTodoNo,
+                        lineNo: $scope.model.form.schedule.sourceTodoLineNo,
+                        todoName: $scope.model.form.schedule.todoName,
+                        todoDetail: $scope.model.form.schedule.todoLineNoInfo,
+                        sourceScheduleCd: $scope.model.form.schedule.scheduleCd,
+                        fromScreen: $scope.model.hidden.fromScreen
+                };
+                sessionStorage.removeItem("salesReport");
+                sessionStorage.removeItem("salesReportUrl");
+                sessionStorage.setItem("salesReportUrl", JSON.stringify(param));
+                break;
+            case 'UPDATE':
+                var salesReport = {
+                    salesReportNo: $scope.model.form.schedule.salesReportNo,
+                    fromScreen: $scope.model.hidden.fromScreen,
+                    isDisabled: false,
+                    screenMode: 'UPDATE',
+                };
+                sessionStorage.setItem("salesReport", JSON.stringify(salesReport));
+                sessionStorage.removeItem("salesReportUrl");
+                break;
+            default:
+                break;
+        }
+
+        var options = {
+            size: 'lg'
+        };
+        DialogsService.showDialog('SalesReportDialog', 'SalesReportControlCtrl', null, options);
+    };
+
+    $scope.$on('updateSchedule', function(evt, param){
+        $scope.update();
+    });
+
+    $scope.$on('deleteSchedule', function(evt, param){
+        $scope.deleteSchedule();
+    });
+
+    $scope.actionDelete = function(formInvalid){
+        $scope.model.hidden.isSubmited = true;
+        if (formInvalid) {
+            return;
+        }
+        if($scope.model.form.schedule.repeatFlag){
+            $scope.model.hidden.action = 'delete';
+            DialogsService.showDialog('ScheduleSettingRequest', 'scheduleSettingRequestCtrl', {action: 'delete'}, {size: '600'});
+        }else{
+            $scope.deleteSchedule();
+        }
+
+    };
+
+    /**
+     * delete schedule
+     */
+    $scope.deleteSchedule = function(){
+        var param = angular.extend({},$scope.model.form.schedule);
+        param.listTargetUser = JSON.stringify($scope.model.form.listTargetUser);
+        if($scope.model.form.schedule.repeatFlag){
+            var scheduleSetting = angular.fromJson(sessionStorage.getItem("scheduleSetting"));
+            $scope.convertDataSetting(param, scheduleSetting);
+        }else{
+            delete param.repeatType;
+            delete param.repeatInterval;
+            delete param.repeatFromDate;
+            delete param.repeatToDate;
+            delete param.repeatDates;
+            delete param.repeatCd;
+        };
+        param = $scope.convertData(param);
+        delete param.targetUser;
+        var dlg = DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('S00005'));
+        dlg.result.then(function(btn){
+            ServerService
+                .doPost('ScheduleControl/delete', param)
+                .then(
+                        function(okResult) {
+                            var error = okResult.data.failed;
+                            var warning = okResult.data.warning;
+                            if(!ValidateUtil.isValidTextEmpty(error)){
+                                DialogsService.showError(Messages.getMessage('system.error'), error);
+                                return;
+                            }
+                            if(!ValidateUtil.isValidTextEmpty(warning)){
+                                DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                                return;
+                            }
+                            var dlg = DialogsService.showNotify(Messages.getMessage('title.info'), okResult.data.success);
+                            dlg.result.then(function(btn){
+                                $uibModalInstance.dismiss('close');
+                                if(!StringUtils.isEmpty($scope.model.hidden.fromScreen)){
+                                    $rootScope.$broadcast("ScheduleList#getEvents");
+                                } else {
+                                    $rootScope.$broadcast("PtlTodoList#getEvents");
+                                }
+                            });
+                        },
+                        function(errResult){
+                        });
+        },function(btn){ });
+    };
+}]);

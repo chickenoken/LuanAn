@@ -1,0 +1,552 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision: $ $Date: $
+ */
+
+'use strict';
+
+exexSMSApp.factory('PtlRequestModel', [ 'BaseModel',function(BaseModel) {
+    var model = BaseModel.getInstance();
+    model.form = {
+            info : {
+                companyCd : '',
+                groupCd : [],
+                approvedUserCd : '',
+                applyMessage : '',
+                screen : '',
+                mode : '',
+                workNo : '',
+                data : '',
+                listDetailData : [],
+                dataReservation : '',
+                recodeNo : 0,
+                version : '',
+                documentStatus : ''
+            },
+            listApproverUser : [],
+            listMstGroup : [],
+            buttonActive : false,
+            mode : ''
+    };
+    model.treeConfig = {
+        core : {
+            multiple : true,
+            animation: true,
+            error : function(error) {
+                console.log('treeCtrl: error from js tree - ' + angular.toJson(error));
+            },
+            check_callback : true,
+            worker : true
+        },
+        types : {
+            'default' : {
+                icon : 'fa fa-users'
+            },
+            star : {
+                icon : 'glyphicon glyphicon-star'
+            },
+            cloud : {
+                icon : 'glyphicon glyphicon-cloud'
+            }
+        },
+        version : 1,
+        plugins : ["types","search"]
+    };
+    model.treeGroup = {
+        treeData : [],
+        treeConfig : angular.copy(model.treeConfig),
+        treeInstance : ''
+    };
+    model.treeApproveGroup = {
+        treeData : [],
+        treeConfig : angular.copy(model.treeConfig),
+        treeInstance : ''
+    };
+    model.treeApproveRoute = {
+        treeData : [],
+        treeConfig : angular.copy(model.treeConfig),
+        treeInstance : ''
+    };
+    model.hidden = {
+        listGroupSelect : [],
+        msgConfirm : ''
+    }
+    return model;
+}]);
+
+exexSMSApp.controller('ptlRequestCtrl',
+        ['$rootScope', '$scope', 'ServerService', '$uibModalInstance', 'DialogsService', 'PtlRequestModel', 'data', 'Messages', '$timeout',
+         function($rootScope, $scope, ServerService, $uibModalInstance, DialogsService, PtlRequestModel, data, Messages, $timeout) {
+
+    $scope.model = PtlRequestModel;
+
+    /**
+     * init model
+     */
+    $scope.init = function(){
+        var sessionLogin = angular.fromJson(sessionStorage.getItem("session"));
+        if(!StringUtils.isEmpty(sessionLogin.groupCd)){
+            $scope.model.form.info.groupCd = [sessionLogin.groupCd]
+        }else{
+            $scope.model.form.info.groupCd = [];
+        }
+
+        $scope.model.form.info.screen = data.screen;
+        if(!ValidateUtil.isValidTextEmpty(data.data.listDetailData)){
+            $scope.model.form.info.listDetailData = data.data.listDetailData;
+            delete data.data.listDetailData;
+        }else if(!ValidateUtil.isValidTextEmpty(data.data.detailSaleList)){
+            $scope.model.form.info.listDetailData = data.data.detailSaleList;
+            delete data.data.detailSaleList;
+        }else if(!ValidateUtil.isValidTextEmpty(data.data.detailOrderList)){
+            $scope.model.form.info.listDetailData = data.data.detailOrderList;
+            delete data.data.detailOrderList;
+        }else if(!ValidateUtil.isValidTextEmpty(data.data.detailStockList)){
+            $scope.model.form.info.listDetailData = data.data.detailStockList;
+            delete data.data.detailStockList;
+        }else{
+            $scope.model.form.info.listDetailData = data.listDetailData;
+        }
+        if(!StringUtils.isEmpty(data.dataReservation)){
+            $scope.model.form.info.dataReservation = data.dataReservation;
+        }
+
+        $scope.model.form.info.data = data.data;
+        $scope.model.form.mode = data.mode;
+        $scope.model.form.info.recodeNo = data.recodeNo;
+        $scope.model.form.info.workNo = data.workNo;
+        $scope.model.form.info.version = data.version;
+        $scope.model.form.info.documentStatus = data.documentStatus;
+        $scope.model.hidden.msgConfirm = data.msgConfirm;
+        $scope.getInit();
+    };
+
+    $scope.close = function() {
+        $uibModalInstance.dismiss('close');
+    };
+
+    /**
+     * 初期表示
+     */
+    $scope.getInit = function() {
+        $scope.model.form.listApproverUser = [];
+        $scope.model.form.listUser = [];
+        $scope.model.form.buttonActive = false;
+        var param = '';
+        ServerService.doPost('PtlRequest/getInit', {}).then(
+            function(okResult) {
+                var error = okResult.data.failed;
+                if(!ValidateUtil.isValidTextEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                } else {
+                    $scope.model.form.listMstGroup = okResult.data.listGroupType;
+                    var json = okResult.data.listGroupType;
+                    var jsonApprove = okResult.data.listGroupApprove;
+                    var jsonApproveRoute = okResult.data.listApproveRoute;
+                    $scope.convertGroupTreeData(json, $scope.model.treeGroup);
+                    $scope.convertGroupTreeData(jsonApprove, $scope.model.treeApproveGroup);
+                    $scope.convertGroupTreeData(jsonApproveRoute, $scope.model.treeApproveRoute);
+                    $timeout(function() {
+                        $scope.model.treeGroup.treeInstance.jstree(true).settings.core.data = $scope.model.treeGroup.treeData;
+                        $scope.model.treeApproveGroup.treeInstance.jstree(true).settings.core.data = $scope.model.treeApproveGroup.treeData;
+                        $scope.model.treeApproveRoute.treeInstance.jstree(true).settings.core.data = $scope.model.treeApproveRoute.treeData;
+                        $scope.model.treeGroup.treeInstance.jstree(true).refresh();
+                        $scope.model.treeApproveGroup.treeInstance.jstree(true).refresh();
+                        $scope.model.treeApproveRoute.treeInstance.jstree(true).refresh();
+                    }, 100);
+                }
+            }
+        );
+    };
+
+    $scope.convertGroupTreeData = function(json, treeModel){
+        if(!ValidateUtil.isValidTextEmpty(json)){
+            json = JSON.parse(JSON.stringify(json).split('"groupCd":').join('"id":'));
+            json = JSON.parse(JSON.stringify(json).split('"groupName":').join('"text":'));
+            json = JSON.parse(JSON.stringify(json).split('"parentCd":').join('"parent":'));
+            angular.forEach(json, function(item, i){
+                if(item.id == '$'){
+                    item.state = { opened : true, disabled: true };
+                }
+                if(item.oldFlag){
+                    item.parent = '$old';
+                }
+                if(item.id == '$old'){
+                    item.state = { disabled: true };
+                }
+            })
+            treeModel.treeData = json;
+        }else{
+            treeModel.treeData = null;
+        }
+    }
+
+    $scope.selectUserByGroupList = function(groupCdList) {
+        var param = {
+            groupCdList : groupCdList,
+            userSelectedList : []
+        };
+        if($scope.model.form.listApproverUser.length != 0){
+            angular.forEach($scope.model.form.listApproverUser, function(item, i){
+                if(item.userGroupFlag == '0'){
+                    param.userSelectedList.push(item.approvedUserCd);
+                }
+            })
+        }
+        ServerService.doPost('PtlRequest/selectUserByGroupList', param).then(
+            function(okResult) {
+                var error = okResult.data.failed;
+                if(!ValidateUtil.isValidTextEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                }
+                 $scope.model.form.listUser = okResult.data.listUser;
+            }
+        );
+    };
+
+    /**
+     * 申請テーブルのデータを作成します。
+     * 申請明細テーブルのデータを作成します。
+     */
+    $scope.addNew = function() {
+        $scope.processing('create');
+    };
+
+    /**
+     * 申請テーブルのデータを作成します。
+     * 申請明細テーブルのデータを作成します。
+     */
+    $scope.update = function() {
+        $scope.processing('update');
+    };
+
+    /**
+     * 申請テーブルのデータを作成します。
+     * 申請明細テーブルのデータを作成します。
+     */
+    $scope.processing = function(action) {
+
+        if($scope.model.form.listApproverUser.length > 100){
+            DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00166'));
+            return;
+        }
+
+//        DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('S00055'))
+        DialogsService.showDialog('PtlRequestWFDialog', 'PtlRequestWFDialogCtrl', null, null)
+        .result.then(function(isSendMail) {
+
+            $uibModalInstance.dismiss('close');
+            var param = angular.copy($scope.model.form.info);
+            param.isSendMail = isSendMail;
+            param.groupCd = param.groupCd.toString();
+            if($scope.model.form.listApproverUser.length != 0){
+                param.approvedUserCd = JSON.stringify($scope.model.form.listApproverUser);
+            }
+            if(data.screen === 'EXEX10'){
+                delete param.listDetailData;
+                delete param.data;
+            }else{
+                delete param.dataReservation;
+            }
+            ServerService.doPost('PtlRequest/' + action, param).then(
+                function(okResult) {
+                    var result = okResult.data;
+                    var error =  result.failed;
+                    var success =  result.success;
+                    var warning =  result.warning;
+                    if(!ValidateUtil.isValidTextEmpty(error)){
+                        DialogsService.showError(Messages.getMessage('system.error'), error);
+                        return;
+                    }else if(!ValidateUtil.isValidTextEmpty(warning)){
+                        DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                        return;
+                    }else{
+                        $rootScope.$broadcast("Header#initData");
+                        DialogsService.showNotify(Messages.getMessage('title.info'), success).result.then(function(btn){
+                            sessionStorage.removeItem("customerInfo");
+                            switch (data.screen) {
+                                // 見積一覧画面遷移する
+                                case 'EXEX01':
+                                    var resultTmp = result.workNo.split("#");
+                                    var salEstimate = {
+                                            'estimateSno' : resultTmp[0],
+                                            'custCd' : resultTmp[1],
+                                            'recodeNo' : ValidateUtil.isValidTextEmpty(result.recodeNo) ? 1 : result.recodeNo,
+                                            'screenMode' : "VIEW",
+                                            'backMode' : '',
+                                            'ptlMode' : '',
+                                            'isDisabled' : true
+                                    };
+                                    sessionStorage.setItem("salEstimate", JSON.stringify(salEstimate));
+                                    $rootScope.$broadcast("SalEstimateControl#editEstimateWF",{
+                                        screenMode : 'VIEW',
+                                        isDisabled : true,
+                                        salEstimate : salEstimate
+                                    });
+                                    break;
+                                case 'EXEX02':
+                                    var receiveItemInfo = {
+                                        'rcvSno' :  result.workNo,
+                                        'recodeNo' : ValidateUtil.isValidTextEmpty(result.recodeNo) ? 1 : result.recodeNo,
+                                        'screenMode' : "VIEW",
+                                        'backMode' : '',
+                                        'ptlMode' : '',
+                                        'isDisabled' : true
+                                    };
+                                    sessionStorage.setItem("receiveItemInfo", JSON.stringify(receiveItemInfo));
+                                    $rootScope.$broadcast("SalRsvControl#view",{
+                                        isDisabled : true,
+                                        screenMode : 'VIEW',
+                                        receiveItemInfo : receiveItemInfo
+                                    });
+                                    break;
+                                case 'EXEX03':
+                                    var salDecideProcess = {
+                                            salesSno :  result.workNo,
+                                            recodeNo : ValidateUtil.isValidTextEmpty(result.recodeNo) ? 1 : result.recodeNo,
+                                            screenMode : "VIEW",
+                                            backMode : '',
+                                            ptlMode : '',
+                                            isDisabled : true,
+                                            custType: data.custType
+                                    };
+                                    sessionStorage.setItem("salDecideProcess", JSON.stringify(salDecideProcess));
+                                    $rootScope.$broadcast("SalDecideProcess#editDecideProcessWF",{
+                                        screenMode : 'VIEW',
+                                        isDisabled : true,
+                                        salDecideProcess : salDecideProcess
+                                    });
+                                    break;
+                                case 'EXEX06':
+                                    var salSell = {
+                                            'orderSno' :  result.workNo,
+                                            'recodeNo' : ValidateUtil.isValidTextEmpty(result.recodeNo) ? 1 : result.recodeNo,
+                                            'screenMode' : "VIEW",
+                                            'backMode' : '',
+                                            'ptlMode' : '',
+                                            'isDisabled' : true
+                                    };
+                                    sessionStorage.setItem("salSell", JSON.stringify(salSell));
+                                    $rootScope.$broadcast("SalOrderControl#editSellWF",{
+                                        screenMode : 'VIEW',
+                                        isDisabled : true,
+                                        salSell : salSell
+                                    });
+                                    break;
+                                case 'EXEX07':
+                                    var salStock = {
+                                        'stockSno' :  result.workNo,
+                                        'recodeNo' : ValidateUtil.isValidTextEmpty(result.recodeNo) ? 1 : result.recodeNo,
+                                        'screenMode' : "VIEW",
+                                        'ptlMode' : '',
+                                        'isDisabled' : true
+                                    };
+                                    sessionStorage.setItem("salStock", JSON.stringify(salStock));
+                                    $rootScope.$broadcast("SalStockControl#editStockWF",{
+                                        screenMode : 'VIEW',
+                                        isDisabled : true,
+                                        salStock : salStock
+                                    });
+                                    break;
+                                case 'EXEX09':
+                                    var stockTransfer = {
+                                        'transferSno' :  result.workNo,
+                                        'recodeNo' : ValidateUtil.isValidTextEmpty(result.recodeNo) ? 1 : result.recodeNo
+                                    };
+                                    sessionStorage.setItem("stockTransfer", JSON.stringify(stockTransfer));
+                                    $rootScope.$broadcast("StockTransferTransfer#editStockTransferWF",{
+                                        screenMode : 'VIEW',
+                                        isDisabled : true,
+                                        stockTransfer : stockTransfer
+                                    });
+                                    break;
+                                case 'EXEX10':
+                                    $rootScope.$broadcast("Reservation#listReservationWF",{
+                                        'screenMode' : 'EDIT',
+                                        'reservationSno': result.workNo,
+                                        'recodeNo': result.recodeNo
+                                    });
+                                    break;
+                                }
+                        });
+                    }
+                }
+            );
+        });
+    };
+
+    $scope.selectUser = function(row, index){
+        $scope.model.form.listUser.splice(index, 1);
+        $scope.model.form.listApproverUser.push(row);
+
+        // show insert / update button when have approve user
+        if($scope.model.form.listApproverUser.length > 0){
+            $scope.model.form.buttonActive = true;
+        }
+    }
+
+    $scope.addAllUser = function(){
+        angular.forEach($scope.model.form.listUser, function(item,index){
+            var itemPust = $scope.model.form.listUser[index];
+            $scope.model.form.listApproverUser.push(itemPust);
+        });
+        $scope.model.form.listUser = [];
+
+        // show insert / update button when have approve user
+        if($scope.model.form.listApproverUser.length > 0){
+            $scope.model.form.buttonActive = true;
+        }
+    };
+
+    $scope.sortableConfig = {
+        group: 'requestUser',
+        onEnd: function (evt){
+            if($scope.model.form.listApproverUser.length > 0){
+                $scope.model.form.buttonActive = true;
+            }else{
+                $scope.model.form.buttonActive = false;
+            }
+        }
+    };
+
+    $scope.selectNode = function(node, selected){
+        selected.node.state.disabled = true;
+        var item = {
+            approvedUserCd : selected.node.id,
+            userName : selected.node.text,
+            userGroupFlag : '1'
+        };
+        $scope.model.form.listApproverUser.push(item);
+        $scope.model.treeGroup.treeInstance.jstree(true).redraw_node(selected.node.id);
+
+        $scope.activeApprove();
+    }
+
+    $scope.selectApproveNode = function(node, selected){
+        selected.node.state.disabled = true;
+
+        var item = {
+            approvedUserCd : selected.node.id,
+            userName : selected.node.text,
+            userGroupFlag : '1',
+            groupType: 'APPROVE_GROUP'
+        };
+        $scope.model.form.listApproverUser.push(item);
+        $scope.model.treeApproveGroup.treeInstance.jstree(true).redraw_node(selected.node.id);
+
+        $scope.activeApprove();
+    }
+
+    $scope.selectApproveRouteNode = function(node, selected) {
+        var groupCd = selected.node.id;
+        ServerService.doPost('PtlRequest/getApproveRouteList', groupCd).then(
+            function(okResult) {
+                var error = okResult.data.failed;
+                if(!ValidateUtil.isValidTextEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                } else {
+                    for (var i = 0; i < okResult.data.listUser.length; i++) {
+                        var data = okResult.data.listUser[i];
+                        var isSelected = false;
+                        for (var j = 0; j < $scope.model.form.listApproverUser.length; j++) {
+                            var user = $scope.model.form.listApproverUser[j];
+                            if(user.approvedUserCd == data.userCd) {
+                                isSelected = true;
+                                break;
+                            }
+                        }
+                        if(!isSelected) {
+                            var item = {
+                                approvedUserCd : data.userCd,
+                                userName : data.userName,
+                                userGroupFlag : data.userGroupFlag,
+                                groupType: 'APPROVE_ROUTE'
+                            };
+                            $scope.model.form.listApproverUser.push(item);
+                        }
+                    }
+                }
+
+                $scope.activeApprove();
+            }
+        );
+    };
+
+    ////Event JSTree
+    $scope.searchNode = function(){
+        var to = false;
+        if(to){
+            clearTimeout(to);
+        }
+        to = setTimeout(function () {
+            var v = $('#searchGroup').val();
+            $scope.model.treeGroup.treeInstance.jstree(true).search(v);
+        }, 250);
+    };
+
+    $scope.searchApproveNode = function(){
+        var to = false;
+        if(to){
+            clearTimeout(to);
+        }
+        to = setTimeout(function () {
+            var v = $('#searchApproveGroup').val();
+            $scope.model.treeApproveGroup.treeInstance.jstree(true).search(v);
+        }, 250);
+    };
+
+    $scope.searchApproveRouteNode = function(){
+        var to = false;
+        if(to){
+            clearTimeout(to);
+        }
+        to = setTimeout(function () {
+            var v = $('#searchApproveRoute').val();
+            $scope.model.treeApproveRoute.treeInstance.jstree(true).search(v);
+        }, 250);
+    };
+
+    $scope.removeItem = function(row, index){
+        if(row.userGroupFlag == '0'&& row.groupType != 'APPROVE_ROUTE'){
+            var list = $scope.model.form.listApproverUser.splice(index, 1);
+            $scope.model.form.listUser.push(list[0]);
+        } else if (row.userGroupFlag == '1' && row.groupType != 'APPROVE_GROUP'){
+            $scope.model.form.listApproverUser.splice(index, 1);
+            $scope.model.treeGroup.treeInstance.jstree(true).get_node(row.approvedUserCd).state.disabled = false;
+            $scope.model.treeGroup.treeInstance.jstree(true).redraw_node(row.approvedUserCd);
+        } else if (row.userGroupFlag == '1' && row.groupType == 'APPROVE_GROUP'){
+            $scope.model.form.listApproverUser.splice(index, 1);
+            $scope.model.treeApproveGroup.treeInstance.jstree(true).get_node(row.approvedUserCd).state.disabled = false;
+            $scope.model.treeApproveGroup.treeInstance.jstree(true).redraw_node(row.approvedUserCd);
+        }
+
+        // hide insert / update button when have no approve user
+        $scope.activeApprove();
+    }
+
+    $scope.changeGroup = function(listSelect){
+        $scope.selectUserByGroupList(listSelect);
+    };
+
+    $scope.changeTab = function(index) {
+        if(index == 0) {
+            $scope.changeGroup($scope.model.form.info.groupCd);
+        }
+        $scope.model.hidden.tabIndex = index;
+    }
+
+    $scope.activeApprove = function(){
+        if($scope.model.form.listApproverUser.length <= 0){
+            $scope.model.form.buttonActive = false;
+        }else{
+            $scope.model.form.buttonActive = true;
+        }
+    }
+
+}]);

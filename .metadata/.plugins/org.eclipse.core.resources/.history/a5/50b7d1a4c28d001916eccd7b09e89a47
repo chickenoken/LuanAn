@@ -1,0 +1,155 @@
+.popover {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1010;
+  display: none;
+  width: 314px;
+  padding: 1px 1px 10px 1px;
+  text-align: left;
+  background-color: white;
+  background-clip: padding-box;
+  border: 1px solid #cccccc;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  border-radius: 0px;
+  -webkit-box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  white-space: normal;
+}
+
+/* line 26, ../../../../../../scss/stylesheets/assets/bootstrap-3.1.1/css/_popovers.scss */
+.popover.top {
+  margin-top: -10px;
+}
+
+/* line 27, ../../../../../../scss/stylesheets/assets/bootstrap-3.1.1/css/_popovers.scss */
+.popover.right {
+  margin-left: 10px;
+}
+
+/* line 28, ../../../../../../scss/stylesheets/assets/bootstrap-3.1.1/css/_popovers.scss */
+.popover.bottom {
+  margin-top: 10px;
+}
+
+/* line 29, ../../../../../../scss/stylesheets/assets/bootstrap-3.1.1/css/_popovers.scss */
+.popover.left {
+  margin-left: -10px;
+}
+
+/* line 32, ../../../../../../scss/stylesheets/assets/bootstrap-3.1.1/css/_popovers.scss */
+.popover-title {
+  margin: 0;
+  padding: 7px 12px;
+  font-size: 12px;
+  font-weight: normal;
+  line-height: 18px;
+  background-color: #f7f7f7;
+  border-bottom: 1px solid #ebebeb;
+  border-radius: 5px 5px 0 0;
+}
+
+/* line 43, ../../../../../../scss/stylesheets/assets/bootstrap-3.1.1/css/_popovers.scss */
+.popover-content {
+  padding: 6px 13px 0px 13px;
+}
+
+/* line 53, ../../../../../../scss/stylesheets/assets/bootstrap-3.1.1/css/_popovers.scss */
+.popover>.arrow, .popover>.arrow:after {
+  position: absolute;
+  display: block !important;
+  width: 0;
+  height: 0;
+  border-color: transparent;
+  border-style: solid;
+}
+
+/* line 62, ../../../../../../scss/stylesheets/assets/bootstrap-3.1.1/css/_popovers.scss */
+.popover>.arrow {
+  border-width: 11px;
+}
+
+/* line 65, ../../../../../../scss/stylesheets/assets/bootstrap-3.1.1/css/_popovers.scss */
+.popover>.arrow:after {
+  border-width: 10px;
+  content: "";
+}
+
+/* line 71, ../../../../../../scss/stylesheets/assets/bootstrap-3.1.1/css/_popovers.scss */
+.popover.top>.arrow {
+  left: 50%;
+  margin-left: -11px;
+  border-bottom-width: 0;
+  border-top-color: #999999;
+  border-top-color: fadein(rgba(0, 0, 0, 0.2), 5%);
+  bottom: -11px;
+}
+
+/* line 78, ../../../../../../scss/stylesheets/assets/bootstrap-3.1.1/css/_popovers.scss */
+.popover.top>.arrow:after {
+  content: " ";
+  bottom: 1px;
+  margin-left: -10px;
+  border-bottom-width: 0;
+  border-top-color: white;
+}
+
+/* line 86, ../../../../../../scss/stylesheets/assets/bootstrap-3.1.1/css/_popovers.scss */
+.popover.right>.arrow {
+  top: 50%;
+  left: -11px;
+  margin-top: -11px;
+  border-left-width: 0;
+  border-right-color: #999999;
+  border-right-color: fadein(rgba(0, 0, 0, 0.2), 5%);
+}
+
+/* line 93, ../../../../../../scss/stylesheets/assets/bootstrap-3.1.1/css/_popovers.scss */
+.popover.right>.arrow:after {
+  content: " ";
+  left: 1px;
+  bottom: -10px;
+  border-left-width: 0;
+  border-right-color: white;
+}
+
+/* line 101, ../../../../../../scss/stylesheets/assets/bootstrap-3.1.1/css/_popovers.scss */
+.popover.bottom>.arrow {
+  left: 50%;
+  margin-left: -11px;
+  border-top-width: 0;
+  border-bottom-color: #999999;
+  border-bottom-color: fadein(rgba(0, 0, 0, 0.2), 5%);
+  top: -11px;
+}
+
+/* line 108, ../../../../../../scss/stylesheets/assets/bootstrap-3.1.1/css/_popovers.scss */
+.popover.bottom>.arrow:after {
+  content: " ";
+  top: 1px;
+  margin-left: -10px;
+  border-top-width: 0;
+  border-bottom-color: white;
+}
+
+/* line 117, ../../../../../../scss/stylesheets/assets/bootstrap-3.1.1/css/_popovers.scss */
+.popover.left>.arrow {
+  top: 50%;
+  right: -11px;
+  margin-top: -11px;
+  border-right-width: 0;
+  border-left-color: #999999;
+  border-left-color: fadein(rgba(0, 0, 0, 0.2), 5%);
+}
+
+/* line 124, ../../../../../../scss/stylesheets/assets/bootstrap-3.1.1/css/_popovers.scss */
+.popover.left>.arrow:after {
+  content: " ";
+  right: 1px;
+  border-right-width: 0;
+  border-left-color: white;
+  bottom: -10px;
+}
+.input-group-addon>i {
+     color: #FFF !important;
+}

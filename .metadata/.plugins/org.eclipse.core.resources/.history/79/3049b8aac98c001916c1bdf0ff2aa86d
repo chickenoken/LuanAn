@@ -1,0 +1,59 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision:  $  $Date:  $
+ * @author : quang-tung
+ */
+'use strict';
+exexSMSApp.factory('SpendReportControlModel', [ 'BaseModel', function(BaseModel) {
+    var model = BaseModel.getInstance();
+    model.form = {
+        createDate:'',
+        paymentLimit:'',
+        summary:'',
+        jobNumber:'',
+        reason:''
+    };
+    return model;
+}]);
+
+/**
+ * reservation sales data group
+ */
+exexSMSApp.controller('spendReportCtrl',
+        ['$rootScope', '$scope', '$uibModalInstance', 'ServerService', 'DialogsService', 'SpendReportControlModel', 'data',
+         function($rootScope, $scope, $uibModalInstance, ServerService, DialogsService, SpendReportControlModel, data) {
+
+    $scope.model = SpendReportControlModel;
+
+    $scope.init = function(){
+        $scope.model.form = {
+                createDate:'',
+                paymentLimit:'',
+                summary:'',
+                jobNumber:'',
+                reason:'',
+                paymentNo: data.paymentNo,
+        };
+    };
+
+    $scope.downReport = function() {
+
+        var param = angular.copy($scope.model.form);
+        var params = data;
+        params.createDate = !ValidateUtil.isValidTextEmpty(param.createDate) ? new Date(param.createDate) : null;
+        params.paymentLimit = !ValidateUtil.isValidTextEmpty(param.paymentLimit) ? new Date(param.paymentLimit) : null;
+        params.summary = param.summary;
+        params.reason = param.reason;
+        params.jobNumber = param.jobNumber;
+
+        ServerService.doDownload('/SpendReportControl/downloadReport',  params, 'application/pdf', "PAYMENT.pdf");
+    }
+
+    $scope.close = function(){
+        $rootScope.$broadcast("SalPayControl#search");
+        $uibModalInstance.dismiss();
+    };
+}]);

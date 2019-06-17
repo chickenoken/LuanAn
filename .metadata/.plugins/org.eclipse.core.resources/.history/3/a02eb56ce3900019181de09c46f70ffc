@@ -1,0 +1,30 @@
+<div class="modal-header">
+  <h3>Thêm nhân Viên</h3>
+</div>
+<div class="modal-body">
+  <div class="row">
+    <div class="form-group">
+      <div class="col-md-4"><span>Tên Nhân Viên</span></div>
+      <div class="col-md-8"><input type="text" ng-model="model.form.control.tenNv" style="width : 100%"></div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="form-group">
+      <div class="col-md-4"><span>Role</span></div>
+      <div class="col-md-8">
+        <select>
+					<option>Danh sách 01</option>
+					<option>Danh sách 02</option>
+					<option>Danh sách 03</option>
+					<option>Danh sách 04</option>
+					</select>
+      </div>
+    </div>
+  </div>
+
+</div>
+<div class="modal-footer">
+    <button class="btn btn-primary" ng-click="ok()">OK</button>
+    <button class="btn btn-warning" ng-click="cancel()">Cancel</button>
+</div>

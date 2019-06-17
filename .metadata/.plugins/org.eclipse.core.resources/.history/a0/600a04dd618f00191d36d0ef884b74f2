@@ -1,0 +1,159 @@
+package org.planning.net.config;
+
+import java.sql.SQLException;
+
+import org.seasar.doma.jdbc.JdbcLogger;
+import org.seasar.doma.jdbc.Sql;
+import org.seasar.doma.jdbc.SqlExecutionSkipCause;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class Slf4jJdbcLogger implements JdbcLogger {
+
+    @Override
+    public void logConnectionClosingFailure(String callerClassName, String callerMethodName, SQLException e) {
+
+        Logger logger = LoggerFactory.getLogger(callerClassName);
+        logger.debug("logConnectionClosingFailure:{}#{}", callerClassName, callerMethodName);
+        logger.error("{}", e);
+    }
+
+    @Override
+    public void logStatementClosingFailure(String callerClassName, String callerMethodName, SQLException e) {
+
+        Logger logger = LoggerFactory.getLogger(callerClassName);
+        logger.debug("logStatementClosingFailure:{}#{}", callerClassName, callerMethodName);
+        logger.error("{}", e);
+    }
+
+    @Override
+    public void logResultSetClosingFailure(String callerClassName, String callerMethodName, SQLException e) {
+
+        Logger logger = LoggerFactory.getLogger(callerClassName);
+        logger.debug("logResultSetClosingFailure:{}#{}", callerClassName, callerMethodName);
+        logger.error("{}", e);
+
+    }
+
+    @Override
+    public void logAutoCommitEnablingFailure(String callerClassName, String callerMethodName, SQLException e) {
+
+        Logger logger = LoggerFactory.getLogger(callerClassName);
+        logger.debug("logAutoCommitEnablingFailure:{}#{}", callerClassName, callerMethodName);
+        logger.error("{}", e);
+
+    }
+
+    @Override
+    public void logTransactionIsolationSettingFailuer(String callerClassName, String callerMethodName,
+            int transactionIsolationLevel, SQLException e) {
+
+        Logger logger = LoggerFactory.getLogger(callerClassName);
+        logger.debug("logTransactionIsolationSettingFailuer:{}#{}({})", callerClassName, callerMethodName,
+                transactionIsolationLevel);
+        logger.error("{}", e);
+
+    }
+
+    @Override
+    public void logDaoMethodEntering(String callerClassName, String callerMethodName, Object... parameters) {
+
+        Logger logger = LoggerFactory.getLogger(callerClassName);
+        logger.debug("START {}#{} {}", callerClassName, callerMethodName, parameters);
+    }
+
+    @Override
+    public void logDaoMethodExiting(String callerClassName, String callerMethodName, Object result) {
+
+        Logger logger = LoggerFactory.getLogger(callerClassName);
+        logger.debug("END {}#{} {}", callerClassName, callerMethodName, result);
+    }
+
+    @Override
+    public void logDaoMethodThrowing(String callerClassName, String callerMethodName, RuntimeException e) {
+
+        Logger logger = LoggerFactory.getLogger(callerClassName);
+        logger.debug("END {}#{} {}", callerClassName, callerMethodName, e);
+        logger.error("{}", e);
+    }
+
+    @Override
+    public void logSqlExecutionSkipping(String callerClassName, String callerMethodName, SqlExecutionSkipCause cause) {
+
+        Logger logger = LoggerFactory.getLogger(callerClassName);
+        logger.debug("SKIPPED(" + cause.name() + ") " + callerClassName + "#" + callerMethodName);
+    }
+
+    @Override
+    public void logSql(String callerClassName, String callerMethodName, Sql<?> sql) {
+
+        Logger logger = LoggerFactory.getLogger(callerClassName);
+        String message = String.format("SQL log. sqlFilePath=[%s],%n%s", sql.getSqlFilePath(), sql.getFormattedSql());
+        logger.debug(message);
+    }
+
+    @Override
+    public void logLocalTransactionBegun(String callerClassName, String callerMethodName, String transactionId) {
+
+    }
+
+    @Override
+    public void logLocalTransactionCommitted(String callerClassName, String callerMethodName, String transactionId) {
+
+        Logger logger = LoggerFactory.getLogger(callerClassName);
+        logger.debug("logLocalTransactionCommitted:{}#{}({})", callerClassName, callerMethodName, transactionId);
+    }
+
+    @Override
+    public void logLocalTransactionRolledback(String callerClassName, String callerMethodName, String transactionId) {
+
+        Logger logger = LoggerFactory.getLogger(callerClassName);
+        logger.debug("logLocalTransactionRolledback:{}#{}({})", callerClassName, callerMethodName, transactionId);
+    }
+
+    @Override
+    public void logLocalTransactionSavepointCreated(String callerClassName, String callerMethodName,
+            String transactionId, String savepointName) {
+
+        Logger logger = LoggerFactory.getLogger(callerClassName);
+        logger.debug("logLocalTransactionSavepointCreated:{}#{}({},{})", callerClassName, callerMethodName,
+                transactionId, savepointName);
+    }
+
+    @Override
+    public void logLocalTransactionSavepointReleased(String callerClassName, String callerMethodName,
+            String transactionId, String savepointName) {
+
+        Logger logger = LoggerFactory.getLogger(callerClassName);
+        logger.debug("logLocalTransactionSavepointReleased:{}#{}({},{})", callerClassName, callerMethodName,
+                transactionId, savepointName);
+    }
+
+    @Override
+    public void logLocalTransactionSavepointRolledback(String callerClassName, String callerMethodName,
+            String transactionId, String savepointName) {
+
+        Logger logger = LoggerFactory.getLogger(callerClassName);
+        logger.debug("logLocalTransactionSavepointRolledback:{}#{}({},{})", callerClassName, callerMethodName,
+                transactionId, savepointName);
+
+    }
+
+    @Override
+    public void logLocalTransactionRollbackFailure(String callerClassName, String callerMethodName,
+            String transactionId, SQLException e) {
+
+        Logger logger = LoggerFactory.getLogger(callerClassName);
+        logger.debug("logLocalTransactionRollbackFailure:{}#{}({})", callerClassName, callerMethodName, transactionId);
+        logger.error("{}", e);
+
+    }
+
+    @Override
+    public void logLocalTransactionEnded(String callerClassName, String callerMethodName, String transactionId) {
+
+        Logger logger = LoggerFactory.getLogger(callerClassName);
+        logger.debug("logLocalTransactionEnded:{}#{}({})", callerClassName, callerMethodName, transactionId);
+    }
+
+}

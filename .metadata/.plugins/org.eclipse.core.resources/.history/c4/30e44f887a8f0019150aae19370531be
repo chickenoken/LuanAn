@@ -1,0 +1,21 @@
+<%@ page language="java" contentType="text/html; charset=ISO-8859-1"
+    pageEncoding="ISO-8859-1"%>
+<%@taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
+<%@ taglib prefix="spring" uri="http://www.springframework.org/tags"%>
+<!DOCTYPE html>
+<html>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.7.8/angular.min.js"></script>
+<script type="text/javascript" src="<c:url value="/resources/js/login.js" />"></script>
+<script type="text/javascript"  src="src/main/webapp/resources/js/header.js"></script>
+<spring:url value="/resources/js/trangChu.js" var="mainCss" />
+<link rel="stylesheet" type="text/css"
+    href="${pageContext.request.contextPath}/WEB-INF/style/my-styles.css">
+<head>
+
+<title>Insert title here</title>
+</head>
+<body>
+test<br/>
+${pageContext.request.contextPath}
+</body>
+</html>

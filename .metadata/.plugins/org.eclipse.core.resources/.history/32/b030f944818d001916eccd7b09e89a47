@@ -1,0 +1,904 @@
+@charset "UTF-8";
+/* Extra small screen / phone */
+/* Small screen / tablet*/
+/* Medium screen / desktop*/
+/* Large screen / wide desktop*/
+/* Large scree / wider desktop*/
+/* So media queries don't overlap when required, provide a maximum*/
+@media (min-width: 992px) and (max-width: 1200px) {
+  /* 992px 1200px */
+}
+@media (min-width: 992px) {
+  /* 992px */
+}
+@media (max-width: 991px) {
+  /* 991px */
+}
+@media (min-width: 768px) and (max-width: 991px) {
+  /* 768px & 991px */
+}
+@media (min-width: 768px) {
+  /* 768px */
+  /*   #tableProject{
+      & tr{
+        &:last-child th {
+          width: 200px;
+        }
+      }
+    } */
+}
+@media (max-width: 767px) {
+  /* 767px */
+}
+@media (max-width: 480px) {
+  /* 480px */
+  /* line 78, ./src/scss/timeline.scss */
+  .tl-wrap .tl-content .panel-footer {
+    padding: 10px 10px;
+  }
+  /* line 80, ./src/scss/timeline.scss */
+  .tl-wrap .tl-content .panel-footer .pull-right {
+    float: none !important;
+  }
+
+  /* line 89, ./src/scss/timeline.scss */
+  .tl-group .tl-group-content {
+    padding-left: 15px !important;
+    padding-right: 10px !important;
+  }
+
+  /* line 96, ./src/scss/timeline.scss */
+  .tl-content.panel {
+    padding-right: 10px;
+    padding-left: 10px;
+  }
+  /* line 100, ./src/scss/timeline.scss */
+  .tl-content.panel .pull-in {
+    margin-right: -10px;
+    margin-left: -10px;
+  }
+  /* line 107, ./src/scss/timeline.scss */
+  .tl-content .tl-info {
+    display: inherit !important;
+  }
+
+  /* line 113, ./src/scss/timeline.scss */
+  .hidden-max-xs {
+    display: none !important;
+  }
+
+  /* line 116, ./src/scss/timeline.scss */
+  .tl-wrap {
+    margin-left: 40px !important;
+  }
+
+  /* line 119, ./src/scss/timeline.scss */
+  .tl-date {
+    margin-left: -64px !important;
+  }
+
+  /* line 123, ./src/scss/timeline.scss */
+  #tableProject tr:last-child th {
+    width: auto !important;
+  }
+}
+/* line 129, ./src/scss/timeline.scss */
+.tl-wrap span.title:after {
+  content: " : ";
+}
+
+/* line 145, ./src/scss/timeline.scss */
+.visible-left {
+  display: none;
+}
+
+/* line 149, ./src/scss/timeline.scss */
+.timeline {
+  margin: 0;
+  padding: 0;
+}
+
+/* line 154, ./src/scss/timeline.scss */
+.tl-item {
+  display: block;
+}
+/* line 135, ./src/scss/timeline.scss */
+.tl-item:before, .tl-item:after {
+  content: " ";
+  display: table;
+}
+/* line 140, ./src/scss/timeline.scss */
+.tl-item:after {
+  clear: both;
+}
+
+/* line 160, ./src/scss/timeline.scss */
+.tl-wrap-group {
+  float: right;
+  width: 100%;
+  text-align: center;
+  display: block;
+  padding: 15px 20px 15px 20px;
+}
+
+/* line 168, ./src/scss/timeline.scss */
+.tl-wrap {
+  display: block;
+  margin-left: 80px;
+  padding: 15px 0 15px 20px;
+  border-style: solid;
+  border-color: #dee5e7;
+  border-width: 0 0 0 8px;
+}
+/* line 135, ./src/scss/timeline.scss */
+.tl-wrap:before, .tl-wrap:after {
+  content: " ";
+  display: table;
+}
+/* line 140, ./src/scss/timeline.scss */
+.tl-wrap:after {
+  clear: both;
+}
+/* line 176, ./src/scss/timeline.scss */
+.tl-wrap:before {
+  position: relative;
+  content: "";
+  float: left;
+  top: 15px;
+  margin-left: -34px;
+  width: 20px;
+  height: 20px;
+  border-color: inherit;
+  border-width: 5px;
+  border-radius: 50%;
+  border-style: solid;
+  background: #edf1f2;
+  /* box-shadow: 0 0 0 4px $body-bg; */
+}
+/* line 191, ./src/scss/timeline.scss */
+.tl-wrap:hover:before {
+  /* background: transparent;
+  border-color: #fff; */
+}
+
+/* line 198, ./src/scss/timeline.scss */
+.tl-date {
+  position: relative;
+  top: 15px;
+  float: left;
+  margin-left: -80px;
+  display: block;
+  width: 40px;
+  text-align: right;
+}
+
+/* line 208, ./src/scss/timeline.scss */
+.tl-content {
+  position: relative;
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+/* line 212, ./src/scss/timeline.scss */
+.tl-content.block {
+  display: block;
+  width: 100%;
+}
+/* line 216, ./src/scss/timeline.scss */
+.tl-content.panel {
+  margin-bottom: 0;
+}
+/* line 219, ./src/scss/timeline.scss */
+.tl-content.panel .panel-footer {
+  margin-bottom: -10px;
+}
+/* line 223, ./src/scss/timeline.scss */
+.tl-content .tl-info {
+  display: flex;
+  justify-content: inherit;
+}
+/* line 227, ./src/scss/timeline.scss */
+.tl-content .tl-name {
+  display: table-cell;
+}
+/* line 229, ./src/scss/timeline.scss */
+.tl-content .tl-name label {
+  text-transform: inherit;
+  color: #0A86E2;
+  font-weight: bold;
+  text-align: left;
+}
+/* line 237, ./src/scss/timeline.scss */
+.tl-content .tl-status label {
+  text-transform: inherit;
+  padding: 6px 8px 6px 8px;
+  font-size: 12px;
+  display: inline-block;
+}
+/* line 244, ./src/scss/timeline.scss */
+.tl-content .tl-content {
+  font-size: inherit;
+}
+/* line 247, ./src/scss/timeline.scss */
+.tl-content .tl-content .tl-explain label {
+  text-transform: inherit;
+  text-align: left;
+}
+/* line 253, ./src/scss/timeline.scss */
+.tl-content .tl-content .tl-explain-info label {
+  text-transform: inherit;
+  padding: 6px 8px 6px 8px;
+  font-size: 12px;
+  display: inline-block;
+}
+/* line 258, ./src/scss/timeline.scss */
+.tl-content .tl-content .tl-explain-info label.alert-day {
+  padding: 5px 8px 5px 8px;
+}
+/* line 264, ./src/scss/timeline.scss */
+.tl-content .tl-content hr {
+  margin-right: -15px;
+  margin-left: -15px;
+}
+/* line 271, ./src/scss/timeline.scss */
+.tl-content table tr th a {
+  color: #FFFFFF;
+  text-decoration: none;
+}
+
+/* line 280, ./src/scss/timeline.scss */
+.tl-group .tl-group-name label {
+  text-transform: inherit;
+  color: #0A86E2;
+  font-weight: bold;
+  white-space: nowrap;
+  font-size: 18px;
+}
+/* line 288, ./src/scss/timeline.scss */
+.tl-group .tl-group-info {
+  display: table-cell;
+}
+/* line 290, ./src/scss/timeline.scss */
+.tl-group .tl-group-info label {
+  text-transform: inherit;
+  padding: 6px 8px 6px 8px;
+  font-size: 12px;
+  display: inline-block;
+}
+/* line 297, ./src/scss/timeline.scss */
+.tl-group .tl-group-content {
+  font-size: inherit;
+  padding-left: 30px;
+}
+
+/* line 303, ./src/scss/timeline.scss */
+.tl-header {
+  display: block;
+  width: 168px;
+  text-align: center;
+  margin-left: 2px;
+}
+
+/* line 311, ./src/scss/timeline.scss */
+.timeline-center .tl-item {
+  margin-left: 50%;
+}
+/* line 313, ./src/scss/timeline.scss */
+.timeline-center .tl-item .tl-wrap {
+  margin-left: -2px;
+}
+/* line 317, ./src/scss/timeline.scss */
+.timeline-center .tl-header {
+  width: auto;
+  margin: 0;
+}
+/* line 321, ./src/scss/timeline.scss */
+.timeline-center .tl-left {
+  margin-left: 0;
+  margin-right: 50%;
+}
+/* line 324, ./src/scss/timeline.scss */
+.timeline-center .tl-left .hidden-left {
+  display: none !important;
+}
+/* line 327, ./src/scss/timeline.scss */
+.timeline-center .tl-left .visible-left {
+  display: inherit;
+}
+/* line 330, ./src/scss/timeline.scss */
+.timeline-center .tl-left .tl-wrap {
+  float: right;
+  margin-right: -2px;
+  border-left-width: 0;
+  border-right-width: 4px;
+  padding-left: 0;
+  padding-right: 20px;
+}
+/* line 337, ./src/scss/timeline.scss */
+.timeline-center .tl-left .tl-wrap:before {
+  float: right;
+  margin-left: 0;
+  margin-right: -27px;
+}
+/* line 343, ./src/scss/timeline.scss */
+.timeline-center .tl-left .tl-date {
+  float: right;
+  margin-left: 0;
+  margin-right: -119px;
+  text-align: left;
+}
+
+/* Table */
+/* line 355, ./src/scss/timeline.scss */
+#tableProject > tbody > tr > td {
+  padding: 4px;
+  vertical-align: middle;
+  border-top: 1px solid #FFF;
+  border-left: 1px solid #FFF;
+  border-right: 1px solid #FFF;
+  border-bottom: 1px solid #FFF;
+}
+/* line 364, ./src/scss/timeline.scss */
+#tableProject tbody tr td .text-hover:hover {
+  text-decoration: underline;
+  color: #428bca;
+  cursor: pointer;
+}
+/* line 371, ./src/scss/timeline.scss */
+#tableProject tr th {
+  background-color: #87CEEB;
+  color: #FFF;
+  height: 35px;
+  vertical-align: middle;
+  border-bottom: 1px solid #FFF;
+  text-align: right;
+  padding: 4px;
+}
+/* line 380, ./src/scss/timeline.scss */
+#tableProject tr th.table-b {
+  width: 200px;
+  background-color: #87CEEB;
+  color: #FFF;
+  vertical-align: middle;
+  border-bottom: 1px solid #DDD;
+}
+/* line 390, ./src/scss/timeline.scss */
+#tableProject tr th label.title-required:after {
+  content: "※";
+  color: #ff6011;
+  margin-left: 1px;
+}
+/* line 396, ./src/scss/timeline.scss */
+#tableProject tr th label.title:after {
+  content: ":";
+  font-weight: bold;
+  color: white;
+  margin-right: 5px;
+}
+/* line 404, ./src/scss/timeline.scss */
+#tableProject tr th.edit-permission2 {
+  background-color: #92989C;
+}
+/* line 407, ./src/scss/timeline.scss */
+#tableProject tr th.edit-permission2 label.title-required:after {
+  content: "※";
+  color: white;
+  margin-left: 1px;
+}
+/* line 415, ./src/scss/timeline.scss */
+#tableProject tr:last-child th {
+  /* width: 200px; */
+  background-color: #87CEEB;
+  color: #FFF;
+  vertical-align: middle;
+  border-bottom: 1px solid #DDD;
+}
+/* line 423, ./src/scss/timeline.scss */
+#tableProject tr td {
+  /*       padding: 4px;
+        vertical-align: middle;
+        border-top: 1px solid #FFF;
+        border-left: 1px solid #FFF;
+        border-right: 1px solid #FFF;
+        border-bottom: 1px solid #FFF; */
+}
+/* line 431, ./src/scss/timeline.scss */
+#tableProject tr td.boder {
+  border-top: 1px solid #DDD;
+  border-right: 1px solid #DDD;
+  border-bottom: 1px solid #DDD;
+}
+
+/* line 442, ./src/scss/timeline.scss */
+.exex-special-table a:hover {
+  text-decoration: underline;
+}
+
+/* line 446, ./src/scss/timeline.scss */
+.exex-special-table td:first-child {
+  border-left: 1px solid #FFF;
+  border-bottom: 1px solid #FFF;
+}
+
+/* modal */
+/* line 453, ./src/scss/timeline.scss */
+#addProcessModal #tableControl tr th {
+  background-color: #87CEEB;
+  color: #FFF;
+  height: 40px;
+  vertical-align: middle;
+  border-bottom: 1px solid #FFF;
+  text-align: left;
+  padding: 4px;
+  text-align: right;
+}
+
+/* line 465, ./src/scss/timeline.scss */
+#addProcessModal .container {
+  padding-left: 0px;
+  padding-right: 0px;
+}
+/* line 472, ./src/scss/timeline.scss */
+#addProcessModal #addProcessModal tr th.table-b {
+  background-color: #87CEEB;
+  color: #FFF;
+  vertical-align: middle;
+  border-bottom: 1px solid #DDD;
+}
+/* line 478, ./src/scss/timeline.scss */
+#addProcessModal #addProcessModal tr th label {
+  margin-bottom: 0px;
+}
+/* line 486, ./src/scss/timeline.scss */
+#addProcessModal .tableList {
+  overflow-y: auto;
+  max-height: 254px;
+}
+/* line 494, ./src/scss/timeline.scss */
+#addProcessModal #tableList thead th {
+  background-color: #39b3d7;
+  color: #FFF;
+  vertical-align: middle;
+  border-bottom: 1px solid #DDD;
+}
+/* line 501, ./src/scss/timeline.scss */
+#addProcessModal #tableList thead tr td {
+  border-bottom-width: 0px;
+}
+
+/* line 510, ./src/scss/timeline.scss */
+.require-flag {
+  background-color: #fcf8e3 !important;
+}
+
+/* line 514, ./src/scss/timeline.scss */
+.require-flag div input {
+  background-color: #fcf8e3 !important;
+}
+
+/* line 518, ./src/scss/timeline.scss */
+.td-b {
+  border-bottom: 1px solid #DDD !important;
+}
+
+/*arrow*/
+/* line 524, ./src/scss/timeline.scss */
+.timeline .arrow {
+  border-width: 9px;
+  z-index: 10;
+}
+/* line 527, ./src/scss/timeline.scss */
+.timeline .arrow, .timeline .arrow:after {
+  position: absolute;
+  display: block;
+  width: 0;
+  height: 0;
+  border-color: transparent;
+  border-style: solid;
+}
+/* line 536, ./src/scss/timeline.scss */
+.timeline .arrow:after {
+  border-width: 8px;
+  content: "";
+}
+/* line 541, ./src/scss/timeline.scss */
+.timeline .arrow.top {
+  left: 50%;
+  margin-left: -9px;
+  border-top-width: 0;
+  border-bottom-color: rgba(0, 0, 0, 0.1);
+  top: -9px;
+}
+/* line 547, ./src/scss/timeline.scss */
+.timeline .arrow.top:after {
+  top: 1px;
+  margin-left: -8px;
+  border-top-width: 0;
+  border-bottom-color: #fff;
+}
+/* line 554, ./src/scss/timeline.scss */
+.timeline .arrow.top.arrow-primary:after {
+  border-bottom-color: #7266ba;
+}
+/* line 559, ./src/scss/timeline.scss */
+.timeline .arrow.top.arrow-info:after {
+  border-bottom-color: #23b7e5;
+}
+/* line 564, ./src/scss/timeline.scss */
+.timeline .arrow.top.arrow-success:after {
+  border-bottom-color: #27c24c;
+}
+/* line 569, ./src/scss/timeline.scss */
+.timeline .arrow.top.arrow-danger:after {
+  border-bottom-color: #f05050;
+}
+/* line 574, ./src/scss/timeline.scss */
+.timeline .arrow.top.arrow-warning:after {
+  border-bottom-color: #fad733;
+}
+/* line 579, ./src/scss/timeline.scss */
+.timeline .arrow.top.arrow-light:after {
+  border-bottom-color: #edf1f2;
+}
+/* line 584, ./src/scss/timeline.scss */
+.timeline .arrow.top.arrow-dark:after {
+  border-bottom-color: #3a3f51;
+}
+/* line 589, ./src/scss/timeline.scss */
+.timeline .arrow.top.arrow-black:after {
+  border-bottom-color: #1c2b36;
+}
+/* line 595, ./src/scss/timeline.scss */
+.timeline .arrow.right {
+  top: 50%;
+  right: -9px;
+  margin-top: -9px;
+  border-right-width: 0;
+  border-left-color: rgba(0, 0, 0, 0.1);
+}
+/* line 601, ./src/scss/timeline.scss */
+.timeline .arrow.right:after {
+  right: 1px;
+  bottom: -8px;
+  border-right-width: 0;
+  border-left-color: #fff;
+}
+/* line 608, ./src/scss/timeline.scss */
+.timeline .arrow.right.arrow-primary:after {
+  border-left-color: #7266ba;
+}
+/* line 613, ./src/scss/timeline.scss */
+.timeline .arrow.right.arrow-info:after {
+  border-left-color: #23b7e5;
+}
+/* line 618, ./src/scss/timeline.scss */
+.timeline .arrow.right.arrow-success:after {
+  border-left-color: #27c24c;
+}
+/* line 623, ./src/scss/timeline.scss */
+.timeline .arrow.right.arrow-danger:after {
+  border-left-color: #f05050;
+}
+/* line 628, ./src/scss/timeline.scss */
+.timeline .arrow.right.arrow-warning:after {
+  border-left-color: #fad733;
+}
+/* line 633, ./src/scss/timeline.scss */
+.timeline .arrow.right.arrow-light:after {
+  border-left-color: #edf1f2;
+}
+/* line 638, ./src/scss/timeline.scss */
+.timeline .arrow.right.arrow-dark:after {
+  border-left-color: #3a3f51;
+}
+/* line 643, ./src/scss/timeline.scss */
+.timeline .arrow.right.arrow-black:after {
+  border-left-color: #1c2b36;
+}
+/* line 649, ./src/scss/timeline.scss */
+.timeline .arrow.bottom {
+  left: 50%;
+  bottom: -9px;
+  margin-left: -9px;
+  border-bottom-width: 0;
+  border-top-color: rgba(0, 0, 0, 0.1);
+}
+/* line 655, ./src/scss/timeline.scss */
+.timeline .arrow.bottom:after {
+  bottom: 1px;
+  margin-left: -8px;
+  border-bottom-width: 0;
+  border-top-color: #fff;
+}
+/* line 662, ./src/scss/timeline.scss */
+.timeline .arrow.bottom.arrow-primary:after {
+  border-top-color: #7266ba;
+}
+/* line 667, ./src/scss/timeline.scss */
+.timeline .arrow.bottom.arrow-info:after {
+  border-top-color: #23b7e5;
+}
+/* line 672, ./src/scss/timeline.scss */
+.timeline .arrow.bottom.arrow-success:after {
+  border-top-color: #27c24c;
+}
+/* line 677, ./src/scss/timeline.scss */
+.timeline .arrow.bottom.arrow-danger:after {
+  border-top-color: #f05050;
+}
+/* line 682, ./src/scss/timeline.scss */
+.timeline .arrow.bottom.arrow-warning:after {
+  border-top-color: #fad733;
+}
+/* line 687, ./src/scss/timeline.scss */
+.timeline .arrow.bottom.arrow-light:after {
+  border-top-color: #edf1f2;
+}
+/* line 692, ./src/scss/timeline.scss */
+.timeline .arrow.bottom.arrow-dark:after {
+  border-top-color: #3a3f51;
+}
+/* line 697, ./src/scss/timeline.scss */
+.timeline .arrow.bottom.arrow-black:after {
+  border-top-color: #1c2b36;
+}
+/* line 703, ./src/scss/timeline.scss */
+.timeline .arrow.left {
+  top: 50%;
+  left: -9px;
+  margin-top: -9px;
+  border-left-width: 0;
+  border-right-color: rgba(0, 0, 0, 0.1);
+}
+/* line 709, ./src/scss/timeline.scss */
+.timeline .arrow.left:after {
+  left: 1px;
+  bottom: -8px;
+  border-left-width: 0;
+  border-right-color: #fff;
+}
+/* line 716, ./src/scss/timeline.scss */
+.timeline .arrow.left.arrow-primary:after {
+  border-right-color: #7266ba;
+}
+/* line 721, ./src/scss/timeline.scss */
+.timeline .arrow.left.arrow-info:after {
+  border-right-color: #23b7e5;
+}
+/* line 726, ./src/scss/timeline.scss */
+.timeline .arrow.left.arrow-success:after {
+  border-right-color: #27c24c;
+}
+/* line 731, ./src/scss/timeline.scss */
+.timeline .arrow.left.arrow-danger:after {
+  border-right-color: #f05050;
+}
+/* line 736, ./src/scss/timeline.scss */
+.timeline .arrow.left.arrow-warning:after {
+  border-right-color: #fad733;
+}
+/* line 741, ./src/scss/timeline.scss */
+.timeline .arrow.left.arrow-light:after {
+  border-right-color: #edf1f2;
+}
+/* line 746, ./src/scss/timeline.scss */
+.timeline .arrow.left.arrow-dark:after {
+  border-right-color: #3a3f51;
+}
+/* line 751, ./src/scss/timeline.scss */
+.timeline .arrow.left.arrow-black:after {
+  border-right-color: #1c2b36;
+}
+/* line 757, ./src/scss/timeline.scss */
+.timeline .arrow.pull-left {
+  left: 19px;
+}
+/* line 760, ./src/scss/timeline.scss */
+.timeline .arrow.pull-right {
+  left: auto;
+  right: 19px;
+}
+/* line 764, ./src/scss/timeline.scss */
+.timeline .arrow.pull-up {
+  top: 19px;
+}
+/* line 767, ./src/scss/timeline.scss */
+.timeline .arrow.pull-down {
+  top: auto;
+  bottom: 19px;
+}
+
+/*orther*/
+/* line 778, ./src/scss/timeline.scss */
+.b-light {
+  border-color: #edf1f2;
+}
+
+/* line 781, ./src/scss/timeline.scss */
+.b-t {
+  border-top: 1px solid #dee5e7;
+}
+
+/* line 784, ./src/scss/timeline.scss */
+.m-b-sm {
+  margin-bottom: 10px;
+}
+
+/* line 787, ./src/scss/timeline.scss */
+.pull-in {
+  margin-right: -15px;
+  margin-left: -15px;
+}
+
+/* line 791, ./src/scss/timeline.scss */
+textarea.form-control {
+  height: auto;
+}
+
+/* line 794, ./src/scss/timeline.scss */
+.no-border, .no-borders {
+  border-color: transparent;
+  border-width: 0 !important;
+}
+
+/* line 799, ./src/scss/timeline.scss */
+.b-success {
+  border-color: #27c24c;
+}
+
+/* line 803, ./src/scss/timeline.scss */
+.b-primary {
+  border-color: #7266ba;
+}
+
+/* line 807, ./src/scss/timeline.scss */
+.tl-color {
+  border-color: #23b7e5;
+}
+
+/* line 811, ./src/scss/timeline.scss */
+.tl-color.pass-process {
+  border-color: #92989C;
+}
+
+/* line 815, ./src/scss/timeline.scss */
+.tl-color.permission {
+  border-color: #92989C;
+}
+
+/* line 820, ./src/scss/timeline.scss */
+.padder {
+  padding-right: 15px;
+  padding-left: 15px;
+}
+
+/* line 825, ./src/scss/timeline.scss */
+.bg-success {
+  color: #c6efd0;
+  background-color: #27c24c;
+}
+
+/*casdcasdcas*/
+/* line 832, ./src/scss/timeline.scss */
+.avatar {
+  position: relative;
+  white-space: nowrap;
+  display: inline-block;
+}
+/* line 836, ./src/scss/timeline.scss */
+.avatar img {
+  height: 60px;
+  vertical-align: middle;
+}
+
+/* icon management*/
+/* line 844, ./src/scss/timeline.scss */
+.icon-container {
+  max-height: 345px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  width: 100%;
+}
+/* line 850, ./src/scss/timeline.scss */
+.icon-container .icon-management-list {
+  padding-left: 0;
+  list-style: none;
+}
+/* line 854, ./src/scss/timeline.scss */
+.icon-container .icon-management-list li {
+  float: left;
+  width: 160px;
+  height: 115px;
+  padding: 10px;
+  line-height: 1.4;
+  text-align: center;
+  background-color: #f9f9f9;
+  border: 1px solid #fff;
+  cursor: pointer;
+}
+/* line 865, ./src/scss/timeline.scss */
+.icon-container .icon-management-list li .picon-image {
+  margin-bottom: 5px;
+  position: relative;
+  display: inline-block;
+}
+/* line 871, ./src/scss/timeline.scss */
+.icon-container .icon-management-list li .picon-name {
+  display: block;
+  text-align: center;
+  word-wrap: break-all;
+}
+
+/*SFA Project Process*/
+/* line 888, ./src/scss/timeline.scss */
+.timeline .panel {
+  border-radius: 2px;
+  box-shadow: 0 0px 6px rgba(0, 0, 0, 0.16), 0 3px 6px rgba(0, 0, 0, 0.22);
+}
+/* line 895, ./src/scss/timeline.scss */
+.timeline .tl-wrap.current-process:before {
+  background: #FF5722;
+  border-color: #FF5722;
+}
+/* line 903, ./src/scss/timeline.scss */
+.timeline .tl-wrap .tl-content.permission #tableProject tr th {
+  background-color: #92989C;
+}
+/* line 906, ./src/scss/timeline.scss */
+.timeline .tl-wrap .tl-content.permission #tableProject tr th label.title-required:after {
+  content: "※";
+  color: white;
+  margin-left: 1px;
+}
+/* line 920, ./src/scss/timeline.scss */
+.timeline .tl-wrap .tl-content.permission .tl-name label, .timeline .tl-wrap .tl-content.permission .tl-explain label, .timeline .tl-wrap .tl-content.permission .tl-status- label, .timeline .tl-wrap .tl-content.permission .tl-explain-info- label, .timeline .tl-wrap .tl-content.permission .tl-group-name label, .timeline .tl-wrap .tl-content.permission .tl-group-info- label {
+  color: #92989C;
+}
+/* line 929, ./src/scss/timeline.scss */
+.timeline .tl-wrap .tl-content.permission .tl-group-info label.label, .timeline .tl-wrap .tl-content.permission .tl-status label.label, .timeline .tl-wrap .tl-content.permission .tl-explain-info label.label {
+  background-color: #92989C;
+}
+
+/*popup*/
+/* line 945, ./src/scss/timeline.scss */
+.apps-container {
+  border: 1px solid #CCC;
+  margin: 10px 10px 0 0;
+  padding: 5px;
+  height: 293px;
+  width: 250px;
+  overflow-y: auto;
+}
+
+/* line 954, ./src/scss/timeline.scss */
+.app {
+  padding: 5px 10px;
+  margin: 5px 0;
+  border: 1px solid #5CB85C;
+  border-radius: 5px;
+  background-color: #5CB85C;
+  font-size: 1.1em;
+  font-weight: bold;
+  cursor: default;
+  color: white;
+}
+
+/* line 966, ./src/scss/timeline.scss */
+.ptlRequest-div {
+  width: 330px;
+}
+
+/* line 970, ./src/scss/timeline.scss */
+.ptlRequest-div > .form-group {
+  margin-left: 0px;
+  margin-right: 0px;
+}
+
+/* line 975, ./src/scss/timeline.scss */
+textarea {
+  resize: none;
+  border: 1px solid #CCC;
+  transition: border-color 0.15s ease-in-out 0s, box-shadow 0.15s ease-in-out 0s;
+  border-radius: 4px;
+}
+
+/*end popup*/

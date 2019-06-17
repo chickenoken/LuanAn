@@ -1,0 +1,34 @@
+var headerApp = angular.module("headerApp", []);
+
+headerApp.factory('headerModel',[ function(){
+    var model = [];
+
+    model.form = {
+       header : {
+       }
+    }
+
+    model.hidden = {
+        isAdmin : false,
+        isSign : false
+    }
+
+    return model;
+}]);
+
+headerApp.controller("headerCtrl",  ['$scope', '$http', '$filter','$rootScope','headerModel',
+    function($scope, $http, $filter, $rootScope, headerModel){
+
+    $scope.model = headerModel;
+
+    $scope.init = function(){
+       var session = angular.fromJson(sessionStorage.getItem("session"));
+       if(!StringUtils.isEmpty(session)){
+           $scope.model.hidden.isAdmin = true;
+           $scope.model.hidden.isSign = true;
+       }
+    };
+
+    $scope.init();
+
+}]);

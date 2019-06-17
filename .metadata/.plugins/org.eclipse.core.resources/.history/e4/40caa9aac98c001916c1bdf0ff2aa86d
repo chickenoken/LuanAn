@@ -1,0 +1,244 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision:  $  $Date:  $
+ *
+ * @author quang-thien
+ */
+
+
+'use strict';
+
+exexSMSApp.factory('MstRoleControlModel', [ 'BaseModel', function(BaseModel) {
+    var model = BaseModel.getInstance();
+    model.form = {
+        roleControl : {
+            roleName : '',
+            remark: ''
+        },
+        listFunction : {}
+    };
+    model.label = {};
+    model.hidden = {
+            checkAll: false,
+            screenMode: 'INSERT',
+            roleCd : '',
+            checkAllMessage : angular.element('#checkAllLabel').text()
+    };
+
+    return model;
+}]);
+
+exexSMSApp.controller('mstRoleControlCtrl',
+        ['$scope', 'ServerService', 'MstRoleControlModel', 'DialogsService', 'RouteService', 'Messages',
+         function($scope, ServerService, MstRoleControlModel, DialogsService, RouteService, Messages){
+
+    $scope.model = MstRoleControlModel;
+    $scope.model.messagePPM = angular.element('#messagePPM').text();
+    $scope.init = function(){
+        $scope.getInit();
+    };
+
+    $scope.getInit = function(){
+        var mstRole = angular.fromJson(sessionStorage.getItem('mstRole'));
+        if(!ValidateUtil.isValidTextEmpty(mstRole)){
+            $scope.model.form.roleControl.roleName = mstRole.roleName;
+            $scope.model.form.roleControl.remark = mstRole.remark;
+            $scope.model.hidden.roleCd = mstRole.roleCd;
+            $scope.model.hidden.screenMode = 'EDIT';
+        }else {
+            $scope.model.hidden.screenMode = 'INSERT';
+        }
+        var param = {roleCd: !ValidateUtil.isValidTextEmpty(mstRole) ? mstRole.roleCd : ''};
+        ServerService.doPost('MstRoleControl/getRoleDetail', param).then(function(okResult) {
+            $scope.model.form.listFunction = okResult.data.roleDetail;
+            /* Get free label */
+            var freeLabel = angular.fromJson(sessionStorage.getItem("freeLabel"));
+            if(!StringUtils.isEmpty(freeLabel)) {
+                $scope.model.label = freeLabel;
+            }
+        });
+    };
+    $scope.init();
+
+    $scope.insertRole = function(param ,formInvalid){
+        $scope.model.hidden.isSubmited = true;
+        if (formInvalid) {
+            return;
+        };
+
+        var listFunction = $scope.convertListFunction(param);
+        var params = {
+            roleName: param.roleControl.roleName,
+            remark: param.roleControl.remark,
+            listFunction: listFunction
+        }
+        DialogsService.showConfirm(Messages.getMessage('title.confirm'),Messages.getMessage('S00003')).result.then(function(btn){
+            ServerService.doPost('MstRoleControl/addRole', params).then(function(okResult) {
+                var warning = okResult.data.warning;
+                var error = okResult.data.failed;
+                var success = okResult.data.success;
+                if(!ValidateUtil.isValidTextEmpty(warning)){
+                    DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                    return;
+                }else if(!ValidateUtil.isValidTextEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                }else{
+                    DialogsService.showNotify(Messages.getMessage('title.info'), success);
+                    $scope.model.hidden.screenMode = "EDIT"
+                    $scope.model.hidden.roleCd = okResult.data.roleCd;
+                }
+            });
+         },function(btn){});
+    };
+
+    $scope.updateRole = function(param ,formInvalid) {
+        $scope.model.hidden.isSubmited = true;
+        if (formInvalid) {
+            return;
+        };
+        if ($scope.model.form.roleControl.roleCd == "SYSTEM") {
+            DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00181'));
+            return;
+        };
+
+        var listFunction = $scope.convertListFunction(param);
+        var params = {
+                roleName: param.roleControl.roleName,
+                remark: param.roleControl.remark,
+                roleCd: $scope.model.hidden.roleCd,
+                listFunction: listFunction
+        }
+
+        DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('S00004')).result.then(function(btn){
+            ServerService.doPost('MstRoleControl/updateRole', params).then(function(okResult) {
+                var warning = okResult.data.warning;
+                var error = okResult.data.failed;
+                var success = okResult.data.success;
+                if(!ValidateUtil.isValidTextEmpty(warning)){
+                    DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                    return;
+                }else if(!ValidateUtil.isValidTextEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                }else{
+                    DialogsService.showNotify(Messages.getMessage('title.info'), success);
+                    $scope.model.hidden.roleCd = okResult.data.roleCd;
+                    //RouteService.gotoUrl('MstRoleList');
+                }
+            });
+        },function(btn){
+        });
+    };
+
+    $scope.deleteRole = function() {
+       if ($scope.model.form.roleControl.roleCd == "SYSTEM") {
+           DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00181'));
+           return;
+       }
+       var params = {
+               roleCd : $scope.model.hidden.roleCd
+       };
+
+       DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('S00005')).result.then(function(btn){
+           ServerService.doPost('MstRoleControl/deleteRole', params).then(function(okResult) {
+               var warning = okResult.data.warning;
+               var error = okResult.data.failed;
+               var success = okResult.data.success;
+               if(!ValidateUtil.isValidTextEmpty(warning)){
+                   DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                   return;
+               }else if(!ValidateUtil.isValidTextEmpty(error)){
+                   DialogsService.showError(Messages.getMessage('system.error'), error);
+                   return;
+               }else{
+                   DialogsService.showNotify(Messages.getMessage('title.info'), success);
+                   sessionStorage.removeItem('mstRole');
+                   RouteService.gotoUrl('MstRoleList');
+               }
+           });
+       },function(btn){});
+    };
+
+    $scope.backList = function(){
+        sessionStorage.removeItem('mstRole');
+        RouteService.gotoUrl('MstRoleList');
+    }
+
+    $scope.convertListFunction = function(param){
+        var listTmp = [];
+        angular.forEach(param.listFunction, function(row, index){
+            if(row.isChecked){
+                var rowItem = {
+                        functionCd : row.functionCd,
+                        isChecked : row.isChecked
+                };
+                listTmp.push(rowItem);
+            }
+        });
+        return listTmp;
+    }
+
+    $scope.changeStatus = function(obj){
+        var string = obj.substring(0, 5);
+        var stringTmp = obj.substring(5, 7);
+        var list = '00';
+        var control = '10';
+        var isExport = '20';
+        if(stringTmp == list){
+            if(!$scope.model.form.listFunction[obj].isChecked){
+                if(obj == 'PJM0100'){
+                    $scope.model.form.listFunction['PPM0110'].isChecked = false;
+                    $scope.model.form.listFunction['PJM0110'].isChecked = false;
+                    $scope.model.form.listFunction['PJM0120'].isChecked = false;
+                }else{
+                    if(!ValidateUtil.isValidTextEmpty($scope.model.form.listFunction[string + control])){
+                        $scope.model.form.listFunction[string + control].isChecked = false;
+                    }
+                    if(!ValidateUtil.isValidTextEmpty($scope.model.form.listFunction[string + isExport])){
+                        $scope.model.form.listFunction[string + isExport].isChecked = false;
+                    }
+                }
+            }else{
+                if(obj == 'SFA1400'){
+                    $scope.model.form.listFunction['SFA1500'].isChecked = true;
+                }
+            }
+        }else{
+            if($scope.model.form.listFunction[obj].isChecked){
+                if(obj == 'PPM0110'){
+                    $scope.model.form.listFunction['PJM0100'].isChecked = true;
+                }else if(obj == 'SFA1410'){
+                    $scope.model.form.listFunction['SFA1400'].isChecked = true;
+                    $scope.model.form.listFunction['SFA1500'].isChecked = true;
+                }else{
+                    if(!StringUtils.isEmpty($scope.model.form.listFunction[string + list])) {
+                        $scope.model.form.listFunction[string + list].isChecked = true;
+                    }
+                }
+            }
+        }
+    };
+
+    $scope.checkAll = function(checkAll){
+        if(checkAll){
+            $scope.model.hidden.checkAllMessage = angular.element('#unCheckAllLabel').text();
+        }else{
+            $scope.model.hidden.checkAllMessage = angular.element('#checkAllLabel').text();
+        }
+        angular.forEach($scope.model.form.listFunction, function(item, i){
+            for (var key in item) {
+                if (item.hasOwnProperty(key) && key == "isChecked") {
+                    if(checkAll){
+                        item[key] = true;
+                    }else{
+                        item[key] = false;
+                    }
+                }
+            };
+        });
+    }
+}]);

@@ -1,0 +1,355 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision:  $  $Date:  $
+ * @author : Quang-Thien
+ */
+'use strict';
+
+exexSMSApp.factory('exExRegistModel', [ 'BaseModel', function(BaseModel) {
+    var model = BaseModel.getInstance();
+
+    model.form = {
+            exExRegist : {
+                companyName : '',
+                userCd : '',
+                delegate : '',
+                postNo : '',
+                postNo1 : '',
+                postNo2 : '',
+                address1 : '',
+                address2 : '',
+                tellNo : '',
+                tellNo1 : '',
+                tellNo2 : '',
+                tellNo3 : '',
+                faxNo : '',
+                fax1 : '',
+                fax2 : '',
+                fax3 : '',
+                mailAddress : '',
+                registUserCount : '4'
+            },
+        };
+    model.hidden = {
+            screenMode : 'VIEW',
+            agreement : '',
+            id : '',
+            isDisabled : false,
+            isCheck : false,
+            isSubmited: false
+    };
+
+    /*
+     * 画面項目を初期化する。
+     */
+    model.setup = function(model) {
+        console.log(model);
+        // メッセージクラスを取得し、sessionStorageに保管する。
+        Messages.setMessage(model != undefined ? model.msgList : '' );
+    };
+
+    return model;
+
+} ]);
+
+exexSMSApp.controller('exExRegistCtrl',
+        ['$scope', 'RouteService', 'ServerService', 'exExRegistModel', 'DialogsService', 'Messages',
+         function($scope, RouteService, ServerService, exExRegistModel, DialogsService, Messages){
+
+    /**
+     * 初期処理
+     */
+    $scope.init = function(model){
+        $scope.model = exExRegistModel;
+        $scope.model.setup(model);
+        //$scope.model.hidden.id = model.id;
+        $scope.model.form.exExRegist.mailAddress = model.tblTranid.mailAddress;
+        $scope.model.hidden.agreement = model.tblTranid.agreement;
+        var companyInfo = angular.fromJson(sessionStorage.getItem("companyInfo"));
+        if(!ValidateUtil.isValidTextEmpty(companyInfo)){
+            $scope.model.form.exExRegist = companyInfo.form.exExRegist;
+            $scope.model.hidden = companyInfo.hidden;
+        }
+        $scope.getInit();
+    };
+
+    $scope.getInit = function(){
+        ServerService
+        .doPost('ExExRegist/loadInit', {id : $scope.model.hidden.id})
+        .then(
+                function(okResult) {
+                    console.log(okResult);
+                },
+                function(errResult){});
+    };
+
+    /**
+     * 眺望
+     */
+    $scope.view = function(paramControl, formInvalid){
+        $scope.model.hidden.isSubmited = true;
+        if (formInvalid) {
+            return;
+        }
+        $scope.convertToJSONControl(paramControl);
+
+        if($scope.validationPostNo(paramControl)){
+            return;
+        };
+
+        if($scope.checkTelephone(paramControl)){
+            return;
+        }
+        if($scope.checkFax(paramControl)){
+            return;
+        }
+
+        var param =  angular.copy(paramControl);
+        ServerService.doPost('ExExRegist/checkData', param)
+        .then(
+        /* success function */
+        function(result) {
+            var error = result.data.failed;
+            var warning = result.data.warning;
+            if(!ValidateUtil.isValidTextEmpty(error)){
+                DialogsService.showError(Messages.getMessage('system.error'), error);
+                return;
+            }else if(!ValidateUtil.isValidTextEmpty(warning)){
+                DialogsService.showWarning( Messages.getMessage('check.error'), warning);
+                return;
+            }else{
+                $scope.model.hidden.isDisabled = true;
+                $scope.model.hidden.screenMode = 'INSERT';
+                $scope.model.hidden.agreement = result.data.agreement;
+                sessionStorage.setItem("companyInfo", JSON.stringify($scope.model));
+            }
+        },
+        /* error function */
+        function(error) {});
+    };
+
+    /**
+     * convert estimate data to JSON data
+     */
+    $scope.convertToJSONControl = function(paramControl){
+        if(!ValidateUtil.isValidTextEmpty(paramControl.postNo1) && !ValidateUtil.isValidTextEmpty(paramControl.postNo2)){
+            paramControl.postNo =  paramControl.postNo1 + ' - ' +  paramControl.postNo2;
+        }
+        if(!ValidateUtil.isValidTextEmpty(paramControl.tellNo1) && !ValidateUtil.isValidTextEmpty(paramControl.tellNo2)
+                && !ValidateUtil.isValidTextEmpty(paramControl.tellNo3)){
+            paramControl.tellNo =  paramControl.tellNo1 + ' - ' +  paramControl.tellNo2 + ' - ' +  paramControl.tellNo3;
+        }
+        if(!ValidateUtil.isValidTextEmpty(paramControl.fax1) && !ValidateUtil.isValidTextEmpty(paramControl.fax2)
+                && !ValidateUtil.isValidTextEmpty(paramControl.fax3)){
+            paramControl.faxNo =  paramControl.fax1 + ' - ' +  paramControl.fax2 + ' - ' +  paramControl.fax3;
+        }
+    };
+
+    /**
+     * postNo1 event change
+     */
+    $scope.$watch('model.form.exExRegist.postNo1', function(newVal, oldVal) {
+        if (!ValidateUtil.isValidTextEmpty(newVal)) {
+            if ($scope.model.form.exExRegist.postNo1.length == 3) {
+                $('input[name=postNo2]').focus();
+            }
+        }
+    });
+
+
+    /**
+     * tellNo1 event change
+     */
+    $scope.$watch('model.form.exExRegist.tellNo1', function(newVal, oldVal) {
+        if (!ValidateUtil.isValidTextEmpty(newVal)) {
+            if ($scope.model.form.exExRegist.tellNo1.length == 5) {
+                $('input[name=tellNo2]').focus();
+            }
+        }
+    });
+    $scope.$watch('model.form.exExRegist.tellNo2', function(newVal, oldVal) {
+        if (!ValidateUtil.isValidTextEmpty(newVal)) {
+            if ($scope.model.form.exExRegist.tellNo2.length == 4) {
+                $('input[name=tellNo3]').focus();
+            }
+        }
+    });
+
+    /**
+     * fax1 event change
+     */
+    $scope.$watch('model.form.exExRegist.fax1', function(newVal, oldVal) {
+        if (!ValidateUtil.isValidTextEmpty(newVal)) {
+            if ($scope.model.form.exExRegist.fax1.length == 5) {
+                $('input[name=fax2]').focus();
+            }
+        }
+    });
+
+    /**
+     * fax2 event change
+     */
+    $scope.$watch('model.form.exExRegist.fax2', function(newVal, oldVal) {
+        if (!ValidateUtil.isValidTextEmpty(newVal)) {
+            if ($scope.model.form.exExRegist.fax2.length == 4) {
+                $('input[name=fax3]').focus();
+            }
+        }
+    });
+
+     /**
+      * check telephone
+      */
+    $scope.checkTelephone = function (param) {
+        if(!ValidateUtil.isValidTextEmpty(param.tellNo1) || !ValidateUtil.isValidTextEmpty(param.tellNo2) || !ValidateUtil.isValidTextEmpty(param.tellNo3)){
+            if(ValidateUtil.isValidTextEmpty(param.tellNo1) || ValidateUtil.isValidTextEmpty(param.tellNo2) || ValidateUtil.isValidTextEmpty(param.tellNo3)){
+                DialogsService.showWarning( Messages.getMessage('check.error'),Messages.getMessage('W00130'));
+                return true;
+            }
+        }
+    };
+
+    /**
+     * check fax
+     */
+    $scope.checkFax = function (param) {
+        if(!ValidateUtil.isValidTextEmpty(param.fax1) || !ValidateUtil.isValidTextEmpty(param.fax2) || !ValidateUtil.isValidTextEmpty(param.fax3)){
+            if(ValidateUtil.isValidTextEmpty(param.fax1) || ValidateUtil.isValidTextEmpty(param.fax2) || ValidateUtil.isValidTextEmpty(param.fax3)){
+                DialogsService.showWarning( Messages.getMessage('check.error'),Messages.getMessage('W00131'));
+                return true;
+            }
+        }
+    };
+
+    /**
+     * check postNo
+     */
+    $scope.validationPostNo = function (param) {
+        if(!ValidateUtil.isValidTextEmpty(param.postNo1) || !ValidateUtil.isValidTextEmpty(param.postNo2)){
+            if((param.postNo1 + param.postNo2).length != 7){
+                DialogsService.showWarning( Messages.getMessage('check.error'), Messages.getMessage('W00018'));
+                return true;
+            }
+        }
+    };
+
+
+    /**
+     *  登録
+     */
+    $scope.registry = function() {
+        var param = {};
+        angular.copy( $scope.model.form.exExRegist, param);
+        param.postNo = param.postNo.replace(/-/g, '').replace(/ /g, '');
+        param.tellNo = param.tellNo.replace(/ /g, '');
+        param.faxNo = param.faxNo.replace(/ /g, '');
+        delete param.postNo1;
+        delete param.postNo2;
+        delete param.tellNo1;
+        delete param.tellNo2;
+        delete param.tellNo3;
+        delete param.fax1;
+        delete param.fax2;
+        delete param.fax3;
+        ServerService.doPost('ExExRegist/registryDb', param)
+        .then(
+        /* success function */
+        function(result) {
+            var error = result.data.failed;
+            var warning = result.data.warning;
+            if(!ValidateUtil.isValidTextEmpty(error)){
+                DialogsService.showError(Messages.getMessage('system.error'), error);
+                return;
+            }else if(!ValidateUtil.isValidTextEmpty(warning)){
+                DialogsService.showWarning( Messages.getMessage('check.error'), warning);
+                return;
+            }else{
+                sessionStorage.removeItem("companyInfo");
+                var screenInfo = {toScreen : 'regist'};
+                sessionStorage.setItem("screenInfo", JSON.stringify(screenInfo));
+                RouteService.gotoUrl('ExExCommit');
+            }
+        },
+        /* error function */
+        function(error) {});
+    };
+
+    /**
+     * 住所検索
+     */
+    $scope.checkPostNumber = function(param){
+        var postNo = param.postNo1 + param.postNo2;
+        if(ValidateUtil.isValidTextEmpty(postNo))
+        {
+            DialogsService.showWarning(Messages.getMessage('check.error'),
+                    Messages.getMessage('W00207'));
+            return true;
+        }
+        if(ValidateUtil.isValidPostNo(postNo))
+        {
+            DialogsService.showWarning(Messages.getMessage('check.error'),
+                    Messages.getMessage('W00018'));
+            return true;
+        }
+        var params = {'postNo':postNo};
+        ServerService.doPost('ExExRegist/checkPostNumber', params)
+        .then(
+        /* success function */
+        function(result) {
+            var error =  result.data.failed;
+            var warning =  result.data.warning;
+            if(!ValidateUtil.isValidTextEmpty(warning)){
+                DialogsService.showWarning(Messages.getMessage('check.error'),
+                        warning);
+            }else if(!ValidateUtil.isValidTextEmpty(error)){
+                DialogsService.showError(Messages.getMessage('system.error'),
+                        error);
+            }else{
+                $scope.model.form.exExRegist.address1 = result.data.address;
+            }
+        },
+        /* error function */
+        function(error) {});
+    };
+
+    /**  戻る */
+    $scope.back = function() {
+        $scope.model.hidden.isDisabled = false;
+        $scope.model.hidden.screenMode = 'VIEW';
+        sessionStorage.removeItem("companyInfo");
+    };
+
+    /**
+     * チェック
+     */
+    $scope.isCheck = function(param){
+        $scope.model.hidden.isCheck = param;
+    };
+
+    /**  メールを送信 */
+    $scope.sendMail = function() {
+        $scope.model.hidden.screenMode = 'SEND';
+        var param =  {mailAddressRegist : $scope.model.hidden.mailAddressRegist};
+        ServerService.doPost('ExExRegist/sendMail', param)
+        .then(
+        /* success function */
+        function(result) {
+            var error = result.data.failed;
+            var warning = result.data.warning;
+            if(!ValidateUtil.isValidTextEmpty(error)){
+                DialogsService.showError(Messages.getMessage('system.error'), error);
+                return;
+            }else if(!ValidateUtil.isValidTextEmpty(warning)){
+                DialogsService.showWarning( Messages.getMessage('check.error'), warning);
+                return;
+            }else{
+            }
+        },
+        /* error function */
+        function(error) {});
+    };
+
+}]);

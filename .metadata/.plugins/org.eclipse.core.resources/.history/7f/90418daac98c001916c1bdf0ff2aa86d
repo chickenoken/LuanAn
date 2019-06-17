@@ -1,0 +1,770 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision: 1.0 $  $Date: 2017/05/30 $
+ * @author tan-duc
+ */
+
+exexSMSApp.factory('OwnerCardListModel', [ 'BaseModel', function(BaseModel) {
+
+    var model = BaseModel.getInstance();
+    model.form = {
+        search : {
+            ownerPerson1:[],
+            ownerPerson2:[],
+            ownerPerson3:[],
+            custName : '',
+            clientType : [],
+            siteName : '',
+            deptName : '',
+            ownerName : '',
+            mailAddress:'',
+            mailReceiveFlag1: [],
+            ownerClass1:[],
+            ownerClass2:[],
+            ownerClass3:[],
+            ownerClass4:[],
+            ownerClass5:[],
+            ownerClass6:[],
+            ownerClass7:[],
+            ownerClass8:[],
+            priority: [],
+            leadSource: [],
+            leadSourceDetail: '',
+            leadStatus: [],
+            remark : '',
+            updDateFrom: '',
+            updDateTo: '',
+            createDateFrom: '',
+            createDateTo: '',
+            ownerCategory:[],
+            registStatus:[],
+            receptionNoFlag: false,
+            searchOrderKey : [],
+            searchOrderSort: ''
+        },
+        paginationInfo : {
+            page: 0,
+            pageSize: 20,
+            totalPage: 0,
+            totalRecord: 0,
+            from: 0,
+            to: 0
+        },
+        ownerCardList : [],
+        listS020015: [],
+        listC010011: [],
+        listC010012: [],
+        listC010013: [],
+        listC010014: [],
+        listC010015: [],
+        listC010016: [],
+        listC010017: [],
+        listC010018: [],
+        listC010019: [],
+        listC010020: [],
+        listC010021: [],
+        listC030002: [],
+        listL010018: [],
+        listC010008: [],
+        listS020012: []
+    };
+    model.hidden = {
+        listParamSearch : [
+                           {id: 1, model: 'custName', name: angular.element('#custNameLabel').text()},
+                           {id: 2, model: 'ownerName', name: angular.element('#ownerNameLabel').text()},
+                           {id: 3, model: 'ownerPerson1', name: angular.element('#ownerPerson1Label').text()},
+                           {id: 4, model: 'ownerPerson2', name: angular.element('#ownerPerson2Label').text()},
+                           {id: 5, model: 'ownerPerson3', name: angular.element('#ownerPerson3Label').text()},
+                           {id: 6, model: 'clientType', name: angular.element('#clientTypeLabel').text()},
+                           {id: 7, model: 'siteName', name: angular.element('#siteNameLabel').text()},
+                           {id: 8, model: 'deptName', name: angular.element('#deptNameLabel').text()},
+                           {id: 9, model: 'mailAddress', name: angular.element('#mailAddressLabel').text()},
+                           {id: 10, model: 'mailReceiveFlag1', name: angular.element('#mailReceiveFlag1Label').text()},
+                           {id: 11, model: 'ownerClass1', name: angular.element('#ownerClass1Label').text()},
+                           {id: 12, model: 'ownerClass2', name: angular.element('#ownerClass2Label').text()},
+                           {id: 13, model: 'ownerClass3', name: angular.element('#ownerClass3Label').text()},
+                           {id: 14, model: 'ownerClass4', name: angular.element('#ownerClass4Label').text()},
+                           {id: 15, model: 'ownerClass5', name: angular.element('#ownerClass5Label').text()},
+                           {id: 16, model: 'ownerClass6', name: angular.element('#ownerClass6Label').text()},
+                           {id: 17, model: 'ownerClass7', name: angular.element('#ownerClass7Label').text()},
+                           {id: 18, model: 'ownerClass8', name: angular.element('#ownerClass8Label').text()},
+                           {id: 19, model: 'priority', name: angular.element('#priorityLabel').text()},
+                           {id: 20, model: 'leadSource', name: angular.element('#leadSourceLabel').text()},
+                           {id: 21, model: 'leadSourceDetail', name: angular.element('#leadSourceDetailLabel').text()},
+                           {id: 22, model: 'leadStatus', name: angular.element('#leadStatusLabel').text()},
+                           {id: 23, model: 'remark', name: angular.element('#remarkLabel').text()},
+                           {id: 24, model: 'updDate', name: angular.element('#updDateLabel').text()},
+                           {id: 25, model: 'createDate', name: angular.element('#createDateLabel').text()},
+                           {id: 26, model: 'ownerCategory', name: angular.element('#ownerCategoryLabel').text()},
+                           {id: 27, model: 'registStatus', name: angular.element('#registStatusLabel').text()},
+                           {id: 28, model: 'receptionNoFlag', name: angular.element('#receptionNoFlagLabel').text()}
+                          ],
+
+        searchOrderKey : [{id: 1, model: 'createDate', name: angular.element('#createDateLabel').text()},
+                          {id: 2, model: 'updDate', name: angular.element('#updDateLabel').text()},
+                          {id: 3, model: 'mownerPosition', name: angular.element('#mownerPositionLabel').text()},
+                          {id: 4, model: 'custName', name: angular.element('#custNameLabel').text()},
+                          {id: 5, model: 'mownerName', name: angular.element('#mownerNameLabel').text()},
+                          {id: 6, model: 'siteName', name: angular.element('#siteNameLabel').text()},
+                          {id: 7, model: 'deptName', name: angular.element('#deptNameLabel').text()},
+                          {id: 8, model: 'releaseScope', name: angular.element('#releaseScopeLabel').text()},
+                          {id: 9, model: 'clientType', name: angular.element('#clientTypeLabel').text()}],
+
+        searchOrderSort : [{id: 1, model: 'desc', name: angular.element('#descLabel').text()},
+                           {id: 2, model: 'asc', name: angular.element('#ascLabel').text()}],
+
+        listSearch:[],
+        listTmp: [],
+        listDataAjax :[]
+    }
+    return model;
+} ]);
+
+
+exexSMSApp.controller('ownerCardListCtrl',['$scope', '$filter', '$timeout', '$window', 'RouteService', 'DialogsService', 'OwnerCardListModel', 'HeaderModel', 'Messages', 'ServerService',
+                                             function($scope, $filter, $timeout, $window, RouteService, DialogsService, OwnerCardListModel, HeaderModel, Messages, ServerService){
+    $scope.model = OwnerCardListModel;
+    $scope.modelHeader = HeaderModel;
+
+    $scope.newListParamSearch = function(){
+        $scope.model.hidden.listTmp = angular.copy($scope.model.hidden.listParamSearch);
+        for (var i = 0; i < $scope.model.hidden.listSearch.length; i++) {
+            var item = $scope.model.hidden.listSearch[i];
+            var removeIndex = $scope.model.hidden.listTmp.map(function(items) { return items.model; }).indexOf(item.model);
+                 if (item.model == 'ownerPerson1') { $scope.model.hidden.listTmp.splice(removeIndex, 1) }
+            else if (item.model == 'ownerPerson2') { $scope.model.hidden.listTmp.splice(removeIndex, 1) }
+            else if (item.model == 'ownerPerson3') { $scope.model.hidden.listTmp.splice(removeIndex, 1) }
+            else if (item.model == 'custName') { $scope.model.hidden.listTmp.splice(removeIndex, 1) }
+            else if (item.model == 'clientType') { $scope.model.hidden.listTmp.splice(removeIndex, 1) }
+            else if (item.model == 'siteName') { $scope.model.hidden.listTmp.splice(removeIndex, 1) }
+            else if (item.model == 'deptName') { $scope.model.hidden.listTmp.splice(removeIndex, 1) }
+            else if (item.model == 'ownerName') { $scope.model.hidden.listTmp.splice(removeIndex, 1) }
+            else if (item.model == 'mailAddress') { $scope.model.hidden.listTmp.splice(removeIndex, 1) }
+            else if (item.model == 'mailReceiveFlag1') { $scope.model.hidden.listTmp.splice(removeIndex, 1) }
+            else if (item.model == 'ownerClass1') { $scope.model.hidden.listTmp.splice(removeIndex, 1) }
+            else if (item.model == 'ownerClass2') { $scope.model.hidden.listTmp.splice(removeIndex, 1) }
+            else if (item.model == 'ownerClass3') { $scope.model.hidden.listTmp.splice(removeIndex, 1) }
+            else if (item.model == 'ownerClass4') { $scope.model.hidden.listTmp.splice(removeIndex, 1) }
+            else if (item.model == 'ownerClass5') { $scope.model.hidden.listTmp.splice(removeIndex, 1) }
+            else if (item.model == 'ownerClass6') { $scope.model.hidden.listTmp.splice(removeIndex, 1) }
+            else if (item.model == 'ownerClass7') { $scope.model.hidden.listTmp.splice(removeIndex, 1) }
+            else if (item.model == 'ownerClass8') { $scope.model.hidden.listTmp.splice(removeIndex, 1) }
+            else if (item.model == 'priority') { $scope.model.hidden.listTmp.splice(removeIndex, 1) }
+            else if (item.model == 'leadSource') { $scope.model.hidden.listTmp.splice(removeIndex, 1) }
+            else if (item.model == 'leadSourceDetail') { $scope.model.hidden.listTmp.splice(removeIndex, 1) }
+            else if (item.model == 'leadStatus') { $scope.model.hidden.listTmp.splice(removeIndex, 1) }
+            else if (item.model == 'remark') { $scope.model.hidden.listTmp.splice(removeIndex, 1) }
+            else if (item.model == 'updDate') { $scope.model.hidden.listTmp.splice(removeIndex, 1) }
+            else if (item.model == 'createDate') { $scope.model.hidden.listTmp.splice(removeIndex, 1) }
+            else if (item.model == 'ownerCategory') { $scope.model.hidden.listTmp.splice(removeIndex, 1) }
+            else if (item.model == 'registStatus') { $scope.model.hidden.listTmp.splice(removeIndex, 1) }
+            else if (item.model == 'receptionNoFlag') { $scope.model.hidden.listTmp.splice(removeIndex, 1) }
+        }
+    };
+
+    $scope.prepareListParamSearch = function (){
+        var listParamSearch = $scope.model.hidden.listParamSearch;
+        var sessionLogin = angular.fromJson(sessionStorage.getItem("session"));
+        var sessionSearch = angular.fromJson(sessionStorage.getItem("ownerCardSearch"));
+        for (var i = 0; i < $scope.model.hidden.listSearch.length; i++) {
+            var item = $scope.model.hidden.listSearch[i];
+            item.listDetailParam = angular.copy($scope.model.hidden.listTmp);
+            if (item.model == 'custName') { item.listDetailParam.push(listParamSearch[0])}
+            else if (item.model == 'ownerName') { item.listDetailParam.push(listParamSearch[1])}
+            else if (item.model == 'ownerPerson1') {item.listDetailParam.push(listParamSearch[2])}
+            else if (item.model == 'ownerPerson2') { item.listDetailParam.push(listParamSearch[3])}
+            else if (item.model == 'ownerPerson3') { item.listDetailParam.push(listParamSearch[4])}
+            else if (item.model == 'clientType') { item.listDetailParam.push(listParamSearch[5])}
+            else if (item.model == 'siteName') { item.listDetailParam.push(listParamSearch[6])}
+            else if (item.model == 'deptName') { item.listDetailParam.push(listParamSearch[7])}
+            else if (item.model == 'mailAddress') { item.listDetailParam.push(listParamSearch[8])}
+            else if (item.model == 'mailReceiveFlag1') { item.listDetailParam.push(listParamSearch[9])}
+            else if (item.model == 'ownerClass1') { item.listDetailParam.push(listParamSearch[10])}
+            else if (item.model == 'ownerClass2') { item.listDetailParam.push(listParamSearch[11])}
+            else if (item.model == 'ownerClass3') { item.listDetailParam.push(listParamSearch[12])}
+            else if (item.model == 'ownerClass4') { item.listDetailParam.push(listParamSearch[13])}
+            else if (item.model == 'ownerClass5') { item.listDetailParam.push(listParamSearch[14])}
+            else if (item.model == 'ownerClass6') { item.listDetailParam.push(listParamSearch[15])}
+            else if (item.model == 'ownerClass7') { item.listDetailParam.push(listParamSearch[16])}
+            else if (item.model == 'ownerClass8') { item.listDetailParam.push(listParamSearch[17])}
+            else if (item.model == 'priority') { item.listDetailParam.push(listParamSearch[18])}
+            else if (item.model == 'leadSource') { item.listDetailParam.push(listParamSearch[19])}
+            else if (item.model == 'leadSourceDetail') { item.listDetailParam.push(listParamSearch[20])}
+            else if (item.model == 'leadStatus') { item.listDetailParam.push(listParamSearch[21])}
+            else if (item.model == 'remark') { item.listDetailParam.push(listParamSearch[22])}
+            else if (item.model == 'updDate') {
+                item.listDetailParam.push(listParamSearch[23]);
+                if(StringUtils.isEmpty(sessionSearch) || (!StringUtils.isEmpty(sessionSearch)
+                        && sessionSearch.updDateFrom === undefined && sessionSearch.updDateTo === undefined )){
+                    $scope.model.form.search.updDateFrom = DateUtils.getPreviousMonth();
+                    $scope.model.form.search.updDateTo = DateUtils.getCurrentDate();
+                }
+            }
+            else if (item.model == 'createDate') {
+                item.listDetailParam.push(listParamSearch[24]);
+                if(StringUtils.isEmpty(sessionSearch) || (!StringUtils.isEmpty(sessionSearch)
+                        && sessionSearch.createDateFrom === undefined && sessionSearch.createDateTo === undefined )){
+                    $scope.model.form.search.createDateFrom = DateUtils.getPreviousMonth();
+                    $scope.model.form.search.createDateTo = DateUtils.getCurrentDate();
+                }
+            }
+            else if (item.model == 'ownerCategory') { item.listDetailParam.push(listParamSearch[25])}
+            else if (item.model == 'registStatus') {item.listDetailParam.push(listParamSearch[26])}
+            else if (item.model == 'receptionNoFlag') { item.listDetailParam.push(listParamSearch[27])}
+        }
+    };
+
+    $scope.prepareSessionSearch = function(session){
+        var listSearch = [];
+        for(var key in session){
+            var item = {};
+            if (key == 'ownerPerson1') { $scope.model.form.search.ownerPerson1 = session[key]; item.model = key }
+            else if (key == 'ownerPerson2') { $scope.model.form.search.ownerPerson2 = session[key]; item.model = key }
+            else if (key == 'ownerPerson3') { $scope.model.form.search.ownerPerson3 = session[key]; item.model = key }
+            else if (key == 'custName') { $scope.model.form.search.custName = session[key]; item.model = key }
+            else if (key == 'clientType') { $scope.model.form.search.clientType = session[key]; item.model = key}
+            else if (key == 'siteName') { $scope.model.form.search.siteName = session[key]; item.model = key }
+            else if (key == 'deptName') { $scope.model.form.search.deptName = session[key]; item.model = key }
+            else if (key == 'ownerName') { $scope.model.form.search.ownerName = session[key]; item.model = key }
+            else if (key == 'mailAddress') { $scope.model.form.search.mailAddress = session[key]; item.model = key }
+            else if (key == 'mailReceiveFlag1') { $scope.model.form.search.mailReceiveFlag1 = session[key]; item.model = key }
+            else if (key == 'ownerClass1') { $scope.model.form.search.ownerClass1 = session[key]; item.model = key }
+            else if (key == 'ownerClass2') { $scope.model.form.search.ownerClass2 = session[key]; item.model = key }
+            else if (key == 'ownerClass3') { $scope.model.form.search.ownerClass3 = session[key]; item.model = key }
+            else if (key == 'ownerClass4') { $scope.model.form.search.ownerClass4 = session[key]; item.model = key }
+            else if (key == 'ownerClass5') { $scope.model.form.search.ownerClass5 = session[key]; item.model = key }
+            else if (key == 'ownerClass6') { $scope.model.form.search.ownerClass6 = session[key]; item.model = key }
+            else if (key == 'ownerClass7') { $scope.model.form.search.ownerClass7 = session[key]; item.model = key }
+            else if (key == 'ownerClass8') { $scope.model.form.search.ownerClass8 = session[key]; item.model = key }
+            else if (key == 'priority') { $scope.model.form.search.priority = session[key]; item.model = key }
+            else if (key == 'leadSource') { $scope.model.form.search.leadSource = session[key]; item.model = key }
+            else if (key == 'leadSourceDetail') { $scope.model.form.search.leadSourceDetail = session[key]; item.model = key }
+            else if (key == 'leadStatus') { $scope.model.form.search.leadStatus = session[key]; item.model = key }
+            else if (key == 'remark') { $scope.model.form.search.remark = session[key]; item.model = key }
+            else if (key == 'createDateFrom') { $scope.model.form.search.createDateFrom = session[key]; item.model = 'createDate' }
+            else if (key == 'createDateTo') { $scope.model.form.search.createDateTo = session[key] }
+            else if (key == 'updDateFrom') { $scope.model.form.search.updDateFrom = session[key]; item.model = 'updDate' }
+            else if (key == 'updDateTo') { $scope.model.form.search.updDateTo = session[key] }
+            else if (key == 'ownerCategory') { $scope.model.form.search.ownerCategory = session[key]; item.model = key }
+            else if (key == 'registStatus') { $scope.model.form.search.registStatus = session[key]; item.model = key }
+            else if (key == 'receptionNoFlag') { $scope.model.form.search.receptionNoFlag = session[key]; item.model = key }
+
+            if (!StringUtils.isEmpty(item.model)){
+                listSearch.push(item);
+            }
+        };
+        $scope.model.hidden.listSearch = listSearch;
+        $scope.newListParamSearch();
+        $scope.prepareListParamSearch();
+    };
+
+    $scope.convertParamsSearch = function(param, page){
+        var params = {
+            searchOrderKey : param.searchOrderKey,
+            searchOrderSort : param.searchOrderSort,
+            page : page,
+            pageSize : $scope.model.form.paginationInfo.pageSize
+        };
+
+        for (var i = 0; i < $scope.model.hidden.listSearch.length; i++) {
+            var item = $scope.model.hidden.listSearch[i];
+            if (item.model == 'ownerPerson1') {
+                params.ownerPerson1 = !StringUtils.isEmpty(param.ownerPerson1) ? param.ownerPerson1 : [];
+            } else if (item.model == 'ownerPerson2') {
+                params.ownerPerson2 = !StringUtils.isEmpty(param.ownerPerson2) ? param.ownerPerson2 : [];
+            } else if (item.model == 'ownerPerson3') {
+                params.ownerPerson3 = !StringUtils.isEmpty(param.ownerPerson3) ? param.ownerPerson3 : [];
+            } else if (item.model == 'custName') {
+                params.custName = !StringUtils.isEmpty(param.custName) ? param.custName : null;
+            } else if (item.model == 'clientType') {
+                params.clientType = !StringUtils.isEmpty(param.clientType) ? param.clientType : null;
+            } else if (item.model == 'siteName') {
+                params.siteName = !StringUtils.isEmpty(param.siteName) ? param.siteName : null;
+            } else if (item.model == 'deptName') {
+                params.deptName = !StringUtils.isEmpty(param.deptName) ? param.deptName : null;
+            } else if (item.model == 'ownerName') {
+                params.ownerName = !StringUtils.isEmpty(param.ownerName) ? param.ownerName : null;
+            } else if (item.model == 'mailAddress') {
+                params.mailAddress = !StringUtils.isEmpty(param.mailAddress) ? param.mailAddress : null;
+            } else if (item.model == 'mailReceiveFlag1') {
+                params.mailReceiveFlag1 = !StringUtils.isEmpty(param.mailReceiveFlag1) ? param.mailReceiveFlag1 : [];
+            } else if (item.model == 'ownerClass1') {
+                params.ownerClass1 = !StringUtils.isEmpty(param.ownerClass1) ? param.ownerClass1 : [];
+            } else if (item.model == 'ownerClass2') {
+                params.ownerClass2 = !StringUtils.isEmpty(param.ownerClass2) ? param.ownerClass2 : [];
+            } else if (item.model == 'ownerClass3') {
+                params.ownerClass3 = !StringUtils.isEmpty(param.ownerClass3) ? param.ownerClass3 : [];
+            } else if (item.model == 'ownerClass4') {
+                params.ownerClass4 = !StringUtils.isEmpty(param.ownerClass4) ? param.ownerClass4 : [];
+            } else if (item.model == 'ownerClass5') {
+                params.ownerClass5 = !StringUtils.isEmpty(param.ownerClass5) ? param.ownerClass5 : [];
+            } else if (item.model == 'ownerClass6') {
+                params.ownerClass6 = !StringUtils.isEmpty(param.ownerClass6) ? param.ownerClass6 : [];
+            } else if (item.model == 'ownerClass7') {
+                params.ownerClass7 = !StringUtils.isEmpty(param.ownerClass7) ? param.ownerClass7 : [];
+            } else if (item.model == 'ownerClass8') {
+                params.ownerClass8 = !StringUtils.isEmpty(param.ownerClass8) ? param.ownerClass8 : [];
+            } else if (item.model == 'priority') {
+                params.priority = !StringUtils.isEmpty(param.priority) ? param.priority : [];
+            } else if (item.model == 'leadSource') {
+                params.leadSource = !StringUtils.isEmpty(param.leadSource) ? param.leadSource : [];
+            } else if (item.model == 'leadSourceDetail') {
+                params.leadSourceDetail = !StringUtils.isEmpty(param.leadSourceDetail) ? param.leadSourceDetail : null;
+            } else if (item.model == 'leadStatus') {
+                params.leadStatus = !StringUtils.isEmpty(param.leadStatus) ? param.leadStatus : [];
+            } else if (item.model == 'remark') {
+                params.remark = !StringUtils.isEmpty(param.remark) ? param.remark : null;
+            } else if (item.model == 'createDate') {
+                params.createDateFrom = !StringUtils.isEmpty(param.createDateFrom) ? new Date(param.createDateFrom) : null;
+                params.createDateTo = !StringUtils.isEmpty(param.createDateTo) ? new Date(param.createDateTo) : null;
+            } else if (item.model == 'updDate') {
+                params.updDateFrom = !StringUtils.isEmpty(param.updDateFrom) ? new Date(param.updDateFrom) : null;
+                params.updDateTo = !StringUtils.isEmpty(param.updDateTo) ? new Date(param.updDateTo) : null;
+            } else if (item.model == 'ownerCategory') {
+                params.ownerCategory = !StringUtils.isEmpty(param.ownerCategory) ? param.ownerCategory : [];
+            } else if (item.model == 'registStatus') {
+                params.registStatus = !StringUtils.isEmpty(param.registStatus) ? param.registStatus : [];
+            } else if (item.model == 'receptionNoFlag') {
+                params.receptionNoFlag = !StringUtils.isEmpty(param.receptionNoFlag) ? param.receptionNoFlag : null;
+            }
+        };
+
+        return params;
+    };
+
+    $scope.changeListParamSearch = function (){
+        $scope.newListParamSearch();
+        $scope.prepareListParamSearch();
+    };
+
+    $scope.newRowParamSearch = function(){
+        $scope.newListParamSearch();
+        var tmp = ""
+        var param = {
+                model : $scope.model.hidden.listTmp[0].model,
+                listDetailParam : $scope.model.hidden.listTmp
+        };
+        $scope.model.hidden.listSearch.push(param);
+        for (var i = 0; i < param.listDetailParam.length; i++) {
+            var tmp = $scope.model.hidden.listTmp[i];
+            if(param.model == tmp.model){
+                param.listDetailParam.splice(i, 1);
+            }
+        };
+        $scope.prepareListParamSearch();
+    };
+
+    $scope.removeItem = function(index) {
+        $scope.model.hidden.listSearch.splice(index, 1);
+        $scope.newListParamSearch();
+        $scope.prepareListParamSearch();
+    };
+
+    $scope.convertDataOwnerPerson = function(index, param) {
+        var list = [];
+        var listTmp = [];
+        if(index == 0){ listTmp = $("select[id='ownerPerson1']").select2('data') }
+        else if (index == 1){ listTmp = $("select[id='ownerPerson2']").select2('data') }
+        else if (index == 2){ listTmp = $("select[id='ownerPerson3']").select2('data') }
+        if(!StringUtils.isEmpty(listTmp)){
+            for (var i = 0; i < listTmp.length; i++) {
+                list.push({
+                    no : listTmp[i].id,
+                    name : listTmp[i].text
+                });
+            };
+        }
+        param.listDataAjax[index] = list;
+        $scope.model.hidden.listDataAjax[index] = list;
+    }
+
+    $scope.init = function(){
+        $scope.openedDetail = [];
+        ServerService.doPost('OwnerCardList/getInit', null).then(
+            function(result) {
+                if(!StringUtils.isEmpty(result.data)){
+                    $scope.model.form.listS020015 = result.data.listS020015;
+                    $scope.model.form.listC010011 = result.data.listC010011;
+                    $scope.model.form.listC010012 = result.data.listC010012;
+                    $scope.model.form.listC010013 = result.data.listC010013;
+                    $scope.model.form.listC010014 = result.data.listC010014;
+                    $scope.model.form.listC010015 = result.data.listC010015;
+                    $scope.model.form.listC010016 = result.data.listC010016;
+                    $scope.model.form.listC010017 = result.data.listC010017;
+                    $scope.model.form.listC010018 = result.data.listC010018;
+                    $scope.model.form.listC010019 = result.data.listC010019;
+                    $scope.model.form.listC010020 = result.data.listC010020;
+                    $scope.model.form.listC010021 = result.data.listC010021;
+                    $scope.model.form.listC030002 = result.data.listC030002;
+                    $scope.model.form.listL010018 = result.data.listL010018;
+                    $scope.model.form.listC010008 = result.data.listC010008;
+                    $scope.model.form.listS020012 = result.data.listS020012;
+                    var ownerCardSearchParams = angular.fromJson(sessionStorage.getItem("ownerCardSearch"));
+                    if(!StringUtils.isEmpty(ownerCardSearchParams)){
+                        $scope.model.form.search = angular.copy(ownerCardSearchParams);
+                        $scope.prepareSessionSearch($scope.model.form.search);
+                        $scope.model.form.search.createDateFrom = !StringUtils.isEmpty(ownerCardSearchParams.createDateFrom) ? ownerCardSearchParams.createDateFrom : null;
+                        $scope.model.form.search.createDateTo = !StringUtils.isEmpty(ownerCardSearchParams.createDateTo) ? ownerCardSearchParams.createDateTo : null
+                        $scope.model.form.search.updDateFrom = !StringUtils.isEmpty(ownerCardSearchParams.updDateFrom) ?ownerCardSearchParams.updDateFrom : null;
+                        $scope.model.form.search.updDateTo = !StringUtils.isEmpty(ownerCardSearchParams.updDateTo) ? ownerCardSearchParams.updDateTo : null;
+                        $scope.doSearch(ownerCardSearchParams.page, ownerCardSearchParams);
+                    } else {
+                        $scope.model.form.search.searchOrderKey = [1];
+                        //Create default search condition
+                        $scope.createDefaultSearchCondition();
+                        $scope.search();
+                    }
+                }
+            }
+        );
+    };
+
+    $scope.search = function(){
+        $scope.doSearch(1);
+    };
+
+    $scope.createDefaultSearchCondition = function() {
+        var defaultCondition = {custName: '',
+                                ownerName: '',
+                                createDateFrom: DateUtils.getPreviousMonth(),
+                                createDateTo: DateUtils.getCurrentDate()
+                               };
+        $scope.prepareSessionSearch(defaultCondition);
+    }
+
+    $scope.doSearch = function(page, session){
+        var params = $scope.convertParamsSearch($scope.model.form.search, page);
+        var paramsSearch = angular.copy(params);
+        paramsSearch.listDataAjax = [];
+        if(StringUtils.isEmpty(session)){
+            if(!StringUtils.isEmpty($scope.model.form.search.ownerPerson1) && $scope.model.form.search.ownerPerson1.length > 0){
+                $scope.convertDataOwnerPerson(0, paramsSearch);
+            }
+            if(!StringUtils.isEmpty($scope.model.form.search.ownerPerson2) && $scope.model.form.search.ownerPerson2.length > 0){
+                $scope.convertDataOwnerPerson(1, paramsSearch);
+            }
+            if(!StringUtils.isEmpty($scope.model.form.search.ownerPerson3) && $scope.model.form.search.ownerPerson3.length > 0){
+                $scope.convertDataOwnerPerson(2, paramsSearch);
+            }
+        }else {
+            if(!StringUtils.isEmpty(session.ownerPerson1) && session.ownerPerson1.length > 0){
+                $scope.model.hidden.listDataAjax[0] = session.listDataAjax[0];
+                paramsSearch.listDataAjax[0]  = session.listDataAjax[0];
+            }
+            if(!StringUtils.isEmpty(session.ownerPerson2) && session.ownerPerson2.length > 0){
+                $scope.model.hidden.listDataAjax[1] = session.listDataAjax[1];
+                paramsSearch.listDataAjax[1] = session.listDataAjax[1];
+            }
+            if(!StringUtils.isEmpty(session.ownerPerson3) && session.ownerPerson3.length > 0){
+                $scope.model.hidden.listDataAjax[2] = session.listDataAjax[2];
+                paramsSearch.listDataAjax[2] = session.listDataAjax[2];
+            }
+        }
+        sessionStorage.removeItem("ownerCardSearch");
+        sessionStorage.setItem("ownerCardSearch", JSON.stringify(paramsSearch));
+        ServerService.doPost('OwnerCardList/search', params).then(
+            function(okResult) {
+                if(!StringUtils.isEmpty(okResult.data.failed)){
+                    DialogsService.showError(Messages.getMessage('system.error'), okResult.data.failed);
+                    return;
+                }else if(!StringUtils.isEmpty(okResult.data.warning)){
+                    DialogsService.showWarning(Messages.getMessage('check.error'), okResult.data.warning);
+                    return;
+                }
+                $scope.model.form.ownerCardList = okResult.data.resultList;
+                $scope.model.form.paginationInfo = okResult.data.paginationInfo;
+
+                // 2018/04/06 comment out because layout has been break alter download excel
+                // setTimeout(function(){
+                //     $scope.setColResizable();
+                // });
+            },
+
+            function(errResult){
+            }
+        );
+    };
+
+    $scope.ownerInsert = function(row){
+        var params = {};
+        params.ownerControl = {};
+        ServerService.doPost('OwnerCardList/getSiteDeptList', {custCd:row.custCd, ownerCd:row.ownerCd}).then(
+            function(okResult) {
+                if(!StringUtils.isEmpty(okResult.data.failed)){
+                    DialogsService.showError(Messages.getMessage('system.error'), okResult.data.failed);
+                    return;
+                }else if(!StringUtils.isEmpty(okResult.data.warning)){
+                    DialogsService.showWarning(Messages.getMessage('check.error'), okResult.data.warning);
+                    return;
+                }
+                params.listSite = okResult.data.listSite;
+                params.listDept = okResult.data.listDept;
+                params.ownerControl = okResult.data.ownerData;
+                params.ownerControl.ownerCardInsert = true;
+                var options = {size: 'owner-control'};
+                DialogsService.showDialog('CrmOwnerControl', 'crmOwnerControlCtr', params,options)
+                .result.then(function(params) {
+                    $scope.doSearch($scope.model.form.paginationInfo.page);
+                });
+            }
+        );
+    };
+
+    /**get data from owner control */
+    $scope.$on('businessCustomer#addMstOwner', function(evt, param){
+        $scope.search();
+    });
+
+    $scope.searchReportList = function(row){
+        var params = {
+                custCd : row.custCd,
+                ownerCd : row.ownerCd
+        };
+        $scope.model.form.listReport = [];
+        ServerService.doPost('OwnerCardList/searchReport', params).then(
+            function(okResult) {
+                if(!StringUtils.isEmpty(okResult.data.failed)){
+                    DialogsService.showError(Messages.getMessage('system.error'), okResult.data.failed);
+                    return;
+                }else if(!StringUtils.isEmpty(okResult.data.warning)){
+                    DialogsService.showWarning(Messages.getMessage('check.error'), okResult.data.warning);
+                    return;
+                }
+                $scope.model.form.listReport = okResult.data.listReport;
+            },
+            function(errResult){}
+        );
+    };
+
+    $scope.goToSalesReportDetails = function(object, row){
+        var param = {salesReportNo: object.salesReportNo};
+        ServerService.doPost('OwnerCardList/checkData', param).then(
+            function(okResult) {
+                if(!StringUtils.isEmpty(okResult.data)){
+                    if(!StringUtils.isEmpty(okResult.data.warning)){
+                        DialogsService.showWarning(Messages.getMessage('check.error'), okResult.data.warning).result.then(function(btn){
+                            $scope.search();
+                        })
+                    }else{
+                        var todoDetail = row.custName;
+                        if(!StringUtils.isEmpty(row.siteName)){
+                            todoDetail += " / " + row.siteName;
+                        }
+                        if(!StringUtils.isEmpty(row.deptName)){
+                            todoDetail += " / " + row.deptName;
+                        }
+                        if(!StringUtils.isEmpty(row.position)){
+                            todoDetail += " / " + row.position;
+                        }
+                        var salesReport = {
+                            salesReportNo : object.salesReportNo,
+                            isDisabled : false,
+                            screenMode: 'UPDATE',
+                            isTodo : true
+                        };
+                        sessionStorage.setItem("salesReport", JSON.stringify(salesReport));
+                        sessionStorage.removeItem("salesReportUrl");
+                        var options = {size: 'lg'};
+                        DialogsService.showDialog('SalesReportDialog','SalesReportControlCtrl', null,options).result.then(
+                        function (isClosed) {
+                            if(!isClosed){
+                                $scope.searchReportList(row);
+                            }
+                        });
+                    }
+                }
+            }
+        );
+    };
+
+    $scope.redirect = function(value, param, index) {
+        switch (value) {
+            case 'SalesReportControl':
+                var params = {
+                    custCd : param.custCd,
+                    custName : param.custName,
+                    ownerCd: param.ownerCd,
+                    ownerName: param.ownerName,
+                    salesReportNo : "",
+                    isDisabled : false,
+                    screenMode: 'INSERT',
+                    fromOwnerCardList : true,
+                    currentDate : new Date(),
+                };
+                sessionStorage.removeItem("salesReport");
+                sessionStorage.setItem("salesReportUrl", JSON.stringify(params));
+                var options = {size: 'lg'};
+                $scope.model.form.ownerCardList[index].opened = false;  // need to close [+] pop-over
+                DialogsService.showDialog('SalesReportDialog','SalesReportControlCtrl', null,options).result.then(
+                function (isClosed) {
+                    if(!isClosed){
+                        $scope.searchReportList(params);
+                    }
+                });
+            break;
+            case 'SalesReportList':
+                var salesReportParamSearch = {
+                    custName : param.custName,
+                    custOwnerName : param.ownerName
+                };
+                sessionStorage.setItem("salesReportParamSearch", JSON.stringify(salesReportParamSearch));
+                sessionStorage.removeItem("projectCustItemInfo");
+                sessionStorage.removeItem("salesReportSearch");
+                window.open("SalesReportList","_blank");
+                //RouteService.gotoUrl("SalesReportList");
+            break;
+            case 'TodoControl':
+                var params = {
+                    custCd : param.custCd,
+                    custName : param.custName,
+                    ownerCd : param.ownerCd,
+                    ownerName : param.ownerName,
+                    position : param.position,
+                    siteCd : param.siteCd,
+                    siteName : param.siteName,
+                    postNo : param.postNo,
+                    address1 : param.address1,
+                    address2 : param.address2,
+                    mailAddress : param.mailAddress,
+                    deptCd : param.deptCd,
+                    deptName : param.deptName,
+                    telephoneNo : param.telephoneNo,
+                    typeParam : 1,
+                    fromScreen : 'OwnerCardList'
+                };
+                sessionStorage.setItem("todo", JSON.stringify(params));
+                RouteService.gotoUrl("TodoControl");
+            break;
+            case 'TodoList':
+                var params = {
+                    ownerName: param.ownerName,
+                    custName: param.custName
+                };
+                sessionStorage.setItem("todoListParamSearch", JSON.stringify(params));
+                window.open("TodoList","_blank");
+                //RouteService.gotoUrl("TodoList");
+            break;
+            case 'SfaProjectControl':
+                var params = { screenMode : 'INSERT'};
+                var itemInfo = {
+                        custCd : param.custCd,
+                        custName : param.custName,
+                        connectionStatus : param.connectionStatus,
+                        ownerCd : param.ownerCd,
+                        siteCd : param.siteCd,
+                        deptCd : param.deptCd
+                };
+                sessionStorage.setItem("projectItemControl", JSON.stringify(params));
+                sessionStorage.setItem("projectCustItemInfo", JSON.stringify(itemInfo));
+                sessionStorage.removeItem("fromSalEXEX");
+                RouteService.gotoUrl('SfaProjectControl');
+            break;
+            case 'SfaProjectList':
+                var params = { screenMode : 'INSERT'};
+                var itemInfo = {
+                        custCd : param.custCd,
+                        custName : param.custName
+                };
+                sessionStorage.setItem("projectItemControl", JSON.stringify(params));
+                sessionStorage.setItem("projectCustItemInfo", JSON.stringify(itemInfo));
+                sessionStorage.removeItem("fromSalEXEX");
+                sessionStorage.removeItem("sfaProjectListSession");
+                RouteService.gotoUrl('SfaProjectList');
+            break;
+        }
+    };
+
+    /**show/hide popover by index*/
+    $scope.show = function(index) {
+        var length = $scope.model.form.ownerCardList.length;
+        for(var i = 0; i < length; i++){
+            if(i == index){
+                $scope.model.form.ownerCardList[i].opened = true;
+            }else{
+                $scope.model.form.ownerCardList[i].opened = false;
+            }
+        }
+    };
+
+    $scope.showPopoverDetail = function(parentIndex, index) {
+        var length = $scope.model.form.ownerCardList.length;
+        for(var i = 0; i< length; i++){
+            if(i == parentIndex){
+                $scope.model.form.ownerCardList[i].openedDetail = [];
+                $scope.model.form.ownerCardList[i].openedDetail[index] = true;
+            }else{
+                $scope.model.form.ownerCardList[i].openedDetail = [];
+            }
+        }
+    };
+
+    $scope.exportCSV = function(){
+        var params = $scope.convertParamsSearch($scope.model.form.search, 0);
+        params.pageSize = 0;
+        var current = $filter('date')(new Date(), "yyyyMMddHHmmss");
+        var csvName = "ご担当者一覧"+current+".xlsx";
+        ServerService.doDownload('/OwnerCardList/exportOwnerCard', params, 'application/vnd.ms-excel', csvName);
+    };
+
+    $scope.isCollapse = true;
+    $scope.collapse = function(){
+        var bodySize =  $window.innerWidth;
+        if(bodySize < 992 ){
+            if(angular.element('#collapseIcon').hasClass('collapsed')){
+                angular.element('#collapse').removeClass('hidden-sm hidden-xs');
+                angular.element('#nonCollapseSearch').addClass('hidden-sm hidden-xs');
+            } else{
+                angular.element('#nonCollapseSearch').removeClass('hidden-sm hidden-xs');
+            }
+        }
+    }
+
+    $scope.showImg = function(row) {
+        if(!StringUtils.isEmpty(row.cardThumbnail)){
+            var params = {'custCd' : row.custCd, 'ownerCd' : row.ownerCd};
+            DialogsService.showDialog('ImgPopup', 'ImgPopupCtrl', params, {size: 'image'}).result.then(function(param) {
+            });
+        }
+    }
+
+    $scope.init();
+
+    /*
+    // 2018/04/06 comment out because layout has been break alter download excel
+    // set colResizable
+    $scope.setColResizable = function(){
+        // remove JCLRgrips if having
+        $('.JCLRgrips').remove();
+
+        // parentId : table header id : tblOwnerCardList
+        // childId : child table id : table accordion ( 'parent table id + Child' )
+        angular.element("table[id^='tblOwnerCardList']").colResizable({
+            liveDrag: true,
+            postbackSafe: true,
+            useLocalStorage: true,
+            onDrag: syncTableWidth,
+            parentId: 'tblOwnerCardList',
+            childId:'tblOwnerCardListChild'
+        });
+        // prevent resize column on child table
+        $('.panel-title .JCLRgrips .JCLRgrip .JColResizer').on('mousemove', function(event) {
+            return false;
+        });
+    }
+
+    // when windows resize, set colresize again for table
+    var timer = false;
+    $(window).resize(function() {
+        if (timer !== false) {
+            clearTimeout(timer);
+        }
+
+        timer = setTimeout(function(){
+            $scope.setColResizable();
+        });
+    });
+    */
+}]);

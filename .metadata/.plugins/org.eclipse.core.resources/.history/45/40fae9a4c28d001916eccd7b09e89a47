@@ -1,0 +1,457 @@
+.bootstrap-switch-container .checker {
+    display: none !important;
+}
+
+.bootstrap-switch {
+    margin-left: 5px;
+}
+
+.exex-form label:after {
+    content: "";
+}
+
+textarea {
+    resize: none;
+}
+
+.label-title-wrap {
+    background-color: #3598DC;
+    color: #FFF;
+    border-bottom: 1px solid #FFF;
+    padding: 22px 5px 22px 0px;
+    text-align: right;
+}
+
+.label-title-address {
+    background-color: #3598DC;
+    color: #FFF;
+    border-bottom: 1px solid #FFF;
+    padding: 43px 5px 43px 0px;
+    text-align: right;
+}
+
+.table>thead>tr>th {
+    border-bottom: none;
+}
+
+.table>tbody>tr>td {
+    border-top: none;
+}
+
+#height-button-control{
+  padding-right: 20px;
+}
+
+#drag-component{
+  margin-left: -19px !important;
+}
+
+#drag-component .panel-heading{
+  background-color: #3598DC !important;
+  border-top-left-radius: 0px !important;
+    border-top-right-radius: 0px !important;
+}
+
+#drag-component h2{
+  text-align: left;
+  background-color: #26a69a;
+  color: #fff;
+  padding: 0px 0px 5px 5px;
+}
+
+#drag-component table thead tr th{
+  background-color: #3598DC;
+  color: #FFF;
+  padding: 5px;
+  border: 1px solid #DDD;
+}
+
+#drag-component table tbody tr td{
+  padding: 5px;
+  border: 1px solid #DDD;
+  max-width: 80px;
+}
+
+#drag-component .md-check{
+  width: 50% !important;
+}
+
+@media (max-width: 1024px){
+    .portlet.light {
+        margin-bottom: 40px !important;
+    }
+    div#height-button-control {
+        position: absolute;
+        margin-bottom: 0px;
+        margin-right: 0px;
+    }
+}
+
+.list {
+  list-style: none outside none;
+  margin: 10px 0 30px;
+}
+
+.apps-container {
+  width: 100%;
+}
+
+.apps-container-right{
+  border: 1px solid #DDD;
+  margin-top: -10px;
+  max-width: 436px;
+}
+
+.app {
+  padding: 5px;
+  margin: 5px 0;
+  border: 1px solid #7b9ce8;
+  border-radius: 0px;
+  font-size: 1.1em;
+  font-weight: bold;
+  cursor: move;
+}
+
+#drag-component .fileinput {
+    margin-bottom: 0px;
+    margin-top: 0px;
+}
+
+#drag-component .hidden{
+  display: none;
+}
+
+#drag-component .calendar-component{
+  margin-top: 0px;
+  margin-bottom: 0px;
+}
+
+#drag-component .daterange-component{
+  margin-top: 0px !important;
+  margin-bottom: 0px;
+}
+
+.table-component{
+  margin-bottom: 0px !important;
+}
+
+.clear {
+  clear: both;
+}
+
+.ui-sortable-placeholder{
+  background-color: #eff0f3;
+    width: 437px;
+    position: absolute;
+    right: 88px;
+    border: 1px dotted #7b9ce8;
+    z-index: 99999;
+}
+
+/*** LABEL ***/
+.exex-text-align {
+  text-align: right;
+}
+/*** END LABEL ***/
+
+/*** INPUT ***/
+
+#custCd .dropdown-menu {
+    overflow: auto;
+    max-height: 175px;
+}
+@media only screen and (max-width: 993px) {
+  .col-md-1, .col-md-10, .col-md-11, .col-md-12, .col-md-2, .col-md-3,
+  .col-md-4, .col-md-5, .col-md-6, .col-md-7, .col-md-8, .col-md-9 {
+    padding-right: 0px;
+    padding-left: 0px;
+  }
+
+  .exex-text-align {
+    text-align: start !important;
+  }
+
+  #daterange.input-group {
+    padding-left: 0px !important;
+    padding-right: 0px !important;
+  }
+  .exex-form .label-title, .exex-form-mst .label-title {
+    background-color: #FFFFFF;
+    color: #000000;
+    text-align: left;
+  }
+  .label-title-wrap {
+    background-color: #FFFFFF;
+    color: #000000;
+    padding: 7px 2px 7px 0px;
+    text-align: left;
+  }
+}
+
+
+
+.fc-color-picker {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.fc-color-picker>li {
+  float: left;
+  font-size: 30px;
+  margin-right: 5px;
+  line-height: 30px;
+}
+
+.fc-color-picker>li .fa {
+  font-size: 24px;
+  -webkit-transition: -webkit-transform linear 0.3s;
+  -moz-transition: -moz-transform linear 0.3s;
+  -o-transition: -o-transform linear 0.3s;
+  transition: transform linear 0.3s;
+}
+
+.fc-color-picker>li .fa:hover {
+  -webkit-transform: rotate(30deg);
+  -ms-transform: rotate(30deg);
+  -o-transform: rotate(30deg);
+  transform: rotate(30deg);
+}
+
+.text-red {
+  color: #f44336 !important;
+}
+
+.text-yellow {
+  color: #f39c12 !important;
+}
+
+.text-aqua {
+  color: #00bcd4 !important;
+}
+
+.text-blue {
+  color: #2196f3 !important;
+}
+
+.text-black {
+  color: #000000 !important;
+}
+
+.text-light-blue {
+  color: #3c8dbc !important;
+}
+
+.text-green {
+  color: #4caf50 !important;
+}
+
+.text-gray {
+  color: #d2d6de !important;
+}
+
+.text-navy {
+  color: #001f3f !important;
+}
+
+.text-teal {
+  color: #009688 !important;
+}
+
+.text-olive {
+  color: #3d9970 !important;
+}
+
+.text-lime {
+  color: #cddc39 !important;
+}
+
+.text-orange {
+  color: #ff9800 !important;
+}
+
+.text-fuchsia {
+  color: #e91e63 !important;
+}
+
+.text-purple {
+  color: #9c27b0 !important;
+}
+
+.text-maroon {
+  color: #d81b60 !important;
+}
+
+.text-muted {
+  color: #9e9e9e !important;
+}
+
+#sales-report-form .popover {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1010;
+  display: none;
+  width: 314px;
+  padding: 1px 1px 10px 1px;
+  text-align: left;
+  background-color: white;
+  background-clip: padding-box;
+  border: 1px solid #cccccc;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  border-radius: 0px;
+  -webkit-box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  white-space: normal;
+}
+
+/* line 26, ../../../../../../scss/stylesheets/assets/bootstrap-3.1.1/css/_popovers.scss */
+#sales-report-form .popover.top {
+  margin-top: -10px;
+}
+
+/* line 27, ../../../../../../scss/stylesheets/assets/bootstrap-3.1.1/css/_popovers.scss */
+#sales-report-form .popover.right {
+  margin-left: 10px;
+}
+
+/* line 28, ../../../../../../scss/stylesheets/assets/bootstrap-3.1.1/css/_popovers.scss */
+#sales-report-form .popover.bottom {
+  margin-top: 10px;
+}
+
+/* line 29, ../../../../../../scss/stylesheets/assets/bootstrap-3.1.1/css/_popovers.scss */
+#sales-report-form .popover.left {
+  margin-left: -10px;
+}
+
+/* line 32, ../../../../../../scss/stylesheets/assets/bootstrap-3.1.1/css/_popovers.scss */
+#sales-report-form .popover-title {
+  margin: 0;
+  padding: 7px 12px;
+  font-size: 12px;
+  font-weight: normal;
+  line-height: 18px;
+  background-color: #f7f7f7;
+  border-bottom: 1px solid #ebebeb;
+  border-radius: 5px 5px 0 0;
+}
+
+/* line 43, ../../../../../../scss/stylesheets/assets/bootstrap-3.1.1/css/_popovers.scss */
+#sales-report-form .popover-content {
+  padding: 6px 13px 0px 13px;
+}
+
+/* line 53, ../../../../../../scss/stylesheets/assets/bootstrap-3.1.1/css/_popovers.scss */
+#sales-report-form .popover>.arrow, .popover>.arrow:after {
+  position: absolute;
+  display: block !important;
+  width: 0;
+  height: 0;
+  border-color: transparent;
+  border-style: solid;
+}
+
+/* line 62, ../../../../../../scss/stylesheets/assets/bootstrap-3.1.1/css/_popovers.scss */
+#sales-report-form .popover>.arrow {
+  border-width: 11px;
+}
+
+/* line 65, ../../../../../../scss/stylesheets/assets/bootstrap-3.1.1/css/_popovers.scss */
+#sales-report-form .popover>.arrow:after {
+  border-width: 10px;
+  content: "";
+}
+
+/* line 71, ../../../../../../scss/stylesheets/assets/bootstrap-3.1.1/css/_popovers.scss */
+#sales-report-form .popover.top>.arrow {
+  left: 50%;
+  margin-left: -11px;
+  border-bottom-width: 0;
+  border-top-color: #999999;
+  border-top-color: fadein(rgba(0, 0, 0, 0.2), 5%);
+  bottom: -11px;
+}
+
+/* line 78, ../../../../../../scss/stylesheets/assets/bootstrap-3.1.1/css/_popovers.scss */
+#sales-report-form .popover.top>.arrow:after {
+  content: " ";
+  bottom: 1px;
+  margin-left: -10px;
+  border-bottom-width: 0;
+  border-top-color: white;
+}
+
+/* line 86, ../../../../../../scss/stylesheets/assets/bootstrap-3.1.1/css/_popovers.scss */
+#sales-report-form .popover.right>.arrow {
+  top: 50%;
+  left: -11px;
+  margin-top: -11px;
+  border-left-width: 0;
+  border-right-color: #999999;
+  border-right-color: fadein(rgba(0, 0, 0, 0.2), 5%);
+}
+
+/* line 93, ../../../../../../scss/stylesheets/assets/bootstrap-3.1.1/css/_popovers.scss */
+#sales-report-form .popover.right>.arrow:after {
+  content: " ";
+  left: 1px;
+  bottom: -10px;
+  border-left-width: 0;
+  border-right-color: white;
+}
+
+/* line 101, ../../../../../../scss/stylesheets/assets/bootstrap-3.1.1/css/_popovers.scss */
+#sales-report-form .popover.bottom>.arrow {
+  left: 50%;
+  margin-left: -11px;
+  border-top-width: 0;
+  border-bottom-color: #999999;
+  border-bottom-color: fadein(rgba(0, 0, 0, 0.2), 5%);
+  top: -11px;
+}
+
+/* line 108, ../../../../../../scss/stylesheets/assets/bootstrap-3.1.1/css/_popovers.scss */
+#sales-report-form .popover.bottom>.arrow:after {
+  content: " ";
+  top: 1px;
+  margin-left: -10px;
+  border-top-width: 0;
+  border-bottom-color: white;
+}
+
+/* line 117, ../../../../../../scss/stylesheets/assets/bootstrap-3.1.1/css/_popovers.scss */
+#sales-report-form .popover.left>.arrow {
+  top: 50%;
+  right: -11px;
+  margin-top: -11px;
+  border-right-width: 0;
+  border-left-color: #999999;
+  border-left-color: fadein(rgba(0, 0, 0, 0.2), 5%);
+}
+
+/* line 124, ../../../../../../scss/stylesheets/assets/bootstrap-3.1.1/css/_popovers.scss */
+#sales-report-form .popover.left>.arrow:after {
+  content: " ";
+  right: 1px;
+  border-right-width: 0;
+  border-left-color: white;
+  bottom: -10px;
+}
+
+#sales-report-form .m-t-30-a{
+  margin-top: -30px !important;
+}
+
+span.timeproject{
+  border-radius: 0px 4px 4px 0px !important;
+  border: 1px solid #9fa4ab;
+}
+#sales-report-form .updated input,
+#sales-report-form .updated textarea,
+#sales-report-form .updated label:not(.dash),
+#sales-report-form .updated a:not(.fileinput-exists1),
+#sales-report-form .updated span:not(.fileinput-exists1):not(.input-group-addon):not(.glyphicon){
+    color: #f50;
+    font-weight: bold;
+}

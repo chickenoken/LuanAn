@@ -1,0 +1,22 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision: $ $Date: $
+ * @author huy-du
+ */
+'use strict';
+exexSMSApp.controller('estimateCustomInfoCtrl',function($rootScope, $scope, $uibModalInstance){
+
+    $rootScope.data = {
+            customInfo: '',
+    }
+    //-- Methods --//
+    $scope.done = function(){
+        $uibModalInstance.close($rootScope.data.customInfo);
+    }; // end done
+    $scope.no = function(){
+        $uibModalInstance.dismiss('no');
+    }; // end close
+});

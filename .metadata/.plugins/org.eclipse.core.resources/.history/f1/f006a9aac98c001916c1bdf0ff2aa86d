@@ -1,0 +1,78 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ * @author : Quang-Thien
+ * @version $Revision: $ $Date: $
+ */
+
+'use strict';
+
+exexSMSApp.factory('PwdResetModel', function(BaseModel) {
+
+    var model = BaseModel.getInstance();
+
+    model.form = {
+        pwdReset : {
+            emailAddress : ""
+        }
+    };
+    model.hidden = {
+            isSubmited: false
+    }
+
+    return model;
+});
+
+exexSMSApp.controller('PwdResetCtrl',
+        ['$scope', 'RouteService', 'DialogsService','PwdResetModel', 'Messages', 'ServerService',
+         function($scope, RouteService, DialogsService, PwdResetModel, Messages, ServerService) {
+
+    $scope.model = PwdResetModel;
+
+    $scope.pwdReset = function(invalid){
+
+        $scope.model.hidden.isSubmited = true;
+        if (invalid) {
+            return;
+        }
+
+        var params = {
+                emailAddress : !ValidateUtil.isValidTextEmpty($scope.model.form.pwdReset.emailAddress)
+                    ? $scope.model.form.pwdReset.emailAddress : ""
+        };
+        var dlg = DialogsService.showConfirm(Messages.getMessage('title.confirm'),
+                Messages.getMessage('S00010'));
+        dlg.result.then(function(btn){
+            ServerService
+                .doPost('PwdReset/pwdReset', params)
+                .then(
+                    function(okResult) {
+                        if(!ValidateUtil.isValidTextEmpty(okResult.data.success)){
+                            ServerService
+                                .doPost('logout', {})
+                                .then(
+                                    function(okResult2) {
+                                        var screenInfo = {toScreen : 'login'};
+                                        sessionStorage.clear();
+                                        sessionStorage.setItem("screenInfo", JSON.stringify(screenInfo));
+                                        RouteService.gotoUrl("Login");
+                                    },
+                                    function(errResult2){
+                                    });
+                          } else {
+                              if(!ValidateUtil.isValidTextEmpty(okResult.data.warningMessage)){
+                                  DialogsService.showError(Messages.getMessage('system.error'),
+                                          okResult.data.failed);
+                              }else{
+                                  DialogsService.showWarning(Messages.getMessage('check.error'),
+                                          okResult.data.warning);
+                              }
+                        }
+                    },
+                    function(errResult){
+                    });
+        });
+    };
+
+}]);

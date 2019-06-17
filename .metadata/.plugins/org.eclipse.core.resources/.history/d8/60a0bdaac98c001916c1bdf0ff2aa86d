@@ -1,0 +1,2695 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision: 1.0 $ $Date: 2014/06/11 $
+ * @author Huy - Du
+ */
+
+'use strict';
+
+exexSMSApp.factory('SfaSubProjectControlModel', ['BaseModel', function (BaseModel) {
+
+    var model = BaseModel.getInstance();
+
+    /** サーバーと連携する画面項目の定義 */
+    model.form = {
+        projectInfo: {
+            custCd: '',
+            custName: '',
+            projectSno: '',
+            projectName: '',
+            crmSiteCd: '',
+            crmSiteName: '',
+            crmDeptCd: '',
+            crmDeptName: '',
+            crmLeaderCd: '',
+            crmLeaderName: '',
+            salesGroupCd: '',
+            salesGroupName: '',
+            billaddressNo: '',
+            billaddressName: '',
+            salesUserCd: '',
+            address1: '',
+            address2: '',
+        },
+        business: {
+            businessCd: '',
+            countUpdate: '',
+            listP010004: [],
+            listMstGroup: [],
+            listUser: [],
+            listProcessSetting: [],
+            isConfirm: false
+        },
+        listP010001: [],
+        listP010002: [],
+        listP010007: [],
+        listInvoice: [],
+        listMstUser: [],
+        listCrmSite: [],
+        listCrmDept: [],
+        listMstOwner: [],
+        listMstBusiness: [],
+        projectProcess: [],
+        listItemsEst: [],
+        listItemsRsv: [],
+        listItemsSales: [],
+        listItemsBill: [],
+        listSfaProject: [],
+        listGroupParent: [],
+        listProjectItem0: [],
+        listProjectItem1: [],
+        listProjectItem2: [],
+        listL030001: [],
+        paginationForReport : {
+            page: 0,
+            pageSize: 20,
+            totalPage: 0,
+            totalRecord: 0,
+            from: 0,
+            to: 0
+        }
+    };
+
+    model.hidden = {
+        custCd: '',
+        custName: '',
+        custType : '',
+        businessCd: '',
+        connectionStatus: '',
+        screenMode: 'INSERT',
+        custFlg: true,
+        flgBusiness: false,
+        isSubmited: false,
+        page: 0,
+        paginationPage: 0,
+        totalPage: 0,
+        fromScreen: '',
+        listGroupSelect: [],
+        createUserName: '',
+        lastUpdUserName: '',
+        lastUpdDate: '',
+        periodTime: '',
+        checkUnique: [],
+        parentProjectSno : '',
+        parentProjectName : '',
+        exportName: 'PROJECT',
+        showProcess: true
+    };
+
+    return model;
+}]);
+
+exexSMSApp.service('SfaProjectControlService', ['$q', 'ServerService', function ($q, ServerService) {
+    var _self = this;
+
+    _self.initData = function (param) {
+        var deferred = $q.defer();
+
+        ServerService.doPost('SfaProjectControl/getInit', param).then(
+            function (okResult) {
+                deferred.resolve(okResult);
+            },
+            function (errResult) {
+                deferred.reject(errResult);
+            }
+        );
+
+        return deferred.promise;
+    };
+
+    _self.inquiry = function (param) {
+        var deferred = $q.defer();
+
+        ServerService.doPost('SfaProjectControl/inquiry', param).then(
+            function (okResult) {
+                deferred.resolve(okResult);
+            },
+            function (errResult) {
+                deferred.reject(errResult);
+            }
+        );
+
+        return deferred.promise;
+    };
+
+    _self.getCustomerDetails = function (param) {
+        var deferred = $q.defer();
+
+        ServerService.doPost('SfaProjectControl/getCustomerDetails', param).then(
+            function (okResult) {
+                deferred.resolve(okResult);
+            },
+            function (errResult) {
+                deferred.reject(errResult);
+            }
+        );
+
+        return deferred.promise;
+    };
+
+    _self.insert = function (param) {
+        var deferred = $q.defer();
+
+        ServerService.doPost('SfaProjectControl/insert', param).then(
+            function (okResult) {
+                deferred.resolve(okResult);
+            },
+            function (errResult) {
+                deferred.reject(errResult);
+            }
+        );
+
+        return deferred.promise;
+    };
+
+    _self.update = function (param) {
+        var deferred = $q.defer();
+
+        ServerService.doPost('SfaProjectControl/update', param).then(
+            function (okResult) {
+                deferred.resolve(okResult);
+            },
+            function (errResult) {
+                deferred.reject(errResult);
+            }
+        );
+
+        return deferred.promise;
+    };
+
+    _self.doDelete = function (param) {
+        var deferred = $q.defer();
+
+        ServerService.doPost('SfaProjectControl/delete', param).then(
+            function (okResult) {
+                deferred.resolve(okResult);
+            },
+            function (errResult) {
+                deferred.reject(errResult);
+            }
+        );
+
+        return deferred.promise;
+    };
+
+    _self.checkDataExportPdf = function (param) {
+        var deferred = $q.defer();
+
+        ServerService.doPost('SfaProjectList/checkDataExportPdf', param).then(
+            function (okResult) {
+                deferred.resolve(okResult);
+            },
+            function (errResult) {
+                deferred.reject(errResult);
+            }
+        );
+
+        return deferred.promise;
+    };
+
+    _self.initProjProcessSetting = function (param) {
+        var deferred = $q.defer();
+
+        ServerService.doPost('SfaProjectProcessSetting/getInit', param).then(
+            function (okResult) {
+                deferred.resolve(okResult);
+            },
+            function (errResult) {
+                deferred.reject(errResult);
+            }
+        );
+
+        return deferred.promise;
+    };
+    _self.search = function (param) {
+        var deferred = $q.defer();
+
+        ServerService.doPost('SfaProjectList/searchListProject', param).then(
+            function (okResult) {
+                deferred.resolve(okResult);
+            },
+            function (errResult) {
+                deferred.reject(errResult);
+            }
+        );
+
+        return deferred.promise;
+    };
+}]);
+
+/**
+ * 共通ヘッダー画面のController定義
+ */
+exexSMSApp.controller('sfaSubProjectControlCtrl', ['$scope', '$cookies', '$filter', 'SfaProjectControlService', 'DialogsService', 'RouteService', 'SfaSubProjectControlModel', 'HeaderModel',
+                    'SalEstimateControlService', 'SalRsvControlService', 'SalDecideProcessService', 'SalRptListService', 'Messages', 'ServerService',
+            function ($scope, $cookies, $filter, SfaProjectControlService, DialogsService, RouteService, SfaSubProjectControlModel, HeaderModel,
+                SalEstimateControlService, SalRsvControlService, SalDecideProcessService, SalRptListService, Messages, ServerService) {
+
+    $scope.model = SfaSubProjectControlModel;
+    $scope.modelHeader = HeaderModel;
+
+    $scope.close = function (e) {
+        angular.element('body').click();
+    }
+
+    $scope.backParentProject = function (){
+        var passingParam = SessionUtils.prepareSession(sessionStorage.getItem("projectItemControl"));
+        passingParam.projectSno = $scope.model.hidden.parentProjectSno;
+        passingParam.screenMode = "VIEW";
+        passingParam.parentProjectSno = "";
+        passingParam.parentProjectName = "";
+        console.log(passingParam);
+        sessionStorage.setItem("projectItemControl", JSON.stringify(passingParam));
+        RouteService.gotoUrl('SfaProjectControl');
+    };
+
+    /**
+     * init model
+     */
+    $scope.init = function (model) {
+
+        //GET DATA TBL_PROJECT
+        var projectSno = null;
+        var param = angular.fromJson(sessionStorage.getItem("projectItemControl"));
+        if (!StringUtils.isEmpty(param)) {
+            $scope.model.hidden.fromScreen = param.fromScreen;
+            if (!StringUtils.isEmpty(param.projectSno) || !StringUtils.isEmpty(param.custCd)) {
+                $scope.model.form.projectInfo.custCd = param.custCd;
+                $scope.model.form.projectInfo.custName = param.custName;
+                var date = new Date();
+                $scope.model.hidden.period = $filter('date')(date, "yyyy/MM/dd HH:mm:ss");
+                projectSno = param.projectSno;
+                if(!StringUtils.isEmpty(projectSno)){
+                    $scope.inquiry(projectSno);
+                }
+            }
+
+            if(!StringUtils.isEmpty(param.siteCd)) {
+                $scope.model.hidden.siteCd = param.siteCd;
+                $scope.model.hidden.siteName = param.siteName;
+            }
+
+            if(!StringUtils.isEmpty(param.parentProjectSno)){
+                $scope.model.hidden.parentProjectSno = param.parentProjectSno;
+                $scope.model.hidden.parentProjectName = param.parentProjectName;
+            } else {
+                $scope.model.hidden.parentProjectSno = 'P00-00000';
+                $scope.model.hidden.parentProjectName = '契約無';
+            }
+            $scope.model.hidden.screenMode = !StringUtils.isEmpty(param.screenMode) ? param.screenMode : 'INSERT';
+        };
+        //GET DATA FREE
+        $scope.getProjectDetailControl(projectSno);
+
+        var custItemInfo = angular.fromJson(sessionStorage.getItem("projectCustItemInfo"));
+        if (!StringUtils.isEmpty(custItemInfo)) {
+            $scope.model.hidden.custFlg = false;
+            if (!StringUtils.isEmpty(custItemInfo)) {
+                $scope.model.form.projectInfo.custCd = custItemInfo.custCd;
+                $scope.model.form.projectInfo.custName = custItemInfo.custName;
+                $scope.model.hidden.custType = custItemInfo.custType;
+            }
+        }
+
+        if ($scope.model.hidden.screenMode == "INSERT") {
+            setTimeout(function () {
+                $('.timepicker').parent('.input-group').on('click', '.input-group-btn', function (e) {
+                    e.preventDefault();
+                    $(this).parent('.input-group').find('.timepicker').timepicker('showWidget');
+                });
+                angular.element('.input-group input').keydown(function (e) {
+                    $(this).parent('.input-group').find('.timepicker').timepicker('hideWidget');
+                });
+            }, 1000);
+
+            var sessionLogin = angular.fromJson(sessionStorage.getItem("session"));
+            if (!StringUtils.isEmpty(sessionLogin.groupCd)) {
+                $scope.model.form.projectInfo.salesGroupCd = [sessionLogin.groupCd];
+                $scope.model.form.projectInfo.salesUserCd = sessionLogin.userCd;
+            }
+        }
+    };
+
+    $scope.convertDataForView = function (detail){
+        if (detail.controlType == "04" && !StringUtils.isEmpty(detail.listData)) {
+            var inputValue = [];
+            angular.forEach(detail.listData, function (data, k) {
+                if (!StringUtils.isEmpty(detail.inputValue) && detail.inputValue.indexOf(data.code) > -1) {
+                    inputValue[k] = '1'
+                } else {
+                    inputValue[k] = '0';
+                }
+            });
+            if (inputValue.length > 0) {
+                detail.inputValue = inputValue;
+            }
+        }
+        if (detail.controlType == "09") {
+            var address = {
+                postNo1: '',
+                postNo2: '',
+                address1: '',
+                address2: '',
+            }
+            if (!StringUtils.isEmpty(detail.inputValue)) {
+                detail.inputValue = StringUtils.isJson(detail.inputValue) ? angular.fromJson(detail.inputValue) : address;
+            } else {
+                detail.inputValue = address;
+            }
+        }
+        if (detail.controlType == "11" || detail.controlType == "MST_GROUP_LIST" || detail.controlType == "MST_USER_LIST"){
+            if(!StringUtils.isEmpty(detail.inputValue)) {
+                detail.inputValue = detail.inputValue.split(',');
+            }
+        }
+
+        if (detail.detailKey == "015" && !StringUtils.isEmpty(detail.inputValue)) {
+            $scope.billaddressChange(detail);
+        }
+
+        if ($scope.model.hidden.screenMode == "INSERT") {
+            if (detail.detailKey == "011") {
+                detail.inputValue = $scope.model.form.projectInfo.salesGroupCd;
+            } else if (detail.detailKey == "012") {
+                detail.inputValue = [$scope.model.form.projectInfo.salesUserCd];
+            } else if (detail.detailKey == '04') {
+                if($scope.model.hidden.parentProjectSno == 'P00-00000'){
+                    detail.readOnly = false;
+                }
+                $scope.customerChange($scope.model.form.projectInfo.custCd);
+            } else if (detail.detailKey == '05') {
+                detail.inputValue = $scope.model.hidden.siteCd;
+                detail.inputValueName = $scope.model.hidden.siteName;
+                $scope.siteChange(detail);
+            } else if (detail.detailKey == '09') {
+                var businessCd = $cookies.get("defaultSubProjectBusinessCd");
+                if(!StringUtils.isEmpty(businessCd)) {
+                    detail.inputValue = businessCd;
+                    $scope.model.form.business.businessCd = businessCd;
+                    $scope.getBusinessProcess(businessCd);
+                }
+            }
+        }
+    }
+
+    $scope.getProjectDetailControl = function (projectSno) {
+        var param = {
+            projectSno: projectSno,
+            periodTime: $scope.model.hidden.period,
+            isLoadListData: true,
+            parentProjectSno : $scope.model.hidden.parentProjectSno
+        }
+        ServerService.doPost('SfaProjectControl/getProjectControl', param).then(
+            function (okResult) {
+                var error = okResult.data.failed;
+                var warning = okResult.data.warning;
+                if (!StringUtils.isEmpty(error)) {
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                } else if (!StringUtils.isEmpty(warning)) {
+                    DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                    return;
+                }
+                $scope.model.form.listProjectItem0 = okResult.data.listProjectItem0;
+                $scope.model.form.listProjectItem1 = okResult.data.listProjectItem1;
+                $scope.model.form.listProjectItem2 = okResult.data.listProjectItem2;
+                $scope.model.form.projectProcess = okResult.data.projectProcess;
+                $scope.model.form.listTodo = okResult.data.listTodo;
+                $scope.model.form.listReport = okResult.data.listReport;
+                $scope.model.form.paginationForReport = okResult.data.paginationInfo;
+
+                angular.forEach($scope.model.form.listProjectItem0, function (item, i) {
+                    angular.forEach(item.listProjectItemDetail, function (detail, j) {
+                        $scope.convertDataForView(detail);
+                    });
+                });
+                angular.forEach($scope.model.form.listProjectItem1, function (item, i) {
+                    angular.forEach(item.listProjectItemDetail, function (detail, j) {
+                        $scope.convertDataForView(detail);
+                    });
+                });
+                angular.forEach($scope.model.form.listProjectItem2, function (item, i) {
+                    angular.forEach(item.listProjectItemDetail, function (detail, j) {
+                        $scope.convertDataForView(detail);
+                    });
+                });
+            }
+        );
+    }
+
+    $scope.searchSfaProjectList = function (page, params, projectSno) {
+        SfaProjectControlService.search(params).then(
+            function (result) {
+                var error = result.data.failed;
+                var warning = result.data.warning;
+                if (!StringUtils.isEmpty(warning)) {
+                    DialogsService.showWarning(titleWarning, warning);
+                } else if (!StringUtils.isEmpty(error)) {
+                    DialogsService.showError(titleError, error);
+                } else {
+                    $scope.model.form.listSfaProject = result.data.listProject;
+                    var length = $scope.model.form.listSfaProject.length;
+                    var i = 0;
+                    for (; i < length; i++) {
+                        if (projectSno == $scope.model.form.listSfaProject[i]) {
+                            $scope.model.hidden.page = i + 1;
+                        }
+                    }
+                    $scope.model.hidden.totalPage = $scope.model.form.listSfaProject.length;
+                }
+            }
+        );
+    };
+
+    /**
+     * 初期表示
+     */
+    $scope.getInit = function () {
+        var param = {
+            'custCd': $scope.model.hidden.custCd
+        };
+        SfaProjectControlService.initData(param).then(
+            function (result) {
+                var error = result.data.failed;
+                if (!StringUtils.isEmpty(result.data.failed)) {
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                }
+                $scope.model.form.listP010001 = result.data.listP010001;
+                $scope.model.form.listP010002 = result.data.listP010002;
+                $scope.model.form.listP010007 = result.data.listP010007;
+                $scope.model.form.listInvoice = result.data.listInvoice;
+                $scope.model.form.listMstGroupType = result.data.listMstGroupType;
+                $scope.model.form.listMstBusiness = result.data.listMstBusiness;
+                $scope.model.form.listMstUser = result.data.listMstUser;
+                $scope.model.form.listL030001 = result.data.listL030001;
+
+                $scope.model.form.projectInfo.companyCd = result.data.companyCd;
+                if (!angular.equals($scope.model.hidden.screenMode, 'VIEW')) {
+                    var sessionLogin = angular.fromJson(sessionStorage.getItem("session"));
+                    if (!StringUtils.isEmpty(sessionLogin)) {
+                        $scope.model.form.projectInfo.salesUserCd = sessionLogin.userCd;
+                    }
+                    $scope.model.form.projectInfo.salesGroupCd = result.data.salesGroupCd;
+
+                }
+                $scope.init();
+            }
+        );
+    };
+
+    $scope.convertParam = function () {
+        var param = {
+            projectSno : $scope.model.form.projectInfo.projectSno,
+            parentProjectSno : $scope.model.hidden.parentProjectSno,
+            businessCd : $scope.model.form.business.businessCd,
+            businessCdOld : '',
+            listProject : [],
+            listGroupProcessSetting : '',
+            listProcessSetting : ''
+        };
+        if ($scope.model.form.business.listProcessSetting.length > 0) {
+            $scope.convertDataProcess(param);
+        }
+
+        if (($scope.model.form.business.businessCd !== $scope.model.hidden.businessCd) ||
+            (!StringUtils.isEmpty($scope.model.hidden.businessCd) && StringUtils.isEmpty(param.businessCd))) {
+            param.businessCdOld = $scope.model.hidden.businessCd;
+        }
+
+        angular.forEach($scope.model.form.listProjectItem0, function (item, i) {
+            angular.forEach(item.listProjectItemDetail, function (detail, j) {
+                if (detail.controlType == "05") {
+                    delete detail.isFileChange;
+                }
+            })
+            param.listProject.push(angular.copy(item));
+        });
+        angular.forEach($scope.model.form.listProjectItem1, function (item, i) {
+            angular.forEach(item.listProjectItemDetail, function (detail, j) {
+                if (detail.controlType == "05") {
+                    delete detail.isFileChange;
+                }
+            })
+            param.listProject.push(angular.copy(item));
+        });
+        angular.forEach($scope.model.form.listProjectItem2, function (item, i) {
+            angular.forEach(item.listProjectItemDetail, function (detail, j) {
+                if (detail.controlType == "05") {
+                    delete detail.isFileChange;
+                }
+            })
+            param.listProject.push(angular.copy(item));
+        });
+
+        angular.forEach(param.listProject, function (group, i) {
+            angular.forEach(group.listProjectItemDetail, function (detail, j) {
+                if (detail.controlType == "04" && detail.listData.length > 0) {
+                    if (!StringUtils.isEmpty(detail.listDataSource)) {
+                        var inputValue = "";
+                        angular.forEach(detail.listData, function (data, k) {
+                            if (detail.inputValue[k] == "1") {
+                                inputValue += data.code + ",";
+                            }
+                        });
+                        if (!StringUtils.isEmpty(inputValue)) {
+                            var trim = inputValue.replace(/(^,)|(,$)/g, "")
+                            detail.inputValue = trim;
+                        } else {
+                            detail.inputValue = null;
+                        }
+                    }
+                }
+                if (detail.controlType == "09") {
+                    if (!StringUtils.isEmpty(detail.inputValue.postNo1) || !StringUtils.isEmpty(detail.inputValue.postNo2) ||
+                        !StringUtils.isEmpty(detail.inputValue.address1) || !StringUtils.isEmpty(detail.inputValue.address2)) {
+                        detail.inputValue = JSON.stringify(detail.inputValue);
+                    } else {
+                        detail.inputValue = null;
+                    }
+                }
+                if ((detail.controlType == "11" || detail.controlType == "MST_GROUP_LIST" || detail.controlType == "MST_USER_LIST")
+                        && !StringUtils.isEmpty(detail.inputValue)) {
+                    detail.inputValue = detail.inputValue.toString();
+                }
+                delete detail.isFileChange;
+                delete detail.fileSize;
+                delete detail.checkSize;
+            });
+        });
+        return param;
+    };
+
+    $scope.convertDataProcess = function (param) {
+        var groupProcess = [];
+        var process = [];
+        angular.forEach($scope.model.form.business.listProcessSetting, function (value, key) {
+            // TUNG: fix insert data business khi bấm button copy
+            if ((!value.isDisabled && $scope.model.hidden.screenMode === 'UPDATE') || $scope.model.hidden.screenMode === 'INSERT') {
+                if (!StringUtils.isEmpty(value.processGroupNo) && !StringUtils.isEmpty(value.processGroupName)) {
+                    var tmp = {
+                        companyCd: value.companyCd,
+                        projectSno: value.projectSno,
+                        businessCd: value.businessCd,
+                        processGroupNo: value.processGroupNo,
+                        processGroupName: value.processGroupName,
+                        groupGroupCd: value.groupGroupCd,
+                        groupUserCd: value.groupUserCd,
+                        iconNo: value.iconNo,
+                        workflowFlag: value.workflowFlag
+                    };
+                    groupProcess.push(tmp);
+                }
+                angular.forEach(value.lstProjectGroupProcess, function (subValue, subKey) {
+                    process.push(subValue);
+                });
+            }
+        });
+        param.listGroupProcessSetting = JSON.stringify(groupProcess);
+        param.listProcessSetting = JSON.stringify(process);
+    };
+
+    $scope.$on("SfaProjectControl#editProject", function (evt, value) {
+        var param = $scope.convertParam();
+        if ($scope.model.hidden.screenMode === 'INSERT') {
+            $scope.insertServer(param);
+        } else if ($scope.model.hidden.screenMode === 'UPDATE') {
+            param.checkProgressUpdDate = value;
+            $scope.updateServer(param);
+        }
+    });
+
+    $scope.$on("SfaProjectControl#loadTodo", function (evt, param) {
+        $scope.searchTodoList();
+    });
+
+    /**
+     * 選択表
+     */
+    $scope.inquiry = function (projectSno) {
+        var param = {
+            'projectSno': projectSno
+        };
+        SfaProjectControlService.inquiry(param).then(
+            function (result) {
+                var error = result.data.failed;
+                var warning = result.data.warning;
+                if (!StringUtils.isEmpty(error)) {
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                } else if (!StringUtils.isEmpty(warning)) {
+                    DialogsService.showWarning(Messages.getMessage('check.error'), warning)
+                    .result.then(function () {
+                        sessionStorage.removeItem("projectItemControl");
+                        RouteService.gotoUrl('SfaSubProjectList');
+                    });
+                    return;
+                }
+                if (!StringUtils.isEmpty(result.data.projectModel.projectSno)) {
+                    $scope.model.form.projectInfo = angular.copy(result.data.projectModel);
+                    $scope.model.hidden.createUserName = result.data.projectModel.createUserName;
+                    $scope.model.hidden.lastUpdUserName = result.data.projectModel.lastUpdUserName;
+                    $scope.model.hidden.createDate = result.data.projectModel.createDate;
+                    $scope.model.hidden.lastUpdDate = result.data.projectModel.lastUpdDate;
+                    $scope.model.hidden.parentProjectSno = result.data.projectModel.parentProjectSno;
+                    $scope.model.hidden.parentProjectName = result.data.projectModel.parentProjectName;
+                    $scope.model.form.mstCustomer = result.data.mstCustomer;
+                    $scope.model.entryLimit = 10; //max no of items to display in a page
+                    $scope.model.currentTodoPage = 1; //current page
+                    $scope.model.currentReportPage = 1; //current page
+                    if ($scope.model.form.mstCustomer != null) {
+                        $scope.model.form.projectInfo.custCd = $scope.model.form.mstCustomer.custCd;
+                        $scope.model.form.projectInfo.custName = $scope.model.form.mstCustomer.controlCd + " " + $scope.model.form.mstCustomer.custName;
+                        $scope.model.hidden.custType = $scope.model.form.mstCustomer.custType;
+                        $scope.model.hidden.connectionStatus = $scope.model.form.mstCustomer.connectionStatus;
+                    } else {
+                        $scope.model.form.projectInfo.custCd = '';
+                        $scope.model.form.projectInfo.custName = '';
+                        $scope.model.hidden.custType = false;
+                        $scope.model.hidden.connectionStatus = '';
+                        angular.forEach($scope.model.form.listProjectItem0, function (group, i) {
+                            angular.forEach(group.listProjectItemDetail, function (detail, j) {
+                                if (detail.detailKey == '04') {
+                                    detail.inputValue = '';
+                                }
+                            });
+                        });
+                        angular.forEach($scope.model.form.listProjectItem1, function (group, i) {
+                            angular.forEach(group.listProjectItemDetail, function (detail, j) {
+                                if (detail.detailKey == '04') {
+                                    detail.inputValue = '';
+                                }
+                            });
+                        });
+                    }
+                    $scope.model.form.listCrmSite = result.data.listCrmSite;
+                    $scope.model.form.listCrmDept = result.data.listCrmDept;
+                    $scope.model.form.listMstOwner = result.data.listMstOwner;
+                    if (!StringUtils.isEmpty(result.data.projectModel.businessCd)) {
+                        $scope.model.form.business.businessCd = result.data.projectModel.businessCd;
+                        $scope.model.hidden.businessCd = result.data.projectModel.businessCd;
+                        $scope.model.form.business.countUpdate = result.data.countUpdate;
+                        $scope.getBusinessProcess($scope.model.form.business.businessCd);
+                    } else {
+                        $scope.model.form.business.businessCd = '';
+                    }
+                }
+            }
+        );
+    };
+
+    /**
+     * 案件テーブル登録
+     */
+    $scope.create = function (formInvalid) {
+
+        $scope.model.hidden.isSubmited = true;
+        if (formInvalid) {
+            return;
+        }
+        for (var key in $scope.model.hidden.checkUnique) {
+            if ($scope.model.hidden.checkUnique[key]) {
+                return;
+            }
+        }
+        var param = $scope.convertParam();
+        delete param.createUser;
+        delete param.createDate;
+
+        var dlg = null;
+        if (!StringUtils.isEmpty(param.businessCd)) {
+            $scope.model.form.business.isConfirm = true;
+            var options = {
+                size: '1250'
+            };
+            dlg = DialogsService.showDialog('SfaProjectProcessSetting', 'sfaProjectProcessSettingCtrl', {}, options);
+        } else {
+            dlg = DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('S00003'));
+        }
+
+        dlg.result.then(function (btn) {
+            $scope.insertServer(param);
+        }, function (btn) {
+            $scope.model.form.business.isConfirm = false;
+        });
+    };
+
+    /**
+     * Insert Project
+     */
+    $scope.insertServer = function (param) {
+        delete param.createUserName;
+        delete param.lastUpdUserName;
+        delete param.lastUpdDate;
+        delete param.createDate;
+        SfaProjectControlService.insert(param).then(
+            function (result) {
+                var error = result.data.failed;
+                var warning = result.data.warning;
+                var success = result.data.success;
+                if (!StringUtils.isEmpty(error)) {
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                } else if (!StringUtils.isEmpty(warning)) {
+                    DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                    return;
+                } else {
+                    DialogsService.showNotify(Messages.getMessage('title.info'), success)
+                    .result.then(function (btn) {
+                        $scope.model.hidden.screenMode = 'VIEW';
+                        $scope.setProjectDetailControl(result.data.projectSno, true);
+                        $scope.inquiry(result.data.projectSno);
+
+                        //Set session for view mode
+                        var passingParam = SessionUtils.prepareSession(sessionStorage.getItem("projectItemControl"));
+                        passingParam.projectSno = result.data.projectSno;
+                        passingParam.screenMode = $scope.model.hidden.screenMode;
+                        if(!StringUtils.isEmpty($scope.model.hidden.parentProjectSno)){
+                            passingParam.parentProjectSno = $scope.model.hidden.parentProjectSno;
+                            passingParam.parentProjectName = $scope.model.hidden.parentProjectName;
+                        }
+                        /*else {
+                            passingParam.parentProjectSno = "";
+                            passingParam.parentProjectName = "";
+                        }*/
+                        sessionStorage.setItem("projectItemControl", JSON.stringify(passingParam));
+                    });
+                }
+            }
+        );
+    };
+
+    /**
+     * 案件テーブル更新
+     */
+    $scope.update = function (formInvalid) {
+        $scope.model.hidden.isSubmited = true;
+        if (formInvalid) {
+            return;
+        }
+        for (var key in $scope.model.hidden.checkUnique) {
+            if ($scope.model.hidden.checkUnique[key]) {
+                return;
+            }
+        }
+        var param = $scope.convertParam();
+        delete param.createUser;
+        delete param.createDate;
+
+        var dlg = null;
+        if (!StringUtils.isEmpty(param.businessCd)) {
+            $scope.model.form.business.isConfirm = true;
+            var options = {
+                size: '1250'
+            };
+            dlg = DialogsService.showDialog('SfaProjectProcessSetting', 'sfaProjectProcessSettingCtrl', {}, options);
+        } else {
+            var confirm = {
+                message: Messages.getMessage('S00004')
+            }
+            dlg = DialogsService.showDialog('ChangeProgressUpdDateDialog', 'ChangeProgressUpdDateDialogCtrl', confirm, null);
+        }
+        dlg.result.then(function (value) {
+            if (!StringUtils.isEmpty(value)) {
+                param.checkProgressUpdDate = value;
+                $scope.updateServer(param);
+            }
+        }, function (btn) {
+            $scope.model.form.business.isConfirm = false;
+        });
+    };
+
+    $scope.updateServer = function (param) {
+        delete param.createUserName;
+        delete param.lastUpdUserName;
+        delete param.lastUpdDate;
+        delete param.createDate;
+        SfaProjectControlService.update(param).then(
+            function (result) {
+                var error = result.data.failed;
+                var warning = result.data.warning;
+                var success = result.data.success;
+                if (!StringUtils.isEmpty(error)) {
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                } else if (!StringUtils.isEmpty(warning)) {
+                    DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                    return;
+                } else {
+                    DialogsService.showNotify(Messages.getMessage('title.info'), success);
+                    $scope.setProjectDetailControl(param.projectSno, true);
+                    $scope.inquiry(param.projectSno);
+                }
+                $scope.model.hidden.screenMode = 'VIEW';
+            }
+        );
+    };
+
+    /**
+     * 案件テーブル更新
+     */
+    $scope.deleteProject = function () {
+        DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('S00005')).result.then(function (btn) {
+            var param = {
+                'custCd': $scope.model.form.projectInfo.custCd,
+                'projectSno': $scope.model.form.projectInfo.projectSno,
+                'businessCd': $scope.model.hidden.businessCd
+            };
+            SfaProjectControlService.doDelete(param).then(
+                function (result) {
+                    var error = result.data.failed;
+                    var success = result.data.success;
+                    var warning = result.data.warning;
+                    if (!StringUtils.isEmpty(error)) {
+                        DialogsService.showError(Messages.getMessage('system.error'), error);
+                        return;
+                    } else if (!StringUtils.isEmpty(warning)) {
+                        DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                        return;
+                    } else {
+                        DialogsService.showNotify(Messages.getMessage('title.info'), success)
+                        .result.then(function (btn) {
+                            if($scope.model.form.listSfaProject.length > 1){
+                                $scope.model.form.listSfaProject.splice($scope.model.hidden.page - 1, 1);
+                                $scope.model.hidden.totalPage = $scope.model.hidden.totalPage - 1;
+                                $scope.model.hidden.page = $scope.model.hidden.page - 1;
+                                $scope.nextPage();
+                            }else{
+                                sessionStorage.removeItem("projectItemControl");
+                                RouteService.gotoUrl('SfaSubProjectList');
+                            }
+                        });
+                    }
+                }
+            );
+        });
+    };
+
+    $scope.gotoProcessBusiness = function (projectInfo, row) {
+        if (!StringUtils.isEmpty(row) && !StringUtils.isEmpty(row.businessCd)) {
+            var processNo = row.processNo;
+            if(!StringUtils.isEmpty(row.processGroupNo)) {
+                processNo = '';
+            }
+            var prjBusiness = {
+                businessCd: row.businessCd,
+                projectSno: projectInfo.projectSno,
+                projectName: projectInfo.parentProjectName,
+                controlCd : projectInfo.controlCd,
+                custCd: projectInfo.custCd,
+                custName: projectInfo.custName,
+                billaddressNo : $scope.model.hidden.billaddressNo,
+                billaddressName : $scope.model.hidden.billaddressName,
+                redirectUrl : 'SfaSubProjectControl',
+                processNo : processNo,
+                processGroupNo : row.processGroupNo,
+                positionNo : row.positionNo,
+                parentProjectSno : projectInfo.parentProjectSno
+            };
+
+            sessionStorage.setItem("prjBusiness", JSON.stringify(prjBusiness));
+            var options = {
+                size: '1200',
+            };
+            DialogsService.showDialog('ProjectProcessDetail', 'SfaProjectProcessManagementCtrl', null, options);
+        } else {
+            var prjBusiness = {
+                businessCd: projectInfo.businessCd,
+                projectSno: projectInfo.projectSno,
+                controlCd : projectInfo.controlCd,
+                projectName: projectInfo.parentProjectName,
+                custCd: projectInfo.custCd,
+                custName: projectInfo.custName,
+                billaddressNo : $scope.model.hidden.billaddressNo,
+                billaddressName : $scope.model.hidden.billaddressName,
+                redirectUrl: 'SfaSubProjectControl',
+                parentProjectSno : projectInfo.parentProjectSno
+            };
+            sessionStorage.setItem("prjBusiness", JSON.stringify(prjBusiness));
+            RouteService.gotoUrl("SfaProjectProcessManagement");
+        }
+    };
+
+    /**
+     * get site(納入機) data when select change
+     */
+    $scope.siteChange = function(detail) {
+        // using displayPosition of input billAddress to choice list data position
+        var listProjectItem = [];
+        if(detail.displayPosition == '0'){  // LEFT LIST
+            listProjectItem = $scope.model.form.listProjectItem0;
+        } else if (detail.displayPosition == '1') { // RIGHT LIST
+            listProjectItem = $scope.model.form.listProjectItem1;
+        } else { // CENTER LIST
+            listProjectItem = $scope.model.form.listProjectItem2;
+        }
+
+        if (!StringUtils.isEmpty(detail.inputValue)) {
+            var param = detail.inputValue;
+            var param = {
+                    'custCd': $scope.model.form.projectInfo.custCd,
+                    'siteCd': detail.inputValue
+                };
+            ServerService.doPost('SfaProjectControl/onChangeSite', param).then(
+                function (okResult) {
+                    var error = okResult.data.failed;
+                    var warning = okResult.data.warning;
+                    if (!StringUtils.isEmpty(error)) {
+                        DialogsService.showError(Messages.getMessage('system.error'), error);
+                        return;
+                    } else if (!StringUtils.isEmpty(warning)) {
+                        DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                        return;
+                    }else{
+                        if (!StringUtils.isEmpty(okResult.data.siteData)) {
+                            var data = okResult.data.siteData;
+                            angular.forEach(listProjectItem, function (item, i) {
+                                angular.forEach(item.listProjectItemDetail, function (detail, j) {
+                                    if (detail.lineNo == 16 && detail.detailFreeItemFlag) {
+                                        detail.inputValue = data.siteName;
+                                    }
+                                    else if (detail.lineNo == 143 && detail.detailFreeItemFlag) {
+                                        detail.inputValue = data.unit;
+                                    }
+                                    else if (detail.lineNo == 17 && detail.detailFreeItemFlag) {
+                                        detail.inputValue = data.controlCd;
+                                    }
+                                    else if (detail.lineNo == 18 && detail.detailFreeItemFlag) {
+                                        detail.inputValue = data.receivePrice;
+                                    }
+                                    else if (detail.lineNo == 19 && detail.detailFreeItemFlag) {
+                                        detail.inputValue = data.delDate;
+                                    }
+                                    else if (detail.lineNo == 20 && detail.detailFreeItemFlag) {
+                                        detail.inputValue = data.salesGroup;
+                                    }
+                                    else if (detail.lineNo == 21 && detail.detailFreeItemFlag) {
+                                        detail.inputValue = data.salesUser;
+                                    }
+                                    else if (detail.lineNo == 22 && detail.detailFreeItemFlag) {
+                                        detail.inputValue = data.wasteClassification;
+                                    }
+                                    else if (detail.lineNo == 23 && detail.detailFreeItemFlag) {
+                                        detail.inputValue = data.wasteDate;
+                                    }
+                                })
+                            });
+                        }
+                    }
+                }
+            )
+        } else {
+            angular.forEach(listProjectItem, function (item, i) {
+                angular.forEach(item.listProjectItemDetail, function (detail, j) {
+                    if (detail.lineNo == 16 && detail.detailFreeItemFlag) {
+                        detail.inputValue = "";
+                    }
+                    else if (detail.lineNo == 143 && detail.detailFreeItemFlag) {
+                        detail.inputValue = "";
+                    }
+                    else if (detail.lineNo == 17 && detail.detailFreeItemFlag) {
+                        detail.inputValue = "";
+                    }
+                    else if (detail.lineNo == 18 && detail.detailFreeItemFlag) {
+                        detail.inputValue = "";
+                    }
+                    else if (detail.lineNo == 19 && detail.detailFreeItemFlag) {
+                        detail.inputValue = "";
+                    }
+                    else if (detail.lineNo == 20 && detail.detailFreeItemFlag) {
+                        detail.inputValue = "";
+                    }
+                    else if (detail.lineNo == 21 && detail.detailFreeItemFlag) {
+                        detail.inputValue = "";
+                    }
+                    else if (detail.lineNo == 22 && detail.detailFreeItemFlag) {
+                        detail.inputValue = "";
+                    }
+                    else if (detail.lineNo == 23 && detail.detailFreeItemFlag) {
+                        detail.inputValue = "";
+                    }
+                })
+            });
+        }
+    };
+
+    /**
+     * get billAddress when select change
+     */
+    $scope.billaddressChange = function (detail) {
+     // using displayPosition of input billAddress to choice list data position
+        var listProjectItem = [];
+        if(detail.displayPosition == '0'){  // LEFT LIST
+            listProjectItem = $scope.model.form.listProjectItem0;
+        } else if (detail.displayPosition == '1') { // RIGHT LIST
+            listProjectItem = $scope.model.form.listProjectItem1;
+        } else { // CENTER LIST
+            listProjectItem = $scope.model.form.listProjectItem2;
+        }
+
+        if (!StringUtils.isEmpty(detail.inputValue)) {
+            var param = detail.inputValue;
+            $scope.model.hidden.billaddressNo = detail.inputValue;
+            ServerService.doPost('SfaProjectControl/onChangeBill', param).then(
+                function (okResult) {
+                    var error = okResult.data.failed;
+                    var warning = okResult.data.warning;
+                    if (!StringUtils.isEmpty(error)) {
+                        DialogsService.showError(Messages.getMessage('system.error'), error);
+                        return;
+                    } else if (!StringUtils.isEmpty(warning)) {
+                        DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                        return;
+                    }else{
+                        if (!StringUtils.isEmpty(okResult.data.billAddress)) {
+                            var data = okResult.data.billAddress;
+                            /* C 都度 締請求 */
+                            var billTypeName = data.billType == '1' ? '締請求' : '都度';
+                            $scope.model.hidden.billaddressName = data.controlCd + "【"+billTypeName+"】" + data.billaddressName;
+                            angular.forEach(listProjectItem, function (item, i) {
+                                angular.forEach(item.listProjectItemDetail, function (detail, j) {
+                                    if (detail.lineNo == 4 && detail.detailFreeItemFlag) {
+                                        detail.inputValue = data.billaddressName;
+                                    }
+                                    else if (detail.lineNo == 6 && detail.detailFreeItemFlag) {
+                                        detail.inputValue = data.billAddress;
+                                    }
+                                    else if (detail.lineNo == 7 && detail.detailFreeItemFlag) {
+                                        detail.inputValue = data.billDeptName;
+                                    }
+                                    else if (detail.lineNo == 8 && detail.detailFreeItemFlag) {
+                                        detail.inputValue = data.billOwnerName;
+                                    }
+                                    else if (detail.lineNo == 131 && detail.detailFreeItemFlag) {
+                                        detail.inputValue = data.telephoneNo;
+                                    }
+                                    else if (detail.lineNo == 132 && detail.detailFreeItemFlag) {
+                                        detail.inputValue = data.faxNo;
+                                    }
+                                    else if (detail.lineNo == 133 && detail.detailFreeItemFlag) {
+                                        detail.inputValue = data.billaddressNameKana;
+                                    }
+                                    else if (detail.lineNo == 135 && detail.detailFreeItemFlag) {
+                                        detail.inputValue = data.billCloseType;
+                                    }
+                                })
+                            });
+                        }
+                    }
+                }
+            )
+        } else {
+            angular.forEach(listProjectItem, function (item, i) {
+                angular.forEach(item.listProjectItemDetail, function (detail, j) {
+                    if (detail.lineNo == 4 && detail.detailFreeItemFlag) {
+                        detail.inputValue = "";
+                    }
+                    else if (detail.lineNo == 6 && detail.detailFreeItemFlag) {
+                        detail.inputValue = "";
+                    }
+                    else if (detail.lineNo == 7 && detail.detailFreeItemFlag) {
+                        detail.inputValue = ""
+                    }
+                    else if (detail.lineNo == 8 && detail.detailFreeItemFlag) {
+                        detail.inputValue = ""
+                    }
+                    else if (detail.lineNo == 131 && detail.detailFreeItemFlag) {
+                        detail.inputValue = ""
+                    }
+                    else if (detail.lineNo == 132 && detail.detailFreeItemFlag) {
+                        detail.inputValue = ""
+                    }
+                    else if (detail.lineNo == 133 && detail.detailFreeItemFlag) {
+                        detail.inputValue = ""
+                    }
+                    else if (detail.lineNo == 135 && detail.detailFreeItemFlag) {
+                        detail.inputValue = ""
+                    }
+                })
+            });
+        }
+    };
+
+    /**
+     * 閲覧モードから編集モードに移行
+     */
+    $scope.change = function () {
+        var param = {
+            projectSno: $scope.model.form.projectInfo.projectSno,
+            custCd: $scope.model.form.projectInfo.custCd,
+            screenMode: 'EDIT'
+        };
+        SfaProjectControlService.inquiry(param).then(
+            function (result) {
+                var error = result.data.failed;
+                var warning = result.data.warning;
+                if (!StringUtils.isEmpty(error)) {
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                } else if (!StringUtils.isEmpty(warning)) {
+                    DialogsService.showWarning(Messages.getMessage('check.error'), warning).result.then(function () {
+                        sessionStorage.removeItem("projectItemControl");
+                        RouteService.gotoUrl('SfaSubProjectList');
+                    });
+                    return;
+                } else {
+                    $scope.model.form.projectInfo = result.data.projectModel;
+                    $scope.model.form.listCrmSite = result.data.listCrmSite;
+                    $scope.model.form.listCrmDept = result.data.listCrmDept;
+                    $scope.model.form.listMstOwner = result.data.listMstOwner;
+                    $scope.model.hidden.screenMode = 'UPDATE';
+                    if (!StringUtils.isEmpty(result.data.projectModel.businessCd)) {
+                        $scope.model.form.business.businessCd = result.data.projectModel.businessCd;
+                    } else {
+                        $scope.model.form.business.businessCd = '';
+                    }
+                }
+            }
+        );
+    };
+
+    /**
+     *（１）登録ボタンを活性化
+     *  (２）他のボタンを非活性
+     *  (３）案件番号、案件フェーズ以外は引き継ぎ、新規登録画面として出力する。
+     */
+    $scope.copy = function () {
+        $scope.model.form.projectInfo.projectSno = '';
+        $scope.model.form.business.countUpdate = 0;
+
+        /*if(!StringUtils.isEmpty($scope.model.hidden.parentProjectSno)){
+            var params = SessionUtils.prepareSession(sessionStorage.getItem("projectItemControl"));
+            params.projectSno = "";
+            sessionStorage.setItem("projectItemControl", JSON.stringify(params));
+        }*/
+
+
+        angular.forEach($scope.model.form.listProjectItem0, function (group, i) {
+            angular.forEach(group.listProjectItemDetail, function (detail, j) {
+                if (detail.checkUnique && !StringUtils.isEmpty(detail.inputValue)) {
+                    $scope.model.hidden.checkUnique[detail.detailKey] = true;
+                }
+            });
+        })
+        angular.forEach($scope.model.form.listProjectItem1, function (group, i) {
+            angular.forEach(group.listProjectItemDetail, function (detail, j) {
+                if (detail.checkUnique && !StringUtils.isEmpty(detail.inputValue)) {
+                    $scope.model.hidden.checkUnique[detail.detailKey] = true;
+                }
+            });
+        })
+        angular.forEach($scope.model.form.listProjectItem2, function (group, i) {
+            angular.forEach(group.listProjectItemDetail, function (detail, j) {
+                if (detail.checkUnique && !StringUtils.isEmpty(detail.inputValue)) {
+                    $scope.model.hidden.checkUnique[detail.detailKey] = true;
+                }
+            });
+        })
+        $scope.model.hidden.screenMode = 'INSERT';
+    };
+
+    $scope.back = function () {
+        if (!StringUtils.isEmpty($scope.model.hidden.fromScreen)){
+            RouteService.gotoUrl($scope.model.hidden.fromScreen);
+        } else {
+            RouteService.gotoUrl('SfaSubProjectList');
+        }
+    };
+
+    $scope.backEdit = function (){
+        $scope.setProjectDetailControl($scope.model.form.projectInfo.projectSno, false);
+        $scope.model.hidden.screenMode = 'VIEW';
+        $scope.changeScreen = "0";
+        $scope.model.hidden.checkUnique = [];
+    }
+
+    // START EXEX PROCESS
+    $scope.gotoSalDepositList = function (projectSno) {
+        var projectItemInfo = {
+            'projectSno': projectSno
+        };
+        sessionStorage.setItem("projectSno", JSON.stringify(projectItemInfo));
+        RouteService.gotoUrl("SalDepositList");
+    };
+
+    $scope.gotoSalEstimateSearch = function (projectSno) {
+        var projectItemInfo = {
+            'projectSno': projectSno
+        };
+        sessionStorage.setItem("projectSno", JSON.stringify(projectItemInfo));
+        RouteService.gotoUrl("SalEstimateList");
+    };
+
+    $scope.gotoSalEstimateControl = function (row) {
+        var projectItemInfo = {
+            projectSno: row.projectSno,
+            controlCd : row.controlCd,
+            projectName: row.parentProjectName,
+            custCd: row.custCd,
+            custName: row.custName,
+            isSalEXEX: true
+        };
+        sessionStorage.removeItem('salEstimate');
+        sessionStorage.removeItem('customerInfo');
+        sessionStorage.setItem('projectSno', JSON.stringify(projectItemInfo));
+        RouteService.gotoUrl('SalEstimateControl');
+    };
+
+    $scope.gotoSalRsvSearch = function (projectSno) {
+        var projectItemInfo = {
+            'projectSno': projectSno
+        };
+        sessionStorage.setItem("projectSno", JSON.stringify(projectItemInfo));
+        RouteService.gotoUrl("SalRsvList");
+    };
+
+    $scope.gotoSalRsvControl = function (row) {
+        var projectItemInfo = {
+            projectSno: row.projectSno,
+            controlCd : row.controlCd,
+            projectName: row.parentProjectName,
+            custCd: row.custCd,
+            custName: row.custName,
+            isSalEXEX: true
+        };
+        sessionStorage.removeItem("customerInfo");
+        sessionStorage.removeItem("receiveItemInfo");
+        sessionStorage.setItem("projectSno", JSON.stringify(projectItemInfo));
+        RouteService.gotoUrl("SalRsvControl");
+    };
+
+    $scope.gotoSalDemandList = function (projectSno) {
+        var projectItemInfo = {
+            'projectSno': projectSno
+        };
+        sessionStorage.setItem("projectSno", JSON.stringify(projectItemInfo));
+        RouteService.gotoUrl("SalDemandList");
+    };
+
+    $scope.gotoSalDecideProcess = function (row) {
+        var projectItemInfo = {
+            projectSno: row.projectSno,
+            controlCd : row.controlCd,
+            projectName: row.parentProjectName,
+            custCd: row.custCd,
+            custName: row.custName,
+            isSalEXEX: true
+        };
+        sessionStorage.removeItem("customerInfo");
+        sessionStorage.removeItem("salDecideProcess");
+        sessionStorage.setItem("projectSno", JSON.stringify(projectItemInfo));
+        RouteService.gotoUrl("SalDecideProcess");
+    };
+
+    $scope.gotoSalDemandOutput = function (projectSno) {
+        var projectItemInfo = {
+            'projectSno': projectSno
+        };
+        sessionStorage.setItem("projectSno", JSON.stringify(projectItemInfo));
+        RouteService.gotoUrl("SalDemandOutput");
+    };
+
+    $scope.gotoSalBillControl = function (projectSno) {
+        var projectItemInfo = {
+            'projectSno': projectSno
+        };
+        sessionStorage.setItem("projectSno", JSON.stringify(projectItemInfo));
+        RouteService.gotoUrl("SalBillControl");
+    };
+    // END EXEX PROCESS
+
+    $scope.redirect = function (url, row, index) {
+        switch (url) {
+            case 'SalesReport':
+                var salesReport = {
+                    salesReportNo: row.salesReportNo,
+                    isDisabled: false,
+                    screenMode: 'UPDATE',
+                    isTodo: false,
+                    fromScreen: 'SfaProjectControl',
+                };
+                sessionStorage.setItem("salesReport", JSON.stringify(salesReport));
+                sessionStorage.removeItem("salesReportUrl");
+                sessionStorage.removeItem("todoDetail");
+                var options = {
+                    size: 'lg'
+                };
+                DialogsService.showDialog('SalesReportDialog', 'SalesReportControlCtrl', null, options).result.then(
+                    function (isClosed) {
+                        if (!isClosed) {
+                            $scope.searchReportList($scope.model.form.projectInfo.projectSno, $scope.model.form.paginationForReport.page);
+                        }
+                    });
+                break;
+            case 'SalesReportList':
+                var salesReportParamSearch = {
+                    projectName: $scope.model.form.projectInfo.projectName,
+                    custName: $scope.model.form.projectInfo.custName
+                };
+                sessionStorage.setItem("salesReportParamSearch", JSON.stringify(salesReportParamSearch));
+                sessionStorage.removeItem("projectCustItemInfo");
+                sessionStorage.removeItem("salesReportSearch");
+                window.open("SalesReportList", "_blank");
+                //RouteService.gotoUrl("SalesReportList");
+                break;
+            case 'SalesReportControl':
+                var param = {};
+                if(!StringUtils.isEmpty(row) && !StringUtils.isEmpty(row.projectSno)){
+                    param = {
+                        custCd: row.custCd,
+                        custName: row.custName,
+                        projectSno: row.projectSno,
+                        projectName: row.projectName,
+                        salesReportNo: "",
+                        fromScreen: 'SfaProjectControl',
+                        isDisabled: false,
+                        screenMode: 'INSERT',
+                        currentDate: new Date(),
+                    };
+                } else {
+                    param = {
+                        custCd: $scope.model.form.projectInfo.custCd,
+                        custName: $scope.model.form.projectInfo.custName,
+                        projectSno: $scope.model.form.projectInfo.projectSno,
+                        projectName: $scope.model.form.projectInfo.projectName,
+                        salesReportNo: "",
+                        fromScreen: 'SfaProjectControl',
+                        isDisabled: false,
+                        screenMode: 'INSERT',
+                        currentDate: new Date(),
+                    };
+                }
+
+                sessionStorage.removeItem("salesReport");
+                sessionStorage.removeItem("salesReportUrl");
+                sessionStorage.setItem("salesReportUrl", JSON.stringify(param));
+                var options = {
+                    size: 'lg'
+                };
+                DialogsService.showDialog('SalesReportDialog', 'SalesReportControlCtrl', null, options).result.then(
+                    function (isClosed) {
+                        if (!isClosed) {
+                            $scope.searchReportList(param.projectSno, $scope.model.form.paginationForReport.page);
+                        }
+                    });
+                break;
+            case 'TodoList':
+                var params = {
+                    custName: $scope.model.form.projectInfo.custName,
+                    projectName: $scope.model.form.projectInfo.projectName
+                };
+                sessionStorage.setItem("todoListParamSearch", JSON.stringify(params));
+                window.open("TodoList", "_blank");
+                //RouteService.gotoUrl("TodoList");
+                break;
+            case 'TodoControl':
+                var param = {
+                    custCd: $scope.model.form.projectInfo.custCd,
+                    custName: $scope.model.form.projectInfo.custName,
+                    ownerCd: $scope.model.form.projectInfo.crmLeaderCd,
+                    ownerName: $scope.model.form.projectInfo.crmLeaderName,
+                    siteCd: $scope.model.form.projectInfo.crmSiteCd,
+                    siteName: $scope.model.form.projectInfo.crmSiteName,
+                    deptCd: $scope.model.form.projectInfo.crmDeptCd,
+                    deptName: $scope.model.form.projectInfo.crmDeptName,
+                    projectSno: $scope.model.form.projectInfo.projectSno,
+                    projectName: $scope.model.form.projectInfo.projectName,
+                    fromScreen: 'SfaProjectControl',
+                    typeParam: 1
+                };
+                sessionStorage.removeItem("todo");
+                sessionStorage.setItem("todo", JSON.stringify(param));
+                RouteService.gotoUrl("TodoControl");
+                break;
+            case 'SalEstimateList':
+                var param = {
+                    projectSno: $scope.model.form.projectInfo.projectSno
+                };
+                sessionStorage.setItem("projectSno", JSON.stringify(param));
+                RouteService.gotoUrl('SalEstimateList');
+                break;
+            case 'SalEstimateControl':
+                var param = {
+                    projectSno: $scope.model.form.projectInfo.projectSno,
+                    controlCd: $scope.model.form.projectInfo.controlCd,
+                    projectName: $scope.model.hidden.parentProjectName,
+                    custCd: $scope.model.form.projectInfo.custCd,
+                    custName: $scope.model.form.projectInfo.custName,
+                    isSalEXEX: true
+                };
+                sessionStorage.removeItem("salEstimate");
+                sessionStorage.removeItem("customerInfo");
+                sessionStorage.setItem("projectSno", JSON.stringify(param));
+                RouteService.gotoUrl('SalEstimateControl');
+                break;
+            case 'SalRsvList':
+                var param = {
+                    projectSno: $scope.model.form.projectInfo.projectSno
+                };
+                sessionStorage.setItem("projectSno", JSON.stringify(param));
+                RouteService.gotoUrl('SalRsvList');
+                break;
+            case 'SalRsvControl':
+                var param = {
+                    projectSno: $scope.model.form.projectInfo.projectSno,
+                    controlCd: $scope.model.form.projectInfo.controlCd,
+                    projectName: $scope.model.hidden.parentProjectName,
+                    custCd: $scope.model.form.projectInfo.custCd,
+                    custName: $scope.model.form.projectInfo.custName,
+                    isSalEXEX: true
+                };
+                var warehouseName, warehouseOwner, telephoneNo, warehouseAddress;
+                angular.forEach($scope.model.form.listProjectItem0, function (group, i) {
+                    angular.forEach(group.listProjectItemDetail, function (detail, j) {
+                        if(!StringUtils.isEmpty(detail.inputValue)) {
+                            if (detail.detailKey == '015') {
+                                param.billaddressNo = detail.inputValue;
+                            }
+                            if (detail.detailKey == '14') {
+                                param.billaddressName = detail.inputValue;
+                            }
+                            if (detail.detailKey == '116') {
+                                param.productName = detail.inputValue;
+                            }
+                            if (detail.detailKey == '1143') {
+                                param.productNo = detail.inputValue;
+                            }
+
+                            if (detail.detailKey == '111') {
+                                warehouseName = detail.inputValue + "  ";
+                            }
+                            if (detail.detailKey == '113') {
+                                warehouseAddress = detail.inputValue.replace(/(\n)/g,"  ");
+                            }
+                            if (detail.detailKey == '115') {
+                                warehouseOwner = detail.inputValue + "  ";
+                            }
+                            if (detail.detailKey == '124') {
+                                telephoneNo = "TEL:" + detail.inputValue + "  ";
+                            }
+                        }
+                    })
+                });
+
+                param.delPlace = warehouseName + warehouseOwner + telephoneNo + warehouseAddress;
+                sessionStorage.removeItem("customerInfo");
+                sessionStorage.removeItem("receiveItemInfo");
+                sessionStorage.setItem("projectSno", JSON.stringify(param));
+                RouteService.gotoUrl('SalRsvControl');
+                break;
+            case 'SalDemandList':
+                var projectItemInfo = {
+                    projectSno: $scope.model.form.projectInfo.projectSno
+                };
+                sessionStorage.setItem("projectSno", JSON.stringify(projectItemInfo));
+                RouteService.gotoUrl('SalDemandList');
+                break;
+            case 'SalDecideProcess':
+                var param = {
+                    projectSno: $scope.model.form.projectInfo.projectSno,
+                    controlCd: $scope.model.form.projectInfo.controlCd,
+                    projectName: $scope.model.hidden.parentProjectName,
+                    custCd: $scope.model.form.projectInfo.custCd,
+                    custName: $scope.model.form.projectInfo.custName,
+                    isSalEXEX: true
+                };
+                sessionStorage.removeItem("customerInfo");
+                sessionStorage.removeItem("salDecideProcess");
+                sessionStorage.setItem("projectSno", JSON.stringify(param));
+                RouteService.gotoUrl('SalDecideProcess');
+                break;
+            case 'SalOrderList':
+                var projectItemInfo = {
+                    projectSno: $scope.model.form.projectInfo.projectSno
+                };
+                sessionStorage.setItem("projectSno", JSON.stringify(projectItemInfo));
+                RouteService.gotoUrl('SalOrderList');
+                break;
+            case 'SalOrderControl':
+                sessionStorage.removeItem("salSell");
+                sessionStorage.removeItem("projectSno");
+                sessionStorage.removeItem("fromSalEXEX");
+                var param = {
+                    projectSno: $scope.model.form.projectInfo.projectSno,
+                    projectName: $scope.model.form.projectInfo.projectName,
+                    isSalEXEX: true
+                };
+                sessionStorage.setItem("projectSno", JSON.stringify(param));
+                RouteService.gotoUrl('SalOrderControl');
+                break;
+            case 'SalStockList':
+                var projectItemInfo = {
+                    projectSno: $scope.model.form.projectInfo.projectSno
+                };
+                sessionStorage.setItem("projectSno", JSON.stringify(projectItemInfo));
+                RouteService.gotoUrl('SalStockList');
+                break;
+            case 'SalStockControl':
+                sessionStorage.removeItem("salStock");
+                sessionStorage.removeItem("projectSno");
+                sessionStorage.removeItem("fromSalEXEX");
+                var param = {
+                    projectSno: $scope.model.form.projectInfo.projectSno,
+                    projectName: $scope.model.form.projectInfo.projectName,
+                    isSalEXEX: true
+                };
+                sessionStorage.setItem("projectSno", JSON.stringify(param));
+                RouteService.gotoUrl('SalStockControl');
+                break;
+            case 'SalesReportListForProject':
+                var param = {};
+                if(!StringUtils.isEmpty(row.projectSno)){
+                    param.custCd = row.custCd;
+                    param.projectSno = row.projectSno;
+                } else {
+                    param.custCd = $scope.model.form.projectInfo.custCd;
+                    param.projectSno = $scope.model.form.projectInfo.projectSno;
+                }
+                var options = {
+                    size: 'auto'
+                };
+                DialogsService.showDialog('SalesReportListForProject', 'SalesReportListForProjectCtrl', param, options).result.then(
+                    function (isClosed) {
+                        if(isClosed){
+                            if(!StringUtils.isEmpty(row.projectSno)){
+                                $scope.searchSubReportList(row.projectSno, index);
+                            } else {
+                                $scope.searchReportList($scope.model.form.projectInfo.projectSno, $scope.model.form.paginationForReport.page);
+                            }
+                        }
+                    });
+                break;
+        }
+    };
+
+    /**
+     * get userCd when select change
+     */
+    $scope.customerChange = function (custCd) {
+        if (StringUtils.isEmpty(custCd)) {
+            $scope.model.form.listCrmSite = [];
+            $scope.model.form.listCrmDept = [];
+            $scope.model.form.listMstOwner = [];
+            $scope.model.form.projectInfo.billaddressName = '';
+            $scope.model.form.projectInfo.billaddressNo = '';
+            $scope.model.form.projectInfo.address1 = '';
+            $scope.model.form.projectInfo.address2 = '';
+            $scope.model.form.projectInfo.custCd = '';
+            $scope.model.form.projectInfo.custName =  '';
+            $scope.model.hidden.custType = '';
+            angular.forEach($scope.model.form.listProjectItem0, function (group, i) {
+                angular.forEach(group.listProjectItemDetail, function (detail, j) {
+                    if (detail.detailKey == '04') {
+                        detail.inputValue = '';
+                    }
+                    if (detail.detailKey == '015') {
+                        detail.inputValue = '';
+                    }
+                });
+            })
+            angular.forEach($scope.model.form.listProjectItem1, function (group, i) {
+                angular.forEach(group.listProjectItemDetail, function (detail, j) {
+                    if (detail.detailKey == '04') {
+                        detail.inputValue = '';
+                    }
+                    if (detail.detailKey == '015') {
+                        detail.inputValue = '';
+                    }
+                });
+            })
+        } else {
+            SfaProjectControlService.getCustomerDetails(custCd).then(
+                function (result) {
+                    var error = result.data.failed;
+                    var warning = result.data.warning;
+                    if (!StringUtils.isEmpty(error)) {
+                        DialogsService.showError(Messages.getMessage('system.error'), error);
+                        return;
+                    } else if (!StringUtils.isEmpty(warning)) {
+                        DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                        return;
+                    } else if (!StringUtils.isEmpty(result.data.customerDetails)) {
+                        $scope.model.form.projectInfo.custCd = custCd;
+                        $scope.model.hidden.custType = result.data.custType;
+                        $scope.model.form.listCrmSite = result.data.listCrmSite;
+                        $scope.model.form.listCrmDept = result.data.listCrmDept;
+                        $scope.model.form.listMstOwner = result.data.listMstOwner;
+                        var customerDetail = result.data.customerDetails;
+                        var custControlCd = !StringUtils.isEmpty(customerDetail.controlCd) ? customerDetail.controlCd + ' ' : '';
+                        $scope.model.form.projectInfo.custName = custControlCd + customerDetail.custName;
+                        var billaddressNo = customerDetail.billaddressNo;
+                        // $scope.model.form.projectInfo.custName = customerDetail.custName;
+                        if (!StringUtils.isEmpty(billaddressNo) && $scope.model.hidden.screenMode == 'INSERT') {
+                            $scope.model.form.projectInfo.billaddressNo = customerDetail.billaddressNo;
+                            $scope.model.form.projectInfo.billaddressName = customerDetail.billaddressName;
+                        }
+                        angular.forEach($scope.model.form.listProjectItem0, function (group, i) {
+                            angular.forEach(group.listProjectItemDetail, function (detail, j) {
+                                if (detail.detailKey == '04') {
+                                    detail.inputValue = custCd;
+                                }
+                                if (detail.detailKey == '015') {
+                                    detail.inputValue = $scope.model.form.projectInfo.billaddressNo;
+                                    detail.inputValueName = $scope.model.form.projectInfo.billaddressName;
+                                    $scope.billaddressChange(detail);
+                                }
+                                var custItemInfo = angular.fromJson(sessionStorage.getItem("projectCustItemInfo"));
+                                if (!StringUtils.isEmpty(custItemInfo) && !StringUtils.isEmpty(custItemInfo.ownerCd)) {
+                                    if (detail.detailKey == '07') {
+                                        detail.inputValue = custItemInfo.ownerCd;
+                                    } else if (detail.detailKey == '05') {
+                                        detail.inputValue = custItemInfo.siteCd;
+                                    } else if (detail.detailKey == '06') {
+                                        detail.inputValue = custItemInfo.deptCd;
+                                    }
+                                } else if (!StringUtils.isEmpty(custItemInfo) && StringUtils.isEmpty(custItemInfo.ownerCd)) {
+                                    if (detail.detailKey == '07') {
+                                        detail.inputValue = $scope.model.form.listMstOwner.length > 0 ? [$scope.model.form.listMstOwner[0].ownerCd] : '';
+                                    } else if (detail.detailKey == '05') {
+                                        detail.inputValue = $scope.model.form.listCrmSite.length > 0 ? $scope.model.form.listCrmSite[0].siteCd : '';
+                                    } else if (detail.detailKey == '06') {
+                                        detail.inputValue = $scope.model.form.listCrmDept.length > 0 ? $scope.model.form.listCrmDept[0].deptCd : '';
+                                    }
+                                }
+                            });
+                        })
+                        angular.forEach($scope.model.form.listProjectItem1, function (group, i) {
+                            angular.forEach(group.listProjectItemDetail, function (detail, j) {
+                                if (detail.detailKey == '04') {
+                                    detail.inputValue = custCd;
+                                }
+                                if (detail.detailKey == '015') {
+                                    detail.inputValue = $scope.model.form.projectInfo.billaddressNo;
+                                }
+                                var custItemInfo = angular.fromJson(sessionStorage.getItem("projectCustItemInfo"));
+                                if (!StringUtils.isEmpty(custItemInfo) && !StringUtils.isEmpty(custItemInfo.ownerCd)) {
+                                    if (detail.detailKey == '07') {
+                                        detail.inputValue = custItemInfo.ownerCd;
+                                    } else if (detail.detailKey == '05') {
+                                        detail.inputValue = custItemInfo.siteCd;
+                                    } else if (detail.detailKey == '06') {
+                                        detail.inputValue = custItemInfo.deptCd;
+                                    }
+                                } else if (!StringUtils.isEmpty(custItemInfo) && StringUtils.isEmpty(custItemInfo.ownerCd)) {
+                                    if (detail.detailKey == '07') {
+                                        detail.inputValue = $scope.model.form.listMstOwner.length > 0 ? [$scope.model.form.listMstOwner[0].ownerCd] : '';
+                                    } else if (detail.detailKey == '05') {
+                                        detail.inputValue = $scope.model.form.listCrmSite.length > 0 ? $scope.model.form.listCrmSite[0].siteCd : '';
+                                    } else if (detail.detailKey == '06') {
+                                        detail.inputValue = $scope.model.form.listCrmDept.length > 0 ? $scope.model.form.listCrmDept[0].deptCd : '';
+                                    }
+                                }
+                            });
+                        })
+                    }
+                }
+            );
+        }
+    };
+
+    $scope.getBusinessProcess = function (businessCd) {
+        $cookies.put("defaultSubProjectBusinessCd", businessCd);
+        if (businessCd == undefined) {
+            businessCd = "";
+        }
+        $scope.model.form.business.businessCd = businessCd;
+        if (StringUtils.isEmpty($scope.model.form.business.businessCd)) {
+            $scope.model.hidden.flgBusiness = false;
+        } else {
+            var param = {
+                projectSno: $scope.model.form.projectInfo.projectSno,
+                businessCd: $scope.model.form.business.businessCd
+            };
+            SfaProjectControlService.initProjProcessSetting(param).then(
+                function (result) {
+                    $scope.model.form.business.listProcessSetting = result.data.listProcessSetting.listProcessSetting;
+                    $scope.model.form.business.listP010004 = result.data.listP010004;
+                    $scope.model.form.business.listMstGroup = result.data.listMstGroup;
+                    $scope.model.form.business.listUser = result.data.listUser;
+                    $scope.model.hidden.flgBusiness = true;
+                });
+        }
+    };
+
+    $scope.openProcessSetting = function () {
+        var options = {
+            size: 'process'
+        };
+        DialogsService.showDialog('SfaProjectProcessSetting', 'sfaProjectProcessSettingCtrl', {}, options).result.then(function (param) {});
+    };
+
+    $scope.$on("SfaProjectList#exportPdf", function (evt, param) {
+        $scope.exportPDFReportFromPopOver(param.item, param.screen);
+    });
+
+    /**
+     * PDFレポートを輸出する
+     */
+    $scope.exportPDFReport = function (row, screen) {
+        $('.fade.in').remove();
+        if (!StringUtils.isEmpty(row)) {
+            switch (screen) {
+                case 'EXEX01':
+                    var param = {
+                        'custCd': row.custCd,
+                        'projectSno': row.projectSno,
+                        'screen': screen
+                    };
+                    SfaProjectControlService.checkDataExportPdf(param).then(
+                        function (result) {
+                            var error = result.data.failed;
+                            var estimateSno = result.data.estimateSno;
+                            var recodeNo = result.data.recodeNo;
+                            if (!StringUtils.isEmpty(error)) {
+                                DialogsService.showError(Messages.getMessage('system.error'), error);
+                                return;
+                            }
+                            if (!StringUtils.isEmpty(estimateSno)) {
+                                var params = {
+                                    'estimateSno': estimateSno,
+                                    'recodeNo': recodeNo
+                                };
+                                SalEstimateControlService.doDownload(params);
+                            } else {
+                                $scope.model.form.listItemsEst = result.data.estimateList;
+                            }
+                        }
+                    );
+                    break;
+                case 'EXEX02':
+                    var param = {
+                        'custCd': row.custCd,
+                        'projectSno': row.projectSno,
+                        'screen': screen
+                    };
+                    SfaProjectControlService.checkDataExportPdf(param).then(
+                        function (result) {
+                            var error = result.data.failed;
+                            var rcvSno = result.data.rcvSno;
+                            var recodeNo = result.data.recodeNo;
+                            if (!StringUtils.isEmpty(error)) {
+                                DialogsService.showError(Messages.getMessage('system.error'), error);
+                                return;
+                            }
+                            if (!StringUtils.isEmpty(rcvSno)) {
+                                var params = {
+                                    'rcvSno': rcvSno,
+                                    'recodeNo': recodeNo
+                                };
+                                SalRsvControlService.doDownload(params);
+                            } else {
+                                $scope.model.form.listItemsRsv = result.data.receiveList;
+                            }
+                        }
+                    );
+                    break;
+                case 'EXEX03':
+                    var param = {
+                        'custCd': row.custCd,
+                        'projectSno': row.projectSno,
+                        'screen': screen
+                    };
+                    SfaProjectControlService.checkDataExportPdf(param).then(
+                        function (result) {
+                            var error = result.data.failed;
+                            var salesSno = result.data.salesSno;
+                            var recodeNo = result.data.recodeNo;
+                            if (!StringUtils.isEmpty(error)) {
+                                DialogsService.showError(Messages.getMessage('system.error'), error);
+                                return;
+                            }
+                            if (!StringUtils.isEmpty(salesSno)) {
+                                var params = {
+                                    'salesSno': salesSno,
+                                    'recodeNo': recodeNo
+                                };
+                                SalDecideProcessService.doDownload(params);
+                            } else {
+                                $scope.model.form.listItemsSales = result.data.salesList;
+                            }
+                        }
+                    );
+                    break;
+                case 'EXEX04':
+                    var param = {
+                        'projectSno': row.projectSno,
+                        'screen': screen
+                    };
+                    SfaProjectControlService.checkDataExportPdf(param).then(
+                        function (result) {
+                            var error = result.data.failed;
+                            var billSno = result.data.billSno;
+                            var billType = result.data.billType;
+                            //var recodeNo = result.recodeNo;
+                            if (!StringUtils.isEmpty(error)) {
+                                DialogsService.showError(Messages.getMessage('system.error'), error);
+                                return;
+                            }
+                            if (!StringUtils.isEmpty(billSno)) {
+                                var params = {
+                                    'billSno': billSno,
+                                    'billType': billType,
+                                    'recodeNo': 1
+                                };
+                                SalRptListService.doDownload(params);
+                            } else {
+                                $scope.model.form.listItemsBill = result.data.billList;
+                            }
+                        }
+                    );
+                    break;
+            }
+        }
+    };
+
+    /**
+     * PDFレポートを輸出する
+     */
+    $scope.exportPDFReportFromPopOver = function (item, screen) {
+        switch (screen) {
+            case 'EXEX01':
+                if (!StringUtils.isEmpty(item)) {
+                    var params = {
+                        'estimateSno': item.estimateSno,
+                        'recodeNo': item.recodeNo
+                    };
+                    SalEstimateControlService.doDownload(params);
+                }
+                break;
+            case 'EXEX02':
+                if (!StringUtils.isEmpty(item)) {
+                    var params = {
+                        'rcvSno': item.rcvSno,
+                        'recodeNo': item.recodeNo
+                    };
+                    SalRsvControlService.doDownload(params);
+                }
+                break;
+            case 'EXEX03':
+                if (!StringUtils.isEmpty(item)) {
+                    var params = {
+                        'salesSno': item.salesSno,
+                        'recodeNo': item.recodeNo
+                    };
+                    SalDecideProcessService.doDownload(params);
+                }
+                break;
+            case 'EXEX04':
+                if (!StringUtils.isEmpty(item)) {
+                    var params = {
+                        'billSno': item.billSno,
+                        'billType': item.billType,
+                        'recodeNo': item.recodeNo
+                    };
+                    SalRptListService.doDownload(params);
+                }
+                break;
+        }
+    };
+
+    $scope.gotoUrlEXEX = function (url, item) {
+        sessionStorage.removeItem("salEstimate");
+        sessionStorage.removeItem("receiveItemInfo");
+        sessionStorage.removeItem("salDecideProcess");
+        sessionStorage.removeItem("salSell");
+        sessionStorage.removeItem("salStock");
+        sessionStorage.removeItem("customerInfo");
+        var params = {
+            custCd: $scope.model.form.projectInfo.custCd,
+            estimateSno: '',
+            rcvSno: '',
+            salesSno: '',
+            orderSno: '',
+            stockSno: '',
+            recodeNo: '',
+            projectSno: $scope.model.form.projectInfo.projectSno,
+            screenMode: 'INSERT',
+            screenName: 'SfaProjectControl',
+            isDisabled: false,
+            redirectUrl: 'SfaProjectControl'
+        };
+        sessionStorage.setItem('fromSalEXEX', JSON.stringify(params));
+        RouteService.gotoUrl(url);
+    };
+
+    $scope.openDialog = function (data, result) {
+        switch (result) {
+            case 'searchCustomer':
+                var param = {
+                    clientType: "0"
+                };
+                var options = {
+                    size: 'auto',
+                };
+                sessionStorage.setItem("searchCustStock", JSON.stringify(param));
+                DialogsService.showDialog('SearchCustomer', 'searchCustomerCtrl', 'data', options)
+                .result.then(function (param) {},
+                    function () {
+                        var searchCustomer = angular.fromJson(sessionStorage.getItem("searchCustomer"));
+                        sessionStorage.removeItem("searchCustomer");
+                        sessionStorage.removeItem("searchCustStock");
+                        if (!StringUtils.isEmpty(searchCustomer)) {
+                            $scope.model.form.projectInfo.custCd = searchCustomer.custCd;
+                            angular.forEach($scope.model.form.listProjectItem0, function (group, i) {
+                                angular.forEach(group.listProjectItemDetail, function (detail, j) {
+                                    if (detail.detailKey == '04') {
+                                        detail.inputValue = searchCustomer.custCd;
+                                    }
+                                });
+                            });
+                            angular.forEach($scope.model.form.listProjectItem1, function (group, i) {
+                                angular.forEach(group.listProjectItemDetail, function (detail, j) {
+                                    if (detail.detailKey == '04') {
+                                        detail.inputValue = searchCustomer.custCd;
+                                    }
+                                });
+                            });
+                            $scope.customerChange(searchCustomer.custCd);
+                        }
+                    }
+                );
+                break;
+        };
+    }; // end launch
+
+    $scope.convertDataForViewAfterInsertUpdateProject = function(itemDetail, detailIndex, group){
+        if (itemDetail.controlType == "04" && !StringUtils.isEmpty(itemDetail.listData)) {
+            var inputValue = [];
+            angular.forEach(itemDetail.listData, function (data, k) {
+                if (!StringUtils.isEmpty(itemDetail.inputValue) && itemDetail.inputValue.indexOf(data.code) > -1) {
+                    inputValue[k] = '1';
+                } else {
+                    inputValue[k] = '0';
+                }
+            });
+            if (inputValue.length > 0) {
+                group.listProjectItemDetail[detailIndex].inputValue = inputValue;
+            }
+        }
+        if (itemDetail.controlType == "09") {
+            if (!ValidateUtil.isValidTextEmpty(itemDetail.inputValue)) {
+                group.listProjectItemDetail[detailIndex].inputValue = angular.fromJson(itemDetail.inputValue);
+            } else {
+                group.listProjectItemDetail[detailIndex].inputValue = {
+                    postNo1: '',
+                    postNo2: '',
+                    address1: '',
+                    address2: '',
+                }
+            }
+        }
+
+        if ((itemDetail.controlType == "11" || itemDetail.controlType == "MST_GROUP_LIST" || itemDetail.controlType == "MST_USER_LIST" )
+                && !StringUtils.isEmpty(itemDetail.inputValue)) {
+            group.listProjectItemDetail[detailIndex].inputValue = itemDetail.inputValue.split(',');
+        }
+    }
+
+    // setting data getting from db to input on screen, after insert/update project
+    $scope.setProjectDetailControl = function (projectSno, isLoad) {
+        var param = {
+            projectSno: projectSno,
+            periodTime: $scope.model.hidden.period,
+            isLoadListData: isLoad ? true : false,
+            parentProjectSno : $scope.model.hidden.parentProjectSno
+        }
+        ServerService.doPost('SfaProjectControl/getProjectControl', param).then(
+            function (okResult) {
+                var warning = okResult.data.warning;
+                if (!StringUtils.isEmpty(warning)) {
+                    DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                    return;
+                }
+                if (isLoad) {
+                    $scope.model.form.projectProcess = okResult.data.projectProcess;
+                    $scope.model.form.listTodo = okResult.data.listTodo;
+                    $scope.model.form.listReport = okResult.data.listReport;
+                }
+                angular.forEach(okResult.data.listProjectItem0, function (item, i) {
+                    angular.forEach($scope.model.form.listProjectItem0, function (group, j) {
+                        if (item.groupKey == group.groupKey) {
+                            angular.forEach(item.listProjectItemDetail, function (itemDetail, k) {
+                                group.listProjectItemDetail[k].newFlag = itemDetail.newFlag;
+                                group.listProjectItemDetail[k].inputValue = itemDetail.inputValue;
+                                group.listProjectItemDetail[k].binaryFile = itemDetail.binaryFile;
+
+                                $scope.convertDataForViewAfterInsertUpdateProject(itemDetail, k, group);
+                            });
+                        }
+                    });
+                });
+                angular.forEach(okResult.data.listProjectItem1, function (item, i) {
+                    angular.forEach($scope.model.form.listProjectItem1, function (group, j) {
+                        if (item.groupKey == group.groupKey) {
+                            angular.forEach(item.listProjectItemDetail, function (itemDetail, k) {
+                                group.listProjectItemDetail[k].newFlag = itemDetail.newFlag;
+                                group.listProjectItemDetail[k].inputValue = itemDetail.inputValue;
+                                group.listProjectItemDetail[k].binaryFile = itemDetail.binaryFile;
+                                $scope.convertDataForViewAfterInsertUpdateProject(itemDetail, k, group);
+                            });
+                        }
+                    });
+                });
+                angular.forEach(okResult.data.listProjectItem2, function (item, i) {
+                    angular.forEach($scope.model.form.listProjectItem2, function (group, j) {
+                        if (item.groupKey == group.groupKey) {
+                            angular.forEach(item.listProjectItemDetail, function (itemDetail, k) {
+                                group.listProjectItemDetail[k].newFlag = itemDetail.newFlag;
+                                group.listProjectItemDetail[k].inputValue = itemDetail.inputValue;
+                                group.listProjectItemDetail[k].binaryFile = itemDetail.binaryFile;
+                                $scope.convertDataForViewAfterInsertUpdateProject(itemDetail, k, group);
+                            });
+                        }
+                    });
+                });
+            }
+        );
+    }
+
+    $scope.prePage = function () {
+        $scope.model.hidden.page -= 1;
+        if($scope.model.hidden.page < 1){
+            $scope.model.hidden.page = $scope.model.form.listSfaProject.length;
+        }
+        var projectSno = $scope.model.form.listSfaProject[$scope.model.hidden.page - 1];
+        $scope.model.hidden.paginationPage = Math.ceil($scope.model.hidden.page / 20);
+        var param = angular.fromJson(sessionStorage.getItem("projectItemControl"));
+        param.projectSno = projectSno;
+        param.parentProjectSno = $scope.model.hidden.parentProjectSno;
+        param.curPage = $scope.model.hidden.page;
+        param.paginationPage = $scope.model.hidden.paginationPage;
+        sessionStorage.setItem("projectItemControl", JSON.stringify(param));
+        $scope.setProjectDetailControl(projectSno, true);
+        $scope.inquiry(projectSno);
+    };
+
+    $scope.nextPage = function () {
+        $scope.model.hidden.page += 1;
+        if($scope.model.hidden.page > $scope.model.form.listSfaProject.length){
+            $scope.model.hidden.page = 1;
+        }
+        var projectSno = $scope.model.form.listSfaProject[$scope.model.hidden.page - 1];
+        $scope.model.hidden.paginationPage = Math.ceil($scope.model.hidden.page / 20);
+        var param = angular.fromJson(sessionStorage.getItem("projectItemControl"));
+        param.projectSno = projectSno;
+        param.curPage = $scope.model.hidden.page;
+        param.parentProjectSno = $scope.model.hidden.parentProjectSno;
+        param.paginationPage = $scope.model.hidden.paginationPage;
+        param.screenMode = 'VIEW';
+        $scope.model.hidden.screenMode = 'VIEW';
+        sessionStorage.setItem("projectItemControl", JSON.stringify(param));
+        $scope.setProjectDetailControl(projectSno, true);
+        $scope.inquiry(projectSno);
+    };
+
+    $scope.downloadFile = function (param) {
+        if (!StringUtils.isEmpty(param.inputValue) && !param.isFileChange) {
+            var params = {
+                'projectSno': $scope.model.form.projectInfo.projectSno,
+                'detailFreeItemFlag': param.detailFreeItemFlag,
+                'lineNo': param.lineNo
+            };
+            Utils.postToUrl("/SfaProjectControl/downloadFile", params);
+        }
+    };
+
+    $scope.resetFile = function (e) {
+        e.wrap('<form>').parent('form').trigger('reset');
+        e.unwrap();
+    };
+
+    $scope.removeFile = function (row, parentIndex, index) {
+        row.binaryFile = '';
+        row.inputValue = '';
+        row.fileSize = '';
+        row.checkSize = false;
+        $scope.resetFile($('input[name="inputValueFile"]'));
+    };
+
+    $scope.gotoUrl = function (url, row, detail) {
+        switch (url) {
+            case 'TodoCustomerList':
+                var param = {
+                    todoList : [row.todoNo],
+                    listDataAjax : {no: row.todoNo, name: row.todoName},
+                    searchFinished : true
+                }
+                sessionStorage.setItem("todoDetail", JSON.stringify(param));
+                sessionStorage.removeItem("todoCustomerList");
+                RouteService.gotoUrl('TodoCustomerList');
+                break;
+            case 'SalesReportTodo':
+                var todoDetail = row.custName;
+                if (!StringUtils.isEmpty(row.siteName)) {
+                    todoDetail += " / " + row.siteName;
+                }
+                if (!StringUtils.isEmpty(row.deptName)) {
+                    todoDetail += " / " + row.deptName;
+                }
+                if (!StringUtils.isEmpty(row.position)) {
+                    todoDetail += " / " + row.position;
+                }
+                var salesReport = {
+                    salesReportNo: detail.salesReportNo,
+                    isDisabled: false,
+                    screenMode: 'UPDATE',
+                    isTodo: true,
+                    todoName: row.todoName,
+                    todoDetail: todoDetail,
+                    todoNo: row.todoNo,
+                    lineNo: row.lineNo,
+                };
+                sessionStorage.setItem("salesReport", JSON.stringify(salesReport));
+                sessionStorage.removeItem("salesReportUrl");
+                sessionStorage.removeItem("todoDetail");
+                var options = {
+                    size: 'lg'
+                };
+                DialogsService.showDialog('SalesReportDialog', 'SalesReportControlCtrl', null, options).result.then(
+                    function (isClosed) {
+                        if (!isClosed) {
+                            $scope.searchTodoReportList(row);
+                        }
+                    });
+                break;
+            case 'SalesReport':
+                var salesReport = {
+                    salesReportNo: row.salesReportNo,
+                    isDisabled: false,
+                    screenMode: 'UPDATE',
+                    isTodo: false
+                };
+                sessionStorage.setItem("salesReport", JSON.stringify(salesReport));
+                sessionStorage.removeItem("salesReportUrl");
+                sessionStorage.removeItem("todoDetail");
+                var options = {
+                    size: 'lg'
+                };
+                DialogsService.showDialog('SalesReportDialog', 'SalesReportControlCtrl', null, options).result.then(
+                    function (isClosed) {
+                        if (!isClosed) {
+                            $scope.searchReportList($scope.model.form.projectInfo.projectSno, $scope.model.form.paginationForReport.page);
+                        }
+                    });
+                break;
+            case 'TodoControl':
+                var options = {
+                    size: '800'
+                };
+                var listCustCd = [];
+                listCustCd.push($scope.model.form.projectInfo.custCd);
+                var param = {
+                    projectSno: $scope.model.form.projectInfo.projectSno,
+                    listCustCd: listCustCd,
+                    fromScreen: "SfaProjectControl"
+                }
+                DialogsService.showDialog('TodoPopup', 'todoPopupCtrl', param, options);
+                break;
+            case 'SalesReportInsert':
+                var salesReport = {
+                    salesReportNo: "",
+                    isDisabled: false,
+                    isTodo: false,
+                    screenMode: 'INSERT',
+                    fromScreen: 'SfaProjectControl',
+                    custCd: $scope.model.form.projectInfo.custCd,
+                    custName: $scope.model.form.projectInfo.custName,
+                    scheduleStartYmd: new Date(),
+                    projectSno: $scope.model.form.projectInfo.projectSno,
+                    projectName: $scope.model.form.projectInfo.projectName
+                };
+                sessionStorage.setItem("salesReportUrl", JSON.stringify(salesReport));
+                sessionStorage.removeItem("salesReport");
+                sessionStorage.removeItem("todoDetail");
+                var options = {
+                    size: 'lg'
+                };
+                DialogsService.showDialog('SalesReportDialog', 'SalesReportControlCtrl', null, options).result.then(
+                    function (isClosed) {
+                        if (!isClosed) {
+                            $scope.searchReportList($scope.model.form.projectInfo.projectSno, $scope.model.form.paginationForReport.page);
+                        }
+                    });
+                break;
+        }
+    };
+
+    $scope.searchTodoList = function (row) {
+        var params = {
+            'projectSno': $scope.model.form.projectInfo.projectSno,
+        };
+        $scope.model.form.listTodo = [];
+        ServerService.doPost('SfaProjectControl/getListTodo', params).then(
+            function (okResult) {
+                console.log(okResult.data);
+                var error = okResult.data.failed;
+                var warning = okResult.data.warning;
+                if (!StringUtils.isEmpty(error)) {
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                } else if (!StringUtils.isEmpty(warning)) {
+                    DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                    return;
+                }
+                $scope.model.form.listTodo = okResult.data.listTodo;
+            },
+            function (errResult) {}
+        );
+    };
+
+    $scope.searchTodoReportList = function (row) {
+        var params = {
+            searchMonth: DateUtils.getCurrentDate(),
+            searchDate: DateUtils.getCurrentDate(),
+            todoNo: row.todoNo,
+            todoLineNo: row.lineNo
+        };
+        $scope.model.form.listReportTodo = [];
+        ServerService.doPost('PtlTodoList/searchReport', params).then(
+            function (okResult) {
+                var error = okResult.data.failed;
+                var warning = okResult.data.warning;
+                if (!StringUtils.isEmpty(error)) {
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                } else if (!StringUtils.isEmpty(warning)) {
+                    DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                    return;
+                }
+                $scope.model.form.listReportTodo = okResult.data.listReport;
+                $scope.setProjectDetailControl($scope.model.form.projectInfo.projectSno, false);
+            },
+            function (errResult) {}
+        );
+    };
+
+    $scope.searchReportList = function (projectSno, page) {
+        var params = {
+            projectSnoList : [projectSno],
+            page : page,
+            pageSize : $scope.model.form.paginationForReport.pageSize
+        }
+        $scope.model.form.listReport = [];
+        ServerService.doPost('SalesReportList/getListReport', params).then(
+            function (okResult) {
+                var error = okResult.data.failed;
+                if (!StringUtils.isEmpty(error)) {
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                } else {
+                    $scope.model.form.listReport = okResult.data.listReport;
+                    $scope.model.form.paginationForReport = okResult.data.paginationInfo;
+                    $scope.setProjectDetailControl($scope.model.form.projectInfo.projectSno, false);
+                }
+            }
+        );
+    };
+
+    /**
+     * 住所検索
+     */
+    $scope.checkPostNumber = function (param, parentIndex, index, list) {
+        var postNo = param.postNo1 + param.postNo2;
+        if (StringUtils.isEmpty(postNo)) {
+            DialogsService.showWarning(Messages.getMessage('check.error'),
+                Messages.getMessage('W00207'));
+            return true;
+        }
+        if (ValidateUtil.isValidPostNo(postNo)) {
+            DialogsService.showWarning(Messages.getMessage('check.error'),
+                Messages.getMessage('W00018'));
+            return true;
+        }
+        var params = {
+            'postNo': postNo
+        };
+        ServerService.doPost('CrmControl/checkPostNumber', params).then(
+            function (okResult) {
+                var error = okResult.data.failed;
+                var warning = okResult.data.warning;
+                if (!StringUtils.isEmpty(warning)) {
+                    DialogsService.showWarning(Messages.getMessage('check.error'),
+                        warning);
+                } else if (!StringUtils.isEmpty(error)) {
+                    DialogsService.showError(Messages.getMessage('system.error'),
+                        error);
+                } else {
+                    if (list == 0) {
+                        $scope.model.form.listProjectItem0[parentIndex].listProjectItemDetail[index].inputValue.address1 = okResult.data.address;
+                    } else if (list == 1) {
+                        $scope.model.form.listProjectItem1[parentIndex].listProjectItemDetail[index].inputValue.address1 = okResult.data.address;
+                    } else if (list == 2) {
+                        $scope.model.form.listProjectItem2[parentIndex].listProjectItemDetail[index].inputValue.address1 = okResult.data.address;
+                    }
+
+                }
+            },
+            function (errResult) {}
+        );
+    };
+
+    $scope.checkUnique = function (detail) {
+        if (detail.checkUnique) {
+            if (!StringUtils.isEmpty(detail.inputValue)) {
+                var params = {
+                    detailFreeItemFlag: detail.detailFreeItemFlag,
+                    lineNo: detail.lineNo,
+                    inputValue: detail.inputValue,
+                    projectSno: $scope.model.form.projectInfo.projectSno
+                };
+                ServerService.doPost('SfaProjectControl/checkUnique', params).then(
+                    function (okResult) {
+                        var error = okResult.data.failed;
+                        var warning = okResult.data.warning;
+                        if (!StringUtils.isEmpty(warning)) {
+                            DialogsService.showWarning(Messages.getMessage('check.error'),
+                                warning);
+                        } else if (!StringUtils.isEmpty(error)) {
+                            DialogsService.showError(Messages.getMessage('system.error'),
+                                error);
+                        } else {
+                            if (!okResult.data.isUnique) {
+                                $scope.model.hidden.checkUnique[detail.detailKey] = true;
+                            } else {
+                                $scope.model.hidden.checkUnique[detail.detailKey] = false;
+                            }
+                        }
+                    },
+                    function (errResult) {}
+                );
+            } else {
+                $scope.model.hidden.checkUnique[detail.detailKey] = false;
+            }
+        }
+    };
+
+    $scope.getInit();
+
+    /**
+     * Tự động convert giá trị trong input thành 1 byte hoặc 2 byte như dưới đây
+     * AUTO_CONVERT_INPUT_TYPE = '02': chuyển giá trị input thành 1 byte
+     * AUTO_CONVERT_INPUT_TYPE = '03': chuyển giá trị input thành 2 byte
+     */
+    $scope.convertCharByInputType = function (detail) {
+        if (!StringUtils.isEmpty(detail.autoConvertInputType)) {
+            if (detail.controlType == '09' && !StringUtils.isEmpty(detail.inputValue)) { //TUNG: controlType == '09' (Component Address)
+                switch (detail.autoConvertInputType) {
+                    case '02':
+                        if (!StringUtils.isEmpty(detail.inputValue.address1)) {
+                            detail.inputValue.address1 = StringUtils.convertDoubleToSingleChar(detail.inputValue.address1);
+                        }
+                        if (!StringUtils.isEmpty(detail.inputValue.address2)) {
+                            detail.inputValue.address2 = StringUtils.convertDoubleToSingleChar(detail.inputValue.address2);
+                        }
+                        break;
+                    case '03':
+                        if (!StringUtils.isEmpty(detail.inputValue.address1)) {
+                            detail.inputValue.address1 = StringUtils.convertSingleToDoubleChar(detail.inputValue.address1);
+                        }
+                        if (!StringUtils.isEmpty(detail.inputValue.address2)) {
+                            detail.inputValue.address2 = StringUtils.convertSingleToDoubleChar(detail.inputValue.address2);
+                        }
+                        break;
+                }
+            } else {
+                switch (detail.autoConvertInputType) {
+                    case '02':
+                        detail.inputValue = StringUtils.convertDoubleToSingleChar(detail.inputValue);
+                        break;
+                    case '03':
+                        detail.inputValue = StringUtils.convertSingleToDoubleChar(detail.inputValue);
+                        break;
+                }
+            }
+        }
+    };
+
+    $scope.openDataCustomer = function() {
+        if(!StringUtils.isEmpty($scope.model.form.projectInfo.custCd)){
+            var param = {
+                custCd : $scope.model.form.projectInfo.custCd,
+                custType : $scope.model.hidden.custType,
+                listMstUser : $scope.model.form.listMstUser,
+                listMstGroupType : $scope.model.form.listMstGroupType
+            }
+            var options = {
+                size: '900'
+            }
+            DialogsService.showDialog('CustomerUpdateDialog', 'CustomerUpdateDialogCtrl', param,options).result.then(
+                function(isUpdated) {
+                    if(isUpdated){
+
+                    }else {
+                        $scope.customerChange(null);
+                    }
+                }
+            );
+        }
+    }
+
+    $scope.$on($scope.model.hidden.exportName + "#exportReport", function(evt, param) {
+        $scope.exportExcel(param);
+    });
+
+    /**show ckeditor report*/
+    $scope.showCustomReport = function(param){
+
+        var params ={'invoiceType': '09', 'objSno': [$scope.model.form.projectInfo.projectSno], 'tempNoCustomer': param.tempNo};
+        var options ={size: 1100};
+        DialogsService.showDialog('InvoiceTemplate/getCustomReportPage', 'CustomReportCtrl', params, options);
+    }
+
+    $scope.exportExcel = function(param){
+        var now = $filter('date')(new Date(), "yyyyMMdd");
+        if(param.code == '2' && param.codeType == 'L030001'){
+            var options = {size: '600'};
+            DialogsService.showDialog('SfaSubProjectControlExport','sfaSubProjectControlExportCtrl', $scope.model.form.projectInfo.projectSno, options).result.then(
+                function(btn){
+                    var params ={
+                        popupIssueGroup : btn.popupIssueGroup,
+                        popupIssueType: btn.popupIssueType,
+                        popupIssueDate : $filter('date')(btn.popupIssueDate, "yyyy/MM/dd"),
+                        popupItemName : btn.popupItemName,
+                        popupItemSum :  parseFloat(btn.popupItemSum),
+                        popupItemUnit : btn.popupItemUnit,
+                        popupItemPrice :  parseFloat(btn.popupItemPrice),
+                        popupFreeTaxSumPrice : btn.popupFreeTaxSumPrice,
+                        popupTaxPrice : btn.popupTaxPrice,
+                        popupRemark : btn.popupRemark,
+                        projectSno : $scope.model.form.projectInfo.projectSno
+                    }
+                    ServerService.doDownload('/SfaSubProjectControl/exportAdvancesReceivedBill', params, "application/vnd.ms-excel", "請求書(前受金)"+ '_' + now + ".xlsx");
+            });
+        }else if(param.code == '3' && param.codeType == 'L030001'){
+            var params = {
+                parentProjectSno : $scope.model.hidden.parentProjectSno,
+                projectSno : $scope.model.form.projectInfo.projectSno,
+                custCd : $scope.model.form.projectInfo.custCd
+            }
+            ServerService.doDownload('/SfaSubProjectControl/exportKarteFile', params, "application/vnd.ms-excel", '配車依頼書_' + now + '.xlsx');
+        } else{
+            var params = {
+                parentProjectSno : $scope.model.hidden.parentProjectSno,
+                projectSno : $scope.model.form.projectInfo.projectSno
+            }
+            ServerService.doDownload('/SfaSubProjectControl/exportExcel', params, 'application/vnd.ms-excel', param.codeName + '_' + now + ".xlsx");
+        }
+    }
+
+    //Change value input has controlType = "06".
+    $scope.onChangeControlType06 = function(detail){
+        CalculateUtils.sumControlType12(detail, $filter);
+    }
+
+    /**
+     * reload timeline process when next, back
+     */
+    $scope.$on("SfaProjectProcessMNM#loadNextBack", function(evt, param) {
+        var params = [$scope.model.form.projectInfo.projectSno];
+        ServerService.doPost('SfaProjectList/searchProcessByProjectSno', params).then(
+            function (okResult) {
+                var error = okResult.data.failed;
+                var warning = okResult.data.warning;
+                if (!StringUtils.isEmpty(error)) {
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                } else if (!StringUtils.isEmpty(warning)) {
+                    DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                    return;
+                }
+                $scope.model.form.projectProcess.listProjectProcess = okResult.data.projectProcess.listProjectProcess;
+                $scope.model.form.projectProcess = okResult.data.projectProcess;
+            }
+        );
+        // reload sub project data
+        $scope.getProjectDetailControl($scope.model.form.projectInfo.projectSno);
+    });
+
+    $scope.warehouseChange = function(detail){
+        // using displayPosition of input warehouse to choice list data position
+        var listProjectItem = [];
+        if(detail.displayPosition == '0'){  // LEFT LIST
+            listProjectItem = $scope.model.form.listProjectItem0;
+        } else if (detail.displayPosition == '1') { // RIGHT LIST
+            listProjectItem = $scope.model.form.listProjectItem1;
+        } else { // CENTER LIST
+            listProjectItem = $scope.model.form.listProjectItem2;
+        }
+
+        if(!StringUtils.isEmpty(detail.inputValue)) {
+            var params = {
+                warehouseNo : detail.inputValue
+            };
+            ServerService.doPost('SfaSubProjectControl/onChangeWarehouse', params).then(
+                function (okResult) {
+                    var error = okResult.data.failed;
+                    if (!StringUtils.isEmpty(error)) {
+                        DialogsService.showError(Messages.getMessage('system.error'), error);
+                        return;
+                    } else {
+                        var data = okResult.data.warehouseData;
+                        angular.forEach(listProjectItem, function (item, i) {
+                            angular.forEach(item.listProjectItemDetail, function (detail, j) {
+                                if (detail.detailKey == '111') {
+                                    detail.inputValue = data.warehouseName;
+                                }
+                                else if (detail.detailKey == '1134') {
+                                    detail.inputValue = data.warehouseNameKana;
+                                }
+                                else if (detail.detailKey == '113') {
+                                    detail.inputValue = data.warehouseAddress;
+                                }
+                                else if (detail.detailKey == '114') {
+                                    detail.inputValue = data.warehouseDept;
+                                }
+                                else if (detail.detailKey == '115') {
+                                    detail.inputValue = data.warehouseOwner;
+                                }
+                                else if (detail.detailKey == '124') {
+                                    detail.inputValue = data.telephoneNo;
+                                }
+                                else if (detail.detailKey == '125') {
+                                    detail.inputValue = data.faxNo;
+                                }
+                            })
+                        });
+                    }
+                }
+            );
+        } else {
+            angular.forEach(listProjectItem, function (item, i) {
+                angular.forEach(item.listProjectItemDetail, function (detail, j) {
+                    if (detail.detailKey == '111') {
+                        detail.inputValue = '';
+                    }
+                    else if (detail.detailKey == '1134') {
+                        detail.inputValue = '';
+                    }
+                    else if (detail.detailKey == '113') {
+                        detail.inputValue = '';
+                    }
+                    else if (detail.detailKey == '114') {
+                        detail.inputValue = '';
+                    }
+                    else if (detail.detailKey == '115') {
+                        detail.inputValue = '';
+                    }
+                    else if (detail.detailKey == '124') {
+                        detail.inputValue = '';
+                    }
+                    else if (detail.detailKey == '125') {
+                        detail.inputValue = '';
+                    }
+                })
+            });
+        }
+    };
+
+    $scope.getListMstSite = function(custCd) {
+        ServerService.doPost('SfaProjectControl/getListMstSite', custCd).then(
+            function (result) {
+                if (!StringUtils.isEmpty(result.data.failed)) {
+                    DialogsService.showError(Messages.getMessage('system.error'), result.data.failed);
+                    return;
+                }
+                $scope.model.form.listCrmSite = result.data.listCrmSite;
+            }
+        );
+    }
+
+    $scope.createSite = function(detail) {
+        var params = {};
+        params.siteControl = {};
+        params.siteControl.custCd = $scope.model.form.projectInfo.custCd;
+        params.siteControl.custName = $scope.model.form.projectInfo.custName;
+        params.screenMode = 'INSERT';
+        params.siteControl.flag = '0';
+        params.siteTitle = $scope.model.hidden.siteTitle;
+        DialogsService.showDialog('CrmSiteControl', 'crmSiteControlCtrl', params, {size: 'auto'})
+        .result.then(function(param) {
+            $scope.getListMstSite($scope.model.form.projectInfo.custCd);
+            detail.inputValue = param.siteCd;
+            $scope.siteChange(detail);
+        });
+    }
+
+    $scope.changeDate = function(date) {
+        console.log(date);
+    }
+}]);
+
+exexSMSApp.controller('sfaProjectProcessSettingCtrl', ['$rootScope', '$scope', '$uibModalInstance', 'DialogsService', 'SfaSubProjectControlModel', 'SfaProjectControlService', 'Messages',
+    function ($rootScope, $scope, $uibModalInstance, DialogsService, SfaSubProjectControlModel, SfaProjectControlService, Messages) {
+
+        $scope.model = SfaSubProjectControlModel;
+
+        $scope.init = function () {
+            $scope.model.hidden.checkProgressUpdDate = true;
+        };
+
+        $scope.getInit = function () {
+            var param = {
+                businessCd: $scope.model.form.business.businessCd
+            };
+            ServerService.doPost('SfaProjectProcessSetting/getInit', param).then(
+                function (result) {
+                    if (!StringUtils.isEmpty(result.data.failed)) {
+                        DialogsService.showError(Messages.getMessage('system.error'),
+                            result.data.failed);
+                        return;
+                    }
+                    $scope.model.form.business.listProcessSetting = result.data.listProcessSetting.listProcessSetting;
+                    $scope.model.form.business.listP010004 = result.data.listP010004;
+                    $scope.model.form.business.listMstGroup = result.data.listMstGroup;
+                    $scope.model.form.business.listUser = result.data.listUser;
+                }
+            );
+        };
+
+        $scope.close = function () {
+            $uibModalInstance.dismiss('close');
+        };
+
+        $scope.yes = function () {
+            $rootScope.$broadcast("SfaProjectControl#editProject", $scope.model.hidden.checkProgressUpdDate);
+            $uibModalInstance.dismiss('close');
+        };
+
+        $scope.update = function () {
+            angular.forEach($scope.model.form.business.listProcessSetting, function (value, key) {
+                angular.forEach(value.lstProjectGroupProcess, function (subValue, subKey) {
+                    if (!StringUtils.isEmpty(subValue.deadlineDate)) {
+                        subValue.deadlineDate = new Date(subValue.deadlineDate);
+                    } else {
+                        subValue.deadlineDate = '';
+                    }
+                });
+            });
+            $scope.model.hidden.flgBusiness = true;
+            $uibModalInstance.dismiss();
+        };
+    }
+]);

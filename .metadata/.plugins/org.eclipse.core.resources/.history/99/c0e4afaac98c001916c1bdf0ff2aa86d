@@ -1,0 +1,547 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision: 1.0 $  $Date: 2014/06/06 $
+ * @author quang-thien
+ */
+
+'use strict';
+
+exexSMSApp.factory('SalDepositControlModel', [ 'BaseModel', function(BaseModel) {
+
+    var model = BaseModel.getInstance();
+
+    model.form = {
+        itemDetail :{
+            paymentNo : '',
+            bankCd : '',
+            bankAccountName : '',
+            paymentType : '',
+            paymentDate : '',
+            payment : '',
+            fee : '',
+            billaddressNo : '',
+            address1 : '',
+            address2 : '',
+            billType :'',
+            billMonth : '',
+            billaddressName :'',
+            paymentTypeName :'',
+            remark :'',
+            advancesReceivedBalance : '',
+            deleteStatus : '',
+            deleteStatusName : '',
+            fbRefNo : '',
+            clientName : '',
+            clientBankName : '',
+            clientSiteName : '',
+        },
+        listD010001: [],
+        listBillAddress:[],
+        listBill: []
+    };
+
+    model.hidden = {
+        add : true,
+        edit : '',
+        detail : '',
+        isBillList : false,
+        redirectUrl : 'SalDepositList',
+        isDisabled : false,
+        flgValidation : "0",
+        isSubmited: false
+    };
+
+    return model;
+} ]);
+
+exexSMSApp.controller('SalDepositControlCtrl',
+        ['$scope', '$filter', 'RouteService', 'DialogsService', 'SalDepositControlModel', 'Messages', 'ServerService',
+         function($scope, $filter, RouteService, DialogsService,SalDepositControlModel, Messages, ServerService) {
+
+    $scope.model = SalDepositControlModel;
+
+    $scope.init = function(){
+        $scope.getDetail= function(){
+            var param = angular.fromJson(sessionStorage.getItem("passingParamOrderItem"));
+            if(!ValidateUtil.isValidTextEmpty(param)){
+                $scope.model.hidden.add = param.add;
+                $scope.model.hidden.edit = param.edit;
+                $scope.model.hidden.detail = param.detail;
+                $scope.model.hidden.list = param.list;
+                $scope.model.hidden.redirectUrl = param.redirectUrl;
+                if(!ValidateUtil.isValidTextEmpty(param.paymentNo)){
+                    var params = {
+                            paymentNo : param.paymentNo
+                    };
+                    ServerService.doPost('SalDepositControl/getPaymentDetail', params).then(
+                        function(okResult) {
+                            if(!ValidateUtil.isValidTextEmpty(okResult.data.failed)){
+                                DialogsService.error(Messages.getMessage('system.error'),
+                                        okResult.data.failed);
+                            }else if(!ValidateUtil.isValidTextEmpty(okResult.data.warning)){
+                                DialogsService.showWarning(Messages.getMessage('check.error'),
+                                        okResult.data.warning);
+                            }else{
+                                $scope.model.form.itemDetail.companyCd = okResult.data.paymentDetail.companyCd;
+                                $scope.model.form.itemDetail.paymentNo = okResult.data.paymentDetail.paymentNo;
+                                $scope.model.form.itemDetail.bankCd = okResult.data.paymentDetail.bankCd;
+                                $scope.model.form.itemDetail.bankAccountName = okResult.data.paymentDetail.bankAccountName;
+                                $scope.model.form.itemDetail.paymentDate = okResult.data.paymentDetail.paymentDate;
+                                $scope.model.form.itemDetail.payment = okResult.data.paymentDetail.payment;
+                                $scope.model.form.itemDetail.fee = okResult.data.paymentDetail.fee;
+                                $scope.model.form.itemDetail.remark = okResult.data.paymentDetail.remark;
+                                $scope.model.form.itemDetail.address1 = okResult.data.paymentDetail.address1;
+                                $scope.model.form.itemDetail.address2 = okResult.data.paymentDetail.address2;
+                                $scope.model.form.itemDetail.billaddressNo = okResult.data.paymentDetail.billaddressNo;
+                                $scope.model.form.itemDetail.billaddressName = okResult.data.paymentDetail.billaddressName;
+                                $scope.model.form.itemDetail.billType = okResult.data.paymentDetail.billType;
+                                $scope.model.form.itemDetail.paymentType = okResult.data.paymentDetail.paymentType;
+                                $scope.model.form.itemDetail.paymentTypeName = okResult.data.paymentDetail.paymentTypeName;
+                                $scope.model.form.itemDetail.billMonth = okResult.data.paymentDetail.billMonth;
+                                $scope.model.form.itemDetail.advancesReceivedBalance = okResult.data.paymentDetail.advancesReceivedBalance;
+
+                                $scope.model.form.itemDetail.deleteStatus = okResult.data.paymentDetail.deleteStatus;
+                                $scope.model.form.itemDetail.deleteStatusName = okResult.data.paymentDetail.deleteStatusName;
+
+                                $scope.model.form.itemDetail.fbRefNo = okResult.data.paymentDetail.fbRefNo;
+                                $scope.model.form.itemDetail.clientName = okResult.data.paymentDetail.clientName;
+                                $scope.model.form.itemDetail.clientBankName = okResult.data.paymentDetail.clientBankName;
+                                $scope.model.form.itemDetail.clientSiteName = okResult.data.paymentDetail.clientSiteName;
+
+                                $scope.model.form.listD010001 = okResult.data.listD010001;
+                                if(!ValidateUtil.isValidTextEmpty(okResult.data.listBill)){
+                                    $scope.model.form.listBill = okResult.data.listBill;
+                                    $scope.model.hidden.isBillList = true;
+                                }
+                                $scope.model.hidden.isDisabled = true;
+                                var length = $scope.model.form.listBill.length;
+                                $scope.model.filteredItems = length; //Initially for no filter
+                                $scope.getBilladdressDetail($scope.model.form.itemDetail.billaddressNo, $scope.model.form.itemDetail.paymentNo);
+                            }
+                        }
+                    );
+                }
+            }else{
+                $scope.model.hidden.add = true;
+                $scope.model.hidden.edit = false;
+                $scope.model.hidden.detail = false;
+                $scope.model.hidden.backdetail = true;
+                ServerService.doPost('SalDepositControl/getInit', {}).then(
+                    function(okResult) {
+                        $scope.model.form.listD010001 = okResult.data.listD010001;
+                        var salDepositControl = angular.fromJson(sessionStorage.getItem("salDepositControl"));
+                        if(!ValidateUtil.isValidTextEmpty(salDepositControl)){
+                            $scope.model.form.itemDetail.billaddressName = salDepositControl.billaddressName;
+                            $scope.model.form.itemDetail.billaddressNo = salDepositControl.billaddressNo;
+                            $scope.model.form.itemDetail.paymentMaturityFrom = salDepositControl.paymentMaturityFrom;
+                            $scope.model.form.itemDetail.paymentMaturityTo = salDepositControl.paymentMaturityTo;
+                            $scope.model.form.itemDetail.billMonth = salDepositControl.billMonth;
+                            $scope.getListBill(true);
+                            $scope.getBilladdressDetail($scope.model.form.itemDetail.billaddressNo, $scope.model.form.itemDetail.paymentNo);
+                        }
+                    }
+                );
+            }
+        };
+
+        $scope.getDetail();
+    };
+
+    $scope.getBilladdressDetail = function(billaddressNo,paymentNo){
+        if(!StringUtils.isEmpty(billaddressNo)){
+            var param = {
+                billaddressNo : billaddressNo,
+                paymentNo : paymentNo,
+                billMonth : $scope.model.form.itemDetail.billMonth
+            };
+            ServerService.doPost('SalDepositControl/getBilladdressDetail', param).then(
+                function(okResult) {
+                    if(!ValidateUtil.isValidTextEmpty(okResult.data.billaddressDetail)){
+                        var detail = okResult.data.billaddressDetail;
+                        $scope.model.form.itemDetail.billaddressNo = detail.billaddressNo;
+                        $scope.model.form.itemDetail.address1 = detail.address1;
+                        $scope.model.form.itemDetail.address2 = detail.address2;
+                        $scope.model.form.itemDetail.billType = detail.billType;
+                        $scope.model.form.itemDetail.billMonth = detail.billMonth;
+                        $scope.model.form.itemDetail.advancesReceivedBalance = detail.advancesReceivedBalance;
+                        $scope.model.form.itemDetail.billAddressVersion = detail.version;
+                    }
+                }
+            );
+        }else{
+            $scope.model.form.itemDetail.address1 = "";
+            $scope.model.form.itemDetail.address2 = "";
+            $scope.model.hidden.isBillList = false;
+            $scope.model.hidden.isDisabled = false;
+        }
+    };
+
+    $scope.getListBill = function (isBillList){
+
+        $scope.model.hidden.flgValidation = "1";
+
+        if(!ValidateUtil.isValidTextEmpty($scope.model.form.itemDetail.billaddressNo)){
+            var paymentNo = $scope.model.form.itemDetail.paymentNo;
+
+            var param = {
+                billaddressNo : $scope.model.form.itemDetail.billaddressNo.toString(),
+                paymentNo : paymentNo,
+                billMonth : $scope.model.form.itemDetail.billMonth,
+                paymentMaturityFrom : $scope.model.form.itemDetail.paymentMaturityFrom,
+                paymentMaturityTo : $scope.model.form.itemDetail.paymentMaturityTo,
+                billDateFrom : $scope.model.form.itemDetail.billDateFrom,
+                billDateTo : $scope.model.form.itemDetail.billDateTo,
+                rcvSno : $scope.model.form.itemDetail.rcvSno,
+                controlCd : $scope.model.form.itemDetail.controlCd
+            };
+            ServerService.doPost('SalDepositControl/getListBill', param).then(
+                function(okResult) {
+                    $scope.model.form.listBill = okResult.data.listBill;
+                    $scope.model.filteredItems = $scope.model.form.listBill.length; //Initially for no filter
+                    if($scope.model.form.listBill.length != 0){
+                        if($scope.model.hidden.isBillList != isBillList){
+                            $scope.model.hidden.isBillList = isBillList;
+                        }
+                    }else{
+                        /*$scope.model.form.itemDetail.billaddressNo = '';
+                        $scope.model.form.itemDetail.address1 = '';
+                        $scope.model.form.itemDetail.address2 = '';
+                        $scope.model.form.itemDetail.billType = '';
+                        $scope.model.form.itemDetail.billaddressName = '';
+                        $scope.model.form.itemDetail.billMonth = '';*/
+                        DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00148'));
+                    }
+                }
+            );
+        }else{
+            DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00075'));
+        }
+    };
+
+    $scope.changeEditMode = function (){
+        var canEdit = true;
+
+        // check billMonth of payment detail and billMonth of billaddress before edit
+        // if having billMonth of payment detail != currentBillMonth of billaddress, do not allow edit payment data
+        var currentBillMonth = '';
+        if($scope.model.form.itemDetail.billType == '1' && !StringUtils.isEmpty($scope.model.form.itemDetail.billMonth)){
+            var yearOfBillMonth = $scope.model.form.itemDetail.billMonth.substr(0, 4);
+            var monthOfBillMonth = $scope.model.form.itemDetail.billMonth.substr(4);
+            var nextBillMonthDate =  yearOfBillMonth + "/" + monthOfBillMonth + '/01';
+            currentBillMonth = $filter('date')(DateUtils.getAddMonth(new Date(nextBillMonthDate), -1), "yyyyMM");
+        }
+        for(var i=0; i<$scope.model.form.listBill.length; i++) {
+            var billAndPaymentData = $scope.model.form.listBill[i];
+            if(billAndPaymentData.billType == '1' && billAndPaymentData.billMonth != currentBillMonth){
+                canEdit = false
+                break;
+            }
+        }
+
+        if(!canEdit){
+            DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00670'));
+        } else {
+            $scope.model.hidden.add = false;
+            $scope.model.hidden.detail = false;
+            $scope.model.hidden.edit = true;
+            $scope.model.hidden.backdetail = true;
+        }
+    };
+
+    $scope.init();
+
+    $scope.convertParam = function(param,billList){
+        var bankCd = null;
+        if(!ValidateUtil.isValidTextEmpty(param.bankCd)){
+            bankCd = param.bankCd.toString();
+        }
+        var params = {
+            companyCd : param.companyCd,
+            paymentNo : param.paymentNo,
+            bankCd : bankCd,
+            paymentType : param.paymentType.toString(),
+            paymentDate : new Date(param.paymentDate),
+            payment : ValidateUtil.isValidTextEmpty(param.payment) ? 0 : param.payment,
+            billMonth : param.billMonth,
+            fee : ValidateUtil.isValidTextEmpty(param.fee) ? null : param.fee,
+            billaddressNo : param.billaddressNo.toString(),
+            remark : param.remark,
+            billDelete : [],
+            address1 : param.address1,
+            address2 : param.address2,
+            billaddressName : param.billaddressName,
+            billType : param.billType,
+            paymentTypeName : param.paymentTypeName,
+            advancesReceivedBalance: param.advancesReceivedBalance,
+            billAddressVersion: param.billAddressVersion,
+            deleteStatus : param.deleteStatus,
+            fbRefNo : param.fbRefNo,
+            clientName : param.clientName,
+            clientBankName : param.clientBankName,
+            clientSiteName : param.clientSiteName,
+            balancePayment : param.balancePayment
+        };
+        var total = 0;
+        var sumPaymentList = 0;
+        if($scope.model.hidden.isBillList == true){
+            var payment = 0;
+            var fee = 0;
+            if(!ValidateUtil.isValidTextEmpty(param.payment)){
+                payment = param.payment;
+            }
+            if(!ValidateUtil.isValidTextEmpty(param.fee)){
+                fee = param.fee;
+            }
+            total = parseInt(payment) + parseInt(fee);
+            var index=0;
+            billList.forEach(function(obj) {
+                if(!ValidateUtil.isValidTextEmpty(obj.payment)){
+                    sumPaymentList += parseInt(obj.payment);
+                }
+                obj.companyCd = param.companyCd;
+                obj.billaddressNo = param.billaddressNo.toString();
+                params.billDelete.splice(index,0,obj);
+               index++;
+            });
+        }
+        params.total = total;
+        params.sumPaymentList = sumPaymentList;
+        return params;
+    };
+
+    $scope.savePayment = function(param, billList, formInvalid){
+        $scope.model.hidden.flgValidation = "0";
+        $scope.model.hidden.isSubmited = true;
+        if (formInvalid) {
+            return;
+        }
+
+        var params = $scope.convertParam(param,billList);
+
+        if(!StringUtils.isEmpty(billList) && billList.length > 0) {
+            if($scope.model.form.itemDetail.balancePayment < 0) {
+                return DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00390'));
+            } else {
+                params.deleteStatus = '2';
+            }
+        } else {
+            params.deleteStatus = '0';
+            params.billDelete = [];
+        }
+        /*if(parseInt(params.total) == 0 && $scope.model.hidden.flgValidation == "1"){
+            DialogsService.showWarning(Messages.getMessage('check.error'),
+                    Messages.getMessage('W00159'), {size: '380'});
+            return;
+        }*/
+
+        /*if(((parseInt(params.total) != parseInt(params.sumPaymentList)) && (parseInt(params.sumPaymentList) != 0)
+            || (parseInt(params.total) != parseInt(params.sumPaymentList)) && (parseInt(params.sumPaymentList) == 0)
+            ) && $scope.model.hidden.isBillList == true){
+            DialogsService.showWarning(Messages.getMessage('check.error'),
+                    Messages.getMessage('W00082'), {size: '380'});
+        }else{*/
+            DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('S00003'))
+            .result.then(function(btn){
+                /*if(params.sumPaymentList == 0){
+                    params.billDelete = [];
+                }*/
+
+                ServerService.doPost('SalDepositControl/addPayment', params).then(
+                    function(okResult) {
+                        if(!ValidateUtil.isValidTextEmpty(okResult.data.success)){
+                            sessionStorage.removeItem("salDepositControl");
+                            sessionStorage.removeItem("passingParamOrderItem");
+                            DialogsService.showNotify(Messages.getMessage('title.info'), okResult.data.success)
+                            .result.then(function(btn){
+                                var passingParamOrderItem = {
+                                    'paymentNo' : okResult.data.paymentNo,
+                                    'add' : false,
+                                    'detail' : true,
+                                    'edit' : false,
+                                    'redirectUrl' : 'SalDepositList'
+                                };
+                                sessionStorage.setItem("passingParamOrderItem", JSON.stringify(passingParamOrderItem));
+                                RouteService.gotoUrl('SalDepositControl');
+                            });
+                        } else {
+                            if(!ValidateUtil.isValidTextEmpty(okResult.data.failed)){
+                                DialogsService.showError(Messages.getMessage('system.error'), okResult.data.failed);
+                            }else{
+                                DialogsService.showWarning(Messages.getMessage('check.error'), okResult.data.warning);
+                            }
+                        }
+                    }
+                );
+            });
+        //}
+    };
+
+
+    $scope.updatePayment = function(param, billList, formInvalid){
+        $scope.model.hidden.flgValidation = "0";
+        $scope.model.hidden.isSubmited = true;
+        if (formInvalid) {
+            return;
+        }
+        var params = $scope.convertParam(param,billList);
+
+        if(!StringUtils.isEmpty(billList) && billList.length > 0) {
+            if($scope.model.form.itemDetail.balancePayment < 0) {
+                return DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00390'));
+            } else {
+                params.deleteStatus = '2';
+            }
+        } else {
+            params.deleteStatus = '0';
+            params.billDelete = [];
+        }
+
+        /*if(parseInt(params.total) == 0 && $scope.model.hidden.flgValidation == "1"){
+            DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00159'), {size: '380'});
+            return;
+        }
+
+        if(((parseInt(params.total) != parseInt(params.sumPaymentList)) && (parseInt(params.sumPaymentList) != 0)
+                || (parseInt(params.total) != parseInt(params.sumPaymentList)) && (parseInt(params.sumPaymentList) == 0)
+            ) && $scope.model.hidden.isBillList == true){
+            DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00082'), {size: '380'});
+        }else{*/
+            ServerService.doPost('SalDepositControl/isExistData', params).then(
+                function(okResult) {
+                    var error = okResult.data.failed;
+                    var warning = okResult.data.warning;
+                    if(!ValidateUtil.isValidTextEmpty(error)){
+                        DialogsService.showError(Messages.getMessage('system.error'), error);
+                        return;
+                     }else if(!ValidateUtil.isValidTextEmpty(warning)){
+                         DialogsService.showWarning(Messages.getMessage('check.error'), warning)
+                         .result.then(function() {
+                             $scope.gotoUrl();
+                         });
+                         return;
+                    }else{
+                        DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('S00004'))
+                        .result.then(function(btn){
+                            ServerService.doPost('SalDepositControl/updatePayment', params).then(
+                                function(okResult) {
+                                    if(!ValidateUtil.isValidTextEmpty(okResult.data.success)){
+                                        sessionStorage.removeItem("passingParamOrderItem");
+                                        DialogsService.showNotify(Messages.getMessage('title.info'), okResult.data.success)
+                                        .result.then(function(btn){
+                                            var passingParamOrderItem = {
+                                                'paymentNo' : param.paymentNo,
+                                                'add' : false,
+                                                'detail' : true,
+                                                'edit' : false,
+                                                'list' : !ValidateUtil.isValidTextEmpty($scope.model.hidden.list) ? $scope.model.hidden.list : false,
+                                                'redirectUrl' : 'SalDepositList'
+                                            };
+                                            sessionStorage.setItem("passingParamOrderItem", JSON.stringify(passingParamOrderItem));
+                                            RouteService.gotoUrl('SalDepositControl');
+                                        });
+                                    } else {
+                                        if(!ValidateUtil.isValidTextEmpty(okResult.data.failed)){
+                                            DialogsService.showError(Messages.getMessage('system.error'), okResult.data.failed);
+                                        }else{
+                                            DialogsService.showWarning(Messages.getMessage('check.error'), okResult.data.warning);
+                                        }
+                                    }
+                                }
+                            );
+                        });
+                    }
+                }
+            );
+        //}
+    };
+
+    $scope.deletePayment = function(param){
+        var params = {
+            paymentNo : param.paymentNo,
+            billaddressNo : ValidateUtil.isValidTextEmpty(param.billaddressNo) ? null : param.billaddressNo.toString(),
+            companyCd : $scope.model.form.itemDetail.companyCd,
+            billAddressVersion: $scope.model.form.itemDetail.billAddressVersion
+        };
+        ServerService.doPost('SalDepositControl/isExistData', params).then(
+            function(okResult) {
+                var error = okResult.data.failed;
+                var warning = okResult.data.warning;
+                if(!ValidateUtil.isValidTextEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                 }else if(!ValidateUtil.isValidTextEmpty(warning)){
+                     DialogsService.showWarning(Messages.getMessage('check.error'), warning)
+                     .result.then(function() {
+                         $scope.gotoUrl();
+                     });
+                     return;
+                }else{
+                    DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('S00005'))
+                    .result.then(function(btn){
+                        ServerService.doPost('SalDepositControl/deletePayment', params).then(
+                            function(okResult) {
+                                if(!ValidateUtil.isValidTextEmpty(okResult.data.success)){
+                                    sessionStorage.removeItem("passingParamOrderItem");
+                                    DialogsService.showNotify(Messages.getMessage('title.info'), okResult.data.success)
+                                    .result.then(function(btn){
+                                        RouteService.gotoUrl('SalDepositList');
+                                    });
+                                } else {
+                                    if(!ValidateUtil.isValidTextEmpty(okResult.data.failed)){
+                                        DialogsService.showError(Messages.getMessage('system.error'), okResult.data.failed);
+                                    }else{
+                                        DialogsService.showWarning(Messages.getMessage('check.error'), okResult.data.warning);
+                                    }
+                                }
+                            }
+                        );
+                    });
+                }
+            }
+        );
+    };
+
+
+    $scope.gotoUrl = function(){
+        RouteService.gotoUrl($scope.model.hidden.redirectUrl);
+    };
+
+    $scope.backSalOrderControl= function(param){
+        $scope.getDetail();
+        $scope.model.hidden.add = false;
+        $scope.model.hidden.detail = true;
+        $scope.model.hidden.edit = false;
+        $scope.model.hidden.isBillList = false;
+        $scope.model.hidden.backdetail = false;
+    };
+
+    $scope.newWin = function(){
+        sessionStorage.removeItem("salDepositControl");
+        sessionStorage.removeItem("passingParamOrderItem");
+        RouteService.gotoUrl('SalDepositControl');
+    };
+
+    $scope.$watch('[model.form.itemDetail.payment, model.form.itemDetail.fee, model.form.listBill]', function(value){
+        if(StringUtils.isEmpty(value[0]) || StringUtils.isEmpty(value[1])) {
+            return;
+        } else {
+            if(!isNaN(parseFloat(value[0])) && !isNaN(parseFloat(value[1]))) {
+                var payment = !StringUtils.isEmpty(value[0]) ? value[0] : 0;
+                var fee = !StringUtils.isEmpty(value[1]) ? value[1] : 0;
+                var listBill = value[2];
+                var sumPayment = 0;
+                for (var i = 0; i < listBill.length; i++) {
+                    var item = listBill[i];
+                    if(!StringUtils.isEmpty(item.payment) && !isNaN(parseFloat(item.payment))) {
+                        sumPayment = parseFloat(sumPayment) + parseFloat(item.payment);
+                    }
+                }
+                $scope.model.form.itemDetail.balancePayment = parseFloat(payment) + parseFloat(fee) - parseFloat(sumPayment);
+            }
+        }
+    }, true);
+
+}]);

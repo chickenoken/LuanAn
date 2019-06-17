@@ -1,0 +1,184 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision: 1.0 $  $Date: 2014/06/18 $
+ * @author Quang-Thien
+ */
+
+exexSMSApp.factory('MstItemDialogModel', [ 'BaseModel', '$rootScope', function(BaseModel, $rootScope) {
+
+    var model = BaseModel.getInstance();
+    model.form = {
+        itemEdit:{
+            serialCd : '',
+            itemCd:'',
+            itemName:''
+        },
+        itemUnit : [
+                    {
+                        originalItemSerialCd : '',
+                        lineNo : '',
+                        itemCd : '',
+                        janCd : '',
+                        itemUnit : '',
+                        packageQuantity : '',
+                        itemCost : '',
+                        itemPrice : '',
+                        isActive : false
+                    },{
+                        originalItemSerialCd : '',
+                        lineNo : '',
+                        itemCd : '',
+                        janCd : '',
+                        itemUnit : '',
+                        packageQuantity : '',
+                        itemCost : '',
+                        itemPrice : '',
+                        isActive : false
+                    }
+         ],
+         search : {
+             workDateFrom : '',
+             workDateTo :'',
+             warehouseNo: '',
+             warehouseNoDetail : '',
+             serialCd : ''
+         },
+         listEnventory : [],
+         detailItemPart : []
+    };
+    model.hidden = {
+            detailFlag : false,
+            viewItemFlag : false,
+            itemCd : '',
+            itemName : '',
+            usagePeriodFrom:'',
+            usagePeriodTo:''
+    }
+
+    return model;
+
+}]);
+exexSMSApp.controller('mstItemDialogCtrl',
+        ['$scope', '$filter', 'ServerService', '$uibModalInstance' ,'MstItemDialogModel', '$timeout',
+         function($scope, $filter, ServerService, $uibModalInstance ,MstItemDialogModel, $timeout){
+
+    $scope.model = MstItemDialogModel;
+
+    $scope.init = function(){
+        var param = angular.fromJson(sessionStorage.getItem('mstItemDialog'));
+        $scope.model.form.itemEdit = [];
+        if(!ValidateUtil.isValidTextEmpty(param.serialCd)){
+            if(param.detailFlag){
+                $scope.model.hidden.detailFlag = true;
+                $scope.getInit(param);
+            }else{
+                $scope.model.hidden.detailFlag = false;
+                if(param.viewHist != null && param.viewHist){
+                    $scope.model.form.search.workDateFrom = $filter('date')(DateUtils.getPreviousMonth(), "yyyy/MM/dd");
+                    $scope.model.form.search.workDateTo = $filter('date')(DateUtils.getCurrentDate(), "yyyy/MM/dd");
+                    $scope.model.form.search.warehouseNo = !ValidateUtil.isValidTextEmpty(param.warehouseNo) ? param.warehouseNo : '',
+                    $scope.model.form.search.warehouseNoDetail = !ValidateUtil.isValidTextEmpty(param.warehouseNoDetail) ? param.warehouseNoDetail : '',
+                    $scope.model.form.search.serialCd = param.serialCd;
+                    $scope.model.hidden.itemCd = param.itemCd;
+                    $scope.model.hidden.itemName = param.itemName;
+                    $scope.model.hidden.usagePeriodFrom = param.usagePeriodFrom;
+                    $scope.model.hidden.usagePeriodTo = param.usagePeriodTo;
+                    $scope.getItemHistory($scope.model.form.search);
+                    $scope.model.hidden.viewItemFlag = param.viewHist;
+                }else{
+                    $scope.getInventoryHistory(param);
+                }
+            }
+        }
+    };
+
+    $scope.getInit = function(param){
+        ServerService
+        .doPost('MstItemControl/getInit', {serialCd : param.serialCd})
+        .then(
+            function(okResult) {
+                $scope.model.form.listM010002 = okResult.data.listM010002;
+                $scope.model.form.listS010003 = okResult.data.listS010003;
+                $scope.model.form.listM010001 = okResult.data.listM010001;
+                $scope.model.form.listCATE01 = okResult.data.category1;
+                $scope.model.form.listCATE02 = okResult.data.category2;
+                $scope.model.form.listCATE03 = okResult.data.category3;
+                $scope.model.form.listStockaddress = okResult.data.stockaddress;
+                $scope.model.form.listMstItem = okResult.data.listMstItem;
+                $scope.model.form.listMaker = okResult.data.maker;
+                $scope.model.form.itemEdit = okResult.data.itemEdit;
+                $scope.model.form.detailItemPart = okResult.data.itemEdit.detailItemPart;
+                if(okResult.data.itemEdit.listItemUnit.length == 1){
+                    $scope.model.form.itemUnit[0] = okResult.data.itemEdit.listItemUnit[0];
+                }else if(okResult.data.itemEdit.listItemUnit.length == 2){
+                    $scope.model.form.itemUnit = okResult.data.itemEdit.listItemUnit;
+                }
+                $scope.calWidth();
+            },
+            function(errResult){});
+    }
+
+    $scope.getInventoryHistory = function(param){
+        ServerService
+        .doPost('MstItemDialog/getInventoryHistory', {serialCd : param.serialCd})
+        .then(
+            function(okResult) {
+                $scope.model.form.itemEdit.serialCd = param.serialCd;
+                $scope.model.form.itemEdit.itemCd = param.itemCd;
+                $scope.model.form.itemEdit.itemName = param.itemName;
+                $scope.model.form.listEnventory = okResult.data.listEnventory;
+            },
+            function(errResult){});
+    }
+
+    $scope.getItemHistory= function(param){
+        var params = {
+              serialCd : param.serialCd,
+              warehouseNo: param.warehouseNo,
+              warehouseNoDetail: param.warehouseNoDetail,
+              workDateFrom : !ValidateUtil.isValidTextEmpty(param.workDateFrom) ? new Date(param.workDateFrom) : null,
+              workDateTo : !ValidateUtil.isValidTextEmpty(param.workDateTo) ? new Date(param.workDateTo) : null,
+              usagePeriodFrom : !StringUtils.isEmpty($scope.model.hidden.usagePeriodFrom) ? new Date($scope.model.hidden.usagePeriodFrom) : null,
+              usagePeriodTo : !StringUtils.isEmpty($scope.model.hidden.usagePeriodTo) ? new Date($scope.model.hidden.usagePeriodTo) : null
+        };
+        ServerService.doPost('StockSituationList/searchViewItemHistory', params)
+        .then(
+            function(okResult) {
+                $scope.model.form.itemEdit.serialCd = param.serialCd;
+                $scope.model.form.itemEdit.itemCd = $scope.model.hidden.itemCd;
+                $scope.model.form.itemEdit.itemName = $scope.model.hidden.itemName;
+                $scope.model.form.listEnventory = okResult.data.viewItemHistory;
+            },
+            function(errResult){});
+    }
+
+    /**
+     * calculate width for table
+     */
+    $scope.calWidth = function(){
+        $timeout(function(){
+            if(!StringUtils.isEmpty($("#tableClone1")[0])){
+                var isChrome = !!window.chrome && !!window.chrome.webstore;
+                var heightTable = $("#tableClone1")[0].offsetHeight;
+                if(!isChrome && heightTable > 246){
+                    $scope.model.hidden.widthHeader = {"width": "calc(100% - 17px)"};
+                    return;
+                }else if (isChrome && heightTable > 246){
+                    $scope.model.hidden.widthHeader = {"width": "calc(100% - 10px)"};
+                    return;
+                }
+                $scope.model.hidden.widthHeader = {"width": "100%"};
+            }
+        },100);
+    }
+
+    $scope.init();
+
+    $scope.close = function() {
+        $uibModalInstance.dismiss('close');
+    };
+
+}]);

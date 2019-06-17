@@ -1,0 +1,5 @@
+package org.planning.net.controller;
+
+public class AppConfig {
+
+}

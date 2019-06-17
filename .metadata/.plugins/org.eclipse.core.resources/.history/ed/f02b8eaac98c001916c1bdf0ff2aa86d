@@ -1,0 +1,252 @@
+'use strict';
+
+exexSMSApp.factory('CsvImportControlModel', [ 'BaseModel',
+                                                        function(BaseModel) {
+
+    var model = BaseModel.getInstance();
+    model.form = {
+        errorFlag: 'true',
+        csvFileType: ''
+    };
+
+    return model;
+}]);
+
+exexSMSApp.controller('csvImportControlCtrl',
+        ['$scope', 'CsvImportControlModel', 'HeaderModel', 'ServerService', 'DialogsService', 'Messages',
+         function($scope, CsvImportControlModel, HeaderModel, ServerService, DialogsService, Messages) {
+
+    $scope.model = CsvImportControlModel;
+    $scope.modelHeader = HeaderModel;
+
+    var freeLabel = angular.fromJson(sessionStorage.getItem("freeLabel"));
+    if(!StringUtils.isEmpty(freeLabel)) {
+        $scope.model.label = freeLabel;
+    }
+
+    /**
+     * when input file clicks, open dialog file
+     */
+    $scope.uploadFileOpen = function(){
+        setTimeout(function() {
+            $('#inputValueFile').click();
+            $scope.clicked = true;
+        }, 0);
+    };
+
+    /**
+     * 所属部署データのサンプルファイルを取得する
+     */
+    $scope.downloadFileSample = function () {
+
+        if(StringUtils.isEmpty($scope.model.form.csvFileType)){
+            DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00298'));
+            return;
+        } else {
+            if($scope.model.form.csvFileType != "6"
+                && $scope.model.form.csvFileType != "8"
+                    && $scope.model.form.csvFileType != "18"
+                        && $scope.model.form.csvFileType != "19"
+                            && $scope.model.form.csvFileType != "20"){
+                var params = {
+                    csvName : $('#csvFileType option:selected').html() + '.csv',
+                    csvFileType : $scope.model.form.csvFileType
+                };
+                ServerService.doDownload('/CsvImportControl/downloadFileSample',  params, 'application/CSV', params.csvName );
+            } else {
+                var params = {
+                    csvName : $('#csvFileType option:selected').html() + '.xlsx',
+                    csvFileType : $scope.model.form.csvFileType
+                };
+                if(params.csvFileType == "6" || params.csvFileType == "18" ){
+                    ServerService.doDownload('/CsvImportCustomerControl/exportData',  params, "application/vnd.ms-excel", params.csvName);
+                } else if(params.csvFileType == "19"){
+                    var fileName = params.csvName.replace(".xlsx", '_' + DateUtils.getYYYYMMDD(new Date()) + ".xlsx");
+                    ServerService.doDownload('/CsvImportUserControl/downloadFileSample',  params, "application/vnd.ms-excel", fileName);
+                } else if(params.csvFileType == "8"){
+                    ServerService.doDownload('/CsvImportProjectControl/downloadFileSample',  params, 'application/vnd.ms-excel', params.csvName);
+                } else if(params.csvFileType == "20") {
+                    ServerService.doDownload('/CsvImportSubProjectControl/downloadFileSample',  params, 'application/vnd.ms-excel', params.csvName);
+                }
+            }
+        }
+    };
+
+    /**
+     * save data to database
+     */
+    $scope.saveData = function () {
+
+        var fileSize = $scope.model.form.fileSize;
+        var fileType = $scope.model.form.fileType;
+        var csvFileType = $scope.model.form.csvFileType;
+
+        if(csvFileType == undefined || csvFileType == ''){
+            DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00298'));
+            return;
+        }
+
+        var param = angular.extend({},$scope.model.form);
+        param.errorFlag = param.errorFlag == 'true' ? true : false;
+        var successFlag = false;
+        DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('S00044'))
+        .result.then(function(btn){
+            switch (csvFileType) {
+            case '1':
+                ServerService.doPost('CsvImportUserControl/saveData', param).then(
+                    function(result) {
+                        $scope.doDownload(result.data);
+                    });
+                break;
+            case '2':
+                ServerService.doPost('CsvImportGroupControl/saveData', param).then(
+                    function(result) {
+                        $scope.doDownload(result.data);
+                    });
+                break;
+            case '3':
+                ServerService.doPost('CsvImportItemControl/saveData', param).then(
+                    function(result) {
+                        $scope.doDownload(result.data);
+                    });
+                break;
+            case '4':
+                ServerService.doPost('CsvImportWarehouseControl/saveData', param).then(
+                    function(result) {
+                        $scope.doDownload(result.data);
+                    });
+                break;
+            case '5':
+                ServerService.doPost('CsvImportWarehouseStockControl/saveData', param).then(
+                    function(result) {
+                        $scope.doDownload(result.data);
+                    });
+                break;
+            case '6': case '18': // 6 : Business Customer, 18 : Individual Customer
+                ServerService.doPost('CsvImportCustomerControl/importData', param).then(
+                    function(result) {
+                        $scope.doDownload(result.data, true);
+                    });
+                break;
+            case '7':
+                ServerService.doPost('CsvImportBillAddressControl/saveData', param).then(
+                    function(result) {
+                        $scope.doDownload(result.data);
+                    });
+                break;
+            case '8':
+                ServerService.doPost('CsvImportProjectControl/saveData', param).then(
+                    function(result) {
+                        $scope.doDownload(result.data, true);
+                    });
+                break;
+            case '9':
+                ServerService.doPost('CsvImportEstimateControl/saveData', param).then(
+                    function(result) {
+                        $scope.doDownload(result.data);
+                    });
+                break;
+            case '10':
+                ServerService.doPost('CsvImportReceiveControl/saveData', param).then(
+                    function(result) {
+                        $scope.doDownload(result.data);
+                    });
+                break;
+            case '11':
+                ServerService.doPost('CsvImportSalesControl/saveData', param).then(
+                    function(result) {
+                        $scope.doDownload(result.data);
+                    });
+                break;
+            case '12':
+                ServerService.doPost('CsvImportOrderControl/saveData', param).then(
+                    function(result) {
+                        $scope.doDownload(result.data);
+                    });
+                break;
+            case '13':
+                ServerService.doPost('CsvImportStockControl/saveData', param).then(
+                    function(result) {
+                        $scope.doDownload(result.data);
+                    });
+                break;
+            case '14':
+                ServerService.doPost('CsvImportDeliveryPlaceControl/saveData', param).then(
+                    function(result) {
+                        $scope.doDownload(result.data);
+                    });
+                break;
+            case '15':
+                ServerService.doPost('CsvImportStockAddressControl/saveData', param).then(
+                    function(result) {
+                        $scope.doDownload(result.data);
+                    });
+                break;
+            case '16':
+                ServerService.doPost('CsvImportBankControl/saveData', param).then(
+                    function(result) {
+                        $scope.doDownload(result.data);
+                    });
+                break;
+            case '17':
+                ServerService.doPost('CsvImportCodeControl/saveData', param).then(
+                    function(result) {
+                        $scope.doDownload(result.data);
+                    });
+                break;
+            case '19':
+                ServerService.doPost('CsvImportUserControl/importData', param).then(
+                    function(result) {
+                        $scope.doDownload(result.data, true);
+                    });
+                break;
+            case '20':
+                ServerService.doPost('CsvImportSubProjectControl/saveData', param).then(
+                    function(result) {
+                        $scope.doDownload(result.data);
+                    });
+                break;
+            };
+        });
+    };
+
+    $scope.doDownload = function(result, isExcel){
+        if(!ValidateUtil.isValidTextEmpty(result.warning)){
+            DialogsService.showWarning(Messages.getMessage('check.error'), result.warning);
+            $scope.resetFile($('input[name="inputValueFile"]'));
+            if(!isExcel) {
+                var paramFile = {
+                    dataFile : result.CSVFile,
+                    csvFileType : $scope.model.form.csvFileType,
+                };
+                var fileType = ".csv";
+                var fileName = "ERROR_" + $("#csvFileType option:selected").html() + fileType;
+                ServerService.doDownload('/CsvImportControl/downloadErrorFile', paramFile, 'application/vnd.ms-excel', fileName);
+            }else if(isExcel && !StringUtils.isEmpty(result.fileData)) {
+                var paramFile = {
+                    binaryFile : result.fileData,
+                    csvFileType : $scope.model.form.csvFileType,
+                };
+                var fileType = ".xlsx";
+                var fileName = "ERROR_" + $("#csvFileType option:selected").html() + fileType;
+                ServerService.doDownload('/CsvImportControl/downloadFileError', paramFile, 'application/vnd.ms-excel', fileName);
+            }
+        } else if(!ValidateUtil.isValidTextEmpty(result.failed)){
+            DialogsService.showError(Messages.getMessage('system.error'), result.failed);
+        } else {
+            DialogsService.showNotify(Messages.getMessage('title.info'), result.success);
+            $scope.model.form.inputValue = '';
+            $scope.model.form.binaryFile = '';
+            $scope.model.form.fileSize = '';
+            $scope.model.form.fileType = '';
+            $scope.resetFile($('input[name="inputValueFile"]'));
+
+        }
+    }
+
+    $scope.resetFile  = function(e) {
+        e.wrap('<form>').parent('form').trigger('reset');
+        e.unwrap();
+    };
+
+}]);

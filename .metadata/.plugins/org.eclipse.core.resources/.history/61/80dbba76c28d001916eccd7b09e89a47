@@ -1,0 +1,309 @@
+.exex-form .md-checkbox label>.box,.exex-form .md-checkbox label>.check,.exex-form .md-checkbox label>.inc
+  {
+  left: 50%;
+}
+
+.exex-form .md-checkbox label>.box {
+  margin-left: -10px;
+}
+
+.exex-form .md-checkbox label>.check {
+  margin-left: -5px;
+}
+
+.exex-form .md-checkbox label>.inc {
+  margin-left: -20px;
+}
+
+.exex-form .md-checkbox input[type=checkbox]:checked ~ label>.box
+  {
+  visibility: hidden;
+}
+
+
+/* BUTTON */
+#buttonHref {
+  margin-top: 5px;
+}
+
+.popover {
+  font-family: inherit;
+}
+
+/* PAGINATION */
+div#pagination-top ul.pagination-small {
+  margin-bottom: 0px;
+  vertical-align: bottom;
+}
+
+/* SELECT 2 */
+span#select2-exportCsv-container {
+  text-align: left;
+}
+
+#exportCsv span.select2.select2-container {
+  text-align: left;
+  width: 180px !important;
+}
+
+/*** TABLE ***/
+th a:-webkit-any-link {
+  color: white;
+}
+
+th a[href] {
+  color: white;
+}
+
+th a i {
+  float: right;
+}
+
+.table {
+  margin-bottom: 0;
+}
+
+.table .btn {
+  margin-right: 0px;
+}
+
+.div-in-table {
+  display: flex;
+}
+
+.row-break {
+  word-break: break-all;
+  width: calc(100% - 80px);
+  width: -webkit-calc(100% - 80px);
+}
+
+/*  Table list */
+#table-search thead tr th {
+  background-color: #3598DC;
+  color: #FFF;
+  vertical-align: middle;
+  border-bottom: 1px solid #DDD;
+}
+
+/* break all td in table */
+#table-search tr td {
+  word-break : break-all;
+}
+/*  End table list */
+
+/*  Table mst-control */
+#mst-item-table tr th, #mst-bill-table tr th, #mst-stock-table tr th,
+  #mst-user-table tr th, #mst-group-table tr th, #mst-mail-table tr th,
+  #mst-icon-table tr th, #mst-bank-table tr th {
+  background-color: #87CEEB;
+  color: #FFF;
+  text-align: right;
+  vertical-align: middle;
+  border-bottom: 1px solid #FFF;
+}
+
+#mst-item-table tr td, #mst-bill-table tr td, #mst-stock-table tr td,
+  #mst-user-table tr td, #mst-group-table tr td, #mst-mail-table tr td,
+  #mst-icon-table tr td, #mst-bank-table tr td {
+  vertical-align: middle;
+}
+
+#mst-item-table tr th.th-last, #mst-bill-table tr th.th-last,
+  #mst-stock-table tr th.th-last, #mst-user-table tr th.th-last,
+  #mst-group-table tr th.th-last, #mst-mail-table tr th.th-last,
+  #mst-icon-table tr th.th-last, #mst-bank-table tr th.th-last {
+  border-bottom: 1px solid #DDD;
+}
+
+#itemListForm .inner_table {
+  overflow-x: hidden;
+  overflow-y: auto;
+  max-height: 260px;
+  height: 260px;
+}
+
+#mst-group-table .apps-container {
+  padding: 5px;
+  height: 271px;
+  width: 100%;
+  overflow-y: auto;
+}
+
+#mst-group-table .app {
+  padding: 5px 10px;
+  margin: 5px 0;
+  border: 1px solid #5CB85C;
+  border-radius: 5px;
+  background-color: #5CB85C;
+  font-size: 1.1em;
+  font-weight: bold;
+  cursor: default;
+  color: white;
+}
+
+#mst-icon-table .no-image {
+  background: url("../../img/no-image.png") no-repeat;
+  cursor: pointer;
+  width: 200px;
+  height: 150px;
+}
+
+#mst-item-table .no-image {
+  background: url(../../img/no-image.png) no-repeat;
+  cursor: pointer;
+  width: 240px;
+  height: 136px;
+  background-size: cover;
+  background-position-y: -20px;
+}
+
+#mst-item-table .thumbnail {
+  cursor: pointer;
+  width: 240px;
+  height: 136px;
+  background-size: cover;
+  background-position-y: -20px;
+}
+/*  End table mst-control */
+/*** END TABLE ***/
+
+/*** MODAL ***/
+/* .modal .modal-footer { */
+/*   padding: 15px !important; */
+/* } */
+.modal.in .modal-dialog.w-image {
+  position: relative;
+  display: table;
+  overflow-x: auto;
+  width: auto;
+  min-width: 10%;
+  max-width: 65%;
+}
+
+.modal.fade .modal-dialog.w-image {
+  position: relative;
+  display: table;
+  overflow-x: auto;
+  width: auto;
+  min-width: 10%;
+  max-width: 65%;
+}
+/*** END MODAL ***/
+
+/*** LABEL ***/
+.exex-text-align {
+  text-align: right;
+}
+/*** END LABEL ***/
+
+/*** INPUT ***/
+#daterange.input-group {
+  padding-left: 10px !important;
+  padding-right: 10px !important;
+}
+/*** END INPUT ***/
+
+/*** RESPONSIVE ***/
+@media only screen and (max-width: 1024px) {
+  .exex-form .form-group, .exex-form-mst .form-group {
+    margin-bottom: 0px;
+  }
+  .form-horizontal .control-label {
+    padding-top: 7px;
+    margin-bottom: 0;
+    text-align: right;
+  }
+  #collapseLabel a:after {
+    font-family: 'Glyphicons Halflings';
+    content: "\e113";
+    color: #398FD3;
+  }
+  #collapseLabel a.collapsed:after {
+    content: "\e114";
+  }
+  .buttons {
+    margin-left: -7px;
+    padding: 0px 25px 5px 25px;
+  }
+
+  #exportCsv span.select2.select2-container {
+      width: 141px !important;
+  }
+}
+
+@media only screen and (max-width: 993px) {
+  .col-md-1, .col-md-10, .col-md-11, .col-md-12, .col-md-2, .col-md-3,
+    .col-md-4, .col-md-5, .col-md-6, .col-md-7, .col-md-8, .col-md-9 {
+    padding-right: 0px;
+    padding-left: 0px;
+  }
+  .exex-text-align {
+    text-align: start !important;
+  }
+  #daterange.input-group {
+    padding-left: 0px !important;
+    padding-right: 0px !important;
+  }
+}
+
+@media only screen and (min-width: 992px) {
+  .col-3 {
+    width: 29.166666665%;
+    float: left;
+  }
+}
+
+/*** END RESPONSIVE ***/
+
+
+#itemForm .input-group .input-group-addon {
+    border-color: #fff;
+    background: #fff;
+}
+
+.top-8 i{
+  top: -8px;
+}
+
+
+#selectItemUnit span.select2.select2-container.select2-container--default {
+  width: -webkit-calc(100% - 65px) !important;
+}
+
+#selectItemUnit .has-error .select2 .select2-selection{
+  border: 1px solid #9FA4AB !important;
+  box-shadow : none !important;
+}
+
+
+#selectItemUnit input[disabled] {
+    background: inherit;
+}
+
+#receiveRSVTable input{
+  padding: 6px;
+}
+
+#inventoryExcutionForm .panel-default {
+  box-shadow: none !important;
+}
+
+#inventoryExcutionForm .panel-body {
+  border-top: none;
+  padding: 0;
+}
+
+#inventoryExcutionForm .panel-heading {
+  font-weight: bold;
+  color: #3598dc;
+  background: #FFFFFF;
+}
+
+#inventoryExcutionForm .panel-group {
+  margin-bottom: 0;
+}
+
+
+ul.select2-results__options li.loading-results{
+  display: none;
+}

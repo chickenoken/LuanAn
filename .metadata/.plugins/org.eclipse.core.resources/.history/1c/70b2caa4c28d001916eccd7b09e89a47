@@ -1,0 +1,509 @@
+/* BUTTON */
+#buttonHref {
+  margin-top: 5px;
+}
+
+.popover {
+  font-family: inherit;
+}
+
+/* PAGINATION */
+div#pagination-top ul.pagination-small {
+  margin-bottom: 0px;
+  margin-top: 0px;
+  vertical-align: bottom;
+}
+
+/* SELECT 2 */
+span#select2-exportCsv-container {
+  text-align: left;
+}
+
+#exportCsv span.select2.select2-container {
+  text-align: left;
+  width: 180px !important;
+}
+
+/*** TABLE ***/
+th a:-webkit-any-link {
+  color: white;
+}
+
+th a[href] {
+  color: white;
+}
+
+th a i {
+  float: right;
+}
+
+.table {
+  margin-bottom: 0;
+}
+
+.table .btn {
+  margin-right: 0px;
+}
+
+.div-in-table {
+  display: flex;
+}
+
+.row-break {
+  word-break: break-all;
+  width: calc(100% - 80px);
+  width: -webkit-calc(100% - 80px);
+}
+
+/*  Table list */
+#table-search thead tr th {
+  background-color: #3598DC;
+  color: #FFF;
+  vertical-align: middle;
+  border-bottom: 1px solid #DDD;
+}
+
+/* break all td in table */
+#table-search tr td {
+  word-break : break-all;
+}
+/*  End table list */
+
+/*  Table mst-control */
+#mst-item-table tr th, #mst-bill-table tr th, #mst-stock-table tr th,
+  #mst-user-table tr th, #mst-group-table tr th, #mst-mail-table tr th,
+  #mst-icon-table tr th, #mst-bank-table tr th {
+  background-color: #87CEEB;
+  color: #FFF;
+  text-align: right;
+  vertical-align: middle;
+  border-bottom: 1px solid #FFF;
+}
+
+#mst-item-table tr td, #mst-bill-table tr td, #mst-stock-table tr td,
+  #mst-user-table tr td, #mst-group-table tr td, #mst-mail-table tr td,
+  #mst-icon-table tr td, #mst-bank-table tr td {
+  vertical-align: middle;
+}
+
+#mst-item-table tr th.th-last, #mst-bill-table tr th.th-last,
+  #mst-stock-table tr th.th-last, #mst-user-table tr th.th-last,
+  #mst-group-table tr th.th-last, #mst-mail-table tr th.th-last,
+  #mst-icon-table tr th.th-last, #mst-bank-table tr th.th-last {
+  border-bottom: 1px solid #DDD;
+}
+
+#itemListForm .inner_table {
+  overflow-x: hidden;
+  overflow-y: auto;
+  max-height: 260px;
+}
+
+#mst-group-table .apps-container {
+  padding: 5px;
+  height: 271px;
+  width: 100%;
+  overflow-y: auto;
+}
+
+#mst-group-table .app {
+  padding: 5px 10px;
+  margin: 5px 0;
+  border: 1px solid #5CB85C;
+  border-radius: 0px;
+  background-color: #5CB85C;
+  font-size: 1.1em;
+  font-weight: bold;
+  cursor: default;
+  color: white;
+}
+
+#mst-icon-table .no-image {
+  background: url("../../img/no-image.png") no-repeat;
+  cursor: pointer;
+  width: 200px;
+  height: 150px;
+}
+
+#mst-item-table .no-image {
+  background: url(../../img/no-image.png) no-repeat;
+  cursor: pointer;
+  width: 100%;
+  height: 110px;
+  background-size: cover;
+  background-position: 50%;
+}
+
+#mst-item-table .thumbnail {
+  cursor: pointer;
+  width: 100%;
+  height: 110px;
+  background-size: cover;
+  background-position: 50%;
+}
+
+/*  End table mst-control */
+/*** END TABLE ***/
+
+/*** MODAL ***/
+/* .modal .modal-footer { */
+/*   padding: 15px !important; */
+/* } */
+.modal.in .modal-dialog.w-image {
+  position: relative;
+  display: table;
+  overflow-x: auto;
+  width: auto;
+  min-width: 10%;
+  max-width: 65%;
+}
+
+.modal.fade .modal-dialog.w-image {
+  position: relative;
+  display: table;
+  overflow-x: auto;
+  width: auto;
+  min-width: 10%;
+  max-width: 65%;
+}
+/*** END MODAL ***/
+
+/*** LABEL ***/
+.exex-text-align {
+  text-align: right;
+}
+/*** END LABEL ***/
+
+
+#itemForm .input-group .input-group-addon.text-overflow,
+#setItemForm .input-group .input-group-addon.text-overflow {
+    border-color: #fff;
+    background: #fff;
+}
+
+.top-8 i{
+  top: -8px;
+}
+
+
+#selectItemUnit span.select2.select2-container.select2-container--default {
+  width: -webkit-calc(100% - 65px) !important;
+}
+
+#selectItemUnit .has-error .select2 .select2-selection{
+  border: 1px solid #9FA4AB !important;
+  box-shadow : none !important;
+}
+
+
+#selectItemUnit input[disabled] {
+    background: inherit;
+}
+
+#receiveRSVTable input{
+  padding: 6px;
+}
+
+#inventoryExcutionForm .panel-default {
+  box-shadow: none !important;
+}
+
+#inventoryExcutionForm .panel-body {
+  border-left: 0px solid #DDDDDD;
+  border-top: none;
+  padding: 0;
+}
+
+#inventoryExcutionForm .panel-heading {
+  font-weight: bold;
+  color: #3598dc;
+  background: #FFFFFF;
+}
+
+#inventoryExcutionForm .panel-group {
+  margin-bottom: 0;
+}
+
+#searchWarehouseForm .md-checkbox input[type=checkbox]:checked ~ label>.box,
+#warehouseListForm .md-checkbox input[type=checkbox]:checked ~ label>.box {
+    visibility: hidden;
+}
+#tableSalesReport thead tr th {
+    background-color: #398FD3;
+    color: #FFF;
+    border-top : 1px solid #398FD3;
+    border-bottom : 1px solid #398FD3;
+}
+
+#tableSalesReport thead tr th:first-child {
+    border-left : 1px solid #398FD3;
+}
+
+#tableSalesReport thead tr th:last-child {
+    border-right : 1px solid #398FD3;
+}
+
+#tableClone,#tableClone1 {
+  transition: width 0.1s ease-in-out;
+  margin-bottom: 0px;
+}
+
+.detail-control-table#tableBody{
+  overflow-x: hidden;
+  overflow-y: auto;
+  max-height: 246px;
+}
+
+#itemForm .col-1{
+  float: left;
+  padding-right: 10px;
+  padding-left: 10px;
+  width: 10.417555%;
+}
+#itemForm .col-2{
+  float: left;
+  padding-right: 10px;
+  padding-left: 10px;
+  width: 12.5%;
+}
+#itemForm .col-4{
+  float: left;
+  padding-right: 10px;
+  padding-left: 10px;
+  width: 37.5%;
+}
+#itemForm .col-5 {
+    width: 14.583%;
+    float: left;
+    padding-left: 10px;
+    padding-right: 10px;
+}
+
+#itemForm .col-3 {
+    width: 12.5%;
+    padding-left: 10px;
+    padding-right: 10px;
+    float: left;
+}
+.modal.in .modal-dialog.w-business-partner {
+  width: 1200px
+}
+.modal-dialog.w-owner-control {
+  width: 1280px;
+}
+
+/*** RESPONSIVE ***/
+@media only screen and (max-width: 1290px) {
+  .modal-dialog {
+    margin: 30px auto;
+  }
+  .modal.in .modal-dialog.w-business-partner {
+    width: 90%;
+  }
+  .modal-dialog.w-owner-control {
+    width: 97%;
+  }
+/*   .fileinput-new {
+    white-space: normal !important;
+  } */
+}
+@media only screen and (max-width: 1024px) {
+  .exex-form .form-group, .exex-form-mst .form-group {
+    margin-bottom: 0px;
+  }
+  .form-horizontal .control-label {
+    padding-top: 7px;
+    margin-bottom: 0;
+    text-align: right;
+  }
+  .buttons {
+    margin-left: -7px;
+    padding: 0px 25px 5px 25px;
+  }
+
+  #exportCsv span.select2.select2-container {
+      width: 141px !important;
+  }
+  .modal-dialog {
+    margin: 30px auto;
+  }
+  .modal.in .modal-dialog.w-business-partner {
+    width: 90%;
+  }
+}
+
+@media only screen and (max-width: 993px) {
+  .col-md-1, .col-md-10, .col-md-11, .col-md-12, .col-md-2, .col-md-3,
+    .col-md-4, .col-md-5, .col-md-6, .col-md-7, .col-md-8, .col-md-9 {
+    padding-right: 0px;
+    padding-left: 0px;
+  }
+  .exex-text-align {
+    text-align: start !important;
+  }
+  #daterange.input-group {
+    padding-left: 0px !important;
+    padding-right: 0px !important;
+  }
+
+  #itemForm .col-1,
+  #itemForm .col-2,
+  #itemForm .col-3,
+  #itemForm .col-4,
+  #itemForm .col-5 {
+      width: 100%;
+      padding-left: 10px;
+      padding-right: 10px;
+  }
+  .modal-dialog {
+    margin: 30px auto;
+  }
+  .modal.in .modal-dialog.w-business-partner {
+    width: 90%;
+  }
+  .modal-dialog.w-owner-control {
+    width: 80%;
+  }
+}
+
+@media only screen and ( max-width : 768px) {
+  .modal-dialog {
+    margin: 30px auto;
+  }
+  .modal.in .modal-dialog.w-business-partner {
+    width: 90%;
+  }
+}
+@media ( max-width : 425px) {
+  .height-duoble {
+     height: auto;
+  }
+}
+
+/*** END RESPONSIVE ***/
+.label-in-table {
+  min-height: 34px;
+  background: skyblue;
+  color: #FFF;
+}
+
+[uib-popover-popup].popover, [uib-popover-html-popup].popover, [uib-popover-template-popup].popover {
+    display: block !important;
+}
+
+.label-padding {
+    padding: 26px 10px 29px 0px !important;
+}
+
+#table-search1 thead tr th {
+    background-color: #87CEEB;
+    color: #FFF;
+    vertical-align: middle;
+    border: 1px solid #DDD !important;
+    white-space: nowrap;
+}
+
+#mst-stock-table .no-image {
+  background: url("../../img/no-image.png") no-repeat;
+  cursor: pointer;
+  width: 200px;
+  height: 150px;
+}
+
+#stockForm .no-image {
+  background: url("../../img/no-image.png") no-repeat;
+  cursor: pointer;
+  width: 200px;
+  height: 150px;
+}
+
+#stockForm .label-title {
+    background-color: #3598DC;
+}
+#tableBusiness td {
+	vertical-align: middle;
+}
+
+#groupForm #checkboxGroup {
+	background-color: white;
+	height: 34px;
+	padding-top: 7px;
+	padding-left: 5px;
+}
+
+#groupControl .headerTree{
+	background-color: #3598dc;
+	height: 35px;
+}
+
+#groupControl .headerTree .labelHeader{
+  color: white;
+  padding: 9px 0 0px 1px;
+  font-weight: bold;
+  word-break: keep-all;
+}
+#groupControl #groupForm .labelHeader{
+  color: white;
+  padding: 9px 0 0px 13px;
+}
+#groupControl #groupTree .inputSearch{
+  float: right;
+  height: 29px;
+  margin-top: 3px;
+}
+#groupControl #groupForm #mst-group-table tr th {
+	text-align: left !important;
+}
+#groupControl #groupForm #mst-group-table tr td ul {
+	border: 0px solid #CCC;
+}
+#groupControl #groupForm #mst-group-table .inputsearchUser{
+	float: right;
+    width: 180px;
+}
+.color-node{
+    color:#dccb03;
+}
+#groupControl #groupTree .boxShadow{
+	box-shadow: 0 0px 0px 1px rgb(221, 221, 221);
+}
+
+#groupControl #groupTree .jstree-anchor{
+    max-width: 100%;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+}
+.dot-line {
+    background-color: #fff;
+    border-top: 2px dashed green;
+    margin: 0px 12px 0px 0px;
+}
+.height-duoble {
+    height: 72px;
+}
+
+#todoControlForm .cardName {
+	width: 40px;
+	float: left;
+	text-align: center;
+	margin-top: 14px;
+}
+
+#todoControlForm .cardName i {
+  font-size: 20px
+}
+
+#billFormControl .scrollbar-custom {
+  max-height: 246px;
+  overflow: auto;
+}
+
+#billFormControl #tableHead.scroll-bar{
+  width: calc(100% - 10px) !important;
+  overflow-y :hidden;
+}
+#billFormControl #tableHead.no-scroll-bar{
+  width: 100% !important;
+  overflow-y :hidden;
+}

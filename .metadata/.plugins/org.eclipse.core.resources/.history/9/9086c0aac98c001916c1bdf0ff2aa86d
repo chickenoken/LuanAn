@@ -1,0 +1,38 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision:  $  $Date:  $
+ * @author : trung-hieu
+ */
+'use strict';
+exexSMSApp.factory('TodoMailPopupModel', [ 'BaseModel', function(BaseModel) {
+    var model = BaseModel.getInstance();
+
+    return model;
+}]);
+
+exexSMSApp.controller('TodoMailPopupCtrl',
+        ['$scope','TodoMailPopupModel', 'DialogsService', '$uibModalInstance', 'ServerService', 'Messages', 'data', 'RouteService',
+         function($scope, TodoMailPopupModel,  DialogsService, $uibModalInstance, ServerService, Messages, data, RouteService){
+
+        $scope.model = TodoMailPopupModel;
+
+        $scope.init = function(){
+            $scope.model.ownerList = data;
+        };
+
+        $scope.addMail = function() {
+            sessionStorage.removeItem("mailCreateDetail");
+            sessionStorage.removeItem("mailListDetail");
+            sessionStorage.setItem("mailTodoCustomer", JSON.stringify(data));
+            RouteService.gotoUrl("MailRegistration");
+        };
+
+        $scope.close = function() {
+            $uibModalInstance.close();
+        };
+
+        $scope.init();
+}]);

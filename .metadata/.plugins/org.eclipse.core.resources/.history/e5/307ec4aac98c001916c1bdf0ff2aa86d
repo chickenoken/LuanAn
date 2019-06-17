@@ -1,0 +1,1045 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision: $ $Date: $
+ * @author Quang-Thien
+ *
+ */
+
+'use strict';
+
+exexSMSApp.factory('PtlTodoModel', [ 'BaseModel', function(BaseModel) {
+    var model = BaseModel.getInstance();
+    model.form = {
+        groupCd : '',
+        todoListA : [],
+        todoListD : [],
+        todoListP : [],
+        historyList : [],
+        listProcessNotify : [],
+        listGroup : [],
+        listDay : [],
+        listMonth : [],
+        listSalesReport: [],
+        listEvents: []
+    };
+    model.hidden ={
+        pageSize: 20,
+        scrollDisabledTD : false,
+        scrollDisabledSR : false,
+        numberToDisplayTD: 0,
+        numberToDisplaySR: 0,
+        dayDate : '',
+        isReq : false,
+        isInfD : false,
+        isInfP : false,
+        lastIndex : null,
+        weekMode: false,
+        selectedDate: '',
+        resource:{}
+    };
+    return model;
+}]);
+
+exexSMSApp.controller('ptlTodoListCtrl',
+        ['$scope','$compile', '$timeout', 'RouteService', '$filter', 'PtlTodoModel', 'HeaderModel', 'DialogsService', 'uiCalendarConfig', 'ServerService', 'Messages',
+         function($scope, $compile, $timeout, RouteService, $filter, PtlTodoModel, HeaderModel, DialogsService, uiCalendarConfig, ServerService, Messages) {
+
+    $scope.model = PtlTodoModel;
+    $scope.modelHeader = HeaderModel;
+
+    $scope.init = function(model) {
+        $('.fc-prev-button').addClass('btn btn-success waves-effect waves-light');
+        $('.fc-today-button').addClass('btn btn-success waves-effect waves-light');
+        $('.fc-next-button').addClass('btn btn-success waves-effect waves-light');
+
+        sessionStorage.removeItem("applyStatus");
+        $scope.model.hidden.dayDate = $filter('date')(DateUtils.getCurrentDate(), 'yyyy/MM/dd');
+        $scope.loadInformationList();
+        $scope.model.hidden.weekMode = true;
+        $scope.model.hidden.selectedDate = $filter('date')(DateUtils.getCurrentDate(), 'yyyy/MM/dd');
+        $scope.getEventsDate(DateUtils.getCurrentDate());
+        if(locale == 'ja'){
+            $scope.model.hidden.resource = {
+                    title2Week: 'YYYY年M月D日',
+                    titleMonth: 'YYYY年M月',
+                    titleWeek: 'YYYY年M月 D日',
+                    titleDate: 'YYYY年M月D日'
+            };
+        }else{
+            $scope.model.hidden.resource = {
+                    title2Week: 'D MMM YYYY',
+                    titleMonth: 'MMM, YYYY',
+                    titleWeek: 'D MMM, YYYY',
+                    titleDate: 'ddd, DD MMM, YYYY'
+            };
+        }
+        $scope.$on("PtlTodoList#getEvents", function(evt, param) {
+            $scope.getEvents(DateUtils.getCurrentDate());
+            $scope.getEventsDate(new Date($scope.model.hidden.selectedDate));
+        });
+    };
+
+    //Load data Todolist(infinite scroll)
+    $scope.loadMoreTD = function() {
+        $scope.model.hidden.scrollDisabledTD = true;
+        var length = $scope.model.form.historyList.length;
+        var page = Math.ceil(length/$scope.model.hidden.pageSize);
+        var params = {
+            page : page + 1,
+            pageSize : $scope.model.hidden.pageSize
+        };
+        ServerService.doPost('PtlTodoList/searchTodoList', params).then(
+            function(okResult) {
+                var tmpList = angular.copy(okResult.data.resultList);
+                for (var i = 0; i < tmpList.length; i++) {
+                    var item = tmpList[i];
+                    $scope.model.form.historyList.push(item);
+                }
+                $scope.model.hidden.numberToDisplayTD += 20;
+                setTimeout(function(){
+                    if(tmpList.length < $scope.model.hidden.pageSize){
+                        $scope.model.hidden.scrollDisabledTD = true;
+                    }else{
+                        $scope.model.hidden.scrollDisabledTD = false;
+                    }
+                },500)
+            },
+            function(errResult){}
+        );
+    };
+
+    $scope.$on("PtlTodoList#loadSalesReportList", function(evt, param) {
+        $scope.model.form.listSalesReport = [];
+        $scope.loadMoreSR();
+    });
+
+    //Load data SalesReportList(infinite scroll)
+    $scope.loadMoreSR = function() {
+        $scope.model.hidden.scrollDisabledSR = true;
+        var length = $scope.model.form.listSalesReport.length;
+        var page = Math.ceil(length/$scope.model.hidden.pageSize);
+        var params = {
+            page : page + 1,
+            pageSize : $scope.model.hidden.pageSize
+        };
+        ServerService.doPost('PtlTodoList/searchSalesReportList', params).then(
+            function(okResult) {
+                var tmpList = angular.copy(okResult.data.resultList);
+                for (var i = 0; i < tmpList.length; i++) {
+                    var item = tmpList[i];
+                    $scope.model.form.listSalesReport.push(item);
+                }
+                $scope.model.hidden.numberToDisplaySR += 20;
+                if(tmpList.length < $scope.model.hidden.pageSize){
+                    $scope.model.hidden.scrollDisabledSR = true;
+                }else{
+                    $scope.model.hidden.scrollDisabledSR = false;
+                }
+            },
+            function(errResult){}
+        );
+    };
+
+    $scope.loadInformationList = function() {
+        var params = {
+                searchMonth : DateUtils.getCurrentDate(),
+                searchDate : DateUtils.getCurrentDate()
+        };
+        ServerService.doPost('PtlTodoList/loadInformation', params).then(function(okResult) {
+            var error = okResult.data.failed;
+            var success = okResult.data.success;
+            if(!ValidateUtil.isValidTextEmpty(error)){
+                DialogsService.showError(Messages.getMessage('system.error'), error);
+                return;
+            }else{
+                setTimeout(function(){
+                    $scope.model.form.todoListA = $scope.modelHeader.hidden.listStatus[0];
+                    $scope.model.form.todoListD = $scope.modelHeader.hidden.listStatus[1];
+                    $scope.model.form.todoListP = $scope.modelHeader.hidden.listStatus[2];
+                    $scope.model.hidden.isReq = $scope.model.form.todoListA.count > 0 ? true : false;
+                    $scope.model.hidden.isInfD = $scope.model.form.todoListD.count > 0 ? true : false;
+                    $scope.model.hidden.isInfP = $scope.model.form.todoListP.count > 0 ? true : false;
+                })
+
+                $scope.model.form.listProcessNotify = okResult.data.listProcessNotify;
+
+                // call refetch events
+                angular.element('.calendar').fullCalendar('refetchEvents');
+            }
+        });
+    };
+
+    $scope.convertDataDay = function(data, date){
+        var tmp = [];
+        var length = data.length;
+        var time = new Date(date).getTime();
+
+        for(var i =0; i < length; i++){
+            var item = data[i];
+            var startTime = new Date(item.scheduleStartYmd).getTime();
+            var endTime = new Date(item.scheduleEndYmd).getTime();
+            var codeName = '';
+            if(!ValidateUtil.isValidTextEmpty(item.codeName)){
+                codeName =  item.codeName + ':';
+            }
+            var textFormmat = '';
+            if(startTime === time && endTime === time){
+                textFormmat = item.scheduleStartHm + Messages.getMessage('common.comma.001') + item.scheduleEndHm;
+            }else if(startTime < time && endTime > time){
+                textFormmat = Messages.getMessage('common.comma.001');
+            }else if(startTime < time && endTime === time){
+                textFormmat = Messages.getMessage('common.comma.001') + item.scheduleEndHm;
+            }else if(startTime === time && endTime > time){
+                textFormmat = item.scheduleStartHm + Messages.getMessage('common.comma.001');
+            }
+
+            var itemTmp = {
+                    scheduleCd : item.scheduleCd,
+                    title : codeName + item.scheduleName,
+                    textFormmat : textFormmat
+            };
+            tmp.push(itemTmp);
+        }
+        return tmp;
+
+    };
+
+    $scope.convertData = function(){
+        var tmp = [];
+        angular.forEach($scope.model.form.listMonth, function(item,i){
+            var codeName = !ValidateUtil.isValidTextEmpty(item.codeName) ? (item.codeName + ':') : '';
+            // Check all day events.
+            var newEndDate = item.scheduleEndYmd;
+            var newEndTime = item.scheduleEndHm;
+            var startDate = new Date(item.scheduleStartYmd).getTime();
+            var endDate = new Date(item.scheduleEndYmd).getTime();
+            var title = codeName + item.scheduleName;
+
+            // khoi: create new endDate, endTime when schedule is allDay
+            // example: endDate = 2017/12/20
+            //          newEndDate = 2017/12/21
+            //          newEndTime = 00:00
+            // for showing event on fullCalendar mode month
+            // fuuCalendar bug: it cannot show event which have startTime = 00:00, endTime = 23:59 in one day
+            if(item.allDay == true){
+                var newEndDate = (moment(item.scheduleEndYmd).add(1, 'day')).format("YYYY/MM/DD");
+                newEndTime = "00:00";
+            }
+            /*if(item.allDay == true){
+                if(item.scheduleStartYmd != item.scheduleEndYmd &&
+                        !StringUtils.isEmpty(item.scheduleStartHm)){
+                    title = item.scheduleStartHm + ' ' + title;
+                }
+            }else{
+                title = item.scheduleStartHm + ' ' + title;
+            }*/
+            var itemTmp = {
+                    scheduleCd : item.scheduleCd,
+                    userCd : item.userCd,
+                    title : title,
+                    start : new Date(item.scheduleStartYmd + ' ' + item.scheduleStartHm),
+                    end : new Date(newEndDate + ' ' + newEndTime),
+                    backgroundColor : item.scheduleColor,
+                    borderColor : item.scheduleColor,
+                    allDay: item.allDay,
+                    salesReportNo: item.salesReportNo
+            };
+            tmp.push(itemTmp);
+
+        });
+        return tmp;
+    };
+
+    //redirect to ptlStateList page
+    $scope.redirectToStateList = function(applyStatus){
+        if(!ValidateUtil.isValidTextEmpty(applyStatus)){
+            var applyStatus = {'applyStatus' : applyStatus};
+            sessionStorage.setItem("applyStatus", JSON.stringify(applyStatus));
+        }
+        sessionStorage.removeItem("dataSearch");
+        RouteService.gotoUrl('PtlStateList');
+    };
+
+    //redirect to ptlStateList page
+    $scope.redirectToApproveList = function(applyStatus){
+        if(!ValidateUtil.isValidTextEmpty(applyStatus)){
+            var applyStatus = {'applyStatus' : applyStatus};
+            sessionStorage.setItem("applyStatus", JSON.stringify(applyStatus));
+        }
+        sessionStorage.removeItem("dataSearch");
+        RouteService.gotoUrl('PtlApproveList');
+    };
+
+    /**
+     * get events when click next, prev, today
+     */
+    $scope.getEvents = function(date){
+        var params = {
+                searchMonth : new Date(date),
+                searchDate : null
+        };
+        ServerService.doPost('PtlTodoList/getEvents', params)
+        .then(function(okResult) {
+            $scope.model.form.listMonth = okResult.data.listEvents;
+            angular.element('.calendar').fullCalendar('refetchEvents');
+        });
+    };
+
+    var dialogIsOpen = false;
+    var openDialogDate = "";
+    var popoverElement;
+
+    $scope.closePopovers = function() {
+        dialogIsOpen = false;
+        openDialogDate = "";
+        $('.popover').not(this).popover('hide');
+        $('.popover').not(this).popover('destroy');
+    }
+
+    /**
+     * get event on day click
+     */
+    $scope.getEventOnDay = function(objDate, jsEvent, view){
+        $scope.model.hidden.selectedDate = objDate.format('YYYY/MM/DD');
+        if(!$scope.model.hidden.weekMode){
+            /*var thisMonth = new Date(uiCalendarConfig.calendars['calendar']
+                .fullCalendar( 'getDate' )).getMonth() + 1;
+            var selectedMonth = new Date(objDate).getMonth() + 1;
+            if(thisMonth > selectedMonth || thisMonth < selectedMonth){
+                //uiCalendarConfig.calendars['calendar'].fullCalendar( 'gotoDate', objDate );
+                $scope.closePopovers();
+                return;
+            }*/
+            /*if(view.type != 'agendaDay'){
+                uiCalendarConfig.calendars['calendar'].fullCalendar( 'gotoDate', objDate );
+            } else {
+                var eventClickDate = objDate.format('YYYY/MM/DD');
+                var nowDate = uiCalendarConfig.calendars['calendar'].fullCalendar( 'getDate' ).format('YYYY/MM/DD');
+                if(eventClickDate == nowDate){
+                    uiCalendarConfig.calendars['calendar'].fullCalendar( 'gotoDate', objDate );
+                }
+            }*/
+            var params = {
+                    searchMonth : null,
+                    searchDate : objDate
+            };
+            ServerService.doPost('PtlTodoList/getEvents', params)
+                .then(function(okResult) {
+                    $scope.showPopupSchedule(objDate, okResult.data.listEvents, jsEvent, view)
+                });
+        }else{
+            //uiCalendarConfig.calendars['calendar'].fullCalendar( 'gotoDate', objDate );
+            $scope.getEventsDate(objDate);
+        }
+
+    };
+
+    /**
+     * show popover
+     */
+    $scope.showPopupSchedule = function(objDate, segs, jsEvent, view){
+        var popTemplate = $(
+            '<div class="popover popover-ptlTodo">' +
+                '<div class="arrow"></div>' +
+                '<div class="popover-header fc-header fc-widget-header">' +
+                    '<button id="closepopover" type="button" class="close fc-close" aria-hidden="true">&times;</button>' +
+                    '<span class="popover-title fc-title"></span>' +
+                    '<span class="fc-addNew" style="cursor: pointer;float: right;">' +
+                        '<i class="glyphicon glyphicon-plus"' +
+                        'style="color: red;font-weight: bold;"></i>' +
+                    '</span>' +
+                '</div>' +
+                '<div class="popover-content"></div>' +
+            '</div>');
+        popTemplate.find('.fc-close').bind('click', function(){
+            $scope.closePopovers();
+        });
+        var presentDate = objDate.format('YYYY/MM/DD');
+        var i;
+        var segContainer = '';
+        var hasEvents = false;
+        for (i = 0; i < segs.length; i++) {
+            var eventDate = segs[i].scheduleStartYmd;
+            var eventEndDate = segs[i].scheduleEndYmd;
+            var hours = new Date(uiCalendarConfig.calendars['calendar']
+                .fullCalendar( 'getDate' )).getHours() - 7; //returns 0-23
+            if((presentDate == eventDate || presentDate == eventEndDate
+                    || (presentDate >= eventDate && presentDate <= eventEndDate))
+                    && view.type == 'month'){
+                segContainer += $scope.createEvent(segs[i], jsEvent, view);
+                hasEvents = true;
+            } else if((presentDate == eventDate || presentDate == eventEndDate
+                    || (presentDate >= eventDate && presentDate <= eventEndDate))
+                    && view.type != 'month'){
+                var eventHours = parseInt(segs[i].scheduleStartHm.split(':')[0]);
+                if ($(jsEvent.target).hasClass('fc-bg')
+                        || $(jsEvent.target).hasClass('fc-widget-content')
+                        || $(jsEvent.currentTarget).hasClass('fc-time-grid-event')){
+                    //Hours
+                    if(!ValidateUtil.isValidTextEmpty(segs[i].scheduleStartHm)){
+                        if(eventHours == hours && segs[i].scheduleEndHm != '23:59'
+                            && eventDate == eventEndDate){
+                            segContainer += $scope.createEvent(segs[i], jsEvent, view);
+                            hasEvents = true;
+                        }
+                    }
+                }else{
+                    //all day
+                    if(!ValidateUtil.isValidTextEmpty(segs[i].scheduleStartHm)){
+                        if((eventHours == hours && segs[i].scheduleEndHm == '23:59')
+                                || (presentDate >= eventDate && presentDate <= eventEndDate)){
+                            segContainer += $scope.createEvent(segs[i], jsEvent, view);
+                            hasEvents = true;
+                        }
+                    }
+                }
+            }
+        }
+        if(hasEvents){
+            popoverElement = $(jsEvent.target);
+            if(dialogIsOpen && openDialogDate == presentDate){
+                $scope.closePopovers();
+            } else if(dialogIsOpen && openDialogDate != presentDate){
+                $scope.closePopovers();
+                $(jsEvent.target).popover({
+                    title: presentDate,
+                    content: segContainer,
+                    template: popTemplate,
+                    placement: 'auto',
+                    html: 'true',
+                    trigger: 'manual',
+                    animation: 'true',
+                    container: 'body'
+                }).popover('show');
+
+                $('.popover').find('.fc-day-grid-event').bind('click', function(){
+                    var eventVal = {
+                            'scheduleCd':this.attributes['scheduleCd'].value,
+                            'start': new Date(this.attributes['start'].value),
+                            'morePopup': true
+                    };
+                    $scope.scheduleView(eventVal, jsEvent, view);
+                });
+                dialogIsOpen = true;
+                openDialogDate = presentDate;
+            } else if (!dialogIsOpen){
+                $(jsEvent.target).popover({
+                    title: presentDate,
+                    content: segContainer,
+                    template: popTemplate,
+                    placement: 'auto',
+                    html: 'true',
+                    trigger: 'manual',
+                    animation: 'true',
+                    container: 'body'
+                }).popover('show');
+                $('.popover').find('.fc-day-grid-event').bind('click', function(){
+                    var eventVal = {
+                            'scheduleCd':this.attributes['scheduleCd'].value,
+                            'start': new Date(this.attributes['start'].value),
+                            'morePopup': true
+                    };
+                    $scope.scheduleView(eventVal, jsEvent, view);
+                });
+                dialogIsOpen = true;
+                openDialogDate = presentDate;
+            }
+            $('.popover-title').html(presentDate);
+            $('.fc-addNew').bind('click', function(){
+                $scope.closePopovers();
+                if(view.type != 'month'){
+                    if ($(jsEvent.target).hasClass('fc-bg')
+                            || $(jsEvent.target).hasClass('fc-title')){
+                        //Hours
+                        $scope.scheduleAdd(objDate, false);
+                    }else{
+                        //All day
+                        $scope.scheduleAdd(objDate, true);
+                    }
+                } else {
+                    $scope.scheduleAdd(objDate, true);
+                }
+            });
+        } else {
+            $scope.closePopovers();
+            if(view.type != 'month'){
+                if ($(jsEvent.target).hasClass('fc-bg')
+                        || $(jsEvent.target).hasClass('fc-title')){
+                    //Hours
+                    if(!StringUtils.isEmpty(segs) && !segs[0].allDay){
+                        $scope.scheduleView(objDate, jsEvent, view);
+                    } else {
+                        $scope.scheduleAdd(objDate, false);
+                    }
+                }else{
+                    //All day
+                    $scope.scheduleAdd(objDate, true);
+                }
+            } else {
+                $scope.scheduleAdd(objDate, true);
+            }
+        }
+    };
+
+    $('body').on('click', function (e) {
+        // close the popover if: click outside of the popover || click on the close button of the popover
+        if (popoverElement &&
+                ((!popoverElement.is(e.target)
+                        && popoverElement.has(e.target).length === 0
+                        && $('.popover').has(e.target).length === 0)
+                        || (popoverElement.has(e.target)
+                                && e.target.id === 'closepopover'))) {
+            $scope.closePopovers();
+        }
+    });
+
+    $scope.createEvent = function(evt, jsEvent, view){
+        var content = '<a class="fc-day-grid-event fc-h-event fc-event fc-start fc-end"'
+        content += 'scheduleCd ="' + evt.scheduleCd + '" start="' + evt.scheduleStartYmd + ' ' + evt.scheduleStartHm + '"';
+        if(!ValidateUtil.isValidTextEmpty(evt.scheduleColor)){
+            content += 'style="background-color:' + evt.scheduleColor
+                + ';border-color:' + evt.scheduleColor + ';min-height: 20px;"';
+        }
+        var codeName = '';
+        if(!StringUtils.isEmpty(evt.codeName)){
+            codeName = evt.codeName + ':';
+        }
+        content += '><div class="fc-content"><span class="fc-title">' + codeName + evt.scheduleName + '</span></div></a>';
+        return content;
+    };
+
+    // calendar
+
+    /* alert on eventClick */
+    $scope.alertOnEventClick = function(calEvent, jsEvent, view){
+    };
+
+    /* alert on Drop */
+    $scope.alertOnDrop = function(event, delta, revertFunc, jsEvent, ui, view){
+    };
+    /* alert on Resize */
+    $scope.alertOnResize = function(event, delta, revertFunc, jsEvent, ui, view ){
+    };
+
+    /* Change View */
+    $scope.changeView = function(view,calendar) {
+        $('.fc-week-button').removeClass('fc-state-active');
+        $scope.model.hidden.weekMode = false;
+        $scope.closePopovers();
+        if(view != 'week'){
+            $scope.uiConfig = {
+                    calendar:{
+                        scrollTime:'09:00:00',
+                        locale: locale,
+                        axisFormat: 'HH:mm',
+                        contentHeight: 450,
+                        editable: false,
+                        firstDay : 1,
+                        selectable: true,
+                        selectHelper: true,
+                        views: {
+                            month: {
+                                eventLimit: 3,
+                                titleFormat: $scope.model.hidden.resource.titleMonth
+                            },
+                            agendaWeek: {
+                                titleFormat: $scope.model.hidden.resource.titleWeek
+                            },
+                            agendaDay: {
+                                titleFormat: $scope.model.hidden.resource.titleDate
+                            }
+                        },
+                        header:{
+                            left: 'title',
+                            center: '',
+                            right: 'prev,today,next'
+                        },
+                        eventClick: $scope.scheduleView,
+                        eventDrop: $scope.alertOnDrop,
+                        eventResize: $scope.alertOnResize,
+                        eventRender: $scope.eventRender,
+                        //eventAfterAllRender : $scope.eventViewAfterAllRender,
+                        viewRender : $scope.eventViewRender,
+                        eventLimitClick: function (cellInfo, jsEvent, view) {
+                            $scope.getEventOnDay(cellInfo.date, jsEvent, view);
+                        },
+                        dayClick: $scope.getEventOnDay
+                    }
+            };
+            uiCalendarConfig.calendars[calendar].fullCalendar('render');
+        }
+        $timeout(function() {
+            if(view == 'month'){
+                $('.fc-agendaWeek-button').removeClass('fc-state-active');
+                $('.fc-agendaDay-button').removeClass('fc-state-active');
+                $('.fc-month-button').addClass('fc-state-active');
+                uiCalendarConfig.calendars[calendar].fullCalendar('changeView',view);
+            }else if(view == 'agendaWeek'){
+                $('.fc-agendaDay-button').removeClass('fc-state-active');
+                $('.fc-month-button').removeClass('fc-state-active');
+                $('.fc-agendaWeek-button').addClass('fc-state-active');
+                uiCalendarConfig.calendars[calendar].fullCalendar('changeView',view);
+            }else if(view == 'agendaDay'){
+                $('.fc-agendaWeek-button').removeClass('fc-state-active');
+                $('.fc-month-button').removeClass('fc-state-active');
+                $('.fc-agendaDay-button').addClass('fc-state-active');
+                uiCalendarConfig.calendars[calendar].fullCalendar('changeView',view);
+            }else{
+                $scope.uiConfig = {
+                        calendar:{
+                            scrollTime:'09:00:00',
+                            locale: locale,
+                            axisFormat: 'HH:mm',
+                            contentHeight: 200,
+                            editable: false,
+                            firstDay: (new Date().getDay()),
+                            defaultView: 'week',
+                            selectable: true,
+                            selectHelper: true,
+                            views: {
+                                week: {
+                                    type: 'basic',
+                                    duration: {weeks: 2},
+                                    eventLimit: 3,
+                                    titleFormat: $scope.model.hidden.resource.title2Week
+                                },
+                                month: {
+                                    eventLimit: 3,
+                                    titleFormat: $scope.model.hidden.resource.titleMonth
+                                },
+                                agendaWeek: {
+                                    titleFormat: $scope.model.hidden.resource.titleWeek
+                                },
+                                agendaDay: {
+                                    titleFormat: $scope.model.hidden.resource.titleDate
+                                }
+                            },
+                            header:{
+                                left: 'title',
+                                center: '',
+                                right: 'prev,today,next'
+                            },
+                            eventClick: $scope.scheduleView,
+                            eventDrop: $scope.alertOnDrop,
+                            eventResize: $scope.alertOnResize,
+                            eventRender: $scope.eventRender,
+                            //eventAfterAllRender : $scope.eventViewAfterAllRender,
+                            viewRender : $scope.eventViewRender,
+                            eventLimitClick: function (cellInfo, jsEvent, view) {
+                                $scope.getEventOnDay(cellInfo.date, jsEvent, view);
+                            },
+                            dayClick: $scope.getEventOnDay
+                        }
+                };
+                uiCalendarConfig.calendars[calendar].fullCalendar('render');
+                $('.fc-agendaWeek-button').removeClass('fc-state-active');
+                $('.fc-month-button').removeClass('fc-state-active');
+                $('.fc-agendaDay-button').removeClass('fc-state-active');
+                $('.fc-week-button').addClass('fc-state-active');
+                $scope.model.hidden.weekMode = true;
+                $scope.model.hidden.selectedDate = $filter('date')(DateUtils.getCurrentDate(), 'yyyy/MM/dd');
+                $scope.getEventsDate(DateUtils.getCurrentDate());
+            }
+        });
+        $scope.getEvents(DateUtils.getCurrentDate());
+    };
+    /* Change View */
+    $scope.renderCalender = function(calendar) {
+      $timeout(function() {
+        if(uiCalendarConfig.calendars[calendar]){
+          uiCalendarConfig.calendars[calendar].fullCalendar('render');
+        }
+      });
+    };
+
+    /* Render Tooltip */
+    $scope.eventRender = function( event, element, view ) {
+    };
+
+    $scope.eventViewAfterAllRender = function(view ) {
+        //Use view.intervalStart and view.intervalEnd to find date range of holidays
+        //Make ajax call to find holidays in range.
+        var fourthOfJuly = moment('2016-01-08','YYYY-MM-DD');
+        var holidays = [fourthOfJuly];
+        var holidayMoment;
+        for(var i = 0; i < holidays.length; i++) {
+            holidayMoment = holidays[i];
+            if (view.name == 'month') {
+                $("td[data-date=" + holidayMoment.format('YYYY-MM-DD') + "]").addClass('holiday');
+            } else if (view.name =='agendaWeek') {
+                var classNames = $("th:contains(' " + holidayMoment.format('M/D') + "')").attr("class");
+                if (classNames != null) {
+                    var classNamesArray = classNames.split(" ");
+                    for(var i = 0; i < classNamesArray.length; i++) {
+                        if(classNamesArray[i].indexOf('fc-col') > -1) {
+                            $("td." + classNamesArray[i]).addClass('holiday');
+                            break;
+                        }
+                    }
+                }
+            } else if (view.name == 'agendaDay') {
+                if(holidayMoment.format('YYYY-MM-DD') == $('#calendar').fullCalendar('getDate').format('YYYY-MM-DD')) {
+                    $("td.fc-col0").addClass('holiday');
+                };
+            }
+        }
+    };
+
+    $scope.selectDate = function (start, end, jsEvent, view) {
+        console.log(start);
+        console.log(end);
+    };
+
+    $scope.eventViewRender = function(view, element){
+        if(locale == 'ja'){
+            view.title = view.title.replace('–', '～');
+            angular.element('.fc-left').html('<h2>' + view.title + '</h2>');
+        }
+        $('.fc-prev-button').addClass('btn btn-success waves-effect waves-light');
+        $('.fc-today-button').addClass('btn btn-success waves-effect waves-light');
+        $('.fc-next-button').addClass('btn btn-success waves-effect waves-light');
+        angular.element('.btn-schedule-lst').remove();
+        angular.element('.fc-button-group').prepend('<span class="btn-schedule-lst waves-effect waves-light"><i class="fa fa-list" aria-hidden="true"></i></span>')
+        angular.element('.btn-schedule-lst').attr('ng-click', "gotoScheduleList()");
+        $compile(angular.element('.btn-schedule-lst'))($scope);
+        if($scope.model.hidden.weekMode){
+            angular.element('.fc-prev-button').remove();
+            angular.element('.fc-today-button').remove();
+            angular.element('.fc-next-button').remove();
+        }
+
+        // duc: getEvents for the month that showing.
+        // fullCalendar bug: it cannot show event when locale vi and mode week
+        var date = view.intervalStart.format('YYYY/MM/DD');
+        if(view.name != 'agendaDay'){
+            $scope.getEvents(date);
+        }
+        $compile(element)($scope);
+    };
+
+    $scope.alertOnEventHover = function(event, jsEvent, view, $popover, element){
+    };
+
+    $scope.scheduleAdd = function(date, allDayFlag){
+        var dateEvent = angular.element('.fc-left').children().html();
+        if(ValidateUtil.isValidTextEmpty(date)){
+            dateEvent = dateEvent.replace('年','/').replace('月','/').replace('日','');
+        } else {
+            dateEvent = date.format('YYYY/MM/DD HH:mm:SS');
+        }
+        if(uiCalendarConfig.calendars['calendar'].fullCalendar( 'getView' ).type == 'month'){
+            allDayFlag = false;
+        }
+        var param = {
+                userCd : null,
+                userName : null,
+                scheduleCd : null,
+                scheduleName : null,
+                scheduleDate : dateEvent,
+                screenMode : 'INSERT',
+                allDayFlag : allDayFlag,
+                topMode : true,
+                viewName: uiCalendarConfig.calendars['calendar'].fullCalendar( 'getView' ).type
+        };
+        sessionStorage.setItem("scheduleInfo", JSON.stringify(param));
+        sessionStorage.removeItem("scheduleSetting");
+        DialogsService.showDialog('PtlTodoControl', 'ptlTodoControlCtrl', param, {size: 'ptlTodo-control',});
+        if(allDayFlag){
+            $('.timepicker').prop('disabled', true);
+        }else{
+            $('.timepicker').prop('disabled', false);
+        }
+    };
+
+    $scope.gotoScheduleList = function(){
+        RouteService.gotoUrl('ScheduleList');
+    }
+
+    $scope.scheduleView = function(calEvent, jsEvent, view){
+        var param = {
+                scheduleCd :calEvent.scheduleCd,
+                salesReportNo: calEvent.salesReportNo,
+                screenMode : 'UPDATE',
+                topMode : true
+        };
+        if(StringUtils.isEmpty(calEvent.scheduleCd)){
+            if(calEvent.morePopup == undefined){
+                $scope.getEventOnDay(calEvent.start, jsEvent, view);
+                return;
+            }
+        }
+
+        $scope.closePopovers();
+        sessionStorage.setItem("scheduleInfo", JSON.stringify(param));
+        sessionStorage.removeItem("scheduleSetting");
+        DialogsService.showDialog('PtlTodoControl', 'ptlTodoControlCtrl', param, {size: 'ptlTodo-control'});
+    };
+
+    /**
+     * calendar config
+     */
+    $scope.uiConfig = {
+            calendar:{
+                scrollTime:'09:00:00',
+                locale: locale,
+                axisFormat: 'HH:mm',
+                contentHeight: 200,
+                editable: false,
+                firstDay: (new Date().getDay()),
+                defaultView: 'week',
+                selectable: true,
+                selectHelper: true,
+                views: {
+                    week: {
+                        type: 'basic',
+                        duration: {weeks: 2},
+                        eventLimit: 3,
+                        titleFormat: $scope.model.hidden.resource.title2Week
+                    },
+                    month: {
+                        eventLimit: 3,
+                        titleFormat: $scope.model.hidden.resource.titleMonth
+                    },
+                    agendaWeek: {
+                        titleFormat: $scope.model.hidden.resource.titleWeek
+                    },
+                    agendaDay: {
+                        titleFormat: $scope.model.hidden.resource.titleDate
+                    }
+                },
+                header:{
+                    left: 'title',
+                    center: '',
+                    right: 'prev,today,next'
+                },
+                eventClick: $scope.scheduleView,
+                eventDrop: $scope.alertOnDrop,
+                eventResize: $scope.alertOnResize,
+                eventRender: $scope.eventRender,
+                //eventAfterAllRender : $scope.eventViewAfterAllRender,
+                viewRender : $scope.eventViewRender,
+                eventLimitClick: function (cellInfo, jsEvent, view) {
+                    $scope.getEventOnDay(cellInfo.date, jsEvent, view);
+                },
+                dayClick: $scope.getEventOnDay
+            }
+    };
+
+    /* add event sources array to calendar*/
+    $scope.eventsScheudle = function (start, end, timezone, callback) {
+        var events = [];
+        //$scope.convertData();
+        events = $scope.convertData();
+        callback(events);
+    };
+
+    $scope.eventSources = [$scope.eventsScheudle];
+
+    $scope.calcHistoryHeight = function(){
+        var session = angular.fromJson(sessionStorage.getItem("session"));
+        var height = 0;
+        if(session.workflow == '0000000000'){
+            height = 513 + $('#workflow').height();
+        }else{
+            height = 503 - $('#workflow').height();
+        }
+        return 'height-'+height;
+    };
+
+    $scope.calcHistoryMaxHeight = function(){
+        var session = angular.fromJson(sessionStorage.getItem("session"));
+        var height = 0;
+        if(session.workflow == '0000000000'){
+            height = 503 + $('#workflow').height() - 76;
+        }else{
+            height = 503 - $('#workflow').height() - 76;
+        }
+        return {
+            'max-height' : height
+        };
+    };
+
+    $scope.gotoProcessBusiness = function(row){
+        if(!ValidateUtil.isValidTextEmpty(row.businessCd)){
+            var prjBusiness = {
+                    'projectSno' : row.projectSno,
+                    'businessCd' : row.businessCd,
+                    'redirectUrl' : 'PtlTodoList'
+            };
+            sessionStorage.setItem("prjBusiness", JSON.stringify(prjBusiness));
+            RouteService.gotoUrl('SfaProjectProcessManagement');
+        }
+    };
+
+    $scope.gotoUrl = function(url, row, detail){
+        switch (url) {
+        case 'TodoCustomerList':
+            var param = {
+                todoList : [row.todoNo],
+                listDataAjax : {'no': row.todoNo, 'name': row.todoName},
+                searchFinished : true
+            }
+            sessionStorage.setItem("todoDetail", JSON.stringify(param));
+            sessionStorage.removeItem("todoCustomerList");
+            RouteService.gotoUrl('TodoCustomerList');
+            break;
+        case 'SalesReport':
+            var todoDetail = row.custName;
+            if(!StringUtils.isEmpty(row.siteName)){
+                todoDetail += " / " + row.siteName;
+            }
+            if(!StringUtils.isEmpty(row.deptName)){
+                todoDetail += " / " + row.deptName;
+            }
+            if(!StringUtils.isEmpty(row.position)){
+                todoDetail += " / " + row.position;
+            }
+            var salesReport = {
+                salesReportNo : detail.salesReportNo,
+                isDisabled : false,
+                screenMode: 'UPDATE',
+                isTodo : true,
+                todoName: row.todoName,
+                todoDetail: todoDetail,
+                todoNo: row.todoNo,
+                lineNo: row.lineNo,
+            };
+            sessionStorage.setItem("salesReport", JSON.stringify(salesReport));
+            sessionStorage.removeItem("salesReportUrl");
+            sessionStorage.removeItem("todoDetail");
+            var options = {size: 'lg'};
+            DialogsService.showDialog('SalesReportDialog','SalesReportControlCtrl', null,options).result.then(
+            function (isClosed) {
+                if(!isClosed){
+                    $scope.getEvents(DateUtils.getCurrentDate());
+                    $scope.searchReportList(row);
+                }
+            });
+            break;
+        }
+    };
+
+    $scope.searchReportList = function(row, index){
+        var params = {
+                todoNo: row.todoNo,
+                todoLineNo: row.lineNo
+        };
+        //remove list detail salesreport when click another row by lastIndex
+        if(!StringUtils.isEmpty($scope.model.hidden.lastIndex)){
+            $scope.model.form.historyList[$scope.model.hidden.lastIndex].listReport = [];
+        }
+        ServerService.doPost('PtlTodoList/searchReport', params).then(
+            function(okResult) {
+                var error = okResult.data.failed;
+                var warning = okResult.data.warning;
+                if(!ValidateUtil.isValidTextEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                }else if(!ValidateUtil.isValidTextEmpty(warning)){
+                    DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                    return;
+                }
+                $scope.model.form.historyList[index].listReport = okResult.data.listReport;
+                if($scope.model.form.historyList[index].listReport.length > 0){
+                    $scope.model.hidden.showTime = $scope.model.form.historyList[index].listReport[0].isActive;
+                }
+                //get lastIndex
+                $scope.model.hidden.lastIndex = index;
+            },
+            function(errResult){
+            }
+        );
+    };
+
+    /***/
+    $scope.gotoSalesReport = function(object){
+        var param = {salesReportNo: object.salesReportNo};
+        ServerService
+        .doPost('SalesReportList/checkData', param)
+        .then(
+            function(okResult) {
+                var warning = okResult.data.warning;
+                if(!StringUtils.isEmpty(warning)){
+                    DialogsService.showWarning(Messages.getMessage('check.error'), warning).result.then(function(param) {
+                    }, function () {
+                        $scope.loadInformationList();
+                    });
+                }else{
+                    var salesReport = {
+                            salesReportNo : object.salesReportNo,
+                            isDisabled : true,
+                            screenMode: 'VIEW'
+                    };
+                    sessionStorage.setItem("salesReport", JSON.stringify(salesReport));
+                    var salesReport = {
+                            salesReportNo : object.salesReportNo,
+                            isDisabled : true,
+                            screenMode: 'VIEW',
+                            redirectUrl : 'PtlTodoList'
+                    };
+                    sessionStorage.removeItem("salesReport");
+                    sessionStorage.removeItem("salesReportUrl");
+                    sessionStorage.setItem("salesReport", JSON.stringify(salesReport));
+                    RouteService.gotoUrl('SalesReportControl');
+                }
+            },
+            function(errResult){}
+        );
+    };
+
+    /**
+     * get events when click day
+     */
+    $scope.getEventsDate = function(date){
+        var params = {
+                searchMonth : date,
+                searchDate : date
+        };
+        ServerService.doPost('PtlTodoList/getEvents', params)
+        .then(function(okResult) {
+            $scope.model.form.listEvents = okResult.data.listEvents;
+        });
+    };
+
+    $scope.gotoSchedule = function(row){
+        var param = {
+                scheduleCd :row.scheduleCd,
+                screenMode : 'UPDATE',
+                salesReportNo: row.salesReportNo,
+                topMode : true
+        };
+        sessionStorage.setItem("scheduleInfo", JSON.stringify(param));
+        sessionStorage.removeItem("scheduleSetting");
+        DialogsService.showDialog('PtlTodoControl', 'ptlTodoControlCtrl', param, {size: 'ptlTodo-control'});
+    };
+
+    $scope.addSchedule = function(date){
+        var today = new Date();
+        var hour = (today.getHours() < 10 ? '0' + (today.getHours()).toString() : (today.getHours()).toString()) ;
+        var minute = (today.getMinutes() < 10 ? '0' + (today.getMinutes()).toString() : (today.getMinutes()).toString()) ;
+        if(parseInt(minute) < 30){
+            minute = '30';
+        }else if(parseInt(minute) > 30){
+            minute = '00';
+        }
+        var param = {
+                userCd : null,
+                userName : null,
+                scheduleCd : null,
+                scheduleName : null,
+                scheduleDate : new Date(date + ' ' + hour + ':' + minute),
+                screenMode : 'INSERT',
+                allDayFlag : false,
+                topMode : true,
+                viewName: ''
+        };
+        sessionStorage.setItem("scheduleInfo", JSON.stringify(param));
+        sessionStorage.removeItem("scheduleSetting");
+        DialogsService.showDialog('PtlTodoControl', 'ptlTodoControlCtrl', param, {size: 'ptlTodo-control',});
+        $('.timepicker').prop('disabled', true);
+    };
+
+}]);

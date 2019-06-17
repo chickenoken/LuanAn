@@ -1,0 +1,142 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision: 1.0 $  $Date:  $
+ * @author quang-tung
+ */
+
+exexSMSApp.factory('TodoControlModel', [ 'BaseModel', function(BaseModel) {
+
+    var model = BaseModel.getInstance();
+    model.form = {
+            todo :{
+                todoNo: '',
+                motion : '',
+                todoName : '',
+                deadline : '',
+                projectSno : '',
+                projectName : '',
+                todoGroupCd : [],
+                todoUserCd : [],
+                content : '',
+                status : '0',
+                respondDatetime : '',
+                notificationGroupCd : [],
+                notificationUserCd : [],
+                respond : '',
+                priority: ''
+            },
+            listDetailTodo : [],
+            listMstUserTodo : [],
+            listMstUserNotification : [],
+            listC010010 : [],
+            listC010006 : [],
+            listC010007 : [],
+            listS020018 : [],
+            listUploadFile : [],
+            listTodoNo : []
+    };
+    model.hidden = {
+            todoNo : '',
+            isSubmited : false,
+            isDisabled : false,
+            isActive : true,
+            screenMode: 'INSERT',
+            fromScreen : '',
+            listCustSelected: [],
+            listCheckIndex: [],
+            listDataTmp : [],
+            sizeUploadList : 0,
+            userDataStorage : 0,
+            maxDataStorage : 0,
+            createUser : '',
+            createDate : '',
+            version : '',
+            numberToDisplay: 5,
+            listGroupSelect:[],
+            page : 0,
+            paginationPage : 0,
+            totalPage : 0,
+            canAddDetailRow : true // User popup sales report control. user can't add more then 1 row detail
+    }
+    model.file ={
+            fileData: '',
+            fileName : '',
+            fileType : '',
+            fileSize : '',
+            isFileChange :false
+    }
+    model.fileImport ={
+            fileData: '',
+            fileName : '',
+            fileType : '',
+            fileSize : '',
+            isFileChange :false
+    }
+    return model;
+} ]);
+
+exexSMSApp.controller('todoControlPopupCtrl',
+        ['$scope', '$filter', 'TodoControlModel', 'DialogsService', 'RouteService', 'ServerService', 'Messages', '$controller', '$uibModalInstance', 'data',
+         function($scope, $filter, TodoControlModel, DialogsService, RouteService, ServerService, Messages, $controller, $uibModalInstance, data){
+
+    $scope.model = TodoControlModel;
+    ObjectUtil.resetEmpty($scope.model.form.todo);
+    $controller('todoControlCtrl', {
+        $scope: $scope
+    });
+
+    $scope.model.form.listDetailTodo.length = 0;
+    $scope.model.hidden.canAddDetailRow = data.canAddDetailRow;
+
+    $scope.init = function(){
+        $scope.addNewRow();
+    }
+
+    $scope.addNewRow = function(index){
+        var length = $scope.model.form.listDetailTodo.length;
+        if(!$scope.model.hidden.canAddDetailRow && length === 1){
+            return;
+        }
+        if(length == (index + 1)){
+            var itemTmp = {
+                    custCd: '',
+                    custName: '',
+                    siteCd : '',
+                    siteName : '',
+                    address1 : '',
+                    address2 : '',
+                    deptCd : '',
+                    deptName : '',
+                    ownerCd : '',
+                    ownerName : '',
+                    position : '',
+                    mailAddress : '',
+                    status : '',
+                    postNo1: '',
+                    postNo2: '',
+                    tel1 : '',
+                    tel2 : '',
+                    tel3 : '',
+                    checkpostNo : false,
+                    checkTelephone : false,
+                    validationPostNo : false,
+                    isActive: true
+            }
+            $scope.model.form.listDetailTodo.push(itemTmp);
+            $scope.loadMore();
+            $scope.model.totalItems = $scope.model.form.listDetailTodo.length - 1;
+        }
+    }
+
+    $scope.$on("OnInsert#Todo", function(evt, param) {
+        $uibModalInstance.close(true);
+    });
+
+    $scope.close = function() {
+        $uibModalInstance.close(true);
+    };
+
+}]);

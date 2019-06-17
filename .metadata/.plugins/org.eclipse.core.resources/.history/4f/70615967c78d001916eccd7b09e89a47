@@ -1,0 +1,20 @@
+
+'use strict';
+exexSMSApp.factory('MstBusinessControlModel', [ 'BaseModel', '$rootScope',
+    function(BaseModel, $rootScope) {
+
+    var model = BaseModel.getInstance();
+
+    return model;
+}]);
+
+exexSMSApp.controller('mstBusinessManagementCtrl',
+        ['$rootScope', '$scope', 'MstBusinessControlModel','MstBusinessControlService' , 'DialogsService', 'RouteService', 'HeaderModel', 'Messages',
+         function($rootScope, $scope, MstBusinessControlModel, MstBusinessControlService, DialogsService, RouteService, HeaderModel, Messages) {
+
+    $scope.model = MstBusinessControlModel;
+    $scope.modelHeader = HeaderModel;
+
+
+
+}]);

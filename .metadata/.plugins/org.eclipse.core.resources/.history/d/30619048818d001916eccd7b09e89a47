@@ -1,0 +1,93 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision: $ $Date: $
+ */
+
+'use strict';
+
+exexSMSApp.factory('LoginSubAccountModel', function(BaseModel, $rootScope) {
+
+    var model = BaseModel.getInstance();
+
+    model.form = {
+        loginId : '',
+        password : ''
+    };
+
+    model.hidden = {
+            isSubmited: false
+    };
+
+    model.setup = function(model) {
+        Messages.setMessage(model != undefined ? model.msgList : '');
+    };
+
+    model.submit = function(action, callback) {
+        if (this.validate()) {
+            this.submitModel(action, this.form, function(data) {
+                callback(data);
+            });
+            return;
+        }
+    };
+    return model;
+});
+
+exexSMSApp.controller('LoginSubAccountCtrl',
+        ['$scope', '$rootScope', 'dialogs', 'LoginSubAccountModel', '$window','DialogsService', 'Messages','ServerService',
+         function($scope, $rootScope, dialogs, LoginSubAccountModel, $window, DialogsService, Messages,serverService) {
+
+    $scope.model = LoginSubAccountModel;
+
+    $scope.init = function(model) {
+        $scope.model.setup(model);
+        sessionStorage.removeItem('session');
+    };
+
+    $scope.submit = function(param, formInvalid) {
+        $scope.model.hidden.isSubmited = true;
+        if (formInvalid) {
+            return;
+        }
+        serverService.doPost('LoginSubAccount/logon', param)
+        .then(
+        /* success function */
+        function(result) {
+            var error = result.data.failed;
+            var warning = result.data.warning;
+            var companyCd = result.data.companyCd;
+            if (!ValidateUtil.isValidTextEmpty(error)) {
+                DialogsService.showError(Messages.getMessage('system.error'), error);
+                return;
+            } else if (!ValidateUtil.isValidTextEmpty(warning)) {
+                DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                return;
+            } else if (!ValidateUtil.isValidTextEmpty(companyCd)) {
+                $scope.model.form.dataSourceType = companyCd;
+                return;
+            } else {
+                sessionStorage.setItem("loginSubAccount", JSON.stringify(result.data.listSubAccount));
+                $window.location = 'ProjectInformation';
+            };
+       },
+        /* error function */
+        function(error) {
+
+       });
+    }
+}]);
+
+exexSMSApp.directive('passEnter', function () {
+    return {
+        link: function (scope, element, attrs) {
+            element.bind("keydown",function(e){
+                if (e.keyCode == 13) {
+                    angular.element('#btnSubmit').click();
+                }
+            });
+        }
+    }
+});

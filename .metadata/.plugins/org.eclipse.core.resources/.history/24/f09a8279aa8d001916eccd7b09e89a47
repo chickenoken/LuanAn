@@ -1,0 +1,23 @@
+package org.planning.net.entity;
+
+import org.seasar.doma.Column;
+import org.seasar.doma.Entity;
+
+@Entity
+public class LogPhong {
+    
+    @Column(name = "MA_KHACH_HANG")
+    private String MA_KHACH_HANG;
+    
+    @Column(name = "MA_PHONG")
+    private String maNhanVien;
+    
+    @Column(name = "TINH_TRANG")
+    private String maNhanVien;
+    
+    @Column(name = "NGAY_THUE")
+    private String maNhanVien;
+    
+    @Column(name = "NGAY_TRA")
+    private String maNhanVien;
+}

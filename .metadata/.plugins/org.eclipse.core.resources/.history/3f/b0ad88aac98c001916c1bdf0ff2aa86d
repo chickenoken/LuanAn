@@ -1,0 +1,244 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision: $ $Date: $
+ */
+
+'use strict';
+
+exexSMSApp.factory('CollationCandidateCustControlModel', [ 'BaseModel',function(BaseModel) {
+    var model = BaseModel.getInstance();
+    model.form = {
+            listCandidate : [],
+            listSelected : [],
+            buttonActive : false,
+            mode : ''
+    };
+    model.hidden = {
+        listSelected : [],
+    }
+    return model;
+}]);
+
+exexSMSApp.controller('collationCandidateCustControlCtrl',
+        ['$rootScope', '$scope', 'ServerService', '$uibModalInstance', 'DialogsService', 'CollationCandidateCustControlModel', 'data', 'Messages', '$timeout',
+         function($rootScope, $scope, ServerService, $uibModalInstance, DialogsService, CollationCandidateCustControlModel, data, Messages, $timeout) {
+
+    $scope.model = CollationCandidateCustControlModel;
+
+    /**
+     * init model
+     */
+    $scope.init = function(model){
+        $scope.model.form.listCandidate = [{}];
+        $scope.model.form.listSelected = [{}];
+        if(data.custCdList.length > 0){
+            $scope.selectRelationDataOfCustomer(data.custCdList);
+        }
+    };
+
+    $scope.close = function() {
+        $uibModalInstance.dismiss('close');
+    };
+
+    /**
+     * 初期表示
+     */
+    $scope.selectRelationDataOfCustomer = function(custCdList, mode, index) {
+        var param = {
+                custCdList: custCdList
+        }
+        $scope.model.hidden.listSelected=[];
+        ServerService.doPost('CollationCandidateCustControl/selectRelationDataOfCustomer', param).then(
+            function(okResult) {
+                var error = okResult.data.failed;
+                if(!ValidateUtil.isValidTextEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                }
+                var resultList = okResult.data.resultList;
+                if(mode == 'CANDIDATE'){
+                    $scope.setData('CANDIDATE', resultList[0], index);
+                }else if(mode == 'SELECTED'){
+                    $scope.setData('SELECTED', resultList[0], index);
+                }else{
+                    for(var i = 0; i < resultList.length; i++){
+                        if(i == 0){
+                            $scope.setData('SELECTED', resultList[i]);
+                        }else{
+                            $scope.setData('CANDIDATE', resultList[i], i - 1);
+                        }
+                    }
+                }
+                $scope.createListCustSelected();
+            },
+            function(errResult){}
+        );
+    };
+
+    $scope.setData = function(mode, custInfo, index){
+        if(mode == 'CANDIDATE'){
+            $scope.model.form.listCandidate[index] = custInfo;
+            var lastIndex = $scope.model.form.listCandidate.length - 1;
+            if(!StringUtils.isEmpty($scope.model.form.listCandidate[lastIndex].custCd)){
+                $scope.model.form.listCandidate.push({});
+            }
+        }else if(mode == 'SELECTED'){
+            $scope.model.form.listSelected[0] = custInfo;
+        }
+    }
+
+    $scope.sortableConfig = {
+        group: 'requestUser',
+        handle:'.handle',
+        sort: false,
+        onRemove: function (evt){
+            var oldIndex = evt.newIndex == 0 ? 1 : 0;
+            $scope.model.form.listCandidate.splice($scope.model.form.listCandidate.length-1, 0, $scope.model.form.listSelected[oldIndex]);
+            $scope.model.form.listSelected = [evt.model];
+            console.log(evt)
+        }
+    };
+
+    $scope.deleteCustomer = function(row, index){
+        var sumDetail = row.todoNum + row.salesReportNum + row.projectNum + row.estimateNum + row.receiveNum + row.salesNum + row.orderNum + row.stockNum + row.scheduleNum;
+        if(sumDetail <= 0){
+            DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('S00064')).result.then(function (btn) {
+                var param = {
+                        custCd: row.custCd
+                }
+                ServerService.doPost('CollationCandidateCustControl/deleteCustomer', param).then(
+                    function (result) {
+                        var error = result.data.failed;
+                        var success = result.data.success;
+                        var warning = result.data.warning;
+                        if (!ValidateUtil.isValidTextEmpty(error)) {
+                            DialogsService.showError(Messages.getMessage('system.error'), error);
+                            return;
+                        } else if (!ValidateUtil.isValidTextEmpty(warning)) {
+                            DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                            return;
+                        } else {
+                            DialogsService.showNotify(Messages.getMessage('title.info'), success)
+                            .result.then(function (btn) {
+                                $scope.removeItem(index);
+                                if(data.fromScreen == 'CrmControl'){
+                                    $rootScope.$broadcast("CrmControl#getInit", {});
+                                    $rootScope.$broadcast("doSearchProjectList", {});
+                                } else if (data.fromScreen == 'CrmList'){
+                                    $rootScope.$broadcast("CrmList#search", {});
+                                } else {
+                                    $rootScope.$broadcast("CollationCandidateCustList#search", {});
+                                }
+                            });
+                        }
+                    }
+                );
+            });
+        }else{
+            DialogsService.showWarning(Messages.getMessage('title.confirm'), Messages.getMessage('W00351'));
+        }
+    }
+
+    $scope.updateCustomer = function(){
+        var sourceCustListLength = $scope.model.form.listCandidate.length;
+        var destCust = $scope.model.form.listSelected[0];
+        var custCd = destCust.custCd;
+        var newClientTypeOfDestCust = null;
+        var custCdList = [];
+
+        for(var i = 0; i < sourceCustListLength; i++){
+            var sourceCust = $scope.model.form.listCandidate[i];
+            if(!StringUtils.isEmpty(sourceCust.custCd) && custCdList.indexOf(sourceCust.custCd) == -1){
+                custCdList.push(sourceCust.custCd);
+
+                // when clientType of sourceCust != destCust
+                // set newClientTypeOfDestCust = '2' (cust / stockAddress) to update on DB
+                if (sourceCust.clientType != destCust.clientType) {
+                    newClientTypeOfDestCust = '2';
+                }
+            }
+        }
+        DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('S00065')).result.then(function (btn) {
+            var param = {
+                    custCd: custCd,
+                    custCdList: custCdList,
+                    newClientTypeOfDestCust: newClientTypeOfDestCust,
+            }
+
+            ServerService.doPost('CollationCandidateCustControl/updateCustomer', param).then(
+                function (result) {
+                    var error = result.data.failed;
+                    var success = result.data.success;
+                    var warning = result.data.warning;
+                    if (!ValidateUtil.isValidTextEmpty(error)) {
+                        DialogsService.showError(Messages.getMessage('system.error'), error);
+                        return;
+                    } else if (!ValidateUtil.isValidTextEmpty(warning)) {
+                        DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                        return;
+                    } else {
+                        DialogsService.showNotify(Messages.getMessage('title.info'), success)
+                        .result.then(function (btn) {
+                            $scope.model.form.listCandidate = [{}];
+                            if(result.data.resultList.length > 0){
+                                $scope.model.form.listSelected[0] = result.data.resultList[0];
+                            }
+                            $scope.createListCustSelected();
+                            if(data.fromScreen == 'CrmControl'){
+                                $rootScope.$broadcast("CrmControl#getInit", {});
+                                $rootScope.$broadcast("doSearchProjectList", 1);
+                            } else if (data.fromScreen == 'CrmList'){
+                                $rootScope.$broadcast("CrmList#search", {});
+                            } else {
+                                $rootScope.$broadcast("CollationCandidateCustList#search", {});
+                            }
+                        });
+                    }
+                }
+            );
+        });
+    }
+
+    $scope.removeItem = function(index){
+        $scope.model.form.listCandidate.splice(index, 1);
+        $scope.createListCustSelected();
+    }
+
+    $scope.createListCustSelected = function(){
+        $scope.model.hidden.listSelected = [];
+        $scope.model.hidden.listSelected.push($scope.model.form.listSelected[0].custCd);
+        var length = $scope.model.form.listCandidate.length;
+        for(var i = 0; i < length-1; i++){
+            var item = $scope.model.form.listCandidate[i];
+            if(!StringUtils.isEmpty(item.custCd) && $scope.model.hidden.listSelected.indexOf(item.custCd) == -1){
+                $scope.model.hidden.listSelected.push(item.custCd);
+            }
+        }
+    }
+
+    $scope.gotoUrl = function(row) {
+        if (!StringUtils.isEmpty(row.custCd)) {
+            if (row.clientType != "1") {
+                var param = {
+                    custCd : row.custCd,
+                    custType : row.custType,
+                }
+                sessionStorage.setItem("projectCustItemInfo", JSON.stringify(param));
+                window.open("CrmControl", "_blank");
+            } else {
+                var param = {
+                    stockaddressNo : row.custCd,
+                    screenMode : 'VIEW'
+                };
+                sessionStorage.setItem("stockaddressInfo", JSON.stringify(param));
+                window.open("MstStockControl", "_blank");
+            }
+        }
+    }
+
+    $scope.init();
+
+}]);

@@ -1,0 +1,367 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision: 1.0 $  $Date:  $
+ * @author quang-tung
+ */
+
+exexSMSApp.factory('StockSituationListModel', [ 'BaseModel', function(BaseModel) {
+
+    var model = BaseModel.getInstance();
+
+    model.form = {
+        search :{
+            itemName: '',
+            itemCd: '',
+            janCd: '',
+            warehouseNo: '',
+            maker: '',
+            stockaddressNo: '',
+            category1: '',
+            category2: '',
+            category3: '',
+            searchShortage: false,
+            searchExcess: false,
+            exportCsv: '',
+            searchHaveStockNum: true,
+            usagePeriodFrom:'',
+            usagePeriodTo:''
+        },
+    };
+    model.hidden = {
+        indexTmp: '',
+        warehouseName:'',
+        rounding: ''
+    };
+    return model;
+} ]);
+
+exexSMSApp.controller('stockSituationListCtrl',
+        ['$scope', '$timeout', 'DialogsService', 'RouteService', 'StockSituationListModel', 'StockSituationListService', 'ServerService','MstItemListService', 'Messages',
+         function($scope, $timeout, DialogsService, RouteService, StockSituationListModel, StockSituationListService, ServerService,MstItemListService, Messages){
+
+    $scope.model = StockSituationListModel;
+
+    $scope.init = function(){
+        StockSituationListService.initData({}).then(
+            function(result) {
+                var error =  result.data.failed;
+                if(!ValidateUtil.isValidTextEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                }
+                $scope.model.form.listMaker = result.data.listMaker;
+                $scope.model.form.listMstStockaddress = result.data.listMstStockaddress;
+                $scope.model.form.listCate01 = result.data.listCate01;
+                $scope.model.form.listCate02 = result.data.listCate02;
+                $scope.model.form.listCate03 = result.data.listCate03;
+                $scope.model.form.listExport = result.data.listExport;
+
+                var sessionSearch = angular.fromJson(sessionStorage.getItem("stockSituationListSession"));
+                if (!StringUtils.isEmpty(sessionSearch)){
+                    $scope.model.form.search = sessionSearch;
+                    delete sessionSearch.currentPage;
+                    $scope.model.currentPage = sessionSearch.currentPage;
+                }
+
+                $scope.search($scope.model.form.search, $scope.model.currentPage);
+            }
+        );
+    };
+
+    /**
+     * 承認依頼リストを検索する
+     */
+    $scope.search = function (param, page){
+        var params = {
+            itemName: param.itemName,
+            itemCd: param.itemCd,
+            janCd: param.janCd,
+            warehouseNo: param.warehouseNo,
+            maker: param.maker,
+            stockaddressNo: param.stockaddressNo,
+            category1: param.category1,
+            category2: param.category2,
+            category3: param.category3,
+            searchShortage: param.searchShortage,
+            searchExcess: param.searchExcess,
+            searchHaveStockNum: param.searchHaveStockNum,
+            usagePeriodFrom : !StringUtils.isEmpty(param.usagePeriodFrom) ? new Date(param.usagePeriodFrom) : null,
+            usagePeriodTo : !StringUtils.isEmpty(param.usagePeriodTo) ? new Date(param.usagePeriodTo) : null
+        };
+
+        var sessionSearch = angular.copy(params);
+        sessionSearch.warehouseName = param.warehouseName;
+        sessionStorage.setItem('stockSituationListSession', JSON.stringify(sessionSearch));
+
+        StockSituationListService.search(params).then(
+            function(result) {
+                var error =  result.data.failed;
+                if(!ValidateUtil.isValidTextEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                }
+                $scope.model.form.listStockSituation = result.data.listStockSituation;
+                $scope.model.hidden.indexTmp = '';
+                var length  = $scope.model.form.listStockSituation.length;
+                // Table Paging
+                $scope.model.currentPage = !StringUtils.isEmpty(page) ? page : 1; //current page
+                $scope.model.entryLimit = 20; //max no of items to display in a page
+                $scope.model.number = 20; //max items display in a page
+                $scope.model.filteredItems = length; //Initially for no filter
+                $scope.model.totalItems = length;
+                // End Table Paging
+            }
+        );
+    };
+    $scope.init();
+
+    $scope.searchDetail = function(param, index){
+        var params = {
+            warehouseNo: $scope.model.form.search.warehouseNo,
+            serialCd: param.serialCd,
+            usagePeriodFrom : !StringUtils.isEmpty($scope.model.form.search.usagePeriodFrom) ? new Date($scope.model.form.search.usagePeriodFrom) : null,
+            usagePeriodTo : !StringUtils.isEmpty($scope.model.form.search.usagePeriodTo) ? new Date($scope.model.form.search.usagePeriodTo) : null
+        };
+
+        if($scope.model.hidden.indexTmp.toString() == index.toString()){
+            param.isOpen = false;
+            $scope.model.hidden.indexTmp = '';
+            return;
+        }
+        if(!ValidateUtil.isValidTextEmpty($scope.model.hidden.indexTmp.toString())){
+            $scope.model.form.listStockSituation[$scope.model.hidden.indexTmp].isOpen = false;
+        }
+        StockSituationListService.searchDetail(params).then(
+            function(result) {
+                var error =  result.data.failed;
+                if(!ValidateUtil.isValidTextEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                }
+
+                $timeout(function() {
+                    $scope.model.form.listDetailStockSituation = [];
+                    $scope.model.form.listDetailStockSituation = result.data.listDetailStockSituation;
+                }, 240);
+                $timeout(function() {
+                    param.isOpen = true;
+                }, 250);
+                $scope.model.hidden.indexTmp = index;
+            }
+        );
+    };
+
+    $scope.showPopup = function(param){
+        var params ={
+                serialCd : param.serialCd,
+        };
+        ServerService
+            .doPost('MstItemControl/getItem', params)
+            .then(
+                function(okResult) {
+                    if(!ValidateUtil.isValidTextEmpty(okResult.data.failed)){
+                        DialogsService.showError(Messages.getMessage('system.error'), okResult.data.failed);
+                        return;
+                    }
+                    if(!ValidateUtil.isValidTextEmpty(okResult.data.itemImage)){
+                        DialogsService.showDialog('/dialogs/custom.html','customDialogCtrl', okResult.data.itemImage, {size: 'image'});
+                    }
+                },
+                function(errResult){});
+    }
+
+    $scope.openDialog = function(item, result, warehouseNo) {
+        switch (result) {
+            case 'inventoryHistory':
+                var param = {
+                    serialCd : item.serialCd,
+                    itemCd : item.itemCd,
+                    itemName : item.itemName,
+                    detailFlag : false,
+                    viewHist : true,
+                    usagePeriodFrom : !StringUtils.isEmpty($scope.model.form.search.usagePeriodFrom) ? new Date($scope.model.form.search.usagePeriodFrom) : null,
+                    usagePeriodTo : !StringUtils.isEmpty($scope.model.form.search.usagePeriodTo) ? new Date($scope.model.form.search.usagePeriodTo) : null
+                };
+
+                if(warehouseNo){
+                    param.warehouseNo = $scope.model.form.search.warehouseNo;
+                    param.warehouseName = $scope.model.hidden.warehouseName;
+                }else{
+                    param.warehouseNoDetail = item.warehouseNo;
+                    param.warehouseName = item.warehouseName;
+                }
+                sessionStorage.setItem('mstItemDialog',JSON.stringify(param));
+                DialogsService.showDialog('MstItemDialog', 'mstItemDialogCtrl', 'data', {size: '800'}).result.then(function(param) {
+                }, function () {
+                    sessionStorage.removeItem('mstItemDialog');
+                });
+            break;
+        };
+    };
+
+    $scope.openDetailItem = function(item){
+        if(!ValidateUtil.isValidTextEmpty(item.serialCd)){
+            var param = {
+                    serialCd : item.serialCd
+            };
+            MstItemListService.checkData(param)
+            .then(
+                function(result) {
+                    if(!ValidateUtil.isValidTextEmpty(result.data.warning)){
+                        DialogsService.showWarning(Messages.getMessage('check.error'),result.data.warning);
+                        $scope.search($scope.model.form.search);
+                        return;
+                    }else if(!ValidateUtil.isValidTextEmpty(result.data.failed)){
+                        DialogsService.showError(Messages.getMessage('system.error'),result.data.failed);
+                        return;
+                    }else{
+                        param.detailFlag = true;
+                        sessionStorage.setItem('mstItem',JSON.stringify(param));
+                        DialogsService.showDialog('MstItemDialog', 'mstItemDialogCtrl', 'data', {size: '1340'}).result.then(function () {}, function () {
+                            sessionStorage.removeItem('mstItem');
+                        });
+                    }
+                }
+            );
+        }
+    };
+
+    $scope.exportExcel=function(param){
+        if(param.exportCsv.codeType == "CUSREP0014"){
+            DialogsService.showDialog('StockSituationCSV', 'StockSituationCSVCtrl', 'data', {size: '500'}).result.then(function () {}, function () {
+                sessionStorage.removeItem('mstItem');
+            });
+        }else{
+            var params = {
+                itemName: param.itemName,
+                itemCd: param.itemCd,
+                janCd: param.janCd,
+                warehouseNo: param.warehouseNo,
+                maker: param.maker,
+                stockaddressNo: param.stockaddressNo,
+                category1: param.category1,
+                category2: param.category2,
+                category3: param.category3,
+                searchShortage: param.searchShortage,
+                searchExcess: param.searchExcess,
+                searchHaveStockNum: param.searchHaveStockNum,
+                exportCsv: param.exportCsv.code,
+                isCustomize: false
+            };
+            var fileName = param.exportCsv.codeName + DateUtils.getYYYYMMDD(new Date());
+            var fileType = '.xlsx';
+            ServerService.doDownload('/StockSituationList/downloadExcel', params, 'application/vnd.ms-excel', fileName + fileType);
+        }
+    };
+
+    $scope.createOrder = function(param){
+        var list = angular.copy(param.listStockSituation)
+        list.sort(function(a, b) {
+            return a.stockaddressNo - b.stockaddressNo;
+        });
+        var listTmp = [];
+        var listParent = [];
+        var stockaddressNo = list[0].stockaddressNo;
+        for (var i = 0; i < list.length; i++) {
+            var item = list[i];
+            if(!ValidateUtil.isValidTextEmpty(item.orderUnit) && item.orderUnit != 0){
+                item.itemSum = item.orderUnit * ( Math.floor(Math.abs(item.shortageNumber)/item.orderUnit) + 1 );
+            }else{
+                item.itemSum = Math.abs(item.shortageNumber);
+            }
+            item.warehouseNo = !ValidateUtil.isValidTextEmpty(param.search.warehouseNo) ? param.search.warehouseNo : '0000000000';
+            item.itemOrderRemaining = item.itemSum;
+            item.itemOrderReservation = 0;
+
+            if(item.stockaddressNo == stockaddressNo){
+                listTmp.push(item);
+            }else{
+                listParent.push(JSON.stringify(listTmp));
+                listTmp = [];
+                stockaddressNo = item.stockaddressNo;
+                i = i - 1;
+            }
+            if(i == list.length-1){
+                listParent.push(JSON.stringify(listTmp));
+            }
+        }
+        var params = {
+                detailJson : listParent
+        }
+        StockSituationListService.createOrder(params)
+        .then(
+            function(result) {
+                if(!ValidateUtil.isValidTextEmpty(result.data.warning)){
+                    DialogsService.showWarning(Messages.getMessage('check.error'),result.data.warning);
+                    $scope.search($scope.model.form.search);
+                    return;
+                }else if(!ValidateUtil.isValidTextEmpty(result.data.failed)){
+                    DialogsService.showError(Messages.getMessage('system.error'),result.data.failed);
+                    return;
+                }else{
+                    DialogsService.showNotify(Messages.getMessage('title.info'), result.data.success)
+                    .result.then(function(btn){
+                        RouteService.gotoUrl('SalOrderList');
+                    });
+                }
+            }
+        );
+    };
+
+    $scope.onChangeWarehouse = function(warehouseNo) {
+        if(StringUtils.isEmpty(warehouseNo)) {
+            $scope.model.form.search.warehouseName = "";
+        }
+    };
+
+    $scope.$watch('model.currentPage', function(newPage, oldPage) {
+        if(!StringUtils.isEmpty(newPage)) {
+            var sessionSearch = SessionUtils.prepareSession(sessionStorage.getItem("stockSituationListSession"));
+            sessionSearch.currentPage = newPage;
+            sessionStorage.setItem("stockSituationListSession", JSON.stringify(sessionSearch));
+        }
+    });
+}]);
+
+exexSMSApp.controller('StockSituationCSVCtrl',
+        ['$rootScope', '$scope', '$uibModalInstance', 'StockSituationListModel', 'Messages', 'ServerService', '$filter',
+         function($rootScope, $scope, $uibModalInstance, StockSituationListModel, Messages, ServerService, $filter){
+
+    $scope.model = StockSituationListModel;
+    $scope.init = function(){
+    };
+
+    $scope.close = function(){
+        $uibModalInstance.dismiss('close');
+    };
+
+    $scope.ok = function(){
+        var param = $scope.model.form.search;
+        var params = {
+            itemName: param.itemName,
+            itemCd: param.itemCd,
+            janCd: param.janCd,
+            warehouseNo: param.warehouseNo,
+            maker: param.maker,
+            stockaddressNo: param.stockaddressNo,
+            category1: param.category1,
+            category2: param.category2,
+            category3: param.category3,
+            searchShortage: param.searchShortage,
+            searchExcess: param.searchExcess,
+            searchHaveStockNum: param.searchHaveStockNum,
+            workDateFrom: !StringUtils.isEmpty(param.workDateFrom) ? new Date(param.workDateFrom) : null,
+            workDateTo: !StringUtils.isEmpty(param.workDateTo) ? new Date(param.workDateTo) : null,
+            exportCsv: param.exportCsv.code,
+            isCustomize: true
+        };
+        var fileName = param.exportCsv.codeName + DateUtils.getYYYYMMDD(new Date());
+        var fileType = '.xlsx';
+        ServerService.doDownload('/StockSituationList/downloadExcel', params, 'application/vnd.ms-excel', fileName + fileType);
+        $uibModalInstance.dismiss('close');
+    };
+
+}]);

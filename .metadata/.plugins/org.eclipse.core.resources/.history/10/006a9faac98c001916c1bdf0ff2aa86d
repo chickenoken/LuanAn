@@ -1,0 +1,66 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision:  $  $Date:  $
+ */
+'use strict';
+exexSMSApp.factory('MstItemControlSearchModel', ['BaseModel', function(BaseModel){
+
+    var model = BaseModel.getInstance();
+
+    model.form = {
+        itemEdit : {
+            itemCd : '',
+            itemName : '',
+            itemName2 : '',
+            itemName3 : '',
+            serialCd : ''
+        },
+        listSearch : [],
+        filtered : []
+    };
+    model.hidden = {
+            isSubmited : false
+    }
+    return model;
+
+}]);
+
+exexSMSApp.controller('mstItemControlSearchCtrl',
+        [ '$scope', '$filter', '$uibModalInstance', 'MstItemControlSearchModel', 'Messages', 'ServerService','DialogsService', 'data',
+         function( $scope, $filter, $uibModalInstance, MstItemControlSearchModel, Messages, ServerService, DialogsService, data){
+
+    $scope.model = MstItemControlSearchModel;
+
+    $scope.close = function(){
+        $uibModalInstance.dismiss('close');
+    };
+
+    $scope.init = function (){
+        var param = data;
+        $scope.model.form.itemEdit.itemCd = data.itemCd;
+        $scope.model.form.itemEdit.itemName = data.itemName;
+        $scope.model.form.itemEdit.itemName2 = data.itemName2;
+        $scope.model.form.itemEdit.itemName3 = data.itemName3;
+
+        ServerService.doPost('MstItemControlSearch/init', param.serialCd).then(
+            function(okResult) {
+                var warning = okResult.data.warning;
+                var error = okResult.data.failed;
+                if(!ValidateUtil.isValidTextEmpty(warning)){
+                    DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                    return;
+                }else if(!ValidateUtil.isValidTextEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'),error);
+                    return;
+                }else{
+                    $scope.model.form.listSearch = okResult.data.listSearch;
+                }
+        });
+    };
+
+    $scope.init();
+
+}]);

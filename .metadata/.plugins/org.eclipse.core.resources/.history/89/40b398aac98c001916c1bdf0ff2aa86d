@@ -1,0 +1,281 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision:  $  $Date:  $
+ * @author : Minh-Dao
+ */
+'use strict';
+/**
+ * Table :
+ */
+exexSMSApp.factory('MstBankControlModel', [ 'BaseModel', function(BaseModel) {
+    var model = BaseModel.getInstance();
+    model.form = {
+        bankEdit:{
+            bankName:'',
+            bankSiteName:'',
+            subjects:'',
+            bankType:'',
+            bankSiteNo:'',
+            bankAccountNo:'',
+            bankAccountName:'',
+            bankAccountKana:'',
+            showOnReport: true,
+            remark:'',
+            bankCd:'',
+            version:'',
+        },
+        listM040001:[],
+        listM040002:[]
+    };
+    model.hidden = {
+            isSubmited: false
+    };
+
+    return model;
+
+}]);
+exexSMSApp.controller('mstBankControlDialogCtrl',
+        ['$rootScope', '$scope', '$uibModalInstance', '$timeout', 'MstBankControlModel', 'data', 'DialogsService', 'Messages', 'ServerService',
+         function($rootScope, $scope, $uibModalInstance, $timeout, MstBankControlModel, data, DialogsService, Messages, ServerService){
+
+    $scope.model=MstBankControlModel;
+
+    $scope.init = function(model){
+        $scope.model.hidden.isSubmited = false;
+        $scope.getInit();
+    };
+
+    $scope.getInit = function(){
+
+        ServerService
+        .doPost('MstBankControl/getInit', {})
+        .then(
+            function(okResult) {
+                var error = okResult.data.failed;
+                if(!ValidateUtil.isValidTextEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                     return;
+                }
+                $scope.model.form.listM040001 = okResult.data.listM040001;
+                $scope.model.form.listM040002 = okResult.data.listM040002;
+                if(ValidateUtil.isValidTextEmpty($scope.model.form.listM040001)){
+                    $scope.model.form.bankEdit.bankType = '';
+                }else{
+                    if(ValidateUtil.isValidTextEmpty(data.bankCd)){
+                        $scope.model.form.bankEdit.bankType = $scope.model.form.listM040001[0].code;
+                    }
+                }
+                if(ValidateUtil.isValidTextEmpty($scope.model.form.listM040002)){
+                    $scope.model.form.bankEdit.subjects = '';
+                }else{
+                    if(ValidateUtil.isValidTextEmpty(data.bankCd)){
+                        $scope.model.form.bankEdit.subjects = $scope.model.form.listM040002[0].code;
+                    }
+                }
+                $scope.getBankDetail();
+            },
+            function(errResult){
+            });
+
+    };
+
+    $scope.getBankDetail = function(){
+        if(!ValidateUtil.isValidTextEmpty(data.bankCd)){
+            var param = {'bankCd':data.bankCd};
+
+            ServerService
+            .doPost('MstBankControl/getBankDetail', param)
+            .then(
+                function(okResult) {
+                    var error = okResult.data.failed;
+                    if(!ValidateUtil.isValidTextEmpty(error)){
+                        DialogsService.showError(Messages.getMessage('system.error'), error);
+                        return;
+                    }
+                    $scope.model.form.bankEdit = okResult.data;
+                },
+                function(errResult){
+                });
+        } else {
+            $scope.model.form.bankEdit = data.bank;
+        }
+    };
+
+    /**
+     * close popup
+     */
+    $scope.close = function() {
+        $scope.resetForm();
+        $uibModalInstance.dismiss('close');
+    };
+
+    /**
+     * 登録。
+     */
+    $scope.addBank = function(param,formInvalid) {
+        $scope.model.hidden.isSubmited = true;
+        if (formInvalid) {
+            return;
+        }
+        var params = {
+            bankCd:'',
+            bankName:param.bankName,
+            bankSiteName:param.bankSiteName,
+            bankType:param.bankType,
+            subjects:param.subjects,
+            bankSiteNo:param.bankSiteNo,
+            bankAccountNo:param.bankAccountNo,
+            bankAccountName:param.bankAccountName,
+            bankAccountKana:param.bankAccountKana,
+            showOnReport: param.showOnReport,
+            remark:param.remark
+        };
+        DialogsService.showConfirm(Messages.getMessage('title.confirm'),Messages.getMessage('S00003'))
+        .result.then(function(btn){
+
+            ServerService
+            .doPost('MstBankControl/addBank', params)
+            .then(
+                function(okResult) {
+                    var success = okResult.data.success;
+                    var warning = okResult.data.warning;
+                    var error = okResult.data.failed;
+                    if (!ValidateUtil.isValidTextEmpty(success)) {
+                        DialogsService.showNotify(Messages.getMessage('title.info'), success);
+                        $uibModalInstance.dismiss('close');
+                        $scope.getBankList();
+                    }else {
+                        if(!ValidateUtil.isValidTextEmpty(warning)){
+                            DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                        }else{
+                            DialogsService.showError(Messages.getMessage('system.error'), error);
+                        }
+                    }
+                },
+                function(errResult){
+                });
+        },function(btn){});
+    };
+
+    /**
+     * 更新。
+     */
+    $scope.updateBank = function(param,formInvalid) {
+        $scope.model.hidden.isSubmited = true;
+        if (formInvalid) {
+            return;
+        }
+        var params = {
+            bankCd:param.bankCd,
+            bankName:param.bankName,
+            bankSiteName:param.bankSiteName,
+            bankType:param.bankType,
+            subjects:param.subjects,
+            bankSiteNo:param.bankSiteNo,
+            bankAccountNo:param.bankAccountNo,
+            bankAccountName:param.bankAccountName,
+            bankAccountKana:param.bankAccountKana,
+            showOnReport: param.showOnReport,
+            remark:param.remark,
+            version: param.version,
+        };
+        DialogsService.showConfirm(Messages.getMessage('title.confirm'),Messages.getMessage('S00004'))
+        .result.then(function(btn){
+            ServerService
+            .doPost('MstBankControl/updateBank', params)
+            .then(
+                function(okResult) {
+                    var success = okResult.data.success;
+                    var warning = okResult.data.warning;
+                    var error = okResult.data.failed;
+                    if (!ValidateUtil.isValidTextEmpty(success)) {
+                        DialogsService.showNotify(Messages.getMessage('title.info'), success);
+                        $uibModalInstance.dismiss('close');
+                        $scope.getBankList();
+                    } else {
+                        if(!ValidateUtil.isValidTextEmpty(warning)){
+                            DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                        }else{
+                            DialogsService.showError(Messages.getMessage('system.error'), error);
+                        }
+                    }
+                },
+                function(errResult){
+                });
+        },function(btn){});
+    };
+
+
+   /**
+    * 削除。
+    */
+   $scope.deleteBank = function(param) {
+       var params = {
+           bankCd:param.bankCd,
+           bankName:param.bankName,
+           bankSiteName:param.bankSiteName,
+           bankType:param.bankType,
+           subjects:param.subjects,
+           bankSiteNo:param.bankSiteNo,
+           bankAccountNo:param.bankAccountNo,
+           bankAccountName:param.bankAccountName,
+           bankAccountKana:param.bankAccountKana,
+           showOnReport: param.showOnReport,
+           remark:param.remark,
+           version: param.version,
+       };
+       DialogsService.showConfirm(Messages.getMessage('title.confirm'),Messages.getMessage('S00005'))
+       .result.then(function(btn){
+           ServerService
+           .doPost('MstBankControl/deleteLogicBank', params)
+           .then(
+               function(okResult) {
+                   var success = okResult.data.success;
+                   var warning = okResult.data.warning;
+                   var error = okResult.data.failed;
+                   if (!ValidateUtil.isValidTextEmpty(success)) {
+                       DialogsService.showNotify(Messages.getMessage('title.info'), success);
+                       $uibModalInstance.dismiss('close');
+                       $scope.getBankList();
+                   } else {
+                       if(!ValidateUtil.isValidTextEmpty(warning)){
+                           DialogsService.showWarning(Messages.getMessage('check.error'), warning, {size: '320'});
+                       }else{
+                           DialogsService.showError(Messages.getMessage('system.error'), error);
+                       }
+                   }
+               },
+               function(errResult){
+               });
+       },function(btn){});
+   };
+
+
+   $scope.resetForm = function(){
+       $scope.model.form.bankEdit.bankName = '';
+       $scope.model.form.bankEdit.bankSiteName = '';
+       $scope.model.form.bankEdit.subjects = '';
+       $scope.model.form.bankEdit.bankType = '';
+       $scope.model.form.bankEdit.bankSiteNo = '';
+       $scope.model.form.bankEdit.bankAccountNo = '';
+       $scope.model.form.bankEdit.bankAccountName = '';
+       $scope.model.form.bankEdit.bankAccountKana = '';
+       $scope.model.form.bankEdit.showOnReport = true;
+       $scope.model.form.bankEdit.remark = '';
+       $scope.model.form.bankEdit.bankCd = '';
+       $scope.model.form.bankEdit.version = '';
+   };
+
+   $scope.getBankList = function(){
+       var params = {
+             bankName:'',
+             bankSiteName:'',
+             bankAccountName:'',
+             bankAccountKana:''
+       };
+       $rootScope.$broadcast("MstBankList#editBankList",params);
+    };
+}]);

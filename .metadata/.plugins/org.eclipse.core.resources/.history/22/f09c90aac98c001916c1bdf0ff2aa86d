@@ -1,0 +1,91 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision:  $  $Date:  $
+ * @author : huy-du
+ */
+'use strict';
+
+exexSMSApp.factory('exexSendMailModel', [ 'BaseModel', function(BaseModel) {
+    var model = BaseModel.getInstance();
+
+    model.form = {
+            exexSendMail : {
+                mailAddressRegist : ''
+            },
+        };
+    model.hidden = {
+            screenMode : 'NOTSEND',
+            mailAddressRegist : '',
+            agreement : '',
+            isCheck : '',
+            isSubmited : false
+    };
+
+    /*
+     * 画面項目を初期化する。
+     */
+    model.setup = function(model) {
+        // メッセージクラスを取得し、sessionStorageに保管する。
+        Messages.setMessage(model != undefined ? model.msgList : '' );
+    };
+
+    return model;
+
+} ]);
+
+exexSMSApp.controller('exexSendMailCtrl',
+        ['$scope', '$window', '$timeout', 'DialogsService', 'exexSendMailModel', 'Messages', 'ServerService',
+         function($scope, $window, $timeout, DialogsService, exexSendMailModel, Messages, ServerService){
+    /**
+     * 初期処理
+     */
+    $scope.init = function(model){
+        $scope.model = exexSendMailModel;
+        $scope.model.setup(model);
+        $scope.getInit();
+    };
+
+    $scope.getInit = function(){
+        var params = {};
+        ServerService
+            .doPost('ExExSendMail/getInit', params)
+            .then(
+                    function(okResult) {
+                        $scope.model.hidden.agreement = okResult.data.agreement;
+                        },
+                    function(errResult){
+                    });
+    };
+    $scope.init();
+
+    /**  メールを送信 */
+    $scope.sendMail = function(invalid) {
+        $scope.model.hidden.isSubmited = true;
+        if (invalid) {
+            return;
+        }
+        $scope.model.hidden.screenMode = 'SEND';
+        var param =  {mailAddressRegist : $scope.model.hidden.mailAddressRegist};
+        ServerService
+            .doPost('ExExSendMail/sendMail', param)
+            .then(
+                    function(okResult) {
+                        var error = okResult.data.failed;
+                        var warning = okResult.data.warning;
+                        if(!ValidateUtil.isValidTextEmpty(error)){
+                            DialogsService.showError(Messages.getMessage('system.error'), error);
+                            $scope.model.hidden.screenMode = 'NOTSEND';
+                        }else if(!ValidateUtil.isValidTextEmpty(warning)){
+                            DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                            $scope.model.hidden.screenMode = 'NOTSEND';
+                        }else{
+
+                        }
+                    },
+                    function(errResult){
+                    });
+    };
+}]);

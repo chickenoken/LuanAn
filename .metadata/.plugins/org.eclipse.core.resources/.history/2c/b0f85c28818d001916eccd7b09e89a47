@@ -1,0 +1,439 @@
+<%-- Copyright(c) SystemEXE corp. All Rights Reserved. --%>
+<%-- $Id: $ --%>
+<%@include file="/WEB-INF/tags/taglib.inc"%>
+
+<script type="text/ng-template" id="customerPopoverButton.html">
+  <div class="row">
+    <button class="btn btn-sm blue waves-effect waves-light" ng-click="redirect('SalEstimateControl',row)">
+      <i class="glyphicon glyphicon-share-alt"></i><spring:message code="POPOVER.ESTIMATE"/></button>
+  </div>
+  <div class="row p-t-5">
+    <button class="btn btn-sm blue waves-effect waves-light" ng-click="redirect('SalRsvControl',row)">
+      <i class="glyphicon glyphicon-share-alt"></i><spring:message code="POPOVER.RECEIVE"/></button>
+  </div>
+  <div class="row p-t-5">
+    <button class="btn btn-sm blue waves-effect waves-light" ng-click="redirect('SalDecideProcess',row)">
+      <i class="glyphicon glyphicon-share-alt"></i><spring:message code="POPOVER.SALES"/></button>
+  </div>
+</script>
+
+<script type="text/ng-template" id="estimatePopoverButton.html">
+  <div class="row m-l-0 m-r-0" ng-if="modelHeader.login.permission.sfa0210Access">
+    <button class="btn btn-sm blue waves-effect waves-light" ng-click="gotoUrlEXEX('SalRsvControl','INSERT',row)">
+      <i class="glyphicon glyphicon-share-alt"></i><spring:message code="POPOVER.RECEIVE"/></button>
+  </div>
+  <div class="row m-l-0 m-r-0 p-t-5" ng-if="modelHeader.login.permission.sfa0310Access">
+    <button class="btn btn-sm blue waves-effect waves-light" ng-click="gotoUrlEXEX('SalDecideProcess','INSERT',row)">
+      <i class="glyphicon glyphicon-share-alt"></i><spring:message code="POPOVER.SALES"/></button>
+  </div>
+  <div class="row m-l-0 m-r-0 p-t-5" ng-if="modelHeader.login.permission.sfa0610Access">
+    <button class="btn btn-sm blue waves-effect waves-light" ng-click="gotoUrlEXEX('SalOrderControl','INSERT',row)">
+      <i class="glyphicon glyphicon-share-alt"></i><spring:message code="POPOVER.ORDER"/></button>
+  </div>
+  <div class="row m-l-0 m-r-0 p-t-5" ng-if="modelHeader.login.permission.sfa0710Access">
+    <button class="btn btn-sm blue waves-effect waves-light" ng-click="gotoUrlEXEX('SalStockControl','INSERT',row)">
+      <i class="glyphicon glyphicon-share-alt"></i><spring:message code="POPOVER.STOCK"/></button>
+  </div>
+</script>
+
+<script type="text/ng-template" id="rsvPopoverButton.html">
+  <div class="row m-l-0 m-r-0" ng-if="modelHeader.login.permission.sfa0310Access">
+    <button class="btn btn-sm blue waves-effect waves-light" ng-click="gotoUrlEXEX('SalDecideProcess','INSERT',row)">
+      <i class="glyphicon glyphicon-share-alt"></i><spring:message code="POPOVER.SALES"/></button>
+  </div>
+  <div class="row m-l-0 m-r-0 p-t-5" ng-if="modelHeader.login.permission.sfa0610Access">
+    <button class="btn btn-sm blue waves-effect waves-light" ng-click="gotoUrlEXEX('SalOrderControl','INSERT',row)">
+      <i class="glyphicon glyphicon-share-alt"></i><spring:message code="POPOVER.ORDER"/></button>
+  </div>
+  <div class="row m-l-0 m-r-0 p-t-5" ng-if="modelHeader.login.permission.sfa0710Access">
+    <button class="btn btn-sm blue waves-effect waves-light" ng-click="gotoUrlEXEX('SalStockControl','INSERT',row)">
+      <i class="glyphicon glyphicon-share-alt"></i><spring:message code="POPOVER.STOCK"/></button>
+  </div>
+  <div class="row m-l-0 m-r-0 p-t-5" ng-if="modelHeader.login.permission.sfa0110Access">
+    <button class="btn btn-sm blue waves-effect waves-light" ng-click="gotoUrlEXEX('SalEstimateControl','INSERT',row)">
+      <i class="glyphicon glyphicon-share-alt"></i><spring:message code="POPOVER.ESTIMATE"/></button>
+  </div>
+</script>
+
+<script type="text/ng-template" id="salesPopoverButton.html">
+  <div class="row m-l-0 m-r-0" ng-if="modelHeader.login.permission.sfa0610Access">
+    <button class="btn btn-sm blue waves-effect waves-light" ng-click="gotoUrlEXEX('SalOrderControl','INSERT',row)">
+      <i class="glyphicon glyphicon-share-alt"></i><spring:message code="POPOVER.ORDER"/></button>
+  </div>
+  <div class="row m-l-0 m-r-0 p-t-5" ng-if="modelHeader.login.permission.sfa0710Access">
+    <button class="btn btn-sm blue waves-effect waves-light" ng-click="gotoUrlEXEX('SalStockControl','INSERT',row)">
+      <i class="glyphicon glyphicon-share-alt"></i><spring:message code="POPOVER.STOCK"/></button>
+  </div>
+  <div class="row m-l-0 m-r-0 p-t-5" ng-if="modelHeader.login.permission.sfa0110Access">
+    <button class="btn btn-sm blue waves-effect waves-light" ng-click="gotoUrlEXEX('SalEstimateControl','INSERT',row)">
+      <i class="glyphicon glyphicon-share-alt"></i><spring:message code="POPOVER.ESTIMATE"/></button>
+  </div>
+  <div class="row m-l-0 m-r-0 p-t-5" ng-if="modelHeader.login.permission.sfa0210Access">
+    <button class="btn btn-sm blue waves-effect waves-light" ng-click="gotoUrlEXEX('SalRsvControl','INSERT',row)">
+      <i class="glyphicon glyphicon-share-alt"></i><spring:message code="POPOVER.RECEIVE"/></button>
+  </div>
+</script>
+
+<script type="text/ng-template" id="orderPopoverButton.html">
+  <div class="row m-l-0 m-r-0" ng-if="modelHeader.login.permission.sfa0710Access">
+    <button class="btn btn-sm blue waves-effect waves-light" ng-click="gotoUrlEXEX('SalStockControl','INSERT',row)">
+      <i class="glyphicon glyphicon-share-alt"></i><spring:message code="POPOVER.STOCK"/></button>
+  </div>
+  <div class="row m-l-0 m-r-0 p-t-5" ng-if="modelHeader.login.permission.sfa0110Access">
+    <button class="btn btn-sm blue waves-effect waves-light" ng-click="gotoUrlEXEX('SalEstimateControl','INSERT',row)">
+      <i class="glyphicon glyphicon-share-alt"></i><spring:message code="POPOVER.ESTIMATE"/></button>
+  </div>
+  <div class="row m-l-0 m-r-0 p-t-5" ng-if="modelHeader.login.permission.sfa0210Access">
+    <button class="btn btn-sm blue waves-effect waves-light" ng-click="gotoUrlEXEX('SalRsvControl','INSERT',row)">
+      <i class="glyphicon glyphicon-share-alt"></i><spring:message code="POPOVER.RECEIVE"/></button>
+  </div>
+  <div class="row m-l-0 m-r-0 p-t-5" ng-if="modelHeader.login.permission.sfa0310Access">
+    <button class="btn btn-sm blue waves-effect waves-light" ng-click="gotoUrlEXEX('SalDecideProcess','INSERT',row)">
+      <i class="glyphicon glyphicon-share-alt"></i><spring:message code="POPOVER.SALES"/></button>
+  </div>
+</script>
+
+<script type="text/ng-template" id="stockPopoverButton.html">
+  <div class="row m-l-0 m-r-0" ng-if="modelHeader.login.permission.sfa0110Access">
+    <button class="btn btn-sm blue waves-effect waves-light" ng-click="gotoUrlEXEX('SalEstimateControl','INSERT',row)">
+      <i class="glyphicon glyphicon-share-alt"></i><spring:message code="POPOVER.ESTIMATE"/></button>
+  </div>
+  <div class="row m-l-0 m-r-0 p-t-5" ng-if="modelHeader.login.permission.sfa0210Access">
+    <button class="btn btn-sm blue waves-effect waves-light" ng-click="gotoUrlEXEX('SalRsvControl','INSERT',row)">
+      <i class="glyphicon glyphicon-share-alt"></i><spring:message code="POPOVER.RECEIVE"/></button>
+  </div>
+  <div class="row m-l-0 m-r-0 p-t-5" ng-if="modelHeader.login.permission.sfa0310Access">
+    <button class="btn btn-sm blue waves-effect waves-light" ng-click="gotoUrlEXEX('SalDecideProcess','INSERT',row)">
+      <i class="glyphicon glyphicon-share-alt"></i><spring:message code="POPOVER.SALES"/></button>
+  </div>
+  <div class="row m-l-0 m-r-0 p-t-5" ng-if="modelHeader.login.permission.sfa0610Access">
+    <button class="btn btn-sm blue waves-effect waves-light" ng-click="gotoUrlEXEX('SalOrderControl','INSERT',row)">
+      <i class="glyphicon glyphicon-share-alt"></i><spring:message code="POPOVER.ORDER"/></button>
+  </div>
+</script>
+
+<script type="text/ng-template" id="sfaProPopoverButton.html">
+  <div class="row m-l-0 m-r-0">
+    <button class="btn btn-sm blue waves-effect waves-light" style="width: 100%" ng-click="gotoUrlEXEX('SalEstimateControl','INSERT',row)">
+      <i class="glyphicon glyphicon-share-alt"></i><spring:message code="POPOVER.ESTIMATE"/></button>
+  </div>
+  <div class="row m-l-0 m-r-0 p-t-5">
+    <button class="btn btn-sm blue waves-effect waves-light" ng-click="gotoUrlEXEX('SalRsvControl','INSERT',row)">
+      <i class="glyphicon glyphicon-share-alt"></i><spring:message code="POPOVER.RECEIVE"/></button>
+  </div>
+  <div class="row m-l-0 m-r-0 p-t-5">
+    <button class="btn btn-sm blue waves-effect waves-light" ng-click="gotoUrlEXEX('SalDecideProcess','INSERT',row)">
+      <i class="glyphicon glyphicon-share-alt"></i><spring:message code="POPOVER.SALES"/></button>
+  </div>
+  <div class="row m-l-0 m-r-0 p-t-5">
+    <button class="btn btn-sm blue waves-effect waves-light" ng-click="gotoUrlEXEX('SalOrderControl','INSERT',row)">
+      <i class="glyphicon glyphicon-share-alt"></i><spring:message code="POPOVER.ORDER"/></button>
+  </div>
+  <div class="row m-l-0 m-r-0 p-t-5">
+    <button class="btn btn-sm blue waves-effect waves-light" ng-click="gotoUrlEXEX('SalStockControl','INSERT',row)">
+      <i class="glyphicon glyphicon-share-alt"></i><spring:message code="POPOVER.STOCK"/></button>
+  </div>
+</script>
+
+
+<!-- Sfa Project List -->
+<script type="text/ng-template" id="estPopoverTemplate.html">
+<a class='close' ng-click='close($event)'>&times;</a>
+<ul class="flex-container">
+  <li class="flex-item"><spring:message code="POPOVER.ESTIMATE"/></li>
+  <li class="flex-item"><spring:message code="POPOVER.ESTIMATE_DATE"/></li>
+  <li class="flex-item"><spring:message code="POPOVER.STATUS"/></li>
+  <li class="flex-item"><spring:message code="POPOVER.RECEIVE"/></li>
+  <li class="flex-item"><spring:message code="POPOVER.SALES"/></li>
+  <li class="flex-item"><spring:message code="POPOVER.ORDER"/></li>
+  <li class="flex-item"><spring:message code="POPOVER.STOCK"/></li>
+</ul>
+<div id="pop-over" ng-cloak style="height: auto;">
+<ul class="flex-container list-data" class="scrollbar-custom" ng-repeat="item in model.form.listItemsEst" ng-if="model.form.listItemsEst.length > 0">
+  <li class="flex-item">
+    <div ng-if='item.documentStatus == 03'>
+      <a ng-click='exportPDFReportFromPopOver(item, "EXEX01")' class='pull-left'>{{item.estimateSno}}</a>
+    </div>
+    <div ng-if='item.documentStatus != 03'>
+      <div class='pull-left'>{{item.estimateSno}}</div>
+    </div>
+  </li>
+  <li class="flex-item">{{item.snoDate}}</li>
+  <li class="flex-item">{{item.documentStatusName}}</li>
+  <li class="flex-item">{{item.rcvSno}}</li>
+  <li class="flex-item">{{item.salesSno}}</li>
+  <li class="flex-item">{{item.orderSno}}</li>
+  <li class="flex-item">{{item.stockSno}}</li>
+</ul>
+</div>
+</script>
+
+<script type="text/ng-template" id="rsvPopoverTemplate.html">
+<a class='close' ng-click='close($event)'>&times;</a>
+<ul class="flex-container">
+  <li class="flex-item"><spring:message code="POPOVER.RECEIVE"/></li>
+  <li class="flex-item"><spring:message code="POPOVER.RECEIVE_DATE"/></li>
+  <li class="flex-item"><spring:message code="POPOVER.STATUS"/></li>
+  <li class="flex-item"><spring:message code="POPOVER.ESTIMATE"/></li>
+  <li class="flex-item"><spring:message code="POPOVER.SALES"/></li>
+  <li class="flex-item"><spring:message code="POPOVER.ORDER"/></li>
+  <li class="flex-item"><spring:message code="POPOVER.STOCK"/></li>
+</ul>
+<div id="pop-over" ng-cloak class="scrollbar-custom" style="height: auto;">
+<ul class="flex-container list-data" ng-repeat="item in model.form.listItemsRsv" ng-if="model.form.listItemsRsv.length > 0">
+  <li class="flex-item">
+    <div ng-if='item.documentStatus == 03'>
+      <a ng-click='exportPDFReportFromPopOver(item, "EXEX02")' class='pull-left'>{{item.rcvSno}}</a>
+    </div>
+    <div ng-if='item.documentStatus != 03'>
+      <div class='pull-left'>{{item.rcvSno}}</div>
+    </div>
+  </li>
+  <li class="flex-item">{{item.snoDate}}</li>
+  <li class="flex-item">{{item.documentStatusName}}</li>
+  <li class="flex-item">{{item.estimateSno}}</li>
+  <li class="flex-item">{{item.salesSno}}</li>
+  <li class="flex-item">{{item.orderSno}}</li>
+  <li class="flex-item">{{item.stockSno}}</li>
+</ul>
+</div>
+</script>
+
+<script type="text/ng-template" id="salesPopoverTemplate.html">
+<a class='close' ng-click='close($event)'>&times;</a>
+<ul class="flex-container">
+  <li class="flex-item"><spring:message code="POPOVER.SALES"/></li>
+  <li class="flex-item"><spring:message code="POPOVER.SALES_DATE"/></li>
+  <li class="flex-item"><spring:message code="POPOVER.STATUS"/></li>
+  <li class="flex-item"><spring:message code="POPOVER.ESTIMATE"/></li>
+  <li class="flex-item"><spring:message code="POPOVER.RECEIVE"/></li>
+  <li class="flex-item"><spring:message code="POPOVER.ORDER"/></li>
+  <li class="flex-item"><spring:message code="POPOVER.STOCK"/></li>
+</ul>
+<div id="pop-over" ng-cloak class="scrollbar-custom " style="height: auto;">
+<ul class="flex-container list-data" ng-repeat="item in model.form.listItemsSales" ng-if="model.form.listItemsSales.length > 0">
+  <li class="flex-item">
+    <div ng-if='item.documentStatus == 03'>
+      <a ng-click='exportPDFReportFromPopOver(item, "EXEX03")' class='pull-left'>{{item.salesSno}}</a>
+    </div>
+    <div ng-if='item.documentStatus != 03'>
+      <div class='pull-left'>{{item.salesSno}}</div>
+    </div>
+  </li>
+  <li class="flex-item">{{item.snoDate}}</li>
+  <li class="flex-item">{{item.documentStatusName}}</li>
+  <li class="flex-item">{{item.estimateSno}}</li>
+  <li class="flex-item">{{item.rcvSno}}</li>
+  <li class="flex-item">{{item.orderSno}}</li>
+  <li class="flex-item">{{item.stockSno}}</li>
+</ul>
+</div>
+</script>
+
+<script type="text/ng-template" id="billPopoverTemplate.html">
+<a class='close' ng-click='close($event)'>&times;</a>
+<ul class="flex-container">
+  <li class="flex-item"><spring:message code="POPOVER.BILL"/></li>
+  <li class="flex-item"><spring:message code="POPOVER.BILL_DATE"/></li>
+  <li class="flex-item"><spring:message code="POPOVER.STATUS"/></li>
+</ul>
+<div id="pop-over" ng-cloak class="scrollbar-custom" style="height: auto;">
+<ul class="flex-container list-data" ng-repeat="item in model.form.listItemsBill" ng-if="model.form.listItemsBill.length > 0">
+  <li class="flex-item">
+    <div ng-if='item.documentStatus == 03'>
+      <a ng-click='exportPDFReportFromPopOver(item, "EXEX04")' class='pull-left'>{{item.billSno}}</a>
+    </div>
+    <div ng-if='item.documentStatus != 03'>
+      <div class='pull-left'>{{item.billSno}}</div>
+    </div>
+  </li>
+  <li class="flex-item">{{item.snoDate}}</li>
+  <li class="flex-item">{{item.documentStatusName}}</li>
+</ul>
+</div>
+</script>
+<!-- End Sfa Project List -->
+
+<script type="text/ng-template" id="colorTemplate.html">
+    <div id="popover-content">
+      <ul class="fc-color-picker" id="color-chooser">
+        <li><a ng-click="loadInitJsEvent(row,$index,$event)" class="text-aqua" href="#"><i class="fa fa-square"></i></a></li>
+        <li><a ng-click="loadInitJsEvent(row,$index,$event)" class="text-blue" href="#"><i class="fa fa-square"></i></a></li>
+        <li><a ng-click="loadInitJsEvent(row,$index,$event)" class="text-light-blue" href="#"><i class="fa fa-square"></i></a></li>
+        <li><a ng-click="loadInitJsEvent(row,$index,$event)" class="text-teal" href="#"><i class="fa fa-square"></i></a></li>
+        <li><a ng-click="loadInitJsEvent(row,$index,$event)" class="text-yellow" href="#"><i class="fa fa-square"></i></a></li>
+        <li><a ng-click="loadInitJsEvent(row,$index,$event)" class="text-orange" href="#"><i class="fa fa-square"></i></a></li>
+        <li><a ng-click="loadInitJsEvent(row,$index,$event)" class="text-green" href="#"><i class="fa fa-square"></i></a></li>
+        <li><a ng-click="loadInitJsEvent(row,$index,$event)" class="text-lime" href="#"><i class="fa fa-square"></i></a></li>
+        <li><a ng-click="loadInitJsEvent(row,$index,$event)" class="text-red" href="#"><i class="fa fa-square"></i></a></li>
+        <li><a ng-click="loadInitJsEvent(row,$index,$event)" class="text-purple" href="#"><i class="fa fa-square"></i></a></li>
+        <li><a ng-click="loadInitJsEvent(row,$index,$event)" class="text-fuchsia" href="#"><i class="fa fa-square"></i></a></li>
+        <li><a ng-click="loadInitJsEvent(row,$index,$event)" class="text-muted" href="#"><i class="fa fa-square"></i></a></li>
+        <li><a ng-click="loadInitJsEvent(row,$index,$event)" class="text-navy" href="#"><i class="fa fa-square"></i></a></li>
+      </ul>
+    </div>
+</script>
+
+<script type="text/ng-template" id="salesReportPopoverButton.html">
+  <div class="row m-l-0 m-r-0">
+    <button class="btn btn-sm blue waves-effect waves-light" ng-click="gotoSalesReport(row)">
+      <i class="glyphicon glyphicon-share-alt"></i><spring:message code="POPOVER.SALES_REPORT"/></button>
+  </div>
+</script>
+
+<script type="text/ng-template" id="itemPopoverTemplate.html">
+    <a class='close' ng-click='close($event)'>&times;</a>
+    <ul class='flex-container'>
+      <li class='flex-item' ng-if='model.hidden.screen=="ESTIMATE"'><spring:message code="POPOVER.ESTIMATE" /></li>
+      <li class='flex-item' ng-if='model.hidden.screen=="ESTIMATE"'><spring:message code="POPOVER.ESTIMATE_DATE" /></li>
+      <li class='flex-item' ng-if='model.hidden.screen=="RECEIVE"'><spring:message code="POPOVER.RECEIVE" /></li>
+      <li class='flex-item' ng-if='model.hidden.screen=="RECEIVE"'><spring:message code="POPOVER.RECEIVE_DATE" /></li>
+      <li class='flex-item' ng-if='model.hidden.screen=="SALES"'><spring:message code="POPOVER.SALES" /></li>
+      <li class='flex-item' ng-if='model.hidden.screen=="SALES"'><spring:message code="POPOVER.SALES_DATE" /></li>
+      <li class='flex-item' ng-if='model.hidden.screen=="BILL"'><spring:message code="POPOVER.BILL" /></li>
+      <li class='flex-item' ng-if='model.hidden.screen=="BILL"'><spring:message code="POPOVER.BILL_DATE" /></li>
+      <li class='flex-item'><spring:message code="POPOVER.STATUS" /></li>
+    </ul>
+    <div id='pop-over' ng-cloak style='height: auto;'>
+      <ul class='flex-container list-data' ng-if='model.hidden.screen=="ESTIMATE" && model.form.listItemsEst.length > 0' class='scrollbar-custom' ng-repeat='item in model.form.listItemsEst'>
+        <li class='flex-item'>
+          <div ng-if='item.documentStatus == 03'>
+            <a ng-click='exportPDFReportFromPopOver(item, "EXEX01")' class='pull-left'>{{item.estimateSno}}</a>
+          </div>
+          <div ng-if='item.documentStatus != 03'>
+            <div class='pull-left'>{{item.estimateSno}}</div>
+          </div>
+        </li>
+        <li class='flex-item'>{{item.snoDate}}</li>
+        <li class='flex-item'>{{item.documentStatusName}}</li>
+      </ul>
+      <ul class='flex-container list-data' ng-if='model.hidden.screen=="RECEIVE" && model.form.listItemsRsv.length > 0' class='scrollbar-custom' ng-repeat='item in model.form.listItemsRsv'>
+        <li class='flex-item'>
+          <div ng-if='item.documentStatus == 03'>
+            <a ng-click='exportPDFReportFromPopOver(item, "EXEX02")' class='pull-left'>{{item.rcvSno}}</a>
+          </div>
+          <div ng-if='item.documentStatus != 03'>
+            <div class='pull-left'>{{item.rcvSno}}</div>
+          </div>
+        </li>
+        <li class='flex-item'>{{item.snoDate}}</li>
+        <li class='flex-item'>{{item.documentStatusName}}</li>
+      </ul>
+      <ul class='flex-container list-data' ng-if='model.hidden.screen=="SALES" && model.form.listItemsSales.length > 0' class='scrollbar-custom' ng-repeat='item in model.form.listItemsSales'>
+        <li class='flex-item'>
+          <div ng-if='item.documentStatus == 03'>
+            <a ng-click='exportPDFReportFromPopOver(item, "EXEX03")' class='pull-left'>{{item.salesSno}}</a>
+          </div>
+          <div ng-if='item.documentStatus != 03'>
+            <div class='pull-left'>{{item.salesSno}}</div>
+          </div>
+        </li>
+        <li class='flex-item'>{{item.snoDate}}</li>
+        <li class='flex-item'>{{item.documentStatusName}}</li>
+      </ul>
+      <ul class='flex-container list-data' ng-if='model.hidden.screen=="BILL" && model.form.listItemsBill.length > 0' class='scrollbar-custom' ng-repeat='item in model.form.listItemsBill'>
+        <li class='flex-item'>
+          <div ng-if='item.documentStatus == 03'>
+            <a ng-click='exportPDFReportFromPopOver(item, "EXEX04")' class='pull-left'>{{item.billSno}}</a>
+          </div>
+          <div ng-if='item.documentStatus != 03'>
+            <div class='pull-left'>{{item.billSno}}</div>
+          </div>
+        </li>
+        <li class='flex-item'>{{item.snoDate}}</li>
+        <li class='flex-item'>{{item.documentStatusName}}</li>
+      </ul>
+    </div>
+</script>
+
+
+<script type="text/ng-template" id="processPopoverButton.html">
+  <div class="row m-l-0 m-r-0">
+    <button class="btn btn-sm blue waves-effect waves-light w-100" style="padding: 6px 12px;" ng-click="addRowProcess('INSERT', $index, 0, item.listDetailProcess)">
+      <i class="glyphicon glyphicon-object-align-top"></i><spring:message code="POPOVER.ADD_TOP"/></button>
+  </div>
+  <hr>
+  <div class="row m-l-0 m-r-0 p-t-5">
+    <button class="btn btn-sm btn-warning waves-effect waves-light w-100" style="padding: 6px 12px;" ng-click="removeRowProcess('DELETE', $index, row, item.listDetailProcess)">
+      <i class="glyphicon glyphicon-trash"></i><spring:message code="POPOVER.REMOVE"/></button>
+  </div>
+  <hr>
+  <div class="row m-l-0 m-r-0 p-t-5">
+    <button class="btn btn-sm blue waves-effect waves-light w-100" style="padding: 6px 12px;" ng-click="addRowProcess('INSERT', $index, 1, item.listDetailProcess)">
+      <i class="glyphicon glyphicon-object-align-bottom"></i><spring:message code="POPOVER.ADD_BOTTOM"/></button>
+  </div>
+</script>
+
+<script type="text/ng-template" id="estimateControlPopoverReport.html">
+  <div class="row m-l-0 m-r-0">
+    <button class="btn btn-sm green waves-effect waves-light w-150" ng-click="downloadEstimateReport(model, modelDetailsControl,'1')">
+      <i class="glyphicon glyphicon-print"></i><spring:message code="POPOVER.ESTIMATE_REPORT.001"/>
+  </button>
+  </div>
+  <div class="row m-l-0 m-r-0 p-t-5">
+  <button class="btn btn-sm green waves-effect waves-light w-150" ng-click="downloadEstimateReport(model, modelDetailsControl,'2')">
+    <i class="glyphicon glyphicon-print"></i><spring:message code="POPOVER.ESTIMATE_REPORT.002"/>
+  </button>
+  </div>
+  <div class="row m-l-0 m-r-0 p-t-5">
+  <button class="btn btn-sm green waves-effect waves-light w-150" ng-click="downloadEstimateReport(model, modelDetailsControl,'3')">
+    <i class="glyphicon glyphicon-print"></i><spring:message code="POPOVER.ESTIMATE_REPORT.003"/>
+  </button>
+  </div>
+</script>
+
+<script type="text/ng-template" id="estimatePopoverReport.html">
+  <div class="row m-l-0 m-r-0">
+    <button class="btn btn-sm green waves-effect waves-light w-150" ng-click="downloadEstimateReport(row,'1')">
+      <i class="glyphicon glyphicon-print"></i><spring:message code="POPOVER.ESTIMATE_REPORT.001"/>
+  </button>
+  </div>
+  <div class="row m-l-0 m-r-0 p-t-5">
+  <button class="btn btn-sm green waves-effect waves-light w-150" ng-click="downloadEstimateReport(row,'2')">
+    <i class="glyphicon glyphicon-print"></i><spring:message code="POPOVER.ESTIMATE_REPORT.002"/>
+  </button>
+  </div>
+  <div class="row m-l-0 m-r-0 p-t-5">
+  <button class="btn btn-sm green waves-effect waves-light w-150" ng-click="downloadEstimateReport(row,'3')">
+    <i class="glyphicon glyphicon-print"></i><spring:message code="POPOVER.ESTIMATE_REPORT.003"/>
+  </button>
+  </div>
+</script>
+
+<script type="text/ng-template" id="todoCustomerList.html">
+  <div class="row m-l-0 m-r-0" ng-repeat="items in model.form.listA050001" ng-class="{'p-t-5' : $index > 0}">
+    <button class="btn blue waves-effect waves-light" style="width: 100%"
+     uib-popover-template="dynamicPopoverDetail.templateUrl"
+     popover-placement="left" popover-trigger="focus"
+     popover-is-open="row.openedDetail[$index]" ng-click="showPopoverDetail($parent.$parent.$index, $index)">
+     {{items.codeName}}
+    </button>
+  </div>
+</script>
+
+<script type="text/ng-template" id="todoCustomerListDetail.html">
+  <div class="row m-l-0 m-r-0" ng-repeat="item in model.form.listC010010" ng-class="{'p-t-5' : $index > 0}">
+    <button class="btn blue waves-effect waves-light" style="width: 100%"
+      ng-click="updateTodoDetail($parent.$parent.$parent.$index, $parent.$index, $index)">
+      <i class="glyphicon glyphicon-floppy-saved"></i>{{item.codeName}}</button>
+  </div>
+</script>
+
+<script type="text/ng-template" id="mailPopoverButton.html">
+  <div class="row">
+    <button class="btn btn-sm blue waves-effect waves-light" style="width: 100%;" ng-click="addText(1)">
+      <i class="glyphicon glyphicon-share-alt"></i><spring:message code="label.mail.registration.022"/></button>
+  </div>
+  <div class="row p-t-5">
+    <button class="btn btn-sm blue waves-effect waves-light" style="width: 100%;" ng-click="addText(2)">
+      <i class="glyphicon glyphicon-share-alt"></i><spring:message code="label.mail.registration.023"/></button>
+  </div>
+  <div class="row p-t-5">
+    <button class="btn btn-sm blue waves-effect waves-light" style="width: 100%;" ng-click="addText(3)">
+      <i class="glyphicon glyphicon-share-alt"></i><spring:message code="label.mail.registration.024"/></button>
+  </div>
+  <div class="row p-t-5">
+    <button class="btn btn-sm blue waves-effect waves-light" style="width: 100%;" ng-click="addText(4)">
+      <i class="glyphicon glyphicon-share-alt"></i><spring:message code="label.mail.registration.032"/></button>
+  </div>
+</script>

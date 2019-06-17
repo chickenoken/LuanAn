@@ -1,0 +1,644 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision: 1.0 $  $Date: 2014/06/25 $
+ * @author Quang-Thien
+ */
+
+/**
+ * Table : 部署マスタ「MST_DEPART」
+ */
+
+'use strict';
+
+exexSMSApp.factory('CrmDeptControlModel', [ 'BaseModel', function(BaseModel) {
+
+    var model = BaseModel.getInstance();
+    model.form = {
+        listDeptItem0 : [],
+        listDeptItem1 : [],
+        listDeptItem2 : [],
+        listMstUser : [],
+        listMstGroupType : []
+    };
+
+    model.hidden = {
+        teleGroup5Max : 5,
+        teleGroup4Max : 4,
+        faxGroup5Max : 5,
+        faxGroup4Max : 4,
+        isDisabled : false,
+        isSubmited: false,
+        index: '',
+        flag: '',
+        faxNo1 : '',
+        faxNo2 : '',
+        faxNo3 : '',
+        telephoneNo1 : '',
+        telephoneNo2 : '',
+        telephoneNo3 : '',
+        businessOwnerFlag : false,
+        listGroupSelect : []
+    };
+    return model;
+
+}]);
+
+exexSMSApp.controller('crmDeptControlCtrl',
+        ['$rootScope', '$scope', '$uibModalInstance', 'CrmDeptControlModel', 'data', 'DialogsService', 'Messages', 'ServerService', '$filter',
+         function($rootScope, $scope, $uibModalInstance, CrmDeptControlModel, data, DialogsService, Messages, ServerService, $filter) {
+
+    $scope.model = CrmDeptControlModel;
+    $scope.model.hidden.checkUnique = [];
+
+    /**get site components for view*/
+    $scope.getDepartControls = function(custCd, deptCd){
+        var param = {
+            custCd: custCd,
+            deptCd : deptCd
+        }
+        ServerService.doPost('CrmDeptControl/getListDeptComponent', param)
+        .then(function(result) {
+            var error = result.data.failed;
+            var warning =  result.data.warning;
+            if(!ValidateUtil.isValidTextEmpty(error)){
+                DialogsService.showError(Messages.getMessage('system.error'), error);
+                return;
+            }else if(!ValidateUtil.isValidTextEmpty(warning)){
+                DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                return;
+            }
+            $scope.model.form.listDeptItem0 = result.data.listDeptItem0;
+            $scope.model.form.listDeptItem1 = result.data.listDeptItem1;
+            $scope.model.form.listDeptItem2 = result.data.listDeptItem2;
+
+            $scope.model.form.listMstUser = result.data.listMstUser;
+            $scope.model.form.listMstGroupType = result.data.listMstGroupType;
+
+            if(!ValidateUtil.isValidTextEmpty(result.data.groupLabelName)){
+                $scope.model.hidden.deptTitle = result.data.groupLabelName;
+            }
+
+            /**convert data of listDeptItem0 for view*/
+            angular.forEach($scope.model.form.listDeptItem0, function(item, i){
+                angular.forEach(item.listDepartItemDetail, function(detail, j){
+                    $scope.convertDataForView(detail);
+                });
+            });
+
+            /**convert data of listDeptItem1 for view*/
+            angular.forEach($scope.model.form.listDeptItem1, function(item, i){
+                angular.forEach(item.listDepartItemDetail, function(detail, j){
+                    $scope.convertDataForView(detail);
+                });
+            });
+
+            /**convert data of listDeptItem1 for view*/
+            angular.forEach($scope.model.form.listDeptItem2, function(item, i){
+                angular.forEach(item.listDepartItemDetail, function(detail, j){
+                    $scope.convertDataForView(detail);
+                });
+            });
+        });
+    }
+
+    /**初期データ*/
+    $scope.init = function(model){
+
+        if(!StringUtils.isEmpty($scope.model.hidden.checkUnique)
+                && $scope.model.hidden.checkUnique.length > 0){
+            for (var key in $scope.model.hidden.checkUnique) {
+                $scope.model.hidden.checkUnique[key] = true;
+            }
+        }
+        $scope.model.hidden.isSubmited = false;
+        if(data != undefined && data != null){
+            if(data.businessOwnerFlag){
+                $scope.model.hidden.businessOwnerFlag = data.businessOwnerFlag;
+                $scope.model.hidden.screenMode = data.screenMode;
+            }else{
+                $scope.model.hidden.screenMode = "";
+                $scope.model.hidden.businessOwnerFlag = false;
+                $scope.model.hidden.isDisabled = data.isDisabled;
+            }
+            var custCd = !ValidateUtil.isValidTextEmpty(data.departControl.custCd) ? data.departControl.custCd : null;
+            var deptCd = !ValidateUtil.isValidTextEmpty(data.departControl.deptCd) ? data.departControl.deptCd : null;
+            $scope.model.hidden.custName = data.departControl.custName;
+            $scope.model.hidden.screenMode = data.screenMode;
+            $scope.model.hidden.isDisabled = data.isDisabled;
+            $scope.model.hidden.custCd = custCd;
+            $scope.model.hidden.deptCd = deptCd;
+            $scope.getDepartControls(custCd, deptCd);
+        }
+    };
+
+    /**call function init()*/
+    $scope.init();
+
+    /**convert parameter before post for new dept*/
+    $scope.convertParam = function(){
+        var param = {
+            custCd: $scope.model.hidden.custCd,
+            deptCd: $scope.model.hidden.deptCd,
+            listDept: []
+        }
+        angular.forEach(angular.copy($scope.model.form.listDeptItem0), function(item, i){
+            angular.forEach(item.listDepartItemDetail, function(detail, j){
+                if(detail.controlType == "05"){
+                    delete detail.isFileChange;
+                }
+                if(detail.controlType == "08" && detail.lineNo == 3){
+                    detail.inputValue = $scope.model.hidden.custCd;
+                }
+            })
+            param.listDept.push(angular.copy(item));
+        });
+        angular.forEach(angular.copy($scope.model.form.listDeptItem1), function(item, i){
+            angular.forEach(item.listDepartItemDetail, function(detail, j){
+                if(detail.controlType == "05"){
+                    delete detail.isFileChange;
+                }
+                if(detail.controlType == "08" && detail.lineNo == 3){
+                    detail.inputValue = $scope.model.hidden.custCd;
+                }
+            })
+            param.listDept.push(angular.copy(item));
+        });
+        angular.forEach(angular.copy($scope.model.form.listDeptItem2), function(item, i){
+            angular.forEach(item.listDepartItemDetail, function(detail, j){
+                if(detail.controlType == "05"){
+                    delete detail.isFileChange;
+                }
+                if(detail.controlType == "08" && detail.lineNo == 3){
+                    detail.inputValue = $scope.model.hidden.custCd;
+                }
+            })
+            param.listDept.push(angular.copy(item));
+        });
+
+        /**convert data for list site*/
+        angular.forEach(param.listDept, function(group, i){
+            angular.forEach(group.listDepartItemDetail, function(detail, j){
+                if(detail.controlType == "04" && detail.listData.length > 0){
+                    if(!StringUtils.isEmpty(detail.listDataSource)){
+                        var inputValue = "";
+                        angular.forEach(detail.listData, function(data, k){
+                            if(detail.inputValue[k] == "1"){
+                                inputValue += data.code+",";
+                            }
+                        });
+                        if(!StringUtils.isEmpty(inputValue)){
+                            var trim = inputValue.replace(/(^,)|(,$)/g, "")
+                            detail.inputValue = trim;
+                        }else{
+                            detail.inputValue = null;
+                        }
+                    }
+                }
+                if(detail.controlType == "09"){
+                    if(!StringUtils.isEmpty(detail.inputValue.postNo1) || !StringUtils.isEmpty(detail.inputValue.postNo2)
+                            || !StringUtils.isEmpty(detail.inputValue.address1) || !StringUtils.isEmpty(detail.inputValue.address2)){
+                        detail.inputValue = JSON.stringify(detail.inputValue);
+                    }else{
+                        detail.inputValue = null;
+                    }
+                }
+                if(detail.controlType == "08" && !StringUtils.isEmpty(detail.inputValue) && detail.lineNo == 1){
+                    detail.inputValue = detail.inputValue.toString();
+                }
+                if((detail.controlType == "11" || detail.controlType == 'MST_GROUP_LIST' || detail.controlType == 'MST_USER_LIST')
+                        && !StringUtils.isEmpty(detail.inputValue)){
+                    detail.inputValue = detail.inputValue.toString();
+                }
+                delete detail.isFileChange;
+                delete detail.fileSize;
+                delete detail.checkSize;
+            });
+        });
+        return param;
+    };
+
+    /**
+     * 拠点テーブル登録
+     */
+    $scope.insertDepart = function(formInvalid) {
+
+        $scope.model.hidden.isSubmited = true;
+        if (formInvalid) {
+            return;
+        }
+        for (var key in $scope.model.hidden.checkUnique) {
+            if ($scope.model.hidden.checkUnique[key]) {
+                return;
+            }
+        }
+        var param = $scope.convertParam();
+        delete param.createUser;
+        delete param.createDate;
+
+        /**show confirm dialog*/
+        DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('S00003'))
+        .result.then(function(btn){
+            $scope.insertServer(param);
+        });
+    };
+
+    /**
+     * 拠点テーブル登録
+     */
+    $scope.insertServer = function(param){
+        delete param.createUserName;
+        delete param.lastUpdUserName;
+        delete param.lastUpdDate;
+        delete param.createDate;
+        ServerService.doPost('CrmDeptControl/insert', param).then(
+            function(result) {
+                var error =  result.data.failed;
+                var warning = result.data.warning;
+                var success = result.data.success;
+                if(!ValidateUtil.isValidTextEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                }else if(!ValidateUtil.isValidTextEmpty(warning)){
+                    DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                    return;
+                }else{
+                    DialogsService.showNotify(Messages.getMessage('title.info'), success)
+                    .result.then(function(btn){
+                        $rootScope.$broadcast("CrmDeptControl#loadDept");
+                        $uibModalInstance.close(true);
+                   });
+                }
+            }
+        );
+    };
+
+    /**
+     * 拠点テーブル更新
+     */
+    $scope.updateDepart = function(formInvalid) {
+
+        $scope.model.hidden.isSubmited = true;
+        if (formInvalid) {
+            return;
+        }
+        for (var key in $scope.model.hidden.checkUnique) {
+            if ($scope.model.hidden.checkUnique[key]) {
+                return;
+            }
+        }
+        var param = $scope.convertParam();
+        delete param.createUser;
+        delete param.createDate;
+
+        DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('S00004'))
+        .result.then(function(value){
+            if(!StringUtils.isEmpty(value)){
+                $scope.updateServer(param);
+            }
+        });
+    };
+
+    /**
+     * 拠点テーブル更新
+     */
+    $scope.updateServer = function(param){
+        delete param.createUserName;
+        delete param.lastUpdUserName;
+        delete param.lastUpdDate;
+        delete param.createDate;
+        ServerService.doPost('CrmDeptControl/update', param).then(
+            function(result) {
+                var error =  result.data.failed;
+                var warning = result.data.warning;
+                var success = result.data.success;
+                if(!ValidateUtil.isValidTextEmpty(error)){
+                    DialogsService.showError(Messages.getMessage('system.error'), error);
+                    return;
+                }else if(!ValidateUtil.isValidTextEmpty(warning)){
+                    DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                    return;
+                }else{
+                    DialogsService.showNotify(Messages.getMessage('title.info'), success)
+                    .result.then(function(btn){
+                        $rootScope.$broadcast("CrmDeptControl#loadDept");
+                        $uibModalInstance.close(true);
+                    });
+                }
+            }
+        );
+    };
+
+    $scope.deleteDept = function(param){
+        var params = {
+            custCd: param.custCd,
+            deptCd: param.deptCd,
+        }
+        DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('S00005'))
+        .result.then(function(btn){
+            ServerService.doPost('CrmDeptControl/delete', params).then(
+                function(okResult) {
+                    var error = okResult.data.failed;
+                    var warning = okResult.data.warning;
+                    var success = okResult.data.success;
+                    if(!StringUtils.isEmpty(error)){
+                        DialogsService.showError(Messages.getMessage('system.error'), error);
+                        return;
+                    }else if(!StringUtils.isEmpty(warning)){
+                        DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                        return;
+                    }
+                    DialogsService.showNotify(Messages.getMessage('title.info'), success)
+                    .result.then(function(btn){
+                        $rootScope.$broadcast("CrmDeptControl#loadDept");
+                        $uibModalInstance.close(true);
+                    });
+                }
+            );
+        });
+    };
+
+    $scope.resetFile  = function(e) {
+        e.wrap('<form>').parent('form').trigger('reset');
+        e.unwrap();
+    };
+
+    $scope.removeFile = function(row,parentIndex,index){
+        row.binaryFile = '';
+        row.inputValue = '';
+        row.fileSize = '';
+        row.checkSize = false;
+        $scope.resetFile($('input[name="inputValueFile"]'));
+    };
+
+    /**ユニークをチェック*/
+    $scope.checkUnique = function(detail){
+        if(detail.checkUnique){
+            var key = detail.detailFreeItemFlag + '' + detail.lineNo +''+ detail.groupNo;
+            if(!StringUtils.isEmpty(detail.inputValue)){
+                var detailFreeItemFlag = 0;
+                if(!ValidateUtil.isValidTextEmpty(detail.detailFreeItemFlag) && detail.detailFreeItemFlag){
+                    detailFreeItemFlag = 1;
+                }
+                var params = {
+                    detailFreeItemFlag: detailFreeItemFlag,
+                    lineNo : detail.lineNo,
+                    inputValue: detail.inputValue,
+                    deptCd: detail.deptCd,
+                    custCd: detail.custCd
+                };
+                ServerService.doPost('CrmDeptControl/checkUnique', params).then(
+                    function(okResult) {
+                        var error =  okResult.data.failed;
+                        var warning =  okResult.data.warning;
+                        if(!ValidateUtil.isValidTextEmpty(warning)){
+                            DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                        }else if(!ValidateUtil.isValidTextEmpty(error)){
+                            DialogsService.showError(Messages.getMessage('system.error'), error);
+                        }else{
+                            if(!okResult.data.isUnique){
+                                $scope.model.hidden.checkUnique[key] = true;
+                            }else{
+                                $scope.model.hidden.checkUnique[key] = false;
+                            }
+                        }
+                    }
+                );
+            }else{
+                $scope.model.hidden.checkUnique[key] = false;
+            }
+        }
+    }
+
+    /**
+     * Tự động convert giá trị trong input thành 1 byte hoặc 2 byte như dưới đây
+     * AUTO_CONVERT_INPUT_TYPE = '02': chuyển giá trị input thành 1 byte
+     * AUTO_CONVERT_INPUT_TYPE = '03': chuyển giá trị input thành 2 byte
+     */
+    $scope.convertCharByInputType = function (detail) {
+        if (!StringUtils.isEmpty(detail.autoConvertInputType)) {
+            if (detail.controlType == '09' && !StringUtils.isEmpty(detail.inputValue)) { //TUNG: controlType == '09' (Component Address)
+                switch (detail.autoConvertInputType) {
+                    case '02':
+                        if (!StringUtils.isEmpty(detail.inputValue.address1)) {
+                            detail.inputValue.address1 = StringUtils.convertDoubleToSingleChar(detail.inputValue.address1);
+                        }
+                        if (!StringUtils.isEmpty(detail.inputValue.address2)) {
+                            detail.inputValue.address2 = StringUtils.convertDoubleToSingleChar(detail.inputValue.address2);
+                        }
+                        break;
+                    case '03':
+                        if (!StringUtils.isEmpty(detail.inputValue.address1)) {
+                            detail.inputValue.address1 = StringUtils.convertSingleToDoubleChar(detail.inputValue.address1);
+                        }
+                        if (!StringUtils.isEmpty(detail.inputValue.address2)) {
+                            detail.inputValue.address2 = StringUtils.convertSingleToDoubleChar(detail.inputValue.address2);
+                        }
+                        break;
+                }
+            } else {
+                switch (detail.autoConvertInputType) {
+                    case '02':
+                        detail.inputValue = StringUtils.convertDoubleToSingleChar(detail.inputValue);
+                        break;
+                    case '03':
+                        detail.inputValue = StringUtils.convertSingleToDoubleChar(detail.inputValue);
+                        break;
+                }
+            }
+        }
+    }
+
+    /**convert data for view*/
+    $scope.convertDataForView = function(detail) {
+        if(detail.controlType == "04" && !StringUtils.isEmpty(detail.listData)){
+            var inputValue = [];
+            angular.forEach(detail.listData, function(data, k){
+                if(!StringUtils.isEmpty(detail.inputValue) && detail.inputValue.indexOf(data.code) > -1){
+                    inputValue[k] = '1'
+                }else{
+                    inputValue[k] = '0';
+                }
+            });
+            if(inputValue.length > 0){
+                detail.inputValue = inputValue;
+            }
+        }
+
+        if(detail.controlType == "08" && detail.lineNo == 3){
+            detail.inputValue = $scope.model.hidden.custName;
+        }
+
+        if(detail.controlType == "09"){
+            var address = {
+                postNo1: '',
+                postNo2: '',
+                address1: '',
+                address2: '',
+            }
+            if(!StringUtils.isEmpty(detail.inputValue)){
+                detail.inputValue = StringUtils.isJson(detail.inputValue) ? angular.fromJson(detail.inputValue) : address;
+            }else{
+                detail.inputValue = address;
+            }
+        }
+        if(detail.controlType == "11" || detail.controlType == 'MST_GROUP_LIST' || detail.controlType == 'MST_USER_LIST'){
+            if(!StringUtils.isEmpty(detail.inputValue) && typeof(detail.inputValue) == 'string'){
+                detail.inputValue = detail.inputValue.split(',');
+                if(detail.controlType == 'MST_GROUP_LIST'){
+                    $scope.model.hidden.listGroupSelect[detail.detailKey] = detail.inputValue;
+                }
+            } else {
+                if(detail.controlType == 'MST_GROUP_LIST'){
+                    $scope.model.hidden.listGroupSelect[detail.detailKey] = [];
+                }
+            }
+        }
+    };
+
+    /**event change value of postNo*/
+    $scope.changePostNo = function(value, lineNo){
+        if (value.length == 3) {
+            angular.element('#postNo2_' + lineNo).focus();
+        }
+    }
+
+    $scope.checkPostNumber = function(param, parentIndex, index, list){
+        var postNo = param.postNo1 + param.postNo2;
+        if(ValidateUtil.isValidTextEmpty(postNo))
+        {
+            DialogsService.showWarning(Messages.getMessage('check.error'),
+                    Messages.getMessage('W00207'));
+            return true;
+        }
+        if(ValidateUtil.isValidPostNo(postNo))
+        {
+            DialogsService.showWarning(Messages.getMessage('check.error'),
+                    Messages.getMessage('W00018'));
+            return true;
+        }
+        var params = {'postNo':postNo};
+        ServerService.doPost('CrmControl/checkPostNumber', params)
+        .then(function(okResult) {
+            var error =  okResult.data.failed;
+            var warning =  okResult.data.warning;
+            if(!ValidateUtil.isValidTextEmpty(warning)){
+                DialogsService.showWarning(Messages.getMessage('check.error'),
+                        warning);
+            }else if(!ValidateUtil.isValidTextEmpty(error)){
+                DialogsService.showError(Messages.getMessage('system.error'),
+                        error);
+            }else{
+                if(list == 0){
+                    $scope.model.form.listDeptItem0[parentIndex].listDepartItemDetail[index].inputValue.address1 = okResult.data.address;
+                }else if(list == 1){
+                    $scope.model.form.listDeptItem1[parentIndex].listDepartItemDetail[index].inputValue.address1 = okResult.data.address;
+                }else if(list == 2){
+                    $scope.model.form.listDeptItem2[parentIndex].listDepartItemDetail[index].inputValue.address1 = okResult.data.address;
+                }
+            }
+        });
+    };
+
+    /**download file */
+    $scope.downloadFile = function(param){
+        if(!StringUtils.isEmpty(param.inputValue) && !param.isFileChange){
+            var detailFreeItemFlag = 0;
+            if(!ValidateUtil.isValidTextEmpty(param.detailFreeItemFlag) && param.detailFreeItemFlag){
+                detailFreeItemFlag = 1;
+            }
+            var params = {
+                custCd: param.custCd,
+                deptCd: param.deptCd,
+                detailFreeItemFlag: detailFreeItemFlag,
+                lineNo : param.lineNo
+            };
+            Utils.postToUrl("/CrmDeptControl/downloadFile", params);
+        }
+    };
+
+    /**close mstSiteControl popup*/
+    $scope.close = function() {
+        $uibModalInstance.close(false);
+    };
+
+    //Change value input has controlType = "06".
+    $scope.onChangeControlType06 = function(detail){
+        CalculateUtils.sumControlType12(detail, $filter);
+    };
+
+    $scope.changeSite = function(detail){
+        var siteCd = detail.inputValue;
+        if(!StringUtils.isEmpty(siteCd)){
+            var params = {
+                custCd : $scope.model.hidden.custCd,
+                siteCd : siteCd
+            }
+            ServerService.doPost('CrmDeptControl/changeSite', params).then(
+                function (okResult) {
+                    var error = okResult.data.failed;
+                    var warning = okResult.data.warning;
+                    if (!StringUtils.isEmpty(error)) {
+                        DialogsService.showError(Messages.getMessage('system.error'), error);
+                        return;
+                    } else if (!StringUtils.isEmpty(warning)) {
+                        DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                        return;
+                    }else{
+                        var siteData = okResult.data.siteData;
+                        if (!StringUtils.isEmpty(siteData) && !StringUtils.isEmpty(siteData.siteCd)) {
+                            angular.forEach($scope.model.form.listDeptItem0, function (group, i) {
+                                angular.forEach(group.listDepartItemDetail, function (detail, j) {
+                                    if (detail.detailKey == '017') {
+                                        detail.inputValue = siteData.unitNo;
+                                    }
+                                });
+                            });
+                        }
+                    }
+                }
+            );
+        }else{
+            angular.forEach($scope.model.form.listDeptItem0, function (group, i) {
+                angular.forEach(group.listDepartItemDetail, function (detail, j) {
+                    if (detail.detailKey == '017') {
+                        detail.inputValue = "";
+                    }
+                });
+            });
+        }
+    }
+
+    $scope.changeCustCd = function(custCd){
+        if(!StringUtils.isEmpty(custCd)){
+            ServerService.doPost('CrmDeptControl/changeCustCd', custCd).then(
+                function (okResult) {
+                    var error = okResult.data.failed;
+                    if (!StringUtils.isEmpty(error)) {
+                        DialogsService.showError(Messages.getMessage('system.error'), error);
+                        return;
+                    }else{
+                        if(!StringUtils.isEmpty(okResult.data.listSite)){
+                            angular.forEach($scope.model.form.listDeptItem0, function(item, i){
+                                angular.forEach(item.listDepartItemDetail, function(detail, j){
+                                    if(detail.detailKey == '04'){
+                                        detail.listData = okResult.data.listSite;
+                                    }
+                                });
+                            });
+                        }
+                    }
+            });
+        }else{
+            angular.forEach($scope.model.form.listDeptItem0, function(item, i){
+                angular.forEach(item.listDepartItemDetail, function(detail, j){
+                    if(detail.detailKey == '04'){
+                        detail.listData = [];
+                    }
+                });
+            });
+        }
+    };
+}]);

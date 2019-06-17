@@ -1,0 +1,123 @@
+
+var qlnv = angular.module("qlnvApp", ['ui.bootstrap']);
+
+qlnv.factory('quanLyNhanVienModel',[ function(){
+    var model = [];
+
+    model.form = {
+       search : {
+           maNv : '',
+           tenNv : ''
+       },
+       listNhanVien : [],
+       listShow : []
+    }
+
+    model.hidden = {
+        isShow : false,
+        pageNum : 0,
+        pageSelect : 0
+    }
+
+    return model;
+}]);
+
+qlnv.controller("quanLyNhanVienCtrl",  ['$scope', '$http', '$filter','$rootScope','quanLyNhanVienModel', '$uibModal',
+    function($scope, $http, $filter, $rootScope, quanLyNhanVienModel, $uibModal){
+
+    $scope.model = quanLyNhanVienModel;
+
+    $scope.getPage = function(list){
+        var pageTemp = 0;
+        for(var i = 0 ; i < list.length; i++){
+            if(i % 5 == 0){
+                pageTemp++;
+            }
+        }
+        $scope.model.hidden.pageNum = pageTemp;
+    }
+
+    $scope.showList = function (page){
+        var listTemp = [];
+        var startPage = 5 * page;
+        var destPage = (5 * page) + 5 > $scope.model.form.listNhanVien.length ? $scope.model.form.listNhanVien.length : (5 * page) + 5;
+        for(var i = startPage; i < destPage; i++){
+            listTemp.push($scope.model.form.listNhanVien[i]);
+        }
+        $scope.model.hidden.pageSelect = page;
+        $scope.model.form.listShow = listTemp;
+    }
+
+    $scope.test = function (){
+        for(var i =0 ; i < 17 ; i++){
+            var param = {
+                maNv : i,
+                tenNv : 'test',
+                role : 'admin',
+                taiKhoan : 'test01',
+                matKhau : '23'
+            };
+            $scope.model.form.listNhanVien.push(param);
+        }
+        $scope.getPage($scope.model.form.listNhanVien);
+        $scope.showList(0);
+    };
+
+    $scope.test();
+
+    $scope.search = function (param){
+        var httpParams = {
+                headers: {'X-CSRF-TOKEN': $('meta[name=_csrf]').attr("content")},
+                method: 'POST',
+                url: 'login/dangNhap',
+                data: angular.copy(param)
+            };
+
+    };
+
+    $scope.range = function(n) {
+        return new Array(n);
+    };
+
+    $scope.openDialog = function() {
+        var modalInstance =  $uibModal.open({
+          templateUrl: "quanLyNhanVienControl",
+          controller: "quanLyNhanVienControlCtrl",
+          size: '',
+        });
+        modalInstance.result.then(function(response){
+            $scope.result = `${response} button hitted`;
+        });
+
+      };
+
+}]);
+
+qlnv.factory('quanLyNhanVienModel',[ function(){
+    var model = [];
+
+    model.form = {
+       control : {
+           tenNv : '',
+           role : 'admin'
+           taiKhoan : '',
+           matKhau : '',
+       },
+       listNhanVien : [],
+       listShow : []
+    }
+
+    return model;
+}]);
+
+qlnv.controller('quanLyNhanVienControlCtrl', function($scope, $uibModalInstance) {
+
+    $scope.ok = function(){
+      $uibModalInstance.close("Ok");
+    }
+
+    $scope.cancel = function(){
+      $uibModalInstance.dismiss();
+    }
+
+  });

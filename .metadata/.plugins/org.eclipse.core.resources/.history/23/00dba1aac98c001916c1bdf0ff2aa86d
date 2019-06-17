@@ -1,0 +1,168 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision:  $  $Date:  $
+ * @author : huy-du
+ */
+'use strict';
+/**
+ * Table :
+ */
+exexSMSApp.factory('MstSalesReportModel', [ 'BaseModel', function(BaseModel) {
+    var model = BaseModel.getInstance();
+    model.form = {
+              search:{
+                scheduleStartHm : '',
+                scheduleEndHm : '',
+              },
+              listSalesReport:[],
+              listA050002: [],
+              listA050003: []
+    };
+    model.listDetail= [],
+    model.hidden = {
+            isSubmited: false
+    };
+
+return model;
+
+}]);
+exexSMSApp.controller('MstSalesReportCtrl',
+        ['$scope','MstSalesReportModel', 'DialogsService', 'MstSalesReportService', 'Messages',
+         function($scope, MstSalesReportModel,  DialogsService, salesReportService, Messages){
+
+        $scope.lblControlLabelName = angular.element('#lblControlLabelName').text();
+        $scope.lblControlTypeName = angular.element('#lblControlTypeName').text();
+
+        $scope.model=MstSalesReportModel;
+        $scope.selectedComponents = [];
+
+        /**初期*/
+        $scope.init = function(){
+            setTimeout(function() {
+                $('.timepicker').parent('.input-group').on('click', '.input-group-btn', function(e){
+                    e.preventDefault();
+                    $(this).parent('.input-group').find('.timepicker').timepicker('showWidget');
+                });
+                angular.element('.input-group input').keydown(function (e){
+                    $(this).parent('.input-group').find('.timepicker').timepicker('hideWidget');
+                });
+            }, 1000);
+
+            salesReportService.initData(null)
+            .then(
+                function(result) {
+                    if(!ValidateUtil.isValidTextEmpty(result.data)){
+                        $scope.model.form.listSalesReport = result.data.listEdit;
+                        $scope.model.form.listA050002 = result.data.listA050002;
+                        $scope.model.form.listA050003 = result.data.listA050003;
+                        $scope.model.form.listMstCode = result.data.listMstCode;
+                        $scope.selectedComponents  = result.data.listFree;
+                    }
+                }
+            );
+        };
+
+        $scope.init();
+
+        /**begin create drag component*/
+        var originalDraggables = [
+                                                  {controlLabelName: '', controlType: '03'},
+                                                  {controlLabelName: '', controlType: '04'},
+                                                  {controlLabelName: '', controlType: '01'},
+                                                  {controlLabelName: '', controlType: '02'},
+                                                  {controlLabelName: '', controlType: '05'}
+        ];
+
+        $scope.draggables = originalDraggables.map(function(x){
+          return [x];
+        });
+
+
+
+        $scope.addRow = function() {
+            var length = $scope.selectedComponents.length;
+            $scope.selectedComponents.splice(length, 1, {controlLabelName: '', controlType: ''});
+        };
+
+        $scope.removeItem = function(index){
+            $scope.selectedComponents.splice(index, 1);
+        }
+
+        $scope.index = 0;
+        $scope.draggableOptions = {
+          connectWith: ".connected-drop-target-sortable",
+          activate: function() {
+          },
+          beforeStop: function(event, ui) {
+              var content = ui.item.parent();
+              var id = ui.placeholder[0].nextSibling.id;
+              if(!ValidateUtil.isValidTextEmpty(id)){
+                  var idArr = ui.placeholder[0].nextSibling.id.split('-');
+                  var index = parseInt(idArr[2]);
+                  $scope.index = index;
+                  var name = $scope.selectedComponents[index].controlLabelName;
+                  ui.item.sortable.model.controlLabelName = name;
+                  $scope.selectedComponents.splice(index, 1, ui.item.sortable.model);
+              }
+          },
+          sort: function(e, ui) {
+              $('.ui-sortable-placeholder').css('height', '36');
+              $('.ui-sortable-placeholder').css('visibility', 'visible');
+          },
+          start: function() {
+          },
+          stop: function (e, ui) {
+            // if the element is removed from the first container
+            if (ui.item.sortable.source.hasClass('draggable-element-container') &&
+                ui.item.sortable.droptarget &&
+                ui.item.sortable.droptarget != ui.item.sortable.source &&
+                ui.item.sortable.droptarget.hasClass('connected-drop-target-sortable')) {
+              // restore the removed item
+              ui.item.sortable.sourceModel.push(ui.item.sortable.model);
+              $scope.selectedComponents.splice($scope.index + 1, 1);
+            }
+          }
+        };
+        $scope.sortableOptions = { };
+
+        /**end create drag component*/
+
+        /**更新*/
+        $scope.update = function(formInvalid) {
+            $scope.model.hidden.isSubmited = true;
+            if (formInvalid) {
+                return;
+            }
+            DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('S00004'))
+            .result.then(function(btn){
+                var listMain = [];
+                angular.forEach($scope.model.form.listSalesReport, function(group, i){
+                    angular.forEach(group.listDetail, function(detail, j){
+                        listMain.push(detail);
+                    })
+                })
+                var param = {
+                        listMain : JSON.stringify(listMain)
+                }
+                salesReportService.updateData(param)
+                .then(
+                    function(result) {
+                        if(!ValidateUtil.isValidTextEmpty(result.data)){
+                            var success = result.data.success;
+                            DialogsService.showNotify(Messages.getMessage('title.info'), success);
+                            $scope.model.hidden.isSubmited = false;
+                        }
+                    }
+                );
+            });
+        };
+
+        $scope.changeType = function(index){
+            if($scope.selectedComponents[index].controlType != '08'){
+                $scope.selectedComponents[index].listDataSource = '';
+            }
+        }
+}]);

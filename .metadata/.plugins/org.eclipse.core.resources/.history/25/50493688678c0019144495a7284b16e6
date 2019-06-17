@@ -1,0 +1,17 @@
+package org.planning.net.service;
+
+import java.util.List;
+
+import org.planning.net.dto.LoginDto;
+import org.springframework.stereotype.Service;
+
+@Service
+public class LoginServiceImpl implements LoginService {
+
+	@Override
+	public List<LoginDto> getList() throws Exception {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+}

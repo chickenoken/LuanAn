@@ -1,0 +1,5 @@
+package org.planning.net.config;
+
+public class ApplicationContextConfig {
+
+}

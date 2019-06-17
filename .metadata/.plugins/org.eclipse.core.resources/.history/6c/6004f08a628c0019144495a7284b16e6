@@ -1,0 +1,6 @@
+# DataSource
+
+ds.database-driver=net.sourceforge.jtds.jdbc.Driver
+ds.url=jdbc:jtds:sqlserver://localhost:1433/NetDatabasse;instance=W0ZVOBIRRBXJWCT\SQLEXPRESS
+ds.username=
+ds.password=

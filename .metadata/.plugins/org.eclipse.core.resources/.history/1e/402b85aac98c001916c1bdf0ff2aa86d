@@ -1,0 +1,672 @@
+/**
+ * Copyright(c) SystemEXE corp. All Rights Reserved.
+ */
+/**
+ *
+ * @version $Revision: 1.0 $  $Date:  $
+ * @author quang-tung
+ */
+
+exexSMSApp.factory('BargainControlModel', [ 'BaseModel', function(BaseModel) {
+
+    var model = BaseModel.getInstance();
+
+    model.form = {
+            bargainControl :{
+                bargainNo : '',
+                bargainType : '2',
+                bargainName : '',
+                bargainDetail : '',
+                bargainValue : '',
+                bargainRate : '',
+                priority : 1,
+                documentStatus : ''
+            },
+            bargainCondition :{
+                fromDate : '',
+                toDate : '',
+                minPurchaseNum : '',
+                maxPurchaseNum : '',
+                minPurchasePrice : '',
+                maxPurchasePrice : '',
+                custCd : [],
+                custRank : [],
+                stockaddressNo : [],
+                cate01: [],
+                cate02: [],
+                cate03: []
+            },
+            bargainItemDetail: [],
+            listMstStockaddress : [],
+            listS020011 : [],
+            listS010005 : [],
+            listC040001 : [],
+            listCate01 : [],
+            listCate02 : [],
+            listCate03 : [],
+    };
+    model.hidden = {
+            valueOrRate : false,
+            valueOrRateDetail : false,
+            isSubmited : false,
+            isDisabled : false,
+            checkBargainCost : true,
+            checkBargainPrice: true,
+            screenMode : 'INSERT',
+            rounding: '',
+            loginSession :'',
+            createUser : '',
+            createDate : '',
+            version : '',
+            listDataCustAjax : [],
+            listDataStockaddressAjax : [],
+    }
+    return model;
+} ]);
+
+exexSMSApp.controller('bargainControlCtrl',
+        ['$rootScope', '$scope', '$timeout', 'BargainControlModel', 'ServerService', 'DialogsService', 'RouteService', 'Messages',
+         function($rootScope, $scope, $timeout, BargainControlModel, ServerService, DialogsService, RouteService, Messages){
+
+    $scope.model = BargainControlModel;
+
+    /**初期*/
+    $scope.init = function(){
+        $scope.getInit();
+    };
+
+    $scope.calWidth = function(){
+        $timeout(function(){
+            var isChrome = !!window.chrome && !!window.chrome.webstore;
+            var heightTable = $("#tableClone1")[0].offsetHeight;
+            if(!isChrome && heightTable > 246){
+                $scope.model.hidden.widthHeader = {"width": "calc(100% - 17px)"};
+                return;
+            }else if (isChrome && heightTable > 246){
+                $scope.model.hidden.widthHeader = {"width": "calc(100% - 10px)"};
+                return;
+            }
+            $scope.model.hidden.widthHeader = {"width": "100%"};
+        },100);
+    };
+
+    $scope.openDialog = function(result, row, item, index) {
+        var options = {size: 'auto',};
+        var param = null;
+        switch (result) {
+            case 'searchItem':
+                DialogsService.showDialog('SearchItem', 'searchItemCtrl', param,options).result.then(function () {}, function () {
+                    if(sessionStorage.getItem("product")){
+                        var item = JSON.parse(sessionStorage.getItem("product"));
+                        if(!StringUtils.isEmpty(item.itemCd)){
+                            $scope.insertRow(item);
+                            $scope.checkDuplicateItemUnit(index);
+                            sessionStorage.removeItem("product");
+                        }
+                    }
+                });
+                break;
+            default:
+                break;
+        };
+    };
+
+    $scope.openDetailItem = function(item){
+        if(!ValidateUtil.isValidTextEmpty(item.itemSerialCd)){
+            var param = {
+                    serialCd : item.itemSerialCd
+            };
+            ServerService.doPost('MstItemList/checkData', param).then(
+                function(okResult) {
+                    var warning = okResult.data.warning;
+                    var error = okResult.data.failed;
+                    if(!ValidateUtil.isValidTextEmpty(warning)){
+                        DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                        $scope.search($scope.model.form.search);
+                        return;
+                    }else if(!ValidateUtil.isValidTextEmpty(error)){
+                        DialogsService.showError(Messages.getMessage('system.error'),error);
+                        return;
+                    }else{
+                        param.detailFlag = true;
+                        sessionStorage.setItem('mstItemDialog',JSON.stringify(param));
+                        DialogsService.showDialog('MstItemDialog', 'mstItemDialogCtrl', 'data', {size: '1240'}).result.then(function(param) {
+                        }, function () {
+                            sessionStorage.removeItem('mstItemDialog');
+                        });
+                    }
+                },
+                function(errResult){}
+            );
+        }
+    };
+
+//    $scope.rounding = function(value, rounding){
+//        if(!ValidateUtil.isValidTextEmpty(rounding)){
+//            if(rounding == 1){
+//                //ep: 5.2→5 (5.6->6)
+//                value = Math.round(value);
+//            } else if(rounding == 0){
+//                //ep: 5.2→5
+//                if(value < 0){
+//                    value = Math.abs(value);
+//                    value = Math.floor(value);
+//                    value = value * (-1);
+//                } else {
+//                    value = Math.floor(value);
+//                }
+//            } else if(rounding == 2){
+//                //ep: 5.2→6
+//                value = Math.ceil(value);
+//            }
+//        }
+//        return value;
+//    };
+
+    $scope.getRounding = function(rounding){
+        $scope.model.hidden.loginSession = angular.fromJson(sessionStorage.getItem("session"));
+        if(ValidateUtil.isValidTextEmpty( $scope.model.hidden.loginSession.rounding)){
+            ServerService.doPost('SalDetailsControl/getRounding', null).then(
+                function(okResult) {
+                    if(!ValidateUtil.isValidTextEmpty(okResult.data.rounding)){
+                        $scope.model.hidden.loginSession.rounding = okResult.data.rounding;
+                        $scope.model.hidden.rounding = okResult.data.rounding;
+                    }
+                },
+                function(errResult){}
+            );
+        }else{
+            $scope.model.hidden.rounding = $scope.model.hidden.loginSession.rounding;
+        }
+    };
+
+    $scope.getInit = function (){
+        ServerService.doPost('BargainControl/getInit', null).then(
+            function(okResult) {
+                $scope.model.form.listS020011 = okResult.data.listS020011;
+                $scope.model.form.listC040001 = okResult.data.listC040001;
+                $scope.model.form.listCate01 = okResult.data.listCate01;
+                $scope.model.form.listCate02 = okResult.data.listCate02;
+                $scope.model.form.listCate03 = okResult.data.listCate03;
+                var bargain = angular.fromJson(sessionStorage.getItem("bargain"));
+                if(!StringUtils.isEmpty(bargain)){
+                    $scope.model.hidden.isDisabled = true;
+                    $scope.model.hidden.screenMode = 'VIEW';
+                    $scope.getBargain(bargain);
+                }
+            },
+            function(errResult){}
+        );
+    };
+
+    $scope.getBargain = function(param){
+        ServerService.doPost('BargainControl/getBargain', param).then(
+            function(okResult) {
+                $scope.model.form.bargainControl = okResult.data.bargainControl;
+                $scope.model.hidden.valueOrRate = !StringUtils.isEmpty($scope.model.form.bargainControl.bargainRate) ? false : true;
+                $scope.model.hidden.createDate = okResult.data.bargainControl.createDate;
+                $scope.model.hidden.createUser = okResult.data.bargainControl.createUser;
+                $scope.model.hidden.version = okResult.data.bargainControl.version;
+                var bargainCondition = okResult.data.bargainCondition;
+                bargainCondition.custRank = !StringUtils.isEmpty(bargainCondition.custRank) ? bargainCondition.custRank.split(',') : [];
+                if($scope.model.form.bargainControl.bargainType == '1'){
+                    bargainCondition.cate01 = !StringUtils.isEmpty(bargainCondition.cate01) ? bargainCondition.cate01.split(',') : [];
+                    bargainCondition.cate02 = !StringUtils.isEmpty(bargainCondition.cate02) ? bargainCondition.cate02.split(',') : [];
+                    bargainCondition.cate03 = !StringUtils.isEmpty(bargainCondition.cate03) ? bargainCondition.cate03.split(',') : [];
+                }else{
+                    $scope.model.form.bargainItemDetail = okResult.data.bargainItemDetail;
+                    $scope.model.hidden.valueOrRateDetail = !StringUtils.isEmpty($scope.model.form.bargainControl.bargainRate) ? false : true;
+                    if($scope.model.form.bargainItemDetail.length > 0){
+                       $scope.model.hidden.checkBargainCost = !StringUtils.isEmpty($scope.model.form.bargainItemDetail[0].bargainCost) ? true : false;
+                       $scope.model.hidden.checkBargainPrice = !StringUtils.isEmpty($scope.model.form.bargainItemDetail[0].bargainPrice) ? true : false;
+                    }
+                }
+                $scope.model.form.bargainCondition = bargainCondition;
+                $scope.convertDataCustomer(bargainCondition);
+                $scope.convertDataStockaddress(bargainCondition);
+            },
+            function(errResult){}
+        );
+    };
+
+    $scope.convertDataCustomer = function(data){
+        $scope.model.hidden.listDataCustAjax = [];
+        if(!StringUtils.isEmpty(data.custCd) && data.custCd.length > 0 && angular.isString(data.custCd)){
+            var listNo = angular.copy(data.custCd).split(',');
+            var listName = angular.copy(data.custName).split(',');
+            for (var i = 0; i < listNo.length; i++) {
+                $scope.model.hidden.listDataCustAjax.push({
+                    no : listNo[i],
+                    name : listName[i]
+                });
+            }
+        };
+    };
+
+    $scope.convertDataStockaddress = function(data){
+        $scope.model.hidden.listDataStockaddressAjax = [];
+        if(!StringUtils.isEmpty(data.stockaddressNo) && data.stockaddressNo.length > 0 && angular.isString(data.stockaddressNo)){
+            var listNo = angular.copy(data.stockaddressNo).split(',');
+            var listName = angular.copy(data.stockaddressName).split(',');
+            for (var i = 0; i < listNo.length; i++) {
+                $scope.model.hidden.listDataStockaddressAjax.push({
+                    no : listNo[i],
+                    name : listName[i]
+                });
+            };
+        }
+    };
+
+    $scope.init();
+
+    /**insert row*/
+    $scope.insertRow = function(item){
+        var itemNew = {
+                valueOrRateDetail : $scope.model.hidden.valueOrRateDetail,
+                itemCd : item.itemCd,
+                itemName : item.itemName,
+                serialCd : item.serialCd,
+                itemSerialCd : item.serialCd,
+                itemUnit : item.itemUnit,
+                listItemUnit: item.listItemUnit,
+                packageQuantity: item.packageQuantity,
+                itemCost : item.itemCost,
+                itemFixedPrice : item.itemFixedPrice,
+                itemPrice : item.itemPrice,
+                bargainRate : !$scope.model.hidden.valueOrRateDetail ? $scope.model.form.bargainControl.bargainRate : null,
+                bargainValue : $scope.model.hidden.valueOrRateDetail ? $scope.model.form.bargainControl.bargainValue : null,
+                bargainCost : null,
+                bargainPrice : null
+        }
+        $scope.model.form.bargainItemDetail.push(itemNew);
+        var index = $scope.model.form.bargainItemDetail.length > 0 ? $scope.model.form.bargainItemDetail.length - 1 : 0;
+        if($scope.model.hidden.valueOrRateDetail){
+            $scope.onChangeBargainValue(index, $scope.model.form.bargainItemDetail[index])
+        }else{
+            $scope.onChangeBargainRate(index, $scope.model.form.bargainItemDetail[index])
+        }
+        $scope.checkDuplicateItemUnit(index);
+        $scope.calWidth();
+    };
+
+    $scope.removeItem = function(index) {
+        $scope.model.form.bargainItemDetail.splice(index, 1);
+        $scope.checkDuplicateItemUnit(index);
+        $scope.calWidth();
+    };
+
+    $scope.changeItemUnit = function(index, item){
+        var lineNo = angular.element('select[name="itemUnit'+index+'"] option:selected').attr('lineNo');
+        if(!StringUtils.isEmpty(item.itemSerialCd)){
+            var param = {
+                    serialCd : item.itemSerialCd,
+                    lineNo : lineNo,
+                    itemUnit : item.itemUnit
+            }
+            ServerService
+                .doPost('SalDetailsControl/getItemByItemUnit', param)
+                .then(
+                    function(okResult) {
+                        var okResult = okResult.data;
+                        item.itemPrice = okResult.itemPrice;
+                        if(!ValidateUtil.isValidTextEmpty(okResult.itemCost)){
+                            item.itemCost = okResult.itemCost;
+                        }else{
+                            item.itemCost = '';
+                            angular.element("input[id='itemCost"+index+"']").val('');
+                        }
+                        item.packageQuantity = okResult.packageQuantity;
+                        if(!item.valueOrRateDetail){
+                            $scope.onChangeBargainRate(index, item);
+                        }else{
+                            $scope.onChangeBargainValue(index, item);
+                        }
+                    },
+                    function(errResult){}
+            );
+        };
+        $scope.checkDuplicateItemUnit(index);
+        $scope.calWidth();
+    };
+
+    $scope.checkDuplicateItemUnit = function(index){
+        $scope.model.hidden.listDuplicate = [];
+        angular.forEach($scope.model.form.bargainItemDetail, function(item, i){
+            angular.forEach($scope.model.form.bargainItemDetail, function(row, j){
+                if(!StringUtils.isEmpty(item.itemSerialCd) && !StringUtils.isEmpty(item.itemSerialCd)
+                        && item.itemSerialCd == row.itemSerialCd && item.itemUnit == row.itemUnit && i != j){
+                    if($scope.model.hidden.listDuplicate.indexOf(j) == -1){
+                        $scope.model.hidden.listDuplicate.push(j);
+                    }
+                }
+            })
+        })
+    };
+
+    $scope.onChangeValueOrRate = function(value){
+        if(ValidateUtil.isValidTextEmpty($scope.model.hidden.rounding)){
+            $scope.getRounding();
+        }
+        var rounding = $scope.model.hidden.rounding;
+        if($scope.model.form.bargainItemDetail.length > 0){
+            angular.forEach($scope.model.form.bargainItemDetail , function(item, i){
+                item.valueOrRateDetail = value;
+                var bargainCost = null;
+                var bargainPrice = null;
+                if(value){
+                    //INPUT D13
+                    var bargainValue = $scope.model.form.bargainControl.bargainValue;
+                    item.bargainValue = bargainValue;
+                    item.bargainRate = null;
+                    //If D14(model.hidden.checkBargainCost) = TRUE --> Set INPUT D15(bargainCost) = D10(itemCost) - D13(bargainValue)
+                    bargainCost = $scope.model.hidden.checkBargainCost ? item.itemCost - bargainValue : null;
+                    item.bargainCost = $rootScope.rounding(bargainCost, rounding);
+                    //If D16(model.hidden.checkBargainPrice) = TRUE --> Set INPUT D17(bargainPrice) = D11(itemPrice) - D13(bargainValue)
+                    bargainPrice = $scope.model.hidden.checkBargainPrice ? item.itemPrice - bargainValue : null;
+                    item.bargainPrice = $rootScope.rounding(bargainPrice, rounding);
+
+                }else{
+                    //INPUT D12
+                    var bargainRate = $scope.model.form.bargainControl.bargainRate;
+                    item.bargainRate = bargainRate;
+                    item.bargainValue = null;
+                    //If D14(model.hidden.checkBargainCost) = TRUE --> Set INPUT D15(bargainCost) = D10(itemCost) * (1 - D12(bargainRate)/100)
+                    bargainCost = $scope.model.hidden.checkBargainCost ? item.itemCost*(1 - bargainRate/100) : null;
+                    item.bargainCost = $rootScope.rounding(bargainCost, rounding);
+                    //If D16(model.hidden.checkBargainPrice) = TRUE --> Set INPUT D17(bargainPrice) = D11(itemPrice) * (1 - D12(bargainRate)/100)
+                    bargainPrice = $scope.model.hidden.checkBargainPrice ? item.itemPrice*(1 - bargainRate/100) : null;
+                    item.bargainPrice = $rootScope.rounding(bargainPrice, rounding);
+                }
+            })
+        }
+    };
+
+    $scope.onChangeBargainRate = function(index, item){
+        $scope.model.form.bargainItemDetail[index].bargainValue = null;
+        if(ValidateUtil.isValidTextEmpty($scope.model.hidden.rounding)){
+            $scope.getRounding();
+        }
+        var rounding = $scope.model.hidden.rounding;
+        var bargainCost = $scope.model.hidden.checkBargainCost ? item.itemCost*(1 - item.bargainRate/100) : null;
+        $scope.model.form.bargainItemDetail[index].bargainCost = $rootScope.rounding(bargainCost, rounding);
+        var bargainPrice = $scope.model.hidden.checkBargainPrice ? item.itemPrice*(1 - item.bargainRate/100) : null;
+        $scope.model.form.bargainItemDetail[index].bargainPrice = $rootScope.rounding(bargainPrice, rounding);
+    };
+
+    $scope.onChangeBargainValue = function(index, item){
+        $scope.model.form.bargainItemDetail[index].bargainRate = null;
+        if(ValidateUtil.isValidTextEmpty($scope.model.hidden.rounding)){
+            $scope.getRounding();
+        }
+        var rounding = $scope.model.hidden.rounding;
+        var bargainCost = $scope.model.hidden.checkBargainCost ? item.itemCost - item.bargainValue : null;
+        $scope.model.form.bargainItemDetail[index].bargainCost = $rootScope.rounding(bargainCost, rounding);
+        var bargainPrice = $scope.model.hidden.checkBargainPrice ? item.itemPrice - item.bargainValue : null;
+        $scope.model.form.bargainItemDetail[index].bargainPrice = $rootScope.rounding(bargainPrice, rounding);
+    };
+
+    $scope.convertParam = function(param, documentStatus){
+        var params = {
+                bargainName : param.bargainControl.bargainName,// A1
+                bargainDetail : param.bargainControl.bargainDetail,// A2
+                bargainType : param.bargainControl.bargainType,// A3
+                priority:  !StringUtils.isEmpty(param.bargainControl.priority) ? parseInt(param.bargainControl.priority) : null,// A6
+                documentStatus : documentStatus
+        }
+        var detailList = [];
+        detailList.push({// C1
+            conditionType : "FROM_DATE",
+            conditionValue : !StringUtils.isEmpty(param.bargainCondition.fromDate) ? param.bargainCondition.fromDate : ""
+        })
+        detailList.push({// C2
+            conditionType : "TO_DATE",
+            conditionValue : !StringUtils.isEmpty(param.bargainCondition.toDate) ? param.bargainCondition.toDate : ""
+        })
+        detailList.push({// C3
+            conditionType : "MIN_PURCHASE_NUM",
+            conditionValue : !StringUtils.isEmpty(param.bargainCondition.minPurchaseNum) ? param.bargainCondition.minPurchaseNum :""
+        })
+        detailList.push({// C4
+            conditionType : "MAX_PURCHASE_NUM",
+            conditionValue : !StringUtils.isEmpty(param.bargainCondition.maxPurchaseNum) ? param.bargainCondition.maxPurchaseNum : ""
+        })
+        detailList.push({// C5
+            conditionType : "MIN_PURCHASE_PRICE",
+            conditionValue : !StringUtils.isEmpty(param.bargainCondition.minPurchaseNum) ? param.bargainCondition.minPurchasePrice : ""
+        })
+        detailList.push({// C6
+            conditionType : "MAX_PURCHASE_PRICE",
+            conditionValue : !StringUtils.isEmpty(param.bargainCondition.maxPurchaseNum) ? param.bargainCondition.maxPurchasePrice : ""
+        })
+        detailList.push({// C7
+            conditionType : "CUST_CD",
+            conditionValue : !StringUtils.isEmpty(param.bargainCondition.custCd) ? (param.bargainCondition.custCd).toString() : ""
+        })
+        detailList.push({// C8
+            conditionType : "CUST_RANK",
+            conditionValue : !StringUtils.isEmpty(param.bargainCondition.custRank) ? (param.bargainCondition.custRank).toString() : ""
+        })
+        detailList.push({// C9
+            conditionType : "STOCKADDRESS_NO",
+            conditionValue : !StringUtils.isEmpty(param.bargainCondition.stockaddressNo) ? (param.bargainCondition.stockaddressNo).toString() : ""
+        })
+        if(param.bargainControl.bargainType == '1'){// A3 == '1'
+            params.bargainRate = !$scope.model.hidden.valueOrRate ? param.bargainControl.bargainRate : null;// A4
+            params.bargainValue = $scope.model.hidden.valueOrRate ? param.bargainControl.bargainValue : null; // A5
+            detailList.push({// I1
+                conditionType : "CATE01",
+                conditionValue : !StringUtils.isEmpty(param.bargainCondition.cate01) ? (param.bargainCondition.cate01).toString() : ""
+            })
+             detailList.push({// I2
+                conditionType : "CATE02",
+                conditionValue : !StringUtils.isEmpty(param.bargainCondition.cate02) ? (param.bargainCondition.cate02).toString() : ""
+            })
+             detailList.push({// I3
+                conditionType : "CATE03",
+                conditionValue : !StringUtils.isEmpty(param.bargainCondition.cate03) ? (param.bargainCondition.cate03).toString() : ""
+            })
+        }else{// A3 == '2'
+            params.bargainRate = !$scope.model.hidden.valueOrRateDetail ? param.bargainControl.bargainRate : null;// D2
+            params.bargainValue = $scope.model.hidden.valueOrRateDetail ? param.bargainControl.bargainValue : null; // D3
+            params.bargainItemDetail = JSON.stringify(param.bargainItemDetail);// List Detail
+        }
+        params.bargainCondition = JSON.stringify(detailList);
+
+        //set data for update bargain
+        params.createUser = !StringUtils.isEmpty($scope.model.hidden.createUser) ? $scope.model.hidden.createUser : '';
+        params.createDate = !StringUtils.isEmpty($scope.model.hidden.createDate) ? new Date($scope.model.hidden.createDate) : null;
+        params.version = !StringUtils.isEmpty($scope.model.hidden.version) ? $scope.model.hidden.version : '';
+        return params;
+    };
+
+    $scope.insertBargain = function(formInvalid, param, documentStatus){
+        $scope.model.hidden.isSubmited = true;
+        if(formInvalid){
+            //set message
+            $scope.onChangeBargainType(param);
+            return;
+        }
+        /** if list detail isEmpty show this message */
+        if(param.bargainControl.bargainType == '2' && $scope.model.form.bargainItemDetail.length == 0){
+            DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00046'));
+            return;
+        }
+        DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('S00003'))
+            .result.then(function(btn){
+                var params = $scope.convertParam(param, documentStatus);
+                ServerService
+                .doPost('BargainControl/insert', params)
+                .then(
+                    function(okResult) {
+                        var success = okResult.data.success;
+                        var warning =  okResult.data.warning;
+                        if(!ValidateUtil.isValidTextEmpty(success)){
+                            var bargain = {
+                                    bargainNo :  okResult.data.bargainNo
+                            };
+                            sessionStorage.setItem("bargain", JSON.stringify(bargain));
+                            $scope.model.hidden.isDisabled = true;
+                            $scope.model.hidden.screenMode = 'VIEW';
+                            DialogsService.showNotify(Messages.getMessage('title.info'), success)
+                            .result.then(function(btn){
+                                $scope.getBargain(bargain);
+                            });
+                        } else if(!ValidateUtil.isValidTextEmpty(warning)){
+                            DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                            return;
+                        }
+                    },
+                    function(errResult){}
+                );
+            },function(btn){}
+        );
+    };
+
+    $scope.edit = function(param){
+        var params = {bargainNo : param.bargainNo};
+        ServerService
+        .doPost('BargainList/isExistData', params).then(
+            function(okResult) {
+                var warning = okResult.data.warning;
+                if(!ValidateUtil.isValidTextEmpty(warning)){
+                    DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                    return;
+                }else{
+                    $scope.model.hidden.isDisabled = false;
+                    $scope.model.hidden.screenMode = 'UPDATE';
+                    $scope.checkBargainCost();
+                    $scope.checkBargainPrice();
+                }
+            },
+            function(errResult){}
+        );
+    };
+
+    $scope.updateBargain = function(formInvalid, param, documentStatus){
+        $scope.model.hidden.isSubmited = true;
+        if(formInvalid){
+            //set message
+            $scope.onChangeBargainType(param);
+            return;
+        }
+        /** if list detail isEmpty show this message */
+        if(param.bargainControl.bargainType == '2' && $scope.model.form.bargainItemDetail.length == 0){
+            DialogsService.showWarning(Messages.getMessage('check.error'), Messages.getMessage('W00046'));
+            return;
+        }
+        DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('S00004'))
+            .result.then(function(btn){
+                var params = $scope.convertParam(param, documentStatus);
+                params.bargainNo = param.bargainControl.bargainNo;
+                ServerService
+                .doPost('BargainControl/update', params)
+                .then(
+                    function(okResult) {
+                        var success = okResult.data.success;
+                        var warning =  okResult.data.warning;
+                        if(!ValidateUtil.isValidTextEmpty(success)){
+                            var bargain = {
+                                    bargainNo :  $scope.model.form.bargainControl.bargainNo
+                            };
+                            sessionStorage.setItem("bargain", JSON.stringify(bargain));
+                            $scope.model.hidden.isDisabled = true;
+                            $scope.model.hidden.screenMode = 'VIEW';
+                            DialogsService.showNotify(Messages.getMessage('title.info'), success)
+                            .result.then(function(btn){
+                                $scope.getBargain(bargain);
+                            });
+                        } else if(!ValidateUtil.isValidTextEmpty(warning)){
+                            DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                            return;
+                        }
+                    },
+                    function(errResult){}
+                );
+            },function(btn){}
+        );
+    };
+
+    $scope.deleteBargain = function(param){
+        DialogsService.showConfirm(Messages.getMessage('title.confirm'), Messages.getMessage('S00005'))
+            .result.then(function(btn){
+                var params = {
+                        bargainNo : param.bargainControl.bargainNo,
+                        version : $scope.model.hidden.version
+                };
+                ServerService
+                .doPost('BargainControl/delete', params)
+                .then(
+                    function(okResult) {
+                        var success = okResult.data.success;
+                        var warning =  okResult.data.warning;
+                        if(!ValidateUtil.isValidTextEmpty(success)){
+                            DialogsService.showNotify(Messages.getMessage('title.info'), success).result.then(function(btn){
+                                sessionStorage.removeItem("bargain");
+                                RouteService.gotoUrl("BargainList");
+                            });
+                        } else if(!ValidateUtil.isValidTextEmpty(warning)){
+                            DialogsService.showWarning(Messages.getMessage('check.error'), warning);
+                            return;
+                        }
+                    },
+                    function(errResult){}
+                );
+            },function(btn){}
+        );
+    };
+
+    $scope.backEdit = function(){
+        $scope.model.hidden.listDataCustAjax = [];
+        $scope.model.hidden.listDataStockaddressAjax = [];
+        $scope.model.hidden.isSubmited = false;
+        var bargain = angular.fromJson(sessionStorage.getItem("bargain"));
+        if(null != bargain){
+            $scope.getBargain(bargain);
+        }
+        $scope.model.hidden.screenMode = 'VIEW';
+        $scope.model.hidden.isDisabled = true;
+    };
+
+    $scope.backList = function(){
+        sessionStorage.removeItem('bargain');
+        RouteService.gotoUrl('BargainList');
+    };
+
+    $scope.onChangeBargainType = function(param){
+        $scope.model.hidden.bargainRateOrValue = angular.element('#bargainRVLabel').text();
+        $scope.model.hidden.bargainRateOrValueDetail = angular.element('#bargainRVDetailLabel').text();
+    }
+
+    $scope.checkBargainCost = function(){
+        if(ValidateUtil.isValidTextEmpty($scope.model.hidden.rounding)){
+            $scope.getRounding();
+        }
+        var rounding = $scope.model.hidden.rounding;
+        angular.forEach($scope.model.form.bargainItemDetail, function(item, i){
+            if(!item.valueOrRateDetail){
+                var bargainCost = $scope.model.hidden.checkBargainCost ? item.itemCost*(1 - item.bargainRate/100) : null;
+                $scope.model.form.bargainItemDetail[i].bargainCost = $rootScope.rounding(bargainCost, rounding);
+            }else{
+                var bargainCost = $scope.model.hidden.checkBargainCost ? item.itemCost - item.bargainValue : null;
+                $scope.model.form.bargainItemDetail[i].bargainCost = $rootScope.rounding(bargainCost, rounding);
+            }
+        });
+    }
+
+    $scope.checkBargainPrice = function(){
+        if(ValidateUtil.isValidTextEmpty($scope.model.hidden.rounding)){
+            $scope.getRounding();
+        }
+        var rounding = $scope.model.hidden.rounding;
+        angular.forEach($scope.model.form.bargainItemDetail, function(item, i){
+            if(!item.valueOrRateDetail){
+                var bargainPrice = $scope.model.hidden.checkBargainPrice ? item.itemPrice*(1 - item.bargainRate/100) : null;
+                $scope.model.form.bargainItemDetail[i].bargainPrice = $rootScope.rounding(bargainPrice, rounding);
+            }else{
+                var bargainPrice = $scope.model.hidden.checkBargainPrice ? item.itemPrice - item.bargainValue : null;
+                $scope.model.form.bargainItemDetail[i].bargainPrice = $rootScope.rounding(bargainPrice, rounding);
+            }
+        });
+    }
+
+}]);

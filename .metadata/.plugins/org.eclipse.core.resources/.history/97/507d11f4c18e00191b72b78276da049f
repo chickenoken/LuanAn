@@ -1,0 +1,107 @@
+package org.planning.net.config;
+
+import javax.sql.DataSource;
+
+import org.seasar.doma.jdbc.ClassHelper;
+import org.seasar.doma.jdbc.Config;
+import org.seasar.doma.jdbc.ExceptionSqlLogType;
+import org.seasar.doma.jdbc.JdbcLogger;
+import org.seasar.doma.jdbc.RequiresNewController;
+import org.seasar.doma.jdbc.SqlFileRepository;
+import org.seasar.doma.jdbc.dialect.Dialect;
+import org.springframework.jdbc.datasource.TransactionAwareDataSourceProxy;
+
+public class DefaultDomaConfig implements Config {
+
+    private DataSource dataSource;
+    private Dialect dialect;
+    private SqlFileRepository sqlFileRepository;
+
+    @Override
+    public DataSource getDataSource() {
+        return new TransactionAwareDataSourceProxy(dataSource); // (1)
+    }
+
+    public void setDataSource(DataSource dataSource) {
+        this.dataSource = dataSource;
+    }
+
+    @Override
+    public Dialect getDialect() {
+        return dialect;
+    }
+
+    public void setDialect(Dialect dialect) {
+        this.dialect = dialect;
+    }
+
+    @Override
+    public SqlFileRepository getSqlFileRepository() {
+        return sqlFileRepository;
+    }
+
+    public void setSqlFileRepository(SqlFileRepository sqlFileRepository) {
+        this.sqlFileRepository = sqlFileRepository;
+    }
+
+    @Override
+    public int getBatchSize() {
+        // TODO Auto-generated method stub
+        return 0;
+    }
+
+    @Override
+    public ClassHelper getClassHelper() {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public String getDataSourceName() {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public ExceptionSqlLogType getExceptionSqlLogType() {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public int getFetchSize() {
+        // TODO Auto-generated method stub
+        return 0;
+    }
+
+    @Override
+    public JdbcLogger getJdbcLogger() {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public int getMaxRows() {
+        // TODO Auto-generated method stub
+        return 0;
+    }
+
+    @Override
+    public int getQueryTimeout() {
+        // TODO Auto-generated method stub
+        return 0;
+    }
+
+    @Override
+    public RequiresNewController getRequiresNewController() {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public boolean ignoreUnknownColumn() {
+        // TODO Auto-generated method stub
+        return false;
+    }
+
+}

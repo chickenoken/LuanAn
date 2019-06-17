@@ -1,0 +1,22 @@
+@CHARSET "UTF-8";
+th.width-100 {
+    background: #87CEEB;
+    color: #FFFFFF;
+}
+.required-new-none-border {
+}
+#table-crud tr th{
+	text-align: right !important;
+}
+
+.table-label>tbody>tr>th {
+	background-color: #87CEEB;
+    color: #FFF;
+    vertical-align: middle;
+    border-bottom: 1px solid #FFF;
+    width: 155px;
+}
+
+.table-label>tbody>tr>td {
+   vertical-align: middle;
+}
